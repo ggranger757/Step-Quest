@@ -87,8 +87,9 @@
   UI.updateHud = () => {
     const s = S(), need = D.xpToNext(s.level);
     $('#hud-level').textContent = s.level;
-    $('#hud-xpnum').textContent = WB.fmt(s.xp) + ' / ' + WB.fmt(need) + ' XP';
-    $('#hud-xpbar').style.width = Math.min(100, (s.xp / need) * 100) + '%';
+    const maxed = s.level >= D.LEVEL_CAP;
+    $('#hud-xpnum').textContent = maxed ? 'Max level' : WB.fmt(s.xp) + ' / ' + WB.fmt(need) + ' XP';
+    $('#hud-xpbar').style.width = (maxed ? 100 : Math.min(100, (s.xp / need) * 100)) + '%';
     $('#hud-xpbar-wrap').setAttribute('aria-valuenow', Math.round((s.xp / need) * 100));
     const hpPct = Math.round((s.hp / G.maxHp()) * 100);
     $('#hud-hpbar').style.width = hpPct + '%';
@@ -154,7 +155,7 @@
     const o = tq.shift(); tShown++;
     const el = document.createElement('div');
     el.className = 'toast ' + (o.cls || '');
-    el.innerHTML = `${o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${o.action ? `<button class="btn sm cyan" type="button">${WB.esc(o.action.label)}</button>` : ''}`;
+    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${o.action ? `<button class="btn sm cyan" type="button">${WB.esc(o.action.label)}</button>` : ''}`;
     if (o.action) el.querySelector('button').onclick = () => { o.action.fn(); done(); };
     $('#toasts').appendChild(el);
     let gone = false;
@@ -285,15 +286,15 @@
 
   // ---------- encounters ----------
   let encCur = null, encTimer = null;
-  const ENC_TITLE = { creature: 'Encounter', chest: 'Discovery', find: 'Discovery', merchant: 'Merchant', traveler: 'Traveler', boss: 'World guardian', merlin: 'Merlin the owl-mage' };
-  const encTitle = (e) => (e.aggressive ? 'Hostile creature' : ENC_TITLE[e.type]);
-  const PRIMARY = ['battle', 'shoo', 'open', 'take', 'accept', 'buy'];
+  const ENC_TITLE = { creature: 'Encounter', chest: 'Discovery', find: 'Discovery', merchant: 'Merchant', traveler: 'Traveler', boss: 'World guardian', merlin: 'Merlin the owl-mage', egg: 'An egg!', druid: 'The Druid' };
+  const encTitle = (e) => (e.nemesis ? 'Boss!' : e.aggressive ? 'Hostile creature' : ENC_TITLE[e.type]);
+  const PRIMARY = ['battle', 'shoo', 'open', 'take', 'accept', 'buy', 'quiz', 'trade'];
   UI.showEncounter = (enc, where = 'stage') => {
     encCur = enc;
     clearTimeout(encTimer);
     const html = `
       <canvas width="64" height="64" id="enc-face"></canvas>
-      <div class="etext"><div class="etitle ${enc.aggressive || enc.boss ? 'hostile' : ''}">${encTitle(enc)}</div><p>${WB.esc(enc.text)}</p>${enc.aggressive || enc.boss ? `<p class="ehp">Your HP ${WB.fmt(S().hp)} / ${WB.fmt(G.maxHp())}${S().hp / G.maxHp() < 0.35 ? ' \u00b7 low, consider avoiding it' : ''}</p>` : ''}</div>
+      <div class="etext"><div class="etitle ${enc.aggressive || enc.boss || enc.nemesis ? 'hostile' : ''}">${encTitle(enc)}</div><p>${WB.esc(enc.text)}</p>${enc.nemesis ? `<p class="ehp">${WB.esc(D.BOSSES[enc.creature].abilityName)}: ${WB.esc(D.BOSSES[enc.creature].abilityDesc)}</p>` : ''}${enc.aggressive || enc.boss || enc.nemesis ? `<p class="ehp">Your HP ${WB.fmt(S().hp)} / ${WB.fmt(G.maxHp())}${S().hp / G.maxHp() < 0.35 ? ' \u00b7 low, consider avoiding it' : ''}</p>` : ''}</div>
       <div class="choices">${enc.choices.map((c) => `<button class="btn ${c.id === 'battle' ? 'danger' : PRIMARY.includes(c.id) ? '' : 'ghost'}" type="button" data-choice="${c.id}" ${off(c.need && S().coins < c.need && 'You need ' + WB.fmt(c.need - S().coins) + ' more coins.')}>${WB.esc(c.label)}${c.hint ? `<small>${WB.esc(c.hint)}</small>` : ''}</button>`).join('')}</div>`;
     let root;
     if (where === 'stage') { root = $('#encounter'); root.innerHTML = html; root.hidden = false; }
@@ -302,6 +303,7 @@
     const face = root.querySelector('canvas');
     if (enc.creature) WB.paintThumb(face, { kind: 'cr', id: enc.creature, face: 'left' });
     else if (enc.npc) WB.paintThumb(face, { kind: 'npc', id: enc.npc, face: 'left' });
+    else if (enc.egg) WB.Assets.load('egg/' + enc.egg + '.png').then((im) => { if (!im || !im._ok) return; const c = face.getContext('2d'); c.imageSmoothingEnabled = false; c.clearRect(0, 0, 64, 64); c.drawImage(im, 0, 0, 32, 32, 0, 0, 64, 64); });
     else { const c = face.getContext('2d'); c.imageSmoothingEnabled = false; const ic = WB.iconCanvas(enc.type === 'chest' ? 'chest' : 'spark'); const sc = Math.floor(48 / ic.width); c.drawImage(ic, (64 - ic.width * sc) / 2, (64 - ic.height * sc) / 2, ic.width * sc, ic.height * sc); }
     root.querySelectorAll('[data-choice]').forEach((b) => b.onclick = () => UI.resolve(enc, b.dataset.choice, root, where));
     const first = root.querySelector('[data-choice]'); if (first && where === 'stage') first.focus({ preventScroll: true });
@@ -309,6 +311,7 @@
   UI.resolve = (enc, choice, root, where) => {
     if (enc._resolved) return;                       // a second click (fast keyboard, assistive tech) can't resolve it twice
     const out = G.resolve(enc, choice);
+    if (out.quiz) return UI.druidQuiz(enc, out.quiz, root, where);
     if (out.battle || out.granted) enc._resolved = true;
     if (out.battle) {
       clearTimeout(encTimer); encCur = null;
@@ -325,13 +328,14 @@
       let dy = 0;
       out.granted.forEach((g) => { if (g.k === 'coins' || g.k === 'xp') { setTimeout(() => UI.floater(g.k === 'coins' ? WB.icon('coin', 2) + '+' + g.v : '+' + g.v + ' XP', pos.x, pos.y - dy, g.k === 'xp' ? 'xp big' : 'big'), 350 + dy * 4); dy += 26; } });
     }
-    const extra = out.newKind ? `<span class="reward-pill item">New creature logged</span>` : out.find ? `<span class="reward-pill item">${WB.pxImg('art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 20)}${D.FINDS[out.find.world][out.find.i][1]}</span>` : out.quest ? `<span class="reward-pill item">New delivery mission</span>` : out.merlin ? `<span class="reward-pill item">New Merlin quest · ${D.missionById[out.merlin].hours}h</span>` : '';
+    const extra = out.newKind ? `<span class="reward-pill item">New creature logged</span>` : out.find ? `<span class="reward-pill item">${WB.pxImg('art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 20)}${D.FINDS[out.find.world][out.find.i][1]}</span>` : out.quest ? `<span class="reward-pill item">New delivery mission</span>` : out.merlin ? `<span class="reward-pill item">New Merlin quest · ${D.missionById[out.merlin].hours}h</span>` : out.egg ? `<span class="reward-pill item">${WB.eggImg(out.egg, 20)}${D.eggById[out.egg].name} · ${G.eggs()[out.egg]} / ${D.EGG_MAX}</span>` : '';
     const holder = where === 'stage' ? root : $('#encounter-sheet');
     holder.innerHTML = `<canvas width="64" height="64"></canvas><div class="etext"><div class="etitle">${out.anim === 'fight' ? 'Done' : out.anim === 'leave' ? 'Moving on' : 'Done'}</div><p>${WB.esc(out.text)}</p></div><div class="outcome">${pills(out.granted)}${extra}<button class="linkbtn push" type="button" data-close-enc>Continue</button></div>${discovery ? '<button class="enc-x" type="button" data-close-enc aria-label="Close">×</button>' : ''}`;
     const face = holder.querySelector('canvas');
     if (out.find) WB.paintImg(face, 'art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 1);
     else if (enc.creature) WB.paintThumb(face, { kind: 'cr', id: enc.creature, face: 'left' });
     else if (enc.npc) WB.paintThumb(face, { kind: 'npc', id: enc.npc, face: 'left' });
+    else if (enc.egg) WB.Assets.load('egg/' + enc.egg + '.png').then((im) => { if (!im || !im._ok) return; const c = face.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(im, 0, 0, 32, 32, 0, 0, 64, 64); });
     else { const ic = WB.iconCanvas('chestopen'); const c = face.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(ic, 8, 14, 48, 36); }
     if (out.find) UI.toast({ kicker: 'New artifact', title: D.FINDS[out.find.world][out.find.i][1], img: 'art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', cls: 'cyan' });
     const close = () => { clearTimeout(encTimer); if (where === 'stage') { root.hidden = true; root.innerHTML = ''; } else UI.closeSheet(); encCur = null; UI.render(); };
@@ -350,6 +354,40 @@
     else { WB.Bgm.stopIf('merlin', 600); if (merlinPrev) setTimeout(() => WB.Bgm.play(merlinPrev), 650); merlinPrev = null; }
   }, 300);
   UI.merlinMusicOn = () => merlinOn;
+  // the Druid's Knowledge Challenge, asked inside his encounter card
+  UI.druidQuiz = (enc, qz, root, where) => {
+    clearTimeout(encTimer);
+    const holder = where === 'stage' ? root : $('#encounter-sheet');
+    holder.innerHTML = `<canvas width="64" height="64"></canvas><div class="etext"><div class="etitle">Knowledge Challenge · ${WB.esc(qz.topic)}</div><p class="dq">${WB.esc(qz.q)}</p></div>
+      <div class="choices quiz">${qz.options.map((o, i) => `<button class="btn ghost" type="button" data-ans="${i}">${WB.esc(o)}</button>`).join('')}</div>`;
+    WB.paintThumb(holder.querySelector('canvas'), { kind: 'cr', id: 'druid', face: 'left' });
+    const first = holder.querySelector('[data-ans]'); if (first && where === 'stage') first.focus({ preventScroll: true });
+    holder.querySelectorAll('[data-ans]').forEach((b) => (b.onclick = () => {
+      const r = G.answerDruid(enc, +b.dataset.ans); if (!r) return;
+      enc._resolved = true;
+      holder.querySelectorAll('[data-ans]').forEach((x, i) => { x.disabled = true; x.classList.toggle('right', i === qz.answer); x.classList.toggle('wrong', i === +b.dataset.ans && !r.ok); });
+      const close = () => { clearTimeout(encTimer); if (where === 'stage') { root.hidden = true; root.innerHTML = ''; } else UI.closeSheet(); encCur = null; UI.render(); };
+      setTimeout(() => {
+        if (r.ok) {
+          if (WB.view) WB.view.playOutcome(enc, { anim: 'druidRun' });
+          holder.innerHTML = `<canvas width="64" height="64"></canvas><div class="etext"><div class="etitle">Correct!</div><p>“${WB.esc(WB.pick(['Wise walker. The path is yours.', 'Hm. You know more than you look. Off you go.', 'Correct. The trees remember the clever.']))}” The Druid runs off into the trees.</p></div><div class="outcome">${pills(r.granted)}<button class="linkbtn push" type="button" data-close-enc>Continue</button></div>`;
+          WB.paintThumb(holder.querySelector('canvas'), { kind: 'cr', id: 'druid', anim: 'flee' });
+          holder.querySelector('[data-close-enc]').onclick = close;
+          encTimer = setTimeout(close, where === 'stage' ? 4500 : 60000);
+        } else {
+          WB.Sfx.play('hurt');
+          holder.innerHTML = `<canvas width="64" height="64"></canvas><div class="etext"><div class="etitle hostile">Wrong answer</div><p>The answer was <b>${WB.esc(r.right)}</b>. “Then we settle it the old way.” Beat the Druid, or he takes every egg you carry.</p></div>
+            <div class="choices"><button class="btn danger" type="button" data-druid-fight>Battle the Druid</button></div>`;
+          WB.paintThumb(holder.querySelector('canvas'), { kind: 'cr', id: 'druid', anim: 'attack', face: 'left' });
+          holder.querySelector('[data-druid-fight]').onclick = () => {
+            if (where === 'stage') { root.hidden = true; root.innerHTML = ''; } else UI.closeSheet();
+            encCur = null; WB.BattleUI.open(enc);
+          };
+          holder.querySelector('[data-druid-fight]').focus({ preventScroll: true });
+        }
+      }, 900);
+    }));
+  };
   UI.encounterGone = (enc) => {
     if (encCur && encCur.id === enc.id && !$('#encounter').hidden && $('#encounter').querySelector('[data-choice]')) {
       $('#encounter').hidden = true; encCur = null;
@@ -417,7 +455,7 @@
     const cal = D.DAILY_CAL.map((c, i) => {
       const idx = ci - (ci % 7) + i, got = idx < ci, now2 = idx === ci;
       const r = G.dailyRewardAt(idx);
-      return `<div class="day ${got ? 'got' : ''} ${now2 ? 'now' : ''} ${c.rare ? 'rare' : ''}">Day ${i + 1}${c.rare ? WB.icon('trail', 2) + '<b>Rare</b>' : WB.icon('coin', 2) + '<b>' + r.coins + '</b>'}</div>`;
+      return `<div class="day ${got ? 'got' : ''} ${now2 ? 'now' : ''} ${c.rare ? 'rare' : ''}">Day ${i + 1}${c.rare ? WB.icon('chest', 2) + '<b>Rare</b>' : WB.icon('coin', 2) + '<b>' + r.coins + '</b>'}</div>`;
     }).join('');
     const canDaily = G.dailyCanClaim(), dDone = G.dailyClaimedToday();
     // four sub-tabs; each shows how many rewards are waiting in it
@@ -462,10 +500,10 @@
   // ---------- SHOP (looks) ----------
   const SHOP_TABS = [
     ['avatar', 'Avatars', 'user', 'Walkers you can play as. Some are bought with Walk Coins, others unlock by leveling, streaks and exploring.'],
-    ['trail', 'Trails', 'trail', 'Particles that follow your footsteps while you walk. Rare trails come from missions, streaks and the daily reward.'],
-    ['weapons', 'Weapons', 'sword', 'Three slots: a melee weapon for Strike, a ranged weapon or spell that flies at the creature, and a shield for Defend. Every weapon has its own effect.'],
-    ['potions', 'Potions', 'img:pot/tonic.png', 'Drink potions in battle from the Item menu; healing potions also work here. Rare potions are found in the newer worlds. You can carry 9 of each.'],
+    ['weapons', 'Weapons', 'sword', 'Three slots: a melee weapon for Strike, a ranged weapon or spell that flies at the creature, and Defense: a shield that powers up Defend. Every weapon has its own effect.'],
+    ['potions', 'Potions & Food', 'img:pot/tonic.png', 'Drink potions or eat food in battle from the Item menu; anything that heals also works here. Rare potions are found in the newer worlds. You can carry 9 of each.'],
     ['pets', 'Pets', 'paw', 'Companions that walk beside you. Unlock them with coins, levels and streaks.'],
+    ['magic', 'Magic', 'img:mg/book.png', 'Magic items you buy once and keep. Use the ring, the book and the clover from the Magic button in battle (once per battle each); the backpack works on its own while you wear it.'],
   ];
   const GEAR = ['weapons', 'potions', 'pets'];
   // item card shared by the Shop and Supplies pages
@@ -474,8 +512,9 @@
     const own = G.owns(cat, it.id), eq = G.isEquipped(cat, it.id);
     const st = own ? null : G.reqStatus(it.req);
     let foot = '';
-    const canOff = cat === 'pet' || cat === 'trail' || (cat === 'weapon' && it.slot === 'shield');
+    const canOff = cat === 'pet' || (cat === 'weapon' && it.slot === 'shield') || cat === 'magic';
     if (eq) foot = canOff ? `<button class="btn ghost sm block" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat}">Unequip</button>` : `<button class="btn ghost sm block" type="button" ${off('Already equipped.')}>Equipped</button>`;
+    else if (own && cat === 'magic' && it.kind === 'battle') foot = `<button class="btn ghost sm block" type="button" ${off(it.name + ' is in your bag: use it from the Magic button during a battle.')}>In your bag</button>`;
     else if (own) foot = `<button class="btn cyan sm block" type="button" data-equip="${cat}:${it.id}">Equip</button>`;
     else if (st.buy) {
       const short = it.req.cost - s.coins;
@@ -494,9 +533,10 @@
   UI.renderShop = () => {
     const s = S();
     if (!SHOP_TABS.some((t) => t[0] === UI.shopTab)) UI.shopTab = 'avatar';
+    if (!SHOP_TABS.some((t) => t[0] === UI.shopTab)) UI.shopTab = 'avatar';
     const cat = UI.shopTab, tab = SHOP_TABS.find((t) => t[0] === cat);
-    const body = GEAR.includes(cat) ? gearBody(cat) : `<div class="grid">${G.CATS[cat][1].map((it) => itemCard(cat, it, { desc: cat === 'avatar' ? it.role : '' })).join('')}</div>`;
-    const counts = { avatar: s.owned.avatars.length + '/' + D.AVATARS.length, trail: s.owned.trails.length + '/' + D.TRAILS.length, weapons: s.owned.weapons.filter((id) => D.weaponById[id]).length + '/' + D.WEAPONS.length, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length + '/' + D.PETS.length };
+    const body = GEAR.includes(cat) ? gearBody(cat) : `<div class="grid">${G.CATS[cat][1].map((it) => itemCard(cat, it, { desc: cat === 'avatar' ? it.role : cat === 'magic' ? it.desc : '' })).join('')}</div>`;
+    const counts = { avatar: s.owned.avatars.length + '/' + D.AVATARS.length, weapons: s.owned.weapons.filter((id) => D.weaponById[id]).length + '/' + D.WEAPONS.length, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length + '/' + D.PETS.length , magic: (s.owned.magic || []).length + '/' + D.MAGIC.length };
     const changed = UI.set($('#scr-shop'), `<div class="scr-wrap">
       <div class="scr-head"><h1>Shop</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
       <div class="seg five" role="tablist" aria-label="Shop sections">${SHOP_TABS.map(([id, l, ic]) => `<button type="button" role="tab" data-shoptab="${id}" aria-selected="${id === cat}" aria-pressed="${id === cat}">${ic.startsWith('img:') ? WB.pxImg(ic.slice(4), 20) : WB.icon(ic, 2)}<span>${l}</span><span class="cnt">${counts[id]}</span></button>`).join('')}</div>
@@ -515,19 +555,7 @@
     else if (cat === 'pet') { const p = D.PETS.find((q) => q.id === id); WB.paintThumb(c, { kind: p.src, id, face: 'right' }); }
     else if (cat === 'weapon') UI.paintWeapon(c, id);
     else if (cat === 'potion') WB.paintImg(c, `pot/${id}.png`, 0.8);
-    else if (cat === 'trail') {   // a still of the trail: particles emitted along a short walk, by style
-      const t = D.TRAILS.find((q) => q.id === id), W = c.width, H = c.height, r0 = Math.random;
-      const rng = WB.rng(WB.hash(id)); Math.random = rng;      // deterministic preview
-      const parts = [];
-      for (let i = 0; i < 46; i++) {
-        const k = i / 46, p = WB.trailParticle(t, 12 + k * (W - 34), H * 0.78, true), age = (1 - k) * p.max * 0.9;
-        p.x += p.vx * age * 0.6; p.y += p.vy * age * 0.6 + (p.grav ? 0.5 * p.grav * age * age * 0.6 : 0);
-        p.a = 0.25 + k * 0.75; parts.push(p);
-      }
-      Math.random = r0;
-      for (const p of parts) { x.globalAlpha = p.a; x.fillStyle = p.color; const sz = (p.size + 1) * 1.5; x.fillRect(Math.round(p.x), Math.round(p.y), p.streak ? p.streak * 2.5 : sz, sz); }
-      x.globalAlpha = 1;
-    }
+    else if (cat === 'magic') WB.paintImg(c, `mg/${id}.png`, 0.72);
   }
   UI.paintWeapon = (c, id) => {
     const w = D.weaponById[id];
@@ -547,6 +575,7 @@
   const COL_TABS = [
     ['finds', 'Artifacts', 'img:art/m30.png', 'Things you discover on the road. Every world hides a few: explore them all.'],
     ['ach', 'Achievements', 'img:ach/legend.png', 'Milestones that pay out coins and XP when you reach them.'],
+    ['eggs', 'Eggs', 'img:egg1', 'Eggs you find on the road or win from creatures. Trade sets of them to Merlin for loot. Losing a battle breaks half of each kind you carry.'],
   ];
   UI.supTab = 'finds';
   function gearBody(tab) {
@@ -555,7 +584,7 @@
     if (tab === 'weapons') {
       const slot = UI.wpnSlot || 'melee', eqd = (k) => G.equipped(k);
       const GROUPS = { melee: [['sword', 'Swords'], ['dagger', 'Daggers'], ['axe', 'Axes'], ['mace', 'Maces'], ['spear', 'Spears'], ['staff', 'Staves']],
-        ranged: [['throw', 'Throwing weapons'], ['knife', 'Throwing knives'], ['bow', 'Bows'], ['spell', 'Spells']], shield: [['shield', 'Shields']] };
+        ranged: [['throw', 'Throwing weapons'], ['knife', 'Throwing knives & gear'], ['bow', 'Bows'], ['gun', 'Firearms'], ['spell', 'Spells']], shield: [['shield', 'Shields']] };
       const own = (k) => D.WEAPONS.filter((w) => w.slot === k && G.owns('weapon', w.id)).length, all = (k) => D.WEAPONS.filter((w) => w.slot === k).length;
       const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Block ${Math.round(w.block * 100)}%` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
       body = `<div class="loadout">${['melee', 'ranged', 'shield'].map((k) => { const w = eqd(k); return `<button type="button" class="lslot pbox ${slot === k ? 'on' : ''}" data-wpnslot="${k}" aria-pressed="${slot === k}">
@@ -573,11 +602,12 @@
             <h3>${locked && p.world ? 'Unknown potion' : WB.esc(p.name)}</h3>
             <div class="req"><span>${locked && p.world ? 'A potion hidden somewhere in ' + WB.esc(D.worldById[p.world].name) + '.' : p.desc}</span></div>${locked ? gauge(st) : ''}
             ${locked ? '' : `<div class="foot"><div class="price"><span class="cost">${WB.icon('coin', 2)}${p.cost}</span>${short > 0 && !full ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>
-              <div class="pair"><button class="btn gold sm" type="button" data-potion-buy="${p.id}" ${off(full ? 'Your bag is full: you can carry ' + D.POTION_MAX + ' ' + p.name + '.' : short > 0 ? 'You need ' + WB.fmt(short) + ' more coins for ' + p.name + '.' : '')}>${full ? 'Full' : 'Buy'}</button>${p.kind === 'heal' ? `<button class="btn ghost sm" type="button" data-drink="${p.id}" ${off(!have ? 'You don’t have any ' + p.name + '. Buy one first.' : hp >= max ? 'You’re already at full health.' : '')}>Drink</button>` : ''}</div></div>`}
+              <div class="pair"><button class="btn gold sm" type="button" data-potion-buy="${p.id}" ${off(full ? 'Your bag is full: you can carry ' + D.POTION_MAX + ' ' + p.name + '.' : short > 0 ? 'You need ' + WB.fmt(short) + ' more coins for ' + p.name + '.' : '')}>${full ? 'Full' : 'Buy'}</button>${p.kind === 'heal' ? `<button class="btn ghost sm" type="button" data-drink="${p.id}" ${off(!have ? 'You don’t have any ' + p.name + '. Buy one first.' : hp >= max ? 'You’re already at full health.' : '')}>${p.food ? 'Eat' : 'Drink'}</button>` : ''}</div></div>`}
           </div>`;
           };
-          const base = D.POTIONS.filter((p) => p.base), found = D.POTIONS.filter((p) => !p.base && G.hasFound(p.id)), hidden = D.POTIONS.filter((p) => !p.base && !G.hasFound(p.id));
+          const base = D.POTIONS.filter((p) => p.base && !p.food), food = D.POTIONS.filter((p) => p.food), found = D.POTIONS.filter((p) => !p.base && G.hasFound(p.id)), hidden = D.POTIONS.filter((p) => !p.base && !G.hasFound(p.id));
           return `<div class="sect"><h2>Everyday potions <span class="aside">${base.length}</span></h2><div class="grid">${base.map(card).join('')}</div></div>
+            <div class="sect"><h2>Food <span class="aside">${food.length}</span></h2><div class="grid">${food.map(card).join('')}</div></div>
             <div class="sect"><h2>Discovered <span class="aside">${found.length} / ${found.length + hidden.length}</span></h2>${found.length ? `<div class="grid">${found.map(card).join('')}</div>` : '<p class="fine">Rare potions are hidden in the newer worlds as artifacts. Find one and you can buy it here.</p>'}</div>
             ${hidden.length ? `<div class="sect"><h2>Still out there <span class="aside">${hidden.length}</span></h2><div class="grid">${hidden.map(card).join('')}</div></div>` : ''}`;
         })()}
@@ -605,16 +635,18 @@
         return `<div class="sect"><h2>${w.name} <span class="aside">${got.length} / ${D.FINDS[w.id].length} found</span></h2>
           <div class="finds">${D.FINDS[w.id].map((f, i) => { const has = got.includes(i); return `<div class="find pbox ${has ? 'got' : ''}">${WB.pxImg('art/' + f[0] + '.png', 64)}${has ? WB.esc(f[1]) : open ? 'Not found yet' : 'Locked world'}</div>`; }).join('')}</div></div>`;
       }).join('');
+    } else if (tab === 'eggs') {
+      body = UI.eggSection();
     } else {
       body = `<div class="list">${D.ACHIEVEMENTS.map((a) => {
         const has = !!s.ach[a.id], cur = G.stats()[a.stat];
         return `<div class="ach pbox ${has ? 'got' : 'locked'}"><span class="a-badge">${WB.pxImg('ach/' + a.id + '.png', 48)}${has ? '' : `<span class="b-lock">${WB.icon('lock', 1)}</span>`}</span><div class="a-b"><div class="a-t">${a.title}</div><div class="a-d">${a.desc}</div>${has ? '' : `<div class="a-p"><span class="bar seg"><i style="width:${Math.min(100, (cur / a.target) * 100)}%"></i></span><span class="lbl">${WB.fmt(Math.min(cur, a.target))} / ${WB.fmt(a.target)}</span></div>`}</div><div class="a-r">${has ? WB.icon('check', 2) : WB.esc(G.rewardText(a.reward))}</div></div>`;
       }).join('')}</div>`;
     }
-    const counts = { finds: G.findCount() + '/' + D.FIND_TOTAL, ach: Object.keys(s.ach).length + '/' + D.ACHIEVEMENTS.length };
+    const counts = { finds: G.findCount() + '/' + D.FIND_TOTAL, ach: Object.keys(s.ach).length + '/' + D.ACHIEVEMENTS.length, eggs: G.eggTotal() };
     const changed = UI.set($('#scr-collection'), `<div class="scr-wrap">
       <div class="scr-head"><h1>Inventory</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
-      <div class="seg" role="tablist" aria-label="Inventory sections">${COL_TABS.map(([id, l, ic]) => `<button type="button" role="tab" data-suptab="${id}" aria-selected="${id === tab}" aria-pressed="${id === tab}">${ic.startsWith('img:') ? WB.pxImg(ic.slice(4), 20) : WB.icon(ic, 2)}<span>${l}</span><span class="cnt">${counts[id]}</span></button>`).join('')}</div>
+      <div class="seg inv" role="tablist" aria-label="Inventory sections">${COL_TABS.map(([id, l, ic]) => `<button type="button" role="tab" data-suptab="${id}" aria-selected="${id === tab}" aria-pressed="${id === tab}">${ic === 'img:egg1' ? WB.eggImg('ember', 20, 'still') : ic.startsWith('img:') ? WB.pxImg(ic.slice(4), 20) : WB.icon(ic, 2)}<span>${l}</span><span class="cnt">${counts[id]}</span></button>`).join('')}</div>
       <p class="scr-note">${def[3]}</p>
       ${body}
     </div>`);
@@ -665,7 +697,7 @@
         <div class="namerow"><h2 title="${WB.esc(s.name)}">${WB.esc(s.name)}</h2><button class="linkbtn" type="button" data-act="rename" aria-label="Change name">${WB.icon('pencil', 2)}</button></div>
         <div class="lbl">Level ${s.level} · ${WB.esc(G.item('avatar', s.avatar).name)}</div>
         <div class="bar xp"><i style="width:${(s.xp / D.xpToNext(s.level)) * 100}%"></i></div>
-        <div class="lbl">${WB.fmt(s.xp)} / ${WB.fmt(D.xpToNext(s.level))} XP to level ${s.level + 1}</div>
+        <div class="lbl">${s.level >= D.LEVEL_CAP ? 'Max level reached: level ' + D.LEVEL_CAP : WB.fmt(s.xp) + ' / ' + WB.fmt(D.xpToNext(s.level)) + ' XP to level ' + (s.level + 1)}</div>
         <div class="bar hp"><i style="width:${(s.hp / G.maxHp()) * 100}%"></i></div>
         <div class="lbl">${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())} HP · ATK ${D.heroAtk(s.level)}</div>
       </div></div>
@@ -679,7 +711,7 @@
         <div class="legend"><span><i class="k-ok"></i>Streak day (${WB.fmt(s.settings.streakMin)}+)</span><span><i class="k-under"></i>Under</span><span><i class="k-today"></i>Today</span></div>
       </div></div>
       <div class="sect"><h2>Loadout <span class="aside">tap to change</span></h2><div class="wardrobe">
-        ${slot('avatar', 'Avatar', s.avatar, 'user')}${WB.hasSkin(s.avatar) ? skinSlot : ''}${slot('weapon', 'Melee', s.equip.melee, 'sword', 'melee')}${slot('weapon', 'Ranged', s.equip.weapon, 'sword', 'ranged')}${slot('weapon', 'Shield', s.equip.shield, 'shield', 'shield')}${slot('pet', 'Pet', s.equip.pet, 'paw')}${slot('trail', 'Trail', s.equip.trail, 'trail')}
+        ${slot('avatar', 'Avatar', s.avatar, 'user')}${WB.hasSkin(s.avatar) ? skinSlot : ''}${slot('weapon', 'Melee', s.equip.melee, 'sword', 'melee')}${slot('weapon', 'Ranged', s.equip.weapon, 'sword', 'ranged')}${slot('weapon', 'Defense', s.equip.shield, 'shield', 'shield')}${slot('pet', 'Pet', s.equip.pet, 'paw')}
       </div></div>
       <div class="sect"><h2>Settings</h2>
         ${WB.Health.native ? `<div class="setting pbox"><div><div>${WB.Health.name()}</div><div class="sd">${WB.Health.status === 'on' ? 'Steps sync automatically, even for walks taken with the app closed.' : WB.esc(WB.Health.msg || 'Read your step count automatically.')}</div></div><div class="acts">${WB.Health.status === 'on' ? '<button class="btn ghost sm" type="button" data-act="health-off">Turn off</button>' : WB.Health.status !== 'unavailable' ? '<button class="btn sm" type="button" data-act="health-connect">Connect</button>' : ''}</div></div>` : ''}
@@ -779,11 +811,13 @@
         return `${i ? '<div class="connector"></div>' : ''}<div class="wnode pbox ${open ? '' : 'locked'} ${cur ? 'current' : ''}">
           <canvas width="120" height="68" data-thumb="${w.id}"></canvas>
           <div class="wbody"><h3>${w.name}</h3><p class="wb">${w.blurb}</p>
+          <div class="wcr"><span class="lbl">Creatures here</span><div class="crts">${w.pool.map((c) => `<span class="crt" title="${WB.esc(D.CREATURES[c].name)}"><canvas width="80" height="80" data-crthumb="${c}" aria-label="${WB.esc(D.CREATURES[c].name)}" role="img"></canvas></span>`).join('')}</div></div>
           ${open ? `<div class="wrow"><div class="bar seg cyan"><i style="width:${pct}%"></i></div><div class="wmeta"><span class="lbl">${Math.floor(pct)}% explored · ${(s.enc.finds[w.id] || []).length}/${D.FINDS[w.id].length} artifacts</span>${cur ? '<span class="lbl here">You are here</span>' : `<button class="btn sm" type="button" data-travel="${w.id}">Travel</button>`}</div>
             <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${!s.bosses[w.id] && pct >= 100 ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : !s.bosses[w.id] ? '<span class="lbl dim">Appears at 100%</span>' : ''}</div></div>`
           : `<div class="wrow"><div class="bar seg"><i style="width:${wp.pct}%"></i></div><div class="wmeta"><span class="lbl">${WB.icon('lock', 2)} Opens at level ${w.unlock.level}</span><span class="lbl">≈ ${WB.fmt(wp.stepsLeft)} steps</span></div></div>`}
           </div></div>`;
       }).join('')}</div></div>`);
+    if (changed) WB.$$('[data-crthumb]', $('#scr-map')).forEach((c) => WB.paintThumb(c, { kind: 'cr', id: c.dataset.crthumb, face: 'left' }));
     if (changed) WB.$$('[data-thumb]', $('#scr-map')).forEach((c) => {
       const w = D.worldById[c.dataset.thumb], x = c.getContext('2d'); x.imageSmoothingEnabled = false;
       Promise.all(w.layers.map((L) => WB.Assets.load(WB.layerPath(w, L[0])))).then((ims) => { ims.forEach((im) => im._ok && x.drawImage(im, 0, 0, im.width, im.height, 0, 0, 120, 68)); });
@@ -810,9 +844,9 @@
     if (d.supply) { const r = G.buySupply(d.supply); UI.toast(r.ok ? { kicker: 'Purchased', title: 'Rest Day Token', icon: 'moon', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.equip) { const [c, id] = d.equip.split(':'); G.equip(c, id); WB.Sfx.play('equip'); return UI.render(); }
     if (d.unequip) { G.equip(d.unequip, null); return UI.render(); }
-    if (d.travel) { G.travel(d.travel); return UI.go('world'); }
+    if (d.travel) { G.travel(d.travel); WB.Loading.world(D.worldById[d.travel]); return UI.go('world'); }
     if (d.wslot) {
-      if (d.wslot === 'avatar' || d.wslot === 'trail') { UI.shopTab = d.wslot; return UI.go('shop'); }
+      if (d.wslot === 'avatar') { UI.shopTab = d.wslot; return UI.go('shop'); }
       if (d.wsub) UI.wpnSlot = d.wsub;
       UI.supTab = d.wslot === 'weapon' ? 'weapons' : 'pets'; return UI.go('supplies');
     }

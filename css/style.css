@@ -532,7 +532,7 @@ input:focus-visible, select:focus-visible { outline: 0; box-shadow: 0 0 0 2px va
 .b-plate { position: absolute; top: var(--s3); width: min(46%, 260px); padding: var(--s2) var(--s3); background: rgba(21,18,46,.94); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 5px var(--shadow); display: grid; gap: 6px; }
 .b-plate.mine { left: var(--s3); }
 .b-plate.enemy { right: var(--s3); }
-.pl-bot { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); min-width: 0; }
+.pl-bot { display: flex; justify-content: space-between; align-items: baseline; gap: 2px var(--s2); min-width: 0; flex-wrap: wrap; }
 .pl-name { font: 400 19px/1 var(--display); overflow-wrap: anywhere; min-width: 0; }
 .b-plate .lbl { font-size: 11px; white-space: nowrap; }
 .b-plate .tags { color: var(--gold); white-space: normal; line-height: 1.3; }
@@ -708,3 +708,73 @@ html.rm .b-actions .btn.special.ready { animation: none; }
 .merlin-sect .mer-face { width: 40px; height: 40px; image-rendering: pixelated; flex: none; }
 .task.mission.merlin { border-color: #8b6cff; box-shadow: 0 0 0 1px rgba(139,108,255,.35) inset, 0 0 14px rgba(139,108,255,.18); }
 .task.mission.merlin .m-kick { color: #c7b8ff; }
+
+/* eggs: an 8-frame strip stepped with CSS */
+.egg-img { display: inline-block; width: var(--s); height: var(--s); background-repeat: no-repeat; background-size: calc(var(--s) * 8) var(--s); image-rendering: pixelated; vertical-align: middle; flex: none; animation: egg-wobble 0.8s steps(8) infinite; }
+.egg-img.still { animation: none; }
+@keyframes egg-wobble { to { background-position: calc(var(--s) * -8) 0; } }
+@media (prefers-reduced-motion: reduce) { .egg-img { animation: none; } }
+html.reduce-motion .egg-img { animation: none; }
+.eggs { display: grid; gap: var(--s2); margin-bottom: var(--s4); }
+.egg { display: flex; gap: var(--s3); align-items: center; padding: var(--s3); }
+.egg.none .egg-img { opacity: .45; filter: grayscale(.6); }
+.egg .egg-b { flex: 1; min-width: 0; }
+.egg .t-title .lbl { margin-left: 6px; }
+.trades { display: grid; gap: var(--s2); }
+.trade { display: flex; gap: var(--s3); align-items: center; padding: var(--s3); }
+.trade.ready { box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(255,204,77,.25); }
+.trade .tr-main { flex: 1; min-width: 0; }
+.trade .tr-need { display: flex; flex-wrap: wrap; gap: var(--s2); margin: 6px 0; }
+.trade .need { display: inline-flex; align-items: center; gap: 4px; font: 400 12px/1 var(--label); color: var(--muted); }
+.trade .need.ok { color: var(--gold); }
+.reward-pill .egg-img { margin-right: 2px; }
+/* Inventory has three tabs: on phones the counts move under the labels so nothing overlaps */
+@media (max-width: 520px) {
+  .seg.inv button { flex-direction: column; gap: 2px; height: 56px; padding: 0 2px; font-size: 10px; }
+  .seg.inv button .px-img, .seg.inv button .egg-img { display: none; }
+}
+/* world map: the creatures that live in each world (silhouettes until you meet them) */
+.wnode .wcr { margin: 8px 0 6px; }
+.wnode .wcr .lbl { display: block; margin-bottom: 6px; }
+.wnode .wcr .crts { display: flex; flex-wrap: nowrap; gap: 8px; }
+.wnode .wcr .crt { display: block; flex: none; width: 40px; height: 40px; background: var(--surface-2); box-shadow: 0 0 0 2px var(--line); }
+.wnode .wcr canvas { display: block; width: 40px; height: 40px; image-rendering: pixelated; }
+
+/* loading screen: black, a ring spinning around the logo, the name underneath */
+.boot { position: fixed; inset: 0; z-index: 300; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; opacity: 1; transition: opacity .35s ease; }
+.boot.out { opacity: 0; pointer-events: none; }
+.boot-mark { position: relative; width: 168px; height: 168px; display: grid; place-items: center; }
+.boot-ring { position: absolute; inset: 0; border-radius: 50%; border: 4px solid rgba(139, 108, 255, .2); border-top-color: #8b6cff; border-right-color: #c7b8ff; animation: boot-spin .9s linear infinite; }
+.boot-logo { width: 112px; height: 112px; image-rendering: pixelated; }
+.boot-name { font: 400 40px/1 var(--display); letter-spacing: .08em; color: #fff; }
+.boot-sub { font: 400 11px/1 var(--label); text-transform: uppercase; letter-spacing: .1em; color: #8f86b8; min-height: 11px; }
+@keyframes boot-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .boot-ring { animation-duration: 2.4s; } }
+html.booting, html.booting body { overflow: hidden; }
+/* the welcome screen leads with the logo */
+#intro-panel .app-logo { display: block; width: 96px; height: 96px; margin: 0 0 8px -6px; image-rendering: pixelated; filter: drop-shadow(0 4px 0 rgba(0,0,0,.45)); }
+
+/* the Druid's Knowledge Challenge */
+.encounter .dq { font-size: 16px; line-height: 1.35; }
+.encounter .choices.quiz { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+.encounter .choices.quiz .btn { height: auto; min-height: 48px; padding: 8px 10px; text-transform: none; letter-spacing: 0; font: 400 14px/1.2 var(--body); white-space: normal; text-align: center; }
+.encounter .choices.quiz .btn.right { background: #1f6b45; box-shadow: 0 0 0 2px #6ee7a0; color: #fff; opacity: 1; }
+.encounter .choices.quiz .btn.wrong { background: #6b1f2e; box-shadow: 0 0 0 2px #ff6b8a; color: #fff; opacity: 1; }
+@media (max-width: 360px) { .encounter .choices.quiz { grid-template-columns: 1fr; } }
+/* six Shop sections: three per row on phones */
+.seg.five.six button, .seg.five.six button:nth-child(n+4) { grid-column: span 2; }
+@media (min-width: 600px) { .seg.five.six { grid-template-columns: repeat(6, minmax(0, 1fr)); } .seg.five.six button { grid-column: auto; } }
+.b-actions .magic-btn { grid-column: 1 / -1; }
+/* Defend: a guard gauge along the bottom, drained by each Defend, refilled on other turns */
+.b-actions .btn.defend { position: relative; padding-bottom: 10px; overflow: hidden; }
+.b-actions .btn.defend .df-gauge { position: absolute; left: 6px; right: 6px; bottom: 5px; height: 4px; background: var(--inset); box-shadow: 0 0 0 1px var(--shadow); }
+.b-actions .btn.defend .df-gauge i { display: block; height: 100%; background: var(--cyan); transition: width .3s steps(6); }
+.b-actions .btn.defend .df-gauge.low i { background: var(--red, #ff6b5b); }
+/* roaming bosses: a red-edged plate and speech bubbles */
+.b-plate.enemy.boss { box-shadow: 0 0 0 2px #ff6b5b, 0 0 0 5px var(--shadow); }
+.b-plate.enemy.boss .pl-name { color: #ffb3a8; }
+.say-bubble { position: absolute; transform: translate(-70%, -100%); width: max-content; max-width: min(56vw, 220px); padding: 8px 10px; background: #fff8e6; color: #1b1630; font: 400 14px/1.3 var(--body); box-shadow: 0 0 0 2px #1b1630, 0 0 0 4px #ff6b5b; animation: say-in .18s steps(3) both; z-index: 3; }
+.say-bubble::after { content: ''; position: absolute; left: 70%; bottom: -8px; border: 6px solid transparent; border-top-color: #fff8e6; border-bottom: 0; }
+.say-bubble.out { opacity: 0; transition: opacity .3s steps(3); }
+@keyframes say-in { from { transform: translate(-70%, -80%) scale(.8); opacity: 0; } }
+html.rm .say-bubble { animation: none; }

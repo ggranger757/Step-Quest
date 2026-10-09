@@ -227,6 +227,8 @@
       merlin: 'music/merlin.mp3',   // only while Merlin is on screen
       // Battle music 1 is the same recording as the app song, and 7 the same as 4, so they share a file
       battle: ['music/app_song.mp3', 'music/battle_2.mp3', 'music/battle_4.mp3', 'music/battle_6.mp3', 'music/battle_8.mp3'],
+      // from level 40 (D.EPIC_MUSIC_LEVEL) battles get the bigger themes: Redemption and Cold Fire
+      battleEpic: ['music/battle_epic_1.mp3', 'music/battle_epic_2.mp3'],
     };
     let el = null, want = null, fadeT = null;
     const allowed = () => !!(WB.state && WB.state.settings.sound && WB.state.settings.music !== false && !(WB.Music && WB.Music.active && WB.Music.active()));
@@ -234,6 +236,7 @@
     const B = {
       // key: 'app' | 'battle'; plays it on a loop until stop()
       play(key) {
+        if (key === 'battle' && WB.state && WB.state.level >= WB.DATA.EPIC_MUSIC_LEVEL) key = 'battleEpic';
         const t = TRACKS[key]; if (!t) return;
         if (want && want.key === key && el && !el.paused) return;
         want = { key, src: Array.isArray(t) ? t[Math.floor(Math.random() * t.length)] : t };

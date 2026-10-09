@@ -25,6 +25,8 @@
   // pixel-art image tag for a file in assets/ (artifacts, badges, potions)
   WB.pxImg = (path, size, cls = '') => `<img class="px-img ${cls}" src="${Assets.url(path)}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async">`;
   WB.potionImg = (id, size = 24, cls = '') => WB.pxImg(`pot/${id}.png`, size, cls);
+  // an egg, gently animated (its 8-frame strip, stepped with CSS; still with reduced motion)
+  WB.eggImg = (id, size = 32, cls = '') => `<span class="egg-img ${cls}" style="--s:${size}px;background-image:url('${Assets.url('egg/' + id + '.png')}')" aria-hidden="true"></span>`;
   // draw a single-image asset into a canvas, integer-scaled and centred
   WB.paintImg = (canvas, path, fill = 0.8) => Assets.load(path).then((im) => {
     if (!im._ok) return;
@@ -60,6 +62,7 @@
     const w = D.weaponById[wid], A = WB.ASSETS, star = A.weapons.star;
     if (!w) return null;
     if (w.type === 'spell') return { path: `wp/spell_${w.fx}_proj.png`, info: A.fx[w.fx], mode: 'straight', boomPath: `wp/spell_${w.boom.slice(5)}_boom.png`, boomInfo: A.fx[w.boom], sfx: null, glow: true };
+    if (w.type === 'gun') return { path: 'wp/bullet_proj.png', info: { w: 8, h: 3, n: 1 }, mode: 'straight', boomPath: 'wp/star_boom.png', boomInfo: star.boom, sfx: null };
     if (w.type === 'bow') return { path: 'wp/arrow_proj.png', info: A.fx.arrow, mode: 'straight', boomPath: 'wp/star_boom.png', boomInfo: star.boom, sfx: null };
     if (w.type === 'knife') { const im = Assets.get(w.icon); return { path: w.icon, info: { w: im.width || 20, h: im.height || 10, n: 1 }, mode: 'spin', boomPath: 'wp/star_boom.png', boomInfo: star.boom, sfx: null }; }
     const m = A.weapons[wid];
@@ -67,7 +70,7 @@
   };
 
   // sheet(kind, id, anim) -> { path, r (row), n (frames), fs (frame size), scale, anim, face }
-  const FALLBACK = { run: ['walk', 'idle'], walk: ['idle'], attack: ['idle'], hurt: ['idle'], talk: ['idle'], special: ['attack', 'idle'], death: ['hurt', 'idle'] };
+  const FALLBACK = { run: ['walk', 'idle'], walk: ['idle'], attack: ['idle'], hurt: ['idle'], talk: ['idle'], special: ['attack', 'idle'], magic: ['attack', 'idle'], transform: ['idle'], death: ['hurt', 'idle'] };
   WB.sheet = (kind, id, anim) => {
     const M = WB.ASSETS;
     const info = kind === 'av' ? M.avatars[id] : kind === 'cr' ? M.creatures[id] : kind === 'pet' ? M.pets[id] : M.npc[id];
@@ -151,7 +154,7 @@
   /* Where each walker's head is in the first idle frame: [centre x, centre y, head size] in frame pixels,
      measured by hand from the sprites (weapons, hats and capes make automatic detection unreliable).
      Used for the round portrait in the HUD. A walker missing here falls back to the top of its figure. */
-  WB.AVATAR_FACE = { scavenger: [62, 68, 13], outrider: [64, 68, 12], marauder: [64, 67, 13], wanderer: [61, 68, 14], ember: [52.5, 68, 14], storm: [56, 69.5, 13], kunoichi: [63.5, 70, 14], monk: [46.5, 33, 19], farmer: [44.5, 37, 20], fixer: [61, 64.5, 16], courier: [63, 65, 15], boss: [60, 66.5, 15], archer: [56, 71, 13], lancer: [61, 67.6, 10], knight: [67.5, 76, 12], biker: [16, 17, 9], punk: [14.5, 19.5, 11], cyborg: [13.5, 17.5, 9], c1: [14.5, 15, 8], c2: [14.7, 15, 10], c3: [14, 18.8, 9], c4: [15.4, 19, 9], c5: [15.8, 19.5, 10], c6: [15.7, 19.7, 9], c9: [16, 19.5, 11], c10: [15.8, 22.6, 9], c11: [15.8, 25, 9], c12: [14, 24.5, 10], satyr: [62, 62, 17], satyress: [62.6, 63, 16], paladin: [62, 82.8, 9], ranger: [63.4, 82, 9] };
+  WB.AVATAR_FACE = { scavenger: [62, 68, 13], outrider: [64, 68, 12], marauder: [64, 67, 13], wanderer: [61, 68, 14], ember: [52.5, 68, 14], storm: [56, 69.5, 13], kunoichi: [63.5, 70, 14], monk: [46.5, 33, 19], farmer: [44.5, 37, 20], fixer: [61, 64.5, 16], courier: [63, 65, 15], boss: [60, 66.5, 15], archer: [56, 71, 13], lancer: [61, 67.6, 10], knight: [67.5, 76, 12], biker: [16, 17, 9], punk: [14.5, 19.5, 11], cyborg: [13.5, 17.5, 9], c1: [14.5, 15, 8], c2: [14.7, 15, 10], c3: [14, 18.8, 9], c4: [15.4, 19, 9], c5: [15.8, 19.5, 10], c6: [15.7, 19.7, 9], c9: [16, 19.5, 11], c10: [15.8, 22.6, 9], c12: [14, 24.5, 10], satyr: [62, 62, 17], satyress: [62.6, 63, 16], paladin: [62, 82.8, 9], ranger: [63.4, 82, 9], hooded: [23.7, 19, 11], reaper: [31, 35, 13], ronin: [95.4, 127, 10], warrior: [39, 48.6, 13], leafranger: [86, 130, 10], blaze: [34, 40, 21], duelist: [61.3, 75.6, 10], huntress: [48, 65.5, 10], shade: [53.7, 59, 12] };
   WB.headBox = (img, sh, id) => {
     const f = id && WB.AVATAR_FACE[id];
     if (f) return { cx: f[0], cy: f[1], s: f[2] * 1.6 };   // ~20% padding on every side
@@ -203,25 +206,6 @@
   };
 
   function P(x, y, vx, vy, life, color, size, kind) { return { x, y, vx, vy, life, max: life, color, size, kind }; }
-  // one trail particle. style decides the motion; idle = standing still (slower, closer to the feet)
-  WB.trailParticle = (tr, fx, fy, moving = true) => {
-    const c = WB.pick(tr.colors), r = Math.random, k = moving ? 1 : 0.35;
-    let p;
-    switch (tr.style) {
-      case 'puff': p = P(fx, fy, (-10 - r() * 10) * k, -4 - r() * 6, 0.7, c, 2, 'trail'); break;
-      case 'rise': p = P(fx, fy - 6, (-8 - r() * 8) * k, -18 - r() * 16, 1.1, c, 1, 'trail'); break;
-      case 'spark': p = P(fx, fy - 4, (-20 - r() * 20) * k, -10 - r() * 30, 0.6, c, 1, 'trail'); break;
-      case 'fall': p = P(fx, fy - 30 - r() * 20, -14 * k, 10, 1.6, c, 2, 'trail'); break;
-      case 'twinkle': p = P(fx - r() * 10, fy - r() * 50, -6 * k, -4, 1.2, c, 1, 'trail'); p.tw = true; break;
-      case 'bubble': p = P(fx, fy - 4, (-6 - r() * 6) * k, -12 - r() * 8, 1.4, c, 2, 'trail'); p.wob = 1; break;
-      case 'stream': p = P(fx, fy - 2 - r() * 10, -42 * k - 10, 0, 0.45, c, 1, 'trail'); p.streak = 4; break;
-      case 'snow': p = P(fx - r() * 8, fy - 20 - r() * 30, -8 * k, 8 + r() * 6, 1.8, c, 1, 'trail'); p.wob = 1; break;
-      case 'drop': p = P(fx, fy - 6, (-12 - r() * 10) * k, -40 - r() * 20, 0.9, c, 2, 'trail'); p.grav = 140; break;
-      case 'pixel': p = P(fx - r() * 6, fy - r() * 30, -10 * k, -6, 0.9, c, 3, 'trail'); p.shrink = 1; break;
-      default: p = P(fx - r() * 14, fy - r() * 56, -30 * k, 0, 0.35, c, 2 + (r() < 0.4) * 2, 'trail'); p.tw = true;   // glitch
-    }
-    return p;
-  };
 
   // ---------- the world view ----------
   class WorldView {
@@ -321,6 +305,7 @@
         else if (e.state === 'hurt') { e.f += dt * 10; if (e.f >= 2) { e.state = 'death'; e.f = 0; } }
         else e.f += dt * 7;
         if (e.state === 'gone' || e.state === 'leave') e.fade -= dt * 1.5;
+        if (e.state === 'run') { e.runX = (e.runX || 0) + dt * 120; e.f += dt * 5; if (e.runX > 140) e.fade -= dt * 2; }   // the Druid running off to the right
       }
       this.ents = this.ents.filter((e) => e.fade > 0 && this.entScreenX(e) > -110);
       this.particles(dt);
@@ -346,7 +331,7 @@
         if (!e.reached && sx <= this.avX + 50.5) {
           e.reached = true; this.vel = 0;
           if (this.cam > e.pos) this.cam = e.pos;   // land exactly at the encounter, not past it (the walked steps still count)
-          this.holdUntil = performance.now() + (e.enc.aggressive || e.enc.boss ? 10000 : 6000);
+          this.holdUntil = performance.now() + (e.enc.aggressive || e.enc.boss || e.enc.nemesis ? 10000 : 6000);
           this.onReach(e.enc);
         }
         if (e.reached && sx < this.avX - 30) { e.done = true; e.state = 'leave'; e.fade = 1; this.onDefer(e.enc); }
@@ -356,7 +341,7 @@
       const e = { enc, pos, t: 0, f: 0, fade: 1, state: 'idle', done: false, reached: false };
       if (enc.creature) { e.kind = 'cr'; e.id = enc.creature; Assets.get(WB.sheet('cr', e.id, 'idle').path); }
       else if (enc.npc) { e.kind = 'npc'; e.id = enc.npc; Assets.get(WB.sheet('npc', enc.npc, 'idle').path); }
-      else e.kind = enc.type;
+      else { e.kind = enc.type; if (enc.egg) { e.id = enc.egg; Assets.get('egg/' + enc.egg + '.png'); } }
       this.ents.push(e);
       return e;
     }
@@ -375,6 +360,9 @@
         this.release();
       } else if (out.anim === 'take') {
         if (e) { this.burst(this.entScreenX(e), this.world.ground - 14, ['#c9f6ff', '#59e3ff', '#ffffff'], 12); e.state = 'gone'; e.fade = 1; }
+        this.release();
+      } else if (out.anim === 'druidRun') {
+        if (e) { e.state = 'run'; e.f = 0; e.runX = 0; }
         this.release();
       } else if (out.anim === 'talk') {
         if (e) { e.state = 'talk'; e.f = 0; setTimeout(() => { e.state = 'leave'; e.fade = 1.4; }, 1600); }
@@ -411,10 +399,6 @@
         p.glow = amb === 'fireflies';
         this.parts.push(p);
       }
-      // trail: a steady stream while you walk, and a gentle shimmer while you stand still
-      const tr = WB.state.equip.trail && D.TRAILS.find((t) => t.id === WB.state.equip.trail);
-      const moving = this.vel > 0.3;
-      if (tr && !this.demo && Math.random() < dt * (moving ? (rm ? 3 : 14) : (rm ? 1 : 4))) this.parts.push(WB.trailParticle(tr, this.avX - 8 + Math.random() * 6, g - 2 - Math.random() * 4, moving));
       for (const p of this.parts) {
         p.life -= dt;
         p.x += p.vx * dt - (p.kind === 'amb' ? dxCam * 0.7 : p.kind === 'trail' ? dxCam * 0.4 : dxCam);
@@ -485,12 +469,12 @@
       x.globalAlpha = WB.clamp(e.fade, 0, 1);
       let top = g - 40;
       if (e.kind === 'cr') {
-        const anim = e.state === 'hurt' ? 'hurt' : e.state === 'death' || e.state === 'gone' ? 'death' : 'idle';
+        const anim = e.state === 'run' ? 'flee' : e.state === 'hurt' ? 'hurt' : e.state === 'death' || e.state === 'gone' ? 'death' : 'idle';
         const sh = WB.sheet('cr', e.id, anim), img = Assets.ok(sh.path);
         if (img) {
           const f = anim === 'death' ? Math.min(sh.n - 1, Math.floor(e.state === 'gone' ? sh.n - 1 : e.f)) : Math.floor(e.f) % sh.n;
           const sc = D.CREATURES[e.id].scale || 1, sz = sh.fs * sc;
-          WB.drawFrame(x, img, sh, f, sx - sz / 2, g - sz + 1, sc, sh.face !== 'left'); // creatures face you
+          WB.drawFrame(x, img, sh, f, sx - sz / 2 + (e.runX || 0), g - sz + 1, sc, anim !== 'flee' && sh.face !== 'left'); // creatures face you (a fleeing druid faces away)
           const box = WB.frameBox(img, sh); top = g - sz + box.y * sc;
         }
       } else if (e.kind === 'npc') {
@@ -505,6 +489,10 @@
         x.drawImage(ic, sx - ic.width, g - ic.height * 2 + 1, ic.width * 2, ic.height * 2);
         top = g - 22;
         if (e.state === 'idle' && Math.sin(this.t * 2.5) > 0.7) { x.fillStyle = '#fff2a8'; x.fillRect(sx + 6, g - 22, 1, 5); x.fillRect(sx + 4, g - 20, 5, 1); }
+      } else if (e.kind === 'egg') {   // a little egg wobbling on the path
+        const im = Assets.ok('egg/' + e.id + '.png');
+        if (im) { const fr = Math.floor(this.t * 9) % 8; x.drawImage(im, fr * 32, 0, 32, 32, Math.round(sx - 16), g - 31, 32, 32); }
+        top = g - 30;
       } else if (e.kind === 'find') {
         const bob = Math.round(Math.sin(e.t * 3) * 2);
         x.save(); x.globalAlpha *= 0.35 + 0.15 * Math.sin(e.t * 4);
@@ -518,7 +506,7 @@
       // marker above unresolved encounters: "!" (gold) or a red swords mark for aggressive ones
       if (!e.done) {
         const by = Math.round(top - 14 + Math.sin(this.t * 5) * 1.5);
-        const hostile = e.enc.aggressive || e.enc.boss;
+        const hostile = e.enc.aggressive || e.enc.boss || e.enc.nemesis;
         x.fillStyle = '#140f2a'; x.fillRect(sx - 3, by - 1, 7, 12);
         x.fillStyle = hostile ? '#ff6b5b' : '#ffcc4d'; x.fillRect(sx - 2, by, 5, 6); x.fillRect(sx - 2, by + 7, 5, 3);
       }

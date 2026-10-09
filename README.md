@@ -1,6 +1,6 @@
 # Stepquest
 
-A pixel-art walking RPG for your phone. Every real step moves your hero forward through the world. Walk to explore 38 worlds that open as you level up, earn Walk Coins, fight turn-based battles against aggressive creatures and world guardians, collect weapons, potions, pets and artifacts, and listen to your own music while you walk.
+A pixel-art walking RPG for your phone. Every real step moves your hero forward through the world. Walk to explore 49 worlds that open as you level up, earn Walk Coins, fight turn-based battles against aggressive creatures and world guardians, collect weapons, potions, food, magic items, pets and artifacts, face rare roaming bosses, and listen to your own music while you walk.
 
 It is a Progressive Web App (PWA): plain HTML, CSS and JavaScript with no build step and no server. Host it anywhere that serves static files over HTTPS, then install it from the phone's browser. The same code also builds into a real iPhone and Android app (see **Automatic step sync**) that reads steps from Apple Health and Health Connect.
 
@@ -74,11 +74,19 @@ Some creatures are aggressive. When one blocks the path you can fight or avoid i
 
 - **Strike** uses your **melee** weapon (swords, daggers, axes, maces, spears, staves). Your walker holds it in hand during the attack. Daggers stab twice, axes sunder (+25% damage taken), maces stun, spears pierce guards and hit harder on the first turn, staves heal or curse, some blades steal life.
 - **Throw / Shoot / Cast** uses your **ranged** weapon: throwing weapons arc, knives spin, arrows and the 12 spells (orb, wave and javelin in sun, frost, void and fire) fly straight at the creature. It hits hardest, may poison, burn, bleed, freeze, weaken, drain or volley, then recharges.
+- **Defend** has a **guard gauge**: each Defend uses 35% of it and every turn you don't defend restores 15% (`D.DEFEND_COST`, `D.DEFEND_REGEN`), so you can't hide behind your shield forever. The Shop calls the shield slot **Defense**.
 - **Defend** uses your **shield**: it blocks 60–85%, and some shields reverse part of the hit back, counter with spikes or heal. Every shield also soaks a little of every hit (armor). Guardians glow red and "charge up" before a heavy attack: defend then.
-- Creatures fight back with more than attacks: they **brace** (your next hit does half) and guardians raise **reversing wards** (30% of your next hit bounces back). Piercing weapons ignore both.
+- **Every creature has five moves** (`D.CREATURE_MOVES` in `js/02-data.js`):
+  - **Attack:** a plain hit.
+  - **Magic:** its own named spell with its own projectile and impact (Medusa's Stone Throw, the Overthinker's What-If Flame…). 40% of the time it adds an effect (20% if you defended): poison or burn (damage each turn, never below 1 HP), weaken (your hits do 30% less for 2 turns), slow (your ranged weapon takes 2 more turns to recharge) or drain (it heals from the damage).
+  - **Defend:** it braces (your next hit does half) and recovers 6% HP; guardians raise a reversing ward instead (30% of your next hit bounces back). Piercing weapons ignore both.
+  - **Flee:** below 25% HP (20% for guardians) it may try to run, at most twice. If it gets away you keep half the battle XP but no coins or loot, and a guardian goes back to waiting on the world map. Creatures never flee your very first battle.
+  - **Special:** a signature move it charges a turn ahead ("Charging!": defend!), every 4th turn (every 3rd for guardians): a big hit with a stun (you lose a turn; defending stops it), poison, burn, weaken, slow or drain, three quick hits, or a quake that's hard to block.
+- **Each world has its own creatures** (`pool` in `D.WORLDS`), three per world picked to suit the place: frost worlds get Medusa, the Orc Raider and the Bog Slime, city streets get the Sentry Drone and the Flying Procrastinator, forests get the Treant and the Mushroom Guard, and so on. The world map shows them on each world's card, under "Creatures here".
+- **33 creatures**, including 18 from the enemies pack: 2Face, Energy Vampire Bat, Flying Procrastinator, Land Alien, Lazy Bat, Little Cthulhu, Medusa, Mushroom Guard, Naughty Nova, Orc Raider, Self-Doubt Drone, Sentry Drone, Bog Slime and Treant roam the worlds, and four are new guardians: the Distraction Dragon, the Ice Bully, the Overthinker and the Slothful Ogre. Animations a GIF set doesn't include (a lunge for attack, a flash for hurt, sinking for death) are generated from its idle frames by `tools/prep_assets.py`.
 - **Pets** fight with you: your pet soaks 20–60% of every hit until its own HP runs out, then it's knocked out until its HP refills over time. Every HP change floats over whoever took it as "-N HP" / "+N HP".
-- **Items** drinks a potion. **Run away** may fail.
-- Losing costs some coins (about 5–10% of what you carry, capped by the world) and drops your HP to 25%.
+- **Items** drinks a potion or eats food. **Magic** uses a magic item (see below). **Run away** may fail.
+- Losing costs some coins (about 5–10% of what you carry, capped by the world), breaks half of each kind of egg you carry (at least one) and drops your HP to 25%.
 - **Walking does not heal.** HP refills on its own, from empty to full in 15 minutes (`D.HEAL_MINUTES`), even while the app is closed, or instantly with a healing potion. Pets recover the same way. A level-up raises your max HP but only tops you up if you were unhurt.
 - **Special attacks** (from level 10): the walker picked at sign-up decides which one you get. A gauge on the Special button fills as you attack (Strike +25%, Throw/Cast +30%); when it's full, tap it.
   - **Scavenger – Scavenger's Raid:** a raiding strike (damage grows with level) that snatches a potion from the creature, usable straight away from Items (better loot in later worlds; coins if your bag is full).
@@ -87,9 +95,53 @@ Some creatures are aggressive. When one blocks the path you can fight or avoid i
 - Magic attacks gather energy at the caster's hand, trail sparks, and burst by element on impact (fire and sun explode, frost shatters, void pulses). Every weapon kind has its own impact sound.
 - Exploring a world to 100% wakes its **guardian**. Challenge it from the world map. Defeating guardians unlocks the legendary weapons.
 
-Everything you can buy is in the **Shop**, in five sections: Walkers, Trails, Weapons, Potions and Pets. Artifacts and achievements live on the **Inventory** tab. The **World map** button sits on the World screen (and in Profile).
+Everything you can buy is in the **Shop**, in five sections: Walkers, Weapons, Potions & Food, Pets and Magic. (Trails were retired; coins spent on them were refunded.) Artifacts and achievements live on the **Inventory** tab. The **World map** button sits on the World screen (and in Profile).
 
-There are 48 potions, one for every flask in the potion pack. Four everyday potions are sold from the start; the other 44 are hidden as artifacts in the newer worlds. Finding one gives you a bottle and adds it to the shop. Potions heal, cut damage, boost damage, recharge your weapon instantly or explode on the enemy.
+**Potions & Food.** Nine everyday potions are sold from the start or unlock by level (Small Tonic, Iron Brew, Fury Draught, Grand Elixir, plus Storm in a Bottle, Ward Cell, Shadow Eye, Sundrop and Fire Crystal from the item pack). 44 more, one for every other flask in the potion pack, are hidden as artifacts in the newer worlds; finding one gives you a bottle and adds it to the shop. Potions heal, cut damage, boost damage, recharge your weapon instantly or explode on the enemy. **Food** is the cheap way to heal: Garden Radish (20%), Orchard Fruit (30%), Smoked Fish (45%), Hearty Steak (60%) and the Candy Jar (a sugar rush that recharges your weapon). Eat it in battle from Items or straight from the Shop. You can carry 9 of each.
+
+**Ranged gear from the item pack** sits in Weapons → Ranged: the Lasso (may rope the creature so it loses a turn), Cherry Bomb (burn), Throwing Axe (bleed), Cannonball (heavy, breaks guard) and Web Snare (weakens) spin through the air like the knives; the Flintlock Pistol is the first **Firearm** and fires a bullet straight through guards.
+
+**Magic items** (Shop → Magic). Each battle item works once per battle as a free action from the **Magic** button (it doesn't use your turn):
+- **Explorer's Backpack** (level 6): while equipped, battle wins pay 50% more coins, double the potion chance and raise the egg chance.
+- **Book of Magic** (level 20): +40% damage from spells, staves and special attacks for 3 to 5 turns (longer at higher levels).
+- **Illusion Ring** (level 50): a copy of your walker appears for 3 turns: the creature attacks the copy instead of you, and the copy strikes alongside you.
+- **Lucky Clover** (level 60): choose to attack twice in a row, or dodge the creature's next two attacks.
+
+## Bosses
+
+From level 20 (`D.BOSS_LEVEL`) six roaming bosses can turn up on the road. They're rare: a small share of encounters, at most one every 90 minutes, and ones you haven't beaten yet show up more often. Each is scaled to your level (about 11 good hits to beat, hits that take roughly 12% of your HP, a special every 3rd turn), has its own magic and a unique ability, and talks during the fight in speech bubbles: an intro, taunts, a line when it's hurt, one for its special, and its last words or a gloat.
+
+| Boss | Magic / special | Ability |
+| --- | --- | --- |
+| Magmor the Demon Lord | Hellfire Rain (burn) / Infernal Cleave | **Hellborn Rage:** below half HP his hits do 35% more |
+| The Hollow King | Soul Siphon (drain) / Night Terror | **Shadow Form:** 25% of your non-piercing hits pass through him |
+| Morwen the Dark Fairy | Thorn Hex (poison) / Bramble Bind (stun) | **True Wings:** at half HP she transforms, heals 25%, hits 20% harder and switches to Spirit Swarm / Summon Spirits |
+| Ironhide the Golem | Rivet Volley (slow) / Overcharge (quake) | **Iron Plating:** non-piercing hits do 30% less |
+| The Bringer of Doom | Grasp of the Grave (drain) / Doom Bell (stun) | **Reaper's Patience:** +40% damage while you're under 35% HP |
+| Vesper the Crimson Sorceress | Crimson Bolt (burn) / Blood Moon Barrage | **Crimson Mirror:** raises a ward often, reversing 45% of a hit |
+
+Bosses never flee, and running from one only works 35% of the time (slipping away from the encounter card is a 50/50; fail and it cuts you off). **Win:** XP worth 8% of a level, 150 + 12 × level coins (+250 the first time), a Sundrop or Grand Elixir and a guaranteed egg. **Lose:** you drop 2 levels (`D.BOSS_LEVEL_LOSS`) and some eggs break; worlds, gear and items stay, and levels you win back don't pay level-up coins a second time (`s.peakLevel`). Boss art is in `assets/cr/` (prep: pack 17 in `tools/prep_assets.py`; the Sorceress is mirrored to face you). The Boss_3 upload contained only tutorial videos, so it isn't used.
+
+## Levels and pacing
+
+Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `80 × level^1.45`, plus 3% per level past 50, so it's a long road: walking about 7,000 steps a day, expect roughly a month to level 20, 6–11 months to level 50 (the last world) and several years to the cap. Battle XP, quests and bosses add to that, but walking is the main source.
+
+## The Druid
+
+From level 2 a druid sometimes steps onto the road with a **Knowledge Challenge**: one multiple-choice question from a bank of **945 questions in 20 topics** (history, geography, science, space, the human body, nature, animals, food, sports, language, pop culture, movies & TV, music, video games, books & myths, general knowledge, art, inventions & tech, math, world cultures), in `js/02e-quiz.js`. Questions don't repeat until you've seen them all. Answer right and he pays XP and coins (more at higher levels and in later worlds) and runs off into the trees. Answer wrong and the right answer is shown, then you must battle him: beat him and he flees, lose and he takes **every egg you carry**. You can also walk away from him for no reward. Logic in `js/05f-druid.js`.
+
+## Eggs
+
+Three eggs (`js/05e-eggs.js`): **Frost** (common), **Ember** (uncommon) and **Crystal** (rare; rarer eggs get likelier in later worlds). They turn up on the road as an encounter of their own, a quarter of the creatures you beat were guarding one, and guardians always drop one. You can carry 12 of each. Trade sets to **Merlin**, by owl post from Inventory → Eggs or Missions → Field at any time, or when he finds you on the road:
+
+| Trade | Eggs | Loot |
+| --- | --- | --- |
+| Basket of Frost Eggs | 5 Frost | 150 coins, 120 XP, 2 Small Tonics |
+| Ember Clutch | 3 Ember | 250 coins, 220 XP, an Iron Brew |
+| Crystal Pair | 2 Crystal | 400 coins, 400 XP, a Grand Elixir |
+| Merlin's Hoard | 3 Frost, 2 Ember, 1 Crystal | 600 coins, 600 XP and a weapon or pet you don't own yet |
+
+Losing a battle breaks half of each kind you carry (losing to the Druid takes them all), so trade before a risky fight.
 
 ## Missions
 
@@ -131,7 +183,8 @@ Recorded sounds live in `assets/sfx/` and music in `assets/music/`; `tools/prep_
 | Level-up, achievement or a finished Merlin quest | `sfx/level_up.mp3` |
 | Weapon impacts by kind, bow and spell launches, spell impacts by element, Wind Blade, shield blocks, poison/burn/bleed/stun ticks, the three special attacks | synthesized by `tools/synth_sounds.py` (`sfx/hit_*`, `spell_*`, `status_*`, `special_*`, `bow_release`, `wind_blade`, `shield_block`) |
 | First launch, through the end (or skip) of the tutorial | `music/app_song.mp3` |
-| Battles | a random battle track from `music/` |
+| Battles below level 40 | a random battle track from `music/` (`battle_2/4/6/8`, app song) |
+| Battles from level 40 (`D.EPIC_MUSIC_LEVEL`) | `music/battle_epic_1.mp3` (Redemption) or `music/battle_epic_2.mp3` (Cold Fire) |
 | While Merlin is on screen | `music/merlin.mp3` |
 
 Music streams (it isn't part of the offline download) and fades out when the fight or tutorial ends. Profile → Settings has **Sound effects** and **Game music** switches, and while the player's own Spotify or Apple Music player is on, all game sounds and music pause automatically. Browsers only allow audio after a tap, so the welcome song starts on the first tap if autoplay is blocked.
@@ -146,13 +199,12 @@ New players get a guided tour right after sign-up (existing players see it once 
 
 ## Worlds and levels
 
-There are 38 worlds. Each one opens at a level, from Rust Hollow at level 1 to the Fort of Illusion at level 50, so the map grows as you level up from walking, battles, missions and achievements. The world screen and the map show the next world and roughly how many steps away it is. Creatures get stronger in later worlds, and every world has a guardian and a few artifacts to find.
+There are 49 worlds. Each one opens at a level (eleven early ones from the More_Worlds upload open between levels 2 and 9: Green Downs, Canopy Vale, Leeward Shore, Misty Hollow, Violet Wood, Sunset Mesa, Cairn Peaks, Teal Tundra, Kiln Canyon, Flue Works and Sodium City), from Rust Hollow at level 1 to the Fort of Illusion at level 50, so the map grows as you level up from walking, battles, missions and achievements. The world screen and the map show the next world and roughly how many steps away it is. Creatures get stronger in later worlds, and every world has a guardian and a few artifacts to find.
 
 ## Walkers and pets
 
-At sign-up a player picks one of three classic walkers (Scavenger, Wandering Mage, Kunoichi) and a skin tone. The other two starters, and every other walker (32 in all, including the Knight and the Ranger), are unlocked later with coins, levels, streaks or exploration.
+At sign-up a player picks one of three classic walkers (Scavenger, Wandering Mage, Healer) and a skin tone. The other two starters, and every other walker (40 in all, including the Knight, the Ranger, and the nine newest: Warrior, Shadow Archer, Ronin, Leaf Ranger, Executioner, Blaze, Huntress, Crimson Duelist and Shadow Knight), are unlocked later with coins, levels, streaks or exploration.
 
-The Shop sells 36 trails, each in its own color and style (puffs, sparks, embers, bubbles, snow, petals, glitches, coins and more). An equipped trail streams behind your walker while you walk and drifts gently while you stand still.
 
 Anything you can't buy or equip yet tells you why when you tap it: how many more coins you need, or the level, streak or world that unlocks it.
 
@@ -186,6 +238,9 @@ js/05-game.js            game rules: rewards, leveling, streaks, missions, encou
 js/05b-battle.js         battle rules (pure logic: moves, weapons, status effects, guardians)
 js/05c-missions.js       field mission rules (progress, board, photo proof)
 js/05d-custom.js         your own missions: templates, due dates, difficulty, priority, rewards
+js/05e-eggs.js           eggs: finding, breaking, Merlin's trades
+js/02e-quiz.js           the Druid's 945 Knowledge Challenge questions
+js/05f-druid.js          the Druid: questions, rewards, taking your eggs
 js/06-engine.js          canvas renderer: parallax worlds, avatar, pets, particles
 js/07-ui.js              screens, HUD, sheets, toasts
 js/07b-battle-ui.js      battle screen
@@ -193,6 +248,7 @@ js/07c-music.js          Spotify / Apple Music player
 js/07d-missions-ui.js    field missions on the Missions tab, camera flow, photo journal
 js/07e-custom-ui.js      "My missions": create, edit, check off and complete your own missions
 js/07f-tour.js           the guided tutorial and the one-time low-health tip
+js/07h-eggs.js           Inventory → Eggs and the trade cards
 js/08-main.js            startup, onboarding, developer panel
 assets/bg/               world layers (each scene at most 300 px tall)
 assets/av/               avatar sprite atlases (one row per animation)
@@ -201,9 +257,10 @@ assets/pet/              pet sprite atlases
 assets/npc/              trader sprite atlases
 assets/wp/               weapon projectiles and explosions
 assets/pot/              potion icons
-assets/art/              artifact icons (r = creature relics, m = minerals, c = charms)
+assets/art/              artifact icons (r = creature relics, m = minerals, c = charms, x = shields, i = item-pack finds)
 assets/ach/              achievement badges
 assets/wi/               weapon icons (melee, ranged, shields)
+assets/mg/               magic item icons
 assets/sfx/              weapon sounds
 assets/icons/            app icons from the Stepquest logo: favicon (.ico, 16, 32), 192/512, Android maskable, apple-touch-icon, og-image (link previews)
 assets/fonts/            Jersey 10, Pixelify Sans, Silkscreen (bundled for offline use, SIL OFL)
@@ -221,7 +278,7 @@ Everything lives in `js/02-data.js`:
 
 - **New world:** add an entry to `D.WORLDS` with its layers (back to front, each with a parallax multiplier), ground line, length in steps and `unlock` level. Then add its finds to `D.FINDS`.
 - **New avatar, pet, trail or weapon:** add an entry with a `req`, such as `{ level: 5 }`, `{ cost: 400 }`, `{ streak: 7 }`, `{ steps: 20000 }` or `{ explored: 'rust' }`.
-- **Skin tones:** `D.SKIN_TONES` holds the swatches (each a 3-color ramp). `D.SKIN_MAP` lists the exact skin colors each sprite sheet uses; Skin tone editing covers the original walkers; the newer walkers keep their drawn skin.
+- **Skin tones:** `D.SKIN_TONES` holds the swatches (each a 3-color ramp). `D.SKIN_MAP` lists the exact skin colors each sprite sheet uses; Skin tone editing covers the original walkers and the nine newest (the Shadow Archer, the Executioner and the Shadow Knight show no skin, so their tone recolors the cloak, the robe and the shadow body); the other packs keep their drawn skin.
 - **Creatures:** `D.CREATURES` sets HP, attack and whether each one is aggressive. Each world has a `pool` and a `boss`.
 - **Weapons and potions:** `D.WEAPONS` (power, recharge turns, effect) and `D.POTIONS`.
 - **Balance:** `COINS_PER_STEP`, `XP_PER_STEP`, `xpToNext`, `heroMaxHp`, `heroAtk`, `creatureStats`, world `length` and `unlock` level.

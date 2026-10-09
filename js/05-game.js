@@ -4,9 +4,9 @@
   const S = () => WB.state;
   const G = (WB.Game = {});
   // unlockable categories: [owned-list key, catalog]
-  const CATS = { avatar: ['avatars', D.AVATARS], pet: ['pets', D.PETS], trail: ['trails', D.TRAILS], weapon: ['weapons', D.WEAPONS] };
+  const CATS = { avatar: ['avatars', D.AVATARS], pet: ['pets', D.PETS], weapon: ['weapons', D.WEAPONS], magic: ['magic', D.MAGIC] };
   G.CATS = CATS;
-  G.CAT_LABEL = { avatar: 'Avatar', pet: 'Pet', trail: 'Trail', weapon: 'Weapon' };
+  G.CAT_LABEL = { avatar: 'Avatar', pet: 'Pet', weapon: 'Weapon', magic: 'Magic item' };
   G.item = (cat, id) => CATS[cat][1].find((i) => i.id === id);
   G.owns = (cat, id) => S().owned[CATS[cat][0]].includes(id);
   G.potion = (id) => D.POTIONS.find((p) => p.id === id);
@@ -58,6 +58,7 @@
   G.isEquipped = (cat, id) => {
     const s = S();
     if (cat === 'avatar') return s.avatar === id;
+    if (cat === 'magic') return id === 'backpack' && !!s.equip.backpack;
     if (cat === 'weapon') { const w = D.weaponById[id]; return !!w && s.equip[G.slotKey(w.slot)] === id; }
     return s.equip[cat] === id;
   };
@@ -114,15 +115,17 @@
   };
   G.addXp = (x) => {
     const s = S();
+    if (s.level >= D.LEVEL_CAP) { s.xp = 0; return; }   // max level: XP stops counting
     s.xp += x;
     let leveled = false;
-    while (s.xp >= D.xpToNext(s.level)) {
+    while (s.level < D.LEVEL_CAP && s.xp >= D.xpToNext(s.level)) {
       const before = G.maxHp();
       s.xp -= D.xpToNext(s.level); s.level++; leveled = true;
-      s.coins += D.levelCoins(s.level);
+      const fresh = s.level > (s.peakLevel || 0); if (fresh) { s.peakLevel = s.level; s.coins += D.levelCoins(s.level); }   // levels won back after a boss pay nothing
       if (s.hp >= before) s.hp = G.maxHp();   // a level-up raises max HP; only an unhurt walker is topped up (walking never heals)
-      WB.bus.emit('levelup', { level: s.level, coins: D.levelCoins(s.level) });
+      WB.bus.emit('levelup', { level: s.level, coins: fresh ? D.levelCoins(s.level) : 0, regained: !fresh });
     }
+    if (s.level >= D.LEVEL_CAP) s.xp = 0;
     if (leveled) G.checkUnlocks();
   };
 
@@ -377,13 +380,23 @@
   G.makeEncounter = (forceType, opts = {}) => {
     const s = S(), w = opts.world ? D.worldById[opts.world] : G.world();
     let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS).type;
-    if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest) type = 'chest';
+    const eggTrade = G.tradesReady && G.tradesReady().length && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
+    if (type === 'druid' && s.level < 2) type = 'chest';
+    if (type === 'nemesis' && !opts.boss && (s.level < D.BOSS_LEVEL || Date.now() - (s.enc.nemesisAt || 0) < D.BOSS_COOLDOWN_H * 3600000)) type = 'creature';
+    if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest && !eggTrade) type = 'chest';
     const e = { id: 'e' + ++s.enc.seq, type, world: w.id };
     if (type === 'boss') {
       e.creature = w.boss; e.boss = true;
       const c = D.CREATURES[e.creature];
       e.text = 'The guardian of ' + w.name + ' appears. ' + c.name + ' ' + c.verb + '!';
       e.choices = [{ id: 'battle', label: 'Battle', hint: 'Guardian' }, { id: 'avoid', label: 'Not yet', hint: 'Fight it from the map' }];
+    } else if (type === 'nemesis') {   // a roaming boss (rare): bosses you haven't beaten yet turn up more often
+      const beaten = (s.nemesis && s.nemesis.beaten) || {};
+      e.creature = opts.boss || WB.weighted(D.BOSS_IDS.map((id) => ({ id, w: beaten[id] ? 1 : 3 }))).id;
+      e.nemesis = true; s.enc.nemesisAt = Date.now();
+      const c = D.CREATURES[e.creature], b = D.BOSSES[e.creature];
+      e.text = 'The air goes cold. ' + c.name + ' ' + c.verb + '! “' + WB.pick(b.lines.intro) + '”';
+      e.choices = [{ id: 'battle', label: 'Battle', hint: 'Boss · Lv ' + D.bossStats(e.creature, s.level).lvl }, { id: 'avoid', label: 'Try to slip away', hint: '50% to escape · losing one costs ' + D.BOSS_LEVEL_LOSS + ' levels' }];
     } else if (type === 'creature') {
       const hostile = w.pool.filter((c) => D.CREATURES[c].aggressive);
       e.creature = opts.creature || (s.enc.battles === 0 && hostile.length ? WB.pick(hostile) : WB.pick(w.pool));
@@ -397,11 +410,22 @@
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
       }
     } else if (type === 'merlin') {
-      const m = opts.quest ? D.missionById[opts.quest] : G.merlinNext();
+      const m = opts.quest ? D.missionById[opts.quest] : G.merlinEligible() ? G.merlinNext() : null, trades = G.tradesReady();
       s.enc.merlinAt = Date.now();
-      e.npc = 'merlin'; e.quest = m.id;
-      e.text = WB.pick(D.MERLIN_LINES) + ' ' + G.missionTitle(m) + ': ' + G.missionDesc(m) + ' Finish within ' + m.hours + ' hours.';
-      e.choices = [{ id: 'accept', label: 'Accept the quest', hint: G.rewardText(m.reward) }, { id: 'decline', label: 'Not this time', hint: 'No penalty' }];
+      e.npc = 'merlin'; e.quest = m ? m.id : null;
+      e.text = m ? WB.pick(D.MERLIN_LINES) + ' ' + G.missionTitle(m) + ': ' + G.missionDesc(m) + ' Finish within ' + m.hours + ' hours.' : '“Hoo! I hear you’ve been collecting eggs. Shall we trade?”';
+      e.choices = m ? [{ id: 'accept', label: 'Accept the quest', hint: G.rewardText(m.reward) }] : [];
+      if (trades.length) { const t = trades[trades.length - 1]; e.trade = t.id; e.choices.push({ id: 'trade', label: 'Trade eggs: ' + t.name, hint: G.rewardText(t.reward) + (t.item ? ' + an item' : '') }); }
+      e.choices.push({ id: 'decline', label: 'Not this time', hint: 'No penalty' });
+    } else if (type === 'druid') {
+      e.creature = 'druid'; e.druid = true;
+      e.text = WB.pick(D.DRUID_LINES);
+      const r = G.druidReward(w);
+      e.choices = [{ id: 'quiz', label: 'Take the challenge', hint: '+' + r.xp + ' XP, +' + r.coins + ' coins · wrong = battle' }, { id: 'avoid', label: 'Walk away', hint: 'No reward' }];
+    } else if (type === 'egg') {
+      e.egg = G.rollEgg(w.tier);
+      e.text = WB.pick(D.EGG_LINES) + ' A ' + D.eggById[e.egg].name + '!';
+      e.choices = [{ id: 'take', label: 'Pick it up', hint: D.eggById[e.egg].rarity + ' · ' + G.eggs()[e.egg] + ' / ' + D.EGG_MAX + ' carried' }];
     } else if (type === 'chest') {
       e.text = WB.pick(D.CHEST_LINES);
       e.choices = [{ id: 'open', label: 'Open crate', hint: 'Coins, maybe a potion' }];
@@ -445,6 +469,7 @@
     const s = S(), out = { text: '', reward: {}, anim: null };
     const lvl = s.level;
     if (choice === 'battle') { out.battle = true; return out; }
+    if (e.type === 'nemesis' && choice === 'avoid' && Math.random() < 0.5) { e.cutOff = true; out.battle = true; return out; }   // it cuts you off
     if (e.type === 'merchant' && choice === 'buy') {
       if (s.coins < e.cost) { out.text = 'You need ' + e.cost + ' coins for that. Keep walking.'; return out; }
       if ((s.potions.tonic || 0) >= D.POTION_MAX) { out.text = 'Your bag already holds ' + D.POTION_MAX + ' tonics.'; return out; }
@@ -452,6 +477,7 @@
     G.removePending(e);
     if (e.type === 'boss' && choice === 'avoid') { s.enc.bossDue = null; out.text = 'You back away. The guardian waits for you on the world map.'; out.anim = 'leave'; }
     else switch (e.type + ':' + choice) {
+      case 'nemesis:avoid': out.text = 'You slip off the road and hold your breath. ' + D.CREATURES[e.creature].name + ' loses your trail.'; out.anim = 'leave'; break;
       case 'creature:avoid': out.text = 'You give it a wide berth and keep walking.'; out.anim = 'leave'; break;
       case 'creature:shoo': {
         out.anim = 'fight'; out.reward = { xp: 14 + lvl * 2, coins: 6 + lvl };
@@ -501,7 +527,21 @@
         else out.text = '“You already carry one of my quests. Finish that one first, walker.”';
         break;
       }
-      case 'merlin:decline': G.declineMerlin(e.quest); out.anim = 'talk'; out.reward = { xp: 5 }; out.text = '“' + WB.pick(D.MERLIN_DECLINE) + '”'; break;
+      case 'druid:quiz': out.quiz = e.quiz = e.quiz || G.druidQuestion(); return out;   // the UI asks it; G.answerDruid settles it
+      case 'druid:avoid': out.text = 'The druid shrugs and melts back into the trees.'; out.anim = 'leave'; break;
+      case 'merlin:trade': {
+        const r = G.tradeEggs(e.trade, true); out.anim = 'talk';
+        if (r) { out.reward = r.reward; out.eggTrade = r.trade.id; out.text = '“Splendid eggs! Here’s your ' + r.trade.name + '.”'; }
+        else { out.reward = { xp: 5 }; out.text = '“Hmm, you don’t have that many eggs any more.”'; }
+        break;
+      }
+      case 'egg:take': {
+        out.anim = 'take';
+        if (G.addEgg(e.egg)) { out.reward = { xp: 8 + lvl }; out.egg = e.egg; out.text = 'You tuck the ' + D.eggById[e.egg].name + ' into your pack. Merlin trades loot for eggs.'; }
+        else { out.reward = { coins: 20 }; out.text = 'You already carry ' + D.EGG_MAX + ' ' + D.eggById[e.egg].name + 's. You leave it and find a few coins nearby.'; }
+        break;
+      }
+      case 'merlin:decline': if (e.quest) G.declineMerlin(e.quest); out.anim = 'talk'; out.reward = { xp: 5 }; out.text = '“' + WB.pick(D.MERLIN_DECLINE) + '”'; break;
     }
     s.enc.count++; s.today.encounters++;
     out.granted = G.grant(out.reward, true);
@@ -515,6 +555,7 @@
     s.hp = Math.max(0, Math.round(b.hero.hp));
     G.removePending(e);
     const out = { result: b.result, reward: {}, granted: [] };
+    if (e.nemesis) return bossResult(b, out, w);
     if (b.result === 'win') {
       const mult = e.boss ? 4 : 1;
       out.reward = { xp: Math.round((22 + w.tier * 9) * mult), coins: Math.round((12 + w.tier * 5) * (e.boss ? 5 : 1)) };
@@ -525,8 +566,10 @@
       if (e.boss) {
         s.bosses[w.id] = Date.now(); s.enc.bossDue = null; out.boss = w;
         out.reward.potion = 'elixir';
-      } else if (Math.random() < 0.3) out.reward.potion = Math.random() < 0.8 ? 'tonic' : 'iron';
+      } else if (Math.random() < (s.equip.backpack ? 0.6 : 0.3)) out.reward.potion = Math.random() < 0.8 ? 'tonic' : 'iron';
+      if (s.equip.backpack) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }   // the backpack carries extra loot
       out.granted = G.grant(out.reward, true);
+      if (e.boss || Math.random() < (s.equip.backpack ? 0.4 : 0.25)) { const id = G.rollEgg(w.tier, e.boss); if (G.addEgg(id)) out.egg = id; }   // creatures sometimes guard an egg
       s.enc.count++; s.today.encounters++;
     } else if (b.result === 'lose') {
       s.enc.losses++;
@@ -534,11 +577,44 @@
       // ...and some coins fall out of your pockets: 5–10% of what you carry plus a little, capped by world tier
       const tier = w.tier || 0, lost = Math.min(s.coins, Math.round(s.coins * (0.05 + Math.random() * 0.05)) + 5 + Math.floor(Math.random() * 11) + tier * 2, 60 + tier * 25);
       s.coins -= lost; out.lostCoins = lost;
+      out.lostEggs = e.creature === 'druid' ? G.takeAllEggs() : G.breakEggs();   // half of each kind of egg breaks (the Druid takes them all)
       if (e.boss) s.enc.bossDue = null;
+    } else if (b.result === 'escaped') {   // it ran away badly hurt: half the battle XP, no coins or loot
+      out.reward = { xp: Math.round((22 + w.tier * 9) * (e.boss ? 4 : 1) * 0.5) };
+      out.granted = G.grant(out.reward, true);
+      s.enc.fights++; s.enc.count++; s.today.encounters++;
+      if (e.boss) s.enc.bossDue = null;   // a guardian that flees waits on the world map
     } else if (e.boss) s.enc.bossDue = null;
     G.after();
     return out;
   };
+
+  // a roaming boss: a big win, or 2 levels lost
+  function bossResult(b, out, w) {
+    const s = S(), e = b.enc, n = (s.nemesis = s.nemesis || { beaten: {}, losses: 0 });
+    if (b.result === 'win') {
+      out.reward = { xp: Math.round(D.xpToNext(s.level) * 0.08), coins: 150 + s.level * 12, potion: s.level >= 15 ? 'sundrop' : 'elixir' };
+      s.enc.battles++; s.today.battles = (s.today.battles || 0) + 1; s.enc.fights++;
+      const first = !n.beaten[e.creature];
+      n.beaten[e.creature] = (n.beaten[e.creature] || 0) + 1;
+      s.enc.cards[e.creature] = (s.enc.cards[e.creature] || 0) + 1;
+      if (first) { out.reward.coins += 250; out.newKind = e.creature; }
+      if (s.equip.backpack) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }
+      out.granted = G.grant(out.reward, true);
+      const id = G.rollEgg(w.tier, true); if (G.addEgg(id)) out.egg = id;
+      out.nemesis = e.creature;
+      s.enc.count++; s.today.encounters++;
+    } else if (b.result === 'lose') {
+      s.enc.losses++; n.losses++;
+      const from = s.level;
+      s.level = Math.max(1, s.level - D.BOSS_LEVEL_LOSS); s.xp = 0;
+      out.levelsLost = from - s.level; out.levelFrom = from;
+      s.hp = Math.round(G.maxHp() * 0.25);
+      out.lostEggs = G.breakEggs();
+    }
+    G.after();
+    return out;
+  }
 
   // ---------- shop & supplies ----------
   G.buy = (cat, id) => {
@@ -584,6 +660,7 @@
     const s = S();
     if (id && !G.owns(cat, id)) return;
     if (cat === 'avatar') s.avatar = id;
+    else if (cat === 'magic') { if (id === 'backpack' || !id) s.equip.backpack = !!id; }   // only the backpack is worn
     else if (cat === 'weapon') { if (!id) return; s.equip[G.slotKey(D.weaponById[id].slot)] = id; }
     else if (cat === 'shield') s.equip.shield = id;   // shields can be taken off
     else s.equip[cat] = id;

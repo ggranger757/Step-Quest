@@ -8,9 +8,9 @@
     return {
       v: 2, created: Date.now(), savedAt: 0, name: 'Wanderer', onboarded: false,
       avatar: 'scavenger', skin: null,
-      equip: { pet: null, trail: null, weapon: 'star', melee: 'sw_rusty', shield: null },
+      equip: { pet: null, weapon: 'star', melee: 'sw_rusty', shield: null, backpack: false },
       owned: { avatars: ['scavenger'],   // replaced by the walker picked at sign-up
-                pets: [], trails: [], weapons: ['star', 'sw_rusty'] },
+                pets: [], weapons: ['star', 'sw_rusty'], magic: [] },
       petHp: {},          // pets have their own health (soak part of every hit in battle)
       hp: D.heroMaxHp(1), potions: { tonic: 2 }, bosses: {},
       music: { provider: 'spotify', url: '', open: false },
@@ -28,6 +28,9 @@
       streak: { count: 0, best: 0, lastDay: '', rest: 0, claimed: [] },
       daily: { idx: 0, lastClaim: '' },
       ach: {}, purchases: 0,
+      eggs: { frost: 0, ember: 0, crystal: 0 }, eggTrades: 0,
+      druid: { asked: [], wins: 0, losses: 0 },
+      nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
       settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, music: true, reducedMotion: null, homeState: '' },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
@@ -52,6 +55,21 @@
       s.enc.pending = [];
       s.v = 2;
     }
+    // the Paperboy walker was retired: refund it and put the player back in their starter's shoes
+    if (s.owned.avatars.includes('c11')) {
+      s.owned.avatars = s.owned.avatars.filter((id) => id !== 'c11'); s.coins += 250;
+      s.notice = (s.notice ? s.notice + ' ' : '') + 'The Paperboy walker was retired. Its 250 coins were refunded.';
+    }
+    if (s.avatar === 'c11') { s.avatar = s.owned.avatars.find((id) => ['scavenger', 'wanderer', 'kunoichi'].includes(id)) || s.owned.avatars[0] || 'scavenger'; s.skin = s.skin || null; }
+    // trails were retired: refund the ones that were bought
+    if (s.owned.trails) {
+      const PRICE = { embers: 220, sparks: 320, foam: 150, copper: 180, mint: 240, sunbeam: 280, violet: 320, lime: 380, cherry: 420, frost: 480, electric: 540, jade: 600, rosegold: 680, lava: 760, smoke: 840, teal: 920, candy: 1000, ghost: 1100, toxic: 1200, sakura: 1300, solar: 1450, shards: 1600, spores: 1750, plasma: 1900, coins: 2100, shadow: 2300, silver: 2500, aurora: 2800, comet: 3200 };
+      const back = s.owned.trails.reduce((n, id) => n + (PRICE[id] || 0), 0);
+      if (back) { s.coins += back; s.notice = (s.notice ? s.notice + ' ' : '') + 'Trails were retired. ' + back + ' Walk Coins were refunded.'; }
+      delete s.owned.trails;
+    }
+    delete s.equip.trail;
+    s.peakLevel = Math.max(s.peakLevel || 0, s.level);   // levels won back after losing to a boss don't pay level-up coins twice
     // the walker picked at sign-up decides the special attack; older saves: the first starter owned is the one picked
     if (!s.starter) {
       const starters = ['scavenger', 'wanderer', 'kunoichi'];

@@ -12,6 +12,8 @@
     wire();
     if (!S().onboarded) intro();
     else startApp(welcome);
+    // the loading screen lifts once fonts and the first screen's scenery and walker are ready
+    { const w = G.world(); WB.Loading.boot([...w.layers.map((l) => WB.layerPath(w, l[0])), WB.sheet('av', S().avatar, 'idle').path]); }
     WB.Cloud.init();
     // every 15 seconds (and whenever the app comes back): new day, HP refilling over time, mission deadlines
     const tick = () => {
@@ -96,13 +98,13 @@
     WB.bus.on('sensor', () => { if (UI.tab === 'world' || UI.tab === 'profile') UI.render(); });
     WB.bus.on('levelup', (e) => {
       WB.Sfx.play('level');
-      UI.toast({ kicker: 'Level up · +' + e.coins + ' coins', title: 'Level ' + e.level, sub: WB.Celebrate.fire('level', e, 110), icon: 'xp', cls: 'big', ms: 4200, group: 'level' });
+      UI.toast({ kicker: e.regained ? 'Level regained' : 'Level up · +' + e.coins + ' coins', title: 'Level ' + e.level, sub: WB.Celebrate.fire('level', e, 110), icon: 'xp', cls: 'big', ms: 4200, group: 'level' });
       if (WB.view && UI.tab === 'world') { const p = WB.view.avatarPos(); UI.floater('LEVEL UP', p.x, p.y - 40, 'xp big'); WB.view.burst(WB.view.avX, WB.view.world.ground - 40, ['#8b6cff', '#c7b8ff', '#ffffff'], 24); }
     });
     WB.bus.on('unlock', ({ cat, id }) => {
       WB.Sfx.play('unlock');
-      const it = G.item(cat, id), name = { avatar: 'New avatar', pet: 'New pet', trail: 'New trail', weapon: it.legendary ? 'Legendary weapon' : 'New weapon' }[cat];
-      UI.toast({ kicker: name, title: it.name, icon: { avatar: 'user', pet: 'paw', trail: 'trail', weapon: 'sword' }[cat], cls: it.legendary ? 'big' : 'cyan', action: { label: 'Equip', fn: () => { G.equip(cat, id); UI.render(); } } });
+      const it = G.item(cat, id), name = { avatar: 'New avatar', pet: 'New pet', weapon: it.legendary ? 'Legendary weapon' : 'New weapon' }[cat];
+      UI.toast({ kicker: name, title: it.name, icon: { avatar: 'user', pet: 'paw', weapon: 'sword' }[cat], cls: it.legendary ? 'big' : 'cyan', action: { label: 'Equip', fn: () => { G.equip(cat, id); UI.render(); } } });
     });
     WB.bus.on('equip', ({ cat }) => { if (cat === 'avatar' || cat === 'skin') UI.paintFace(); });
     WB.bus.on('achievement', (a) => (WB.Sfx.play('level'), UI.toast({ kicker: 'Achievement', title: a.title, sub: WB.Celebrate.fire('achievement', a, 90), img: 'ach/' + a.id + '.png', cls: 'gold', ms: 4000 })));
@@ -139,7 +141,7 @@
     iv.start();
     let pick = S().avatar;
     const step1 = () => {
-      panel.innerHTML = `<h1 class="logo">STEP<br>QUEST</h1><p class="tagline">Every step you take in the real world moves your hero forward.</p><button class="btn block xl" type="button" id="i-go">Start adventure</button>`;
+      panel.innerHTML = `<img class="app-logo" src="${WB.Loading.logo()}" alt="" width="96" height="96"><h1 class="logo">STEP<br>QUEST</h1><p class="tagline">Every step you take in the real world moves your hero forward.</p><button class="btn block xl" type="button" id="i-go">Start adventure</button>`;
       $('#i-go').onclick = () => { WB.Sfx.play('tap'); step2(); };
     };
     const step2 = () => {

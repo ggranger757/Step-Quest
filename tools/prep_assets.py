@@ -12,6 +12,19 @@ Usage: python3 -I prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir>
   pack7_dir: Special_Attacks.zip and Wind_Blade_Attack.zip unzipped into one folder ("special/", "wind/"):
              the three special attack effects and the Wind Blade projectile; plus "magic/fire_blast.gif" and
              "magic/ice_shatter.gif" (spell impact bursts).
+  pack8_dir: enemies.zip unzipped (the "enemies" folder): 18 more creatures as GIFs, some with their own
+             projectiles and attack explosions. Shared files (the same explosion or sound in several
+             folders, or already used by a weapon) are stored once.
+  pack10_dir: the five walker packs unzipped side by side (ArcherHero, Undead_executioner, Martial_Hero_2,
+             Warrior-V1.3, Elementals_Leaf_ranger_Free_v1.0).
+  pack11_dir: Troll, Medieval_Warrior_Pack_2 and Huntress unzipped, plus the Shadow Knight .rar unpacked into
+             "shadow/" (its sheets are idle and run only: attack and hurt are made from them).
+  pack13_dir: the Druid's frames ("knight iso char_*.png", 84 px).
+  pack14_dir: More_Worlds unzipped, with vista-ten-1.0.0.zip unzipped into "vista/" and Purple_Lex_BG.rar
+             unpacked into "purple/".
+  pack15_dir: the four magic item pictures (ring, book, clover, backpack).
+  pack16_dir: more_items unzipped ("more items/Icons_01..40.png").
+  pack9_dir: the three egg GIFs, saved as frost.gif, ember.gif and crystal.gif.
   pack6_dir: the Knight & Ranger upload unzipped ("human_knight copy", "human_ranger copy" GIF folders).
              They have no walk cycle, so one is generated from the idle frames (see walk_from_idle).
 
@@ -23,8 +36,10 @@ from PIL import Image, ImageSequence
 P1, P2, P3, P4, P5, OUT = sys.argv[1:7]
 P6 = sys.argv[7] if len(sys.argv) > 7 else None
 P7 = sys.argv[8] if len(sys.argv) > 8 else None   # Special_Attacks + Wind_Blade_Attack uploads, unzipped into one folder
+P9 = sys.argv[10] if len(sys.argv) > 10 else None   # the three egg GIFs (frost.gif, ember.gif, crystal.gif), 32 px, 8 frames
+P8 = sys.argv[9] if len(sys.argv) > 9 else None   # enemies.zip unzipped: the "enemies" folder (18 creatures, their attack effects)
 os.makedirs(OUT, exist_ok=True)
-MAN = {'bg': {}, 'avatars': {}, 'creatures': {}, 'pets': {}, 'npc': {}, 'weapons': {}, 'fx': {}}
+MAN = {'bg': {}, 'avatars': {}, 'creatures': {}, 'pets': {}, 'npc': {}, 'weapons': {}, 'fx': {}, 'eggs': {}}
 
 def save(im, rel):
     p = os.path.join(OUT, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -189,7 +204,7 @@ for aid, nm in (('biker', 'Biker'), ('punk', 'Punk'), ('cyborg', 'Cyborg')):
     d = glob.glob(f'{NW}/* {nm}')[0]
     rows = [('idle', load(f'{d}/{nm}_idle.png')), ('walk', load(f'{d}/{nm}_run.png')), ('attack', load(f'{d}/{nm}_attack1.png')), ('hurt', load(f'{d}/{nm}_hurt.png'))]
     MAN['avatars'][aid] = {**atlas(rows, f'av/{aid}.png'), 'scale': 2}
-CITY = {'c1': '1', 'c2': '2', 'c3': '3', 'c4': '4', 'c5': '5', 'c6': '6', 'c9': '9', 'c10': '10', 'c11': '11', 'c12': '12'}
+CITY = {'c1': '1', 'c2': '2', 'c3': '3', 'c4': '4', 'c5': '5', 'c6': '6', 'c9': '9', 'c10': '10', 'c12': '12'}   # (11, the Paperboy, was retired)
 for aid, folder in CITY.items():
     d = f'{NW}/{folder}'; rows = [('idle', load(f'{d}/Idle.png')), ('walk', load(f'{d}/Walk.png'))]
     if os.path.exists(f'{d}/Special.png'): rows.append(('attack', load(f'{d}/Special.png')))
@@ -310,6 +325,12 @@ for folder in sorted(os.listdir(CR1)):
     if not folder[0].isdigit(): continue
     name = folder.split(' ', 1)[1]; cid = name.lower()
     rows = [(k, load(f'{CR1}/{folder}/{name}_{k}.png')) for k in ('idle', 'walk', 'hurt', 'death', 'attack')]
+    if cid == 'deceased':   # its "attack" just holds the torch out: make it lunge at the walker, torch first
+        at = rows[4][1]; fr = [at.crop((i * 48, 0, (i + 1) * 48, 48)) for i in range(at.width // 48)]
+        lunge = []
+        for i, d in enumerate((1, 0, -3, -7, -10, -10, -6, -2)):
+            o = Image.new('RGBA', (48, 48)); o.paste(fr[i % len(fr)], (d, 0), fr[i % len(fr)]); lunge.append(o)
+        rows[4] = ('attack', strip(lunge))
     MAN['creatures'][cid] = {**atlas(rows, f'cr/{cid}.png'), 'face': 'left'}
 NC = f'{P2}/4f8e125d-New_Creatures/New Creatures'
 for k, cid in ((1, 'snapjaw'), (2, 'bulbspitter'), (3, 'grinbloom')):
@@ -321,7 +342,7 @@ for folder, nm, cid in (('1 Centipede', 'Centipede', 'centipede'), ('2 Battle tu
     rows = [(k, load(f'{SW}/{folder}/{nm}_{s}.png')) for k, s in (('idle', 'idle'), ('walk', 'walk'), ('hurt', 'hurt'), ('death', 'death'), ('attack', 'attack1'), ('special', 'attack3'))]
     MAN['creatures'][cid] = {**atlas(rows, f'cr/{cid}.png'), 'face': 'left'}
 FB = f'{NC}/craftpix-net-413641-free-forest-bosses-pixel-art-sprite-sheet-pack'
-for folder, cid, face in (('1', 'thornbeast', 'left'), ('2', 'brute', 'right'), ('3', 'torchbearer', 'right')):
+for folder, cid, face in (('1', 'thornbeast', 'left'), ('2', 'brute', 'left'), ('3', 'torchbearer', 'left')):   # all three swing toward the walker
     rows = [(k, load(f'{FB}/{folder}/{s}.png')) for k, s in (('idle', 'Idle'), ('walk', 'Walk'), ('hurt', 'Hurt'), ('death', 'Death'), ('attack', 'Attack1'), ('special', 'Special'))]
     MAN['creatures'][cid] = {**atlas(rows, f'cr/{cid}.png'), 'face': face}
 
@@ -524,6 +545,260 @@ if P7:
         for i, f in enumerate(fr): strip_im.alpha_composite(f, (i * 48, 0))
         MAN['npc']['merlin'] = {**atlas([('idle', strip_im), ('talk', strip_im)], 'npc/merlin.png'), 'scale': 2}
     MAN['weapons']['windblade'] = {'proj': frames_strip(wb[:4], 'wp/windblade_proj.png'), 'boom': frames_strip(wb[2:], 'wp/windblade_boom.png'), 'sfx': 'sfx/wind_blade.mp3', 'mode': 'straight'}
+
+# ------------------------------------------------------------------ enemies (pack 8)
+# Every creature becomes the usual atlas (idle, walk, hurt, death, attack). Animations a GIF set doesn't have
+# are made from its idle frames: a lunge toward you for attack, a red/white flash with a knock-back for hurt,
+# and sinking into the ground for death. Frames are aligned on the figure's feet (bottom centre).
+def alpha_box(f):
+    return f.getchannel('A').point(lambda v: 255 if v > 20 else 0).getbbox()
+def key_bg(frames):
+    out = []
+    for f in frames:
+        a = np.asarray(f).copy().astype(int); bg = a[0, 0, :3]
+        m = (np.abs(a[..., :3] - bg).sum(-1) < 40); a[m, 3] = 0
+        out.append(Image.fromarray(a.astype(np.uint8), 'RGBA'))
+    return out
+def down(frames, k):
+    return frames if k == 1 else [f.resize((f.width // k, f.height // k), Image.NEAREST) for f in frames]
+def tint(f, rgb, amt, alpha=1.0):
+    a = np.asarray(f).astype(float); m = a[..., 3] > 10
+    a[m, :3] = a[m, :3] * (1 - amt) + np.array(rgb) * amt; a[..., 3] *= alpha
+    return Image.fromarray(a.clip(0, 255).astype(np.uint8), 'RGBA')
+def shift(f, dx, dy=0):
+    o = Image.new('RGBA', f.size); o.paste(f, (dx, dy), f); return o
+def gen_attack(idle, d0=1):   # a lunge: toward the left for creatures (d0 1), toward the right for walkers (d0 -1)
+    bb = alpha_box(idle[0]); w = bb[2] - bb[0]; k = max(1, round(w / 28))
+    return [shift(idle[i % len(idle)], d * k * d0) for i, d in enumerate((2, 1, -3, -7, -9, -5, -2, 0))]
+def gen_hurt(idle, d=1):   # d: which way the hit knocks it (+1 right, -1 left)
+    return [shift(tint(idle[0], (255, 70, 70), 0.55), 3 * d), shift(tint(idle[0], (255, 255, 255), 0.85), 4 * d), shift(tint(idle[0], (255, 70, 70), 0.3), 2 * d)]
+def gen_death(idle):
+    bb = alpha_box(idle[0]); h = bb[3] - bb[1]; out = []
+    for i in range(7):
+        k = i / 6; f = tint(idle[0], (40, 20, 30), 0.5 * k, 1 - 0.6 * k)
+        sunk = Image.new('RGBA', f.size); sunk.paste(f, (0, round(h * 0.7 * k)), f)
+        a = np.asarray(sunk).copy(); a[bb[3]:] = 0; out.append(Image.fromarray(a, 'RGBA'))
+    return out
+def enemy_atlas(cid, anims, track=(), face='left', kind='creatures', folder='cr', extra=None, names=('idle', 'walk', 'hurt', 'death', 'attack', 'special')):
+    """anims: name -> frames (RGBA). Same-size canvases share the idle anchor; 'track' anims re-centre each frame."""
+    for k in ('walk', 'attack', 'hurt', 'death'):
+        if k not in anims and k in names: anims[k] = {'walk': lambda: anims['idle'], 'attack': lambda: gen_attack(anims['idle'], -1 if face == 'right' else 1), 'hurt': lambda: gen_hurt(anims['idle'], -1 if face == 'right' else 1), 'death': lambda: gen_death(anims['idle'])}[k]()
+    def union(fr):
+        bs = [alpha_box(f) for f in fr if alpha_box(f)]
+        return (min(b[0] for b in bs), min(b[1] for b in bs), max(b[2] for b in bs), max(b[3] for b in bs))
+    iu = union(anims['idle']); isz = anims['idle'][0].size
+    if 'idle' in track: ib = alpha_box(anims['idle'][0]); iu = (ib[0], iu[1], ib[2], iu[3])
+    anchors = {}
+    for name, fr in anims.items():
+        u = union(fr)
+        if name in track: anchors[name] = [(((alpha_box(f) or u)[0] + (alpha_box(f) or u)[2]) / 2, u[3]) for f in fr]
+        elif fr[0].size == isz: anchors[name] = [((iu[0] + iu[2]) / 2, iu[3])] * len(fr)
+        else: anchors[name] = [((u[0] + u[2]) / 2, u[3])] * len(fr)
+    hw = hh = 0
+    for name, fr in anims.items():
+        for f, (ax, ay) in zip(fr, anchors[name]):
+            b = alpha_box(f)
+            if not b: continue
+            hw = max(hw, ax - b[0], b[2] - ax); hh = max(hh, ay - b[1])
+    fs = int(max(2 * hw, hh)) + 2; fs += fs % 2
+    rows = []
+    for name in names:
+        if name not in anims: continue
+        sq = []
+        for f, (ax, ay) in zip(anims[name], anchors[name]):
+            o = Image.new('RGBA', (fs, fs)); o.paste(f, (int(round(fs / 2 - ax)), int(fs - ay)), f)
+            sq.append(o)
+        rows.append((name, strip(sq)))
+    MAN[kind][cid] = {**atlas(rows, f'{folder}/{cid}.png'), 'face': face, **(extra or {})}
+if P8:
+    E = lambda *p: os.path.join(P8, *p)
+    G = lambda *p: gif_rgba(E(*p))
+    def main_blob(frames, pad=4):
+        # keep only the creature (the biggest blob, plus anything close to it): drops stray particles
+        out = []
+        for f in frames:
+            a = np.asarray(f).copy(); m = a[..., 3] > 20
+            lab, n = ndimage.label(ndimage.binary_dilation(m, iterations=pad))
+            if n > 1: a[(lab != np.bincount(lab[m]).argmax())] = 0
+            out.append(Image.fromarray(a, 'RGBA'))
+        return out
+    two = main_blob(G('2Face', '2Face Idle.gif')); melt = G('2Face', '2Face_Hurt.gif')
+    enemy_atlas('twoface', {'idle': two, 'attack': two, 'hurt': melt[:3], 'death': melt}, track=('idle', 'attack', 'hurt', 'death'))
+    enemy_atlas('dragon', {'idle': G('Distraction Dragon', 'Distraction Dragon.gif')})
+    enemy_atlas('vampbat', {'idle': G('Energy Vampire Bat', 'Energy Vampire Bat.gif')})
+    enemy_atlas('procrastinator', {'idle': G('Flying Procrastinator', 'Flying Procrastinator.gif')})
+    ib = {k: down(G('Ice Bully', f + '.gif'), 3) for k, f in (('idle', 'idle'), ('walk', 'walk'), ('hurt', 'take_hit'), ('death', 'death'), ('attack', '1_atk'))}
+    enemy_atlas('icebully', ib)
+    enemy_atlas('alien', {'idle': G('Land Alien', 'alien-idle-animated.gif'), 'walk': G('Land Alien', 'alien-walk-animated.gif')})
+    enemy_atlas('lazybat', {k: down(G('Lazy Bat', f), 2) for k, f in (('idle', 'Lazy Bat-IdleFly-animated.gif'), ('attack', 'Lazy Bat-Attack-animated.gif'), ('hurt', 'Lazy Bat-Hurt.gif'))})
+    enemy_atlas('cthulhu', {'idle': G('Little Cthulhu', 'Little Cthulhu.gif')})
+    enemy_atlas('medusa', {'idle': G('Medusa', 'Medusa-animated.gif')})
+    enemy_atlas('mushroom', {k: G('Mushroom Guard', f) for k, f in (('idle', 'Mushroom_Idle.gif'), ('attack', 'Mushroom_Attack.gif'), ('hurt', 'Mushroom_Hit.gif'), ('death', 'Mushroom_Die.gif'))}, face='right')
+    nova = load(E('Naughty Nova', 'Naughty Nova.png'))
+    bob = [nova, shift(nova, 0, -1), shift(nova, 0, -2), shift(nova, 0, -1)]   # one still frame: a little hop for idle
+    enemy_atlas('nova', {'idle': bob})
+    enemy_atlas('orc', {k: G('Orc', f) for k, f in (('idle', 'Orc-Idle.gif'), ('attack', 'Orc-Attack.gif'), ('hurt', 'Orc-Hurt.gif'), ('death', 'Orc-Death.gif'))})
+    enemy_atlas('overthinker', {'idle': G('Overthinker', 'OverthinkerEnemy.gif')})
+    enemy_atlas('selfdoubt', {'idle': G('Self Doubt Drone', 'Self Doubt Drone.gif')[::2]})
+    enemy_atlas('sentry', {'idle': G('Sentry Drone', 'Sentry Drone.gif')})
+    enemy_atlas('slime', {'idle': G('Slime Enemy', 'Slime Enemy.gif')})
+    enemy_atlas('ogre', {'idle': G('Slothful Ogre', 'ogre-idle.gif'), 'walk': G('Slothful Ogre', 'ogre-walk.gif'), 'attack': G('Slothful Ogre', 'ogre-attack.gif')})
+    enemy_atlas('treant', {'idle': G('Treant', 'Treant.gif')})
+    # their magic: projectiles and impact bursts (each shared file stored once)
+    crop_fr = lambda fr: (lambda u: [f.crop(u) for f in fr])((lambda bs: (min(b[0] for b in bs), min(b[1] for b in bs), max(b[2] for b in bs), max(b[3] for b in bs)))([alpha_box(f) for f in fr if alpha_box(f)]))
+    MAN['fx']['en_spark'] = frames_strip(crop_fr(G('Distraction Dragon', 'Distraction Dragon Attack.gif')), 'wp/en_spark.png')      # also Naughty Nova's
+    MAN['fx']['en_ring'] = frames_strip(crop_fr(G('Sentry Drone', 'Sentry Drone Projectile.gif')), 'wp/en_ring.png')               # also Mushroom Guard's
+    MAN['fx']['en_gaze'] = frames_strip(crop_fr(key_bg(G('Medusa', 'Medusa Attack Explosion.gif'))), 'wp/en_gaze.png')
+    MAN['fx']['en_skull'] = frames_strip(crop_fr(sheet_frames(E('Overthinker', 'Fire skull attack', 'Sprites.png'), 48)), 'wp/en_skull.png')
+    MAN['fx']['en_orb'] = frames_strip(G('Self Doubt Drone', 'Self Doubt Drone Projectile.gif'), 'wp/en_orb.png')
+    MAN['fx']['en_bolt'] = frames_strip(crop_fr([load(E('Energy Vampire Bat', 'Energy Vampire Bat Projectile Attack.png'))]), 'wp/en_bolt.png')
+    MAN['fx']['en_clod'] = frames_strip(crop_fr([load(E('Land Alien', 'Alien Attack Projectile.png'))]), 'wp/en_clod.png')       # also the Procrastinator's
+    # (Medusa's rock is the Asteroid weapon's projectile, the Mushroom Guard's star is the Throwing Star's,
+    #  and the splash used by Little Cthulhu, the Slime and the Treant is Blue Flame's explosion: reused as is.)
+
+# ------------------------------------------------------------------ more walkers (pack 10)
+# Five character packs, each in its own layout (sheets on a grid, or one PNG per frame). Every walker gets
+# idle, walk, attack and hurt rows; packs without a hurt animation get a flash and knock-back made from idle.
+P10 = sys.argv[11] if len(sys.argv) > 11 else None
+def grid(path, fw, fh, cells):
+    im = load(path); cols = im.width // fw
+    return [im.crop(((c % cols) * fw, (c // cols) * fh, (c % cols + 1) * fw, (c // cols + 1) * fh)) for c in cells]
+def numbered(folder):
+    fs = sorted(glob.glob(os.path.join(folder, '*.png')), key=lambda f: int(''.join(ch for ch in os.path.basename(f) if ch.isdigit()) or 0))
+    return [load(f) for f in fs]
+if P10:
+    AV_NAMES = ('idle', 'walk', 'attack', 'hurt')
+    A = f'{P10}/ArcherHero/Final'
+    idle = grid(f'{A}/Idle and running.png', 64, 64, [0, 0, 1, 1])
+    enemy_atlas('hooded', {'idle': idle, 'walk': grid(f'{A}/Idle and running.png', 64, 64, range(8, 16)), 'attack': grid(f'{A}/Normal Attack.png', 64, 64, range(0, 11))},
+                face='right', kind='avatars', folder='av', extra={'scale': 2}, names=AV_NAMES)
+    U = f'{P10}/Undead_executioner/Undead executioner puppet/png'
+    enemy_atlas('reaper', {'idle': grid(f'{U}/idle2.png', 100, 100, range(8)), 'walk': grid(f'{U}/idle2.png', 100, 100, range(8)), 'attack': grid(f'{U}/attacking.png', 100, 100, range(13))},
+                face='right', kind='avatars', folder='av', extra={'scale': 1}, names=AV_NAMES)
+    M = f'{P10}/Martial_Hero_2/Martial Hero 2/Sprites'
+    enemy_atlas('ronin', {'idle': grid(f'{M}/Idle.png', 200, 200, range(4)), 'walk': grid(f'{M}/Run.png', 200, 200, range(8)), 'attack': grid(f'{M}/Attack1.png', 200, 200, range(4)), 'hurt': grid(f'{M}/Take hit.png', 200, 200, range(3))},
+                face='right', kind='avatars', folder='av', extra={'scale': 1.25}, names=AV_NAMES)
+    W = f'{P10}/Warrior-V1.3/Warrior/Individual Sprite'
+    enemy_atlas('warrior', {'idle': numbered(f'{W}/idle'), 'walk': numbered(f'{W}/Run'), 'attack': numbered(f'{W}/Attack'), 'hurt': numbered(f'{W}/HurtnoEffect')},
+                face='right', kind='avatars', folder='av', extra={'scale': 2}, names=AV_NAMES)
+    L = glob.glob(f'{P10}/Elementals_Leaf_ranger_Free_v1.0/*/animations/PNG')[0]
+    enemy_atlas('leafranger', {'idle': numbered(f'{L}/idle'), 'walk': numbered(f'{L}/run'), 'attack': numbered(f'{L}/1_atk'), 'hurt': numbered(f'{L}/take_hit')},
+                face='right', kind='avatars', folder='av', extra={'scale': 1.5}, names=AV_NAMES)
+
+# ------------------------------------------------------------------ more walkers (pack 11)
+P11 = sys.argv[12] if len(sys.argv) > 12 else None   # Shadow Knight (Shadeflit, from a .rar), Troll, Medieval Warrior Pack 2, Huntress
+def prefixed(folder, prefix):
+    fs = sorted(f for f in glob.glob(os.path.join(folder, prefix + '*.png')) if os.path.basename(f)[len(prefix):len(prefix) + 1].isdigit())
+    return [load(f) for f in fs]
+if P11:
+    AV_NAMES = ('idle', 'walk', 'attack', 'hurt')
+    sh = glob.glob(f'{P11}/shadow/*')[0]
+    sidle = grid(f'{sh}/idle.png', 277, 161, range(6))
+    enemy_atlas('shade', {'idle': sidle, 'walk': grid(f'{sh}/run.png', 277, 161, range(6))}, face='right', kind='avatars', folder='av', extra={'scale': 1.5}, names=AV_NAMES)
+    T = f'{P11}/Troll/Troll/PNG'   # (despite the pack name, a red-haired young swordsman: Blaze)
+    enemy_atlas('blaze', {'idle': prefixed(f'{T}/Idle, run, jump', 'idle'), 'walk': prefixed(f'{T}/Idle, run, jump', 'run'), 'attack': prefixed(f'{T}/Attacks', 'AttackA'), 'hurt': prefixed(f'{T}/Hit, death', 'hit')},
+                face='right', kind='avatars', folder='av', extra={'scale': 2}, names=AV_NAMES)
+    MW = glob.glob(f'{P11}/Medieval_Warrior_Pack_2/*/Sprites')[0]
+    enemy_atlas('duelist', {'idle': grid(f'{MW}/Idle.png', 150, 150, range(8)), 'walk': grid(f'{MW}/Run.png', 150, 150, range(8)), 'attack': grid(f'{MW}/Attack1.png', 150, 150, range(4)), 'hurt': grid(f'{MW}/Take Hit.png', 150, 150, range(4))},
+                face='right', kind='avatars', folder='av', extra={'scale': 1.5}, names=AV_NAMES)
+    H = f'{P11}/Huntress/Huntress/Sprites'
+    enemy_atlas('huntress', {'idle': grid(f'{H}/Idle.png', 150, 150, range(8)), 'walk': grid(f'{H}/Run.png', 150, 150, range(8)), 'attack': grid(f'{H}/Attack1.png', 150, 150, range(5)), 'hurt': grid(f'{H}/Take hit.png', 150, 150, range(3))},
+                face='right', kind='avatars', folder='av', extra={'scale': 1.5}, names=AV_NAMES)
+
+# ------------------------------------------------------------------ the Druid (pack 13)
+# 84 px frames: idle (4, facing you), run left (6), one run-right frame and one slice frame. He runs off to the
+# right when beaten, so "flee" is the run-left cycle mirrored (the pack's own run-right frame matches it).
+P13 = sys.argv[13] if len(sys.argv) > 13 else None
+if P13:
+    K = lambda n: load(os.path.join(P13, f'knight iso char_{n}.png'))
+    idle = [K(f'idle_{i}') for i in range(4)]
+    run = [K(f'run left_{i}') for i in range(6)]
+    slash = K('slice right_1')
+    atk = [idle[0], shift(idle[0], -2), shift(slash, -3), shift(slash, -6), shift(slash, -4), shift(idle[0], -1)]
+    enemy_atlas('druid', {'idle': idle, 'walk': run, 'attack': atk, 'flee': [f.transpose(Image.FLIP_LEFT_RIGHT) for f in run]},
+                face='left', names=('idle', 'walk', 'hurt', 'death', 'attack', 'flee'))
+
+# ------------------------------------------------------------------ more worlds (pack 14)
+# Vista Ten (CC0): ten 384x216 scenes in four looping layers (sky, far, mid, near), used at 1x. Purple Lex: one
+# 320x180 forest in six layers, doubled to the game's pixel size (its top sky trimmed to 300 px).
+# Their artifacts (x1-x33) are spare shields and two treasures from the weapon icon sheets.
+P14 = sys.argv[14] if len(sys.argv) > 14 else None
+if P14:
+    V = f'{P14}/vista/vista-ten'
+    for n in ('cairn', 'canopy', 'downs', 'flue', 'hollow', 'kiln', 'leeward', 'mesa', 'sodium', 'tundra'):
+        scene('v_' + n, [f'{V}/{n}/{n}_{i}_{L}.png' for i, L in enumerate(('sky', 'far', 'mid', 'near'))])
+    PL = f'{P14}/purple/Purple_Lex_BG'
+    scene('violet', [f'{PL}/{L}.png' for L in ('mountains', 'Cloud', 'Bush', 'Ground', 'Sign', 'ForeGround_Tree')], k=2)
+    RELICS = [('SHIELD 1', i) for i in (1, 2, 4, 6, 7, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35, 36, 37, 39)] + [('STAVES 1', 2), ('AXES 1', 11)]
+    for n, (sheet, idx) in enumerate(RELICS, 1): save(icon(sheet, idx), f'art/x{n}.png')
+
+# ------------------------------------------------------------------ magic items (pack 15)
+P15 = sys.argv[15] if len(sys.argv) > 15 else None   # ring.png, book.png, clover.png, backpack.png (about 64 px)
+if P15:
+    for n in ('ring', 'book', 'clover', 'backpack'):
+        im = load(os.path.join(P15, n + '.png')); sq = Image.new('RGBA', (64, 64))
+        sq.alpha_composite(im, ((64 - im.width) // 2, (64 - im.height) // 2)); save(sq, f'mg/{n}.png')
+
+# ------------------------------------------------------------------ more items (pack 16): 40 icons, 32 px
+# Food and potions go to pot/, six become ranged weapons (wi/ww_*), the rest are artifacts (art/i<nn>).
+P16 = sys.argv[16] if len(sys.argv) > 16 else None
+if P16:
+    I = lambda n: load(os.path.join(P16, 'more items', f'Icons_{n:02d}.png'))
+    for pid, n in (('radish', 22), ('candy', 13), ('fruit', 16), ('fish', 27), ('steak', 17), ('storm', 26), ('cell', 38), ('eye', 21), ('sundrop', 12), ('firecrystal', 24)):
+        save(I(n), f'pot/{pid}.png')
+    for wid, n in (('ww_axe', 5), ('ww_bomb', 23), ('ww_lasso', 25), ('ww_pistol', 30), ('ww_web', 31), ('ww_cannon', 35)):
+        save(I(n), f'wi/{wid}.png')
+    for n in (1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 14, 15, 18, 19, 20, 28, 29, 32, 33, 34, 36, 37, 39, 40):
+        save(I(n), f'art/i{n:02d}.png')
+    b = Image.new('RGBA', (8, 3))   # the pistol's shot: a hot little slug with a bright tip
+    for x in range(8):
+        for y in range(3):
+            if y == 1 or 2 <= x <= 6: b.putpixel((x, y), (255, 214, 102, 255) if x < 6 else (255, 255, 230, 255))
+    save(b, 'wp/bullet_proj.png')
+
+# ------------------------------------------------------------------ bosses (pack 17)
+# Six roaming bosses (rare, from level 20). Each gets idle / walk / hurt / death / attack and, where the pack
+# has one, a 'magic' (casting) and 'special' row. The Dark Fairy has a second form: a separate atlas
+# 'darkfairy2' whose first row is her transformation. The Crimson Sorceress faces right in her pack.
+P17 = sys.argv[17] if len(sys.argv) > 17 else None
+if P17:
+    BN = ('idle', 'walk', 'hurt', 'death', 'attack', 'magic', 'special')
+    one = lambda pat: glob.glob(os.path.join(P17, pat))[0]
+    ds = one('*Boss_1/boss_demon_slime*/spritesheets/*.png'); dsr = lambda r, n: grid(ds, 288, 160, range(r * 22, r * 22 + n))
+    enemy_atlas('demonlord', {'idle': dsr(0, 6), 'walk': dsr(1, 12), 'attack': dsr(2, 15), 'hurt': dsr(3, 5), 'death': dsr(4, 22)}, names=BN)
+    rg = one('*Boss_2')
+    rnorm = grid(f'{rg}/spr_enemy_finalboss_normal_strip6.png', 128, 150, range(6)); rfly = grid(f'{rg}/spr_enemy_finalboss_flying_strip6.png', 128, 150, range(6))
+    enemy_atlas('hollowking', {'idle': rnorm, 'walk': rnorm, 'attack': rfly, 'magic': rfly, 'special': rfly + rfly[::-1], 'hurt': grid(f'{rg}/spr_enemy_finalboss_hurt_strip2.png', 128, 150, range(2))}, names=BN)
+    fy = one('*Boss_4/darkfairy_full_version')
+    F1 = lambda n, k, fw=64, fh=64: grid(f'{fy}/darkfairy_phase1/spritesheets/darkfairy_phase1_{n}.png', fw, fh, range(k))
+    F2 = lambda n, k: grid(f'{fy}/darkfairy_phase2/spritesheets/darkfairy_phase2_{n}.png', 64, 64, range(k))
+    enemy_atlas('darkfairy', {'idle': F1('idle', 8), 'attack': F1('closeattack', 9), 'magic': F1('castspell', 7), 'special': F1('createshield', 7), 'hurt': F1('hurt', 3)}, names=BN)
+    trans = grid(f'{fy}/darkfairy_phase2/spritesheets/darkfairy_transformation_into_phase2.png', 64, 64, range(16))
+    p2 = F2('idle', 2); p2 = [p2[0], p2[0], p2[1], p2[1]]
+    enemy_atlas('darkfairy2', {'idle': p2, 'transform': trans, 'attack': F2('castspell', 4), 'magic': F2('castspell', 4), 'special': F2('summonspirits', 4), 'hurt': F2('hurt', 3), 'death': F2('death', 14)},
+                names=('idle', 'walk', 'hurt', 'death', 'attack', 'magic', 'special', 'transform'))
+    gd = one('*Boss_5/Daddy'); vs = lambda n, k, fh=176: grid(f'{gd}/{n}.png', Image.open(f'{gd}/{n}.png').width, fh, range(k))
+    enemy_atlas('golem', {'idle': vs('Scream', 24)[::2], 'walk': vs('Walk', 9, 180), 'attack': vs('Shoot', 8), 'magic': vs('Charhedv2', 8), 'special': vs('Charged', 8)}, names=BN)
+    bd = one('*Boss_6/Bringer-Of-Death') + '/Individual Sprite'
+    enemy_atlas('bringer', {'idle': numbered(f'{bd}/Idle'), 'walk': numbered(f'{bd}/Walk'), 'attack': numbered(f'{bd}/Attack'), 'magic': numbered(f'{bd}/Cast'), 'special': numbered(f'{bd}/Cast'),
+                            'hurt': numbered(f'{bd}/Hurt'), 'death': numbered(f'{bd}/Death')}, names=BN)
+    sp = one('*Boss_7*/Evil Wizard 3/Sprites')
+    enemy_atlas('sorceress', {'idle': grid(f'{sp}/Idle.png', 140, 140, range(10)), 'walk': grid(f'{sp}/Walk.png', 140, 140, range(8)), 'attack': grid(f'{sp}/Attack.png', 140, 140, range(13)),
+                              'hurt': grid(f'{sp}/Get hit.png', 140, 140, range(3)), 'death': grid(f'{sp}/Death.png', 140, 140, range(18))}, face='right', names=BN)
+    # their spells
+    crop_b = lambda fr: (lambda u: [f.crop(u) for f in fr])((lambda bs: (min(b[0] for b in bs), min(b[1] for b in bs), max(b[2] for b in bs), max(b[3] for b in bs)))([alpha_box(f) for f in fr if alpha_box(f)]))
+    MAN['fx']['en_hand'] = frames_strip(crop_b(numbered(f'{bd}/Spell')), 'wp/en_hand.png')             # the Bringer's hand from below
+    MAN['fx']['en_crimson'] = frames_strip(crop_b(grid(f'{sp}/Projectile/Moving.png', 50, 50, range(4))), 'wp/en_crimson.png')
+    MAN['fx']['en_crimson_boom'] = frames_strip(crop_b(grid(f'{sp}/Projectile/Explode.png', 50, 50, range(7))), 'wp/en_crimson_boom.png')
+    MAN['fx']['en_fairy'] = frames_strip(crop_b(F1('spell', 7)), 'wp/en_fairy.png')                   # thorns rising under you
+    MAN['fx']['en_spirits'] = frames_strip(crop_b(grid(f'{fy}/darkfairy_phase2/spritesheets/darkfairy_phase2_spell.png', 64, 64, range(13))), 'wp/en_spirits.png')
+
+# ------------------------------------------------------------------ eggs (pack 9): one 8-frame strip each
+if P9:
+    MAN['eggs'] = {}
+    for eid in ('frost', 'ember', 'crystal'):
+        fr = gif_frames(os.path.join(P9, eid + '.gif'))
+        MAN['eggs'][eid] = frames_strip(fr, f'egg/{eid}.png')
 
 # figure bounds of each animation's first frame ("b": [x, y, w, h]) so thumbnails crop correctly even
 # where the browser cannot read pixels back (sandboxed previews)

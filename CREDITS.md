@@ -43,7 +43,7 @@ The UI icons (coins, chests, artifacts and so on) were drawn in code for this pr
 
 ## Sound effects and music (2.7)
 
-The action sounds, the welcome song and the battle music in `assets/sfx/` and `assets/music/` were supplied by the project owner for Stepquest (converted and trimmed by `tools/prep_sounds.py`). Confirm their license before shipping commercially.
+The action sounds, the welcome song and the battle music in `assets/sfx/` and `assets/music/` were supplied by the project owner for Stepquest (converted and trimmed by `tools/prep_sounds.py`). Confirm their license before shipping commercially. The level-40+ battle themes are "Redemption" (Terra Symphonia) and "Cold Fire" (Evgeny Bardyuzha), as supplied; check the stock-music license covers an app.
 
 ## Software
 
@@ -56,3 +56,7 @@ Bundled in `assets/fonts/` (Latin subset, WOFF) under the SIL Open Font License 
 - Jersey 10
 - Pixelify Sans
 - Silkscreen
+
+## Bosses
+
+Roaming boss sprites supplied by the project owner: Demon Slime (boss_demon_slime_FREE), the ram-skulled final boss strip, Dark Fairy (full version, both phases and spirits), "Daddy" golem sheets, Bringer of Death, and Evil Wizard 3 (projectile included). Check each pack's license (several include a License.txt) before shipping commercially.
