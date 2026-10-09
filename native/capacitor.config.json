@@ -1,6 +1,6 @@
 {
   "appId": "com.stepquest.app",
-  "appName": "Stepquest",
+  "appName": "Step Quest",
   "webDir": "www",
   "backgroundColor": "#0b0a1a",
   "android": { "allowMixedContent": false },

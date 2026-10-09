@@ -1,4 +1,4 @@
-/* Stepquest — world renderer: parallax layers, avatar, pets, encounters, particles.
+/* Step Quest — world renderer: parallax layers, avatar, pets, encounters, particles.
    Sprites are atlases: one PNG per character, one row per animation (row height = frame size). */
 (() => {
   const D = WB.DATA;

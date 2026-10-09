@@ -1,4 +1,4 @@
-/* Stepquest — player state, persistence (local + optional cloud save) */
+/* Step Quest — player state, persistence (local + optional cloud save) */
 (() => {
   const KEY = 'walkbound.save.v1';
   const D = WB.DATA;

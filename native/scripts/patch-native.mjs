@@ -9,9 +9,9 @@ const edit = (file, fn) => { if (!existsSync(file)) return false; const a = read
 
 // ---- iOS: usage descriptions + HealthKit entitlement
 const plistKeys = {
-  NSHealthShareUsageDescription: 'Stepquest reads your step count so your steps move your hero.',
-  NSHealthUpdateUsageDescription: 'Stepquest does not write health data.',
-  NSMotionUsageDescription: 'Stepquest counts your steps while the game is open.',
+  NSHealthShareUsageDescription: 'Step Quest reads your step count so your steps move your hero.',
+  NSHealthUpdateUsageDescription: 'Step Quest does not write health data.',
+  NSMotionUsageDescription: 'Step Quest counts your steps while the game is open.',
 };
 const iosApp = join(native, 'ios', 'App', 'App');
 edit(join(iosApp, 'Info.plist'), (s) => {

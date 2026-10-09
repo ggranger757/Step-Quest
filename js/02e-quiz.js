@@ -1,4 +1,4 @@
-/* Stepquest — the Druid's Knowledge Challenges: 945 multiple-choice questions in 20 topics.
+/* Step Quest — the Druid's Knowledge Challenges: 945 multiple-choice questions in 20 topics.
    Each row: [topic, question, correct answer, wrong, wrong, wrong]; the game shuffles the answers.
    Facts were picked to be long-established and unambiguous. */
 (() => {

@@ -1,9 +1,9 @@
-/* Stepquest — automatic step sync from the phone's health store.
+/* Step Quest — automatic step sync from the phone's health store.
  *
  *   iPhone   → Apple Health (HealthKit)
  *   Android  → Health Connect
  *
- * Both are reached through one cross-platform Capacitor plugin (@capgo/capacitor-health) when Stepquest
+ * Both are reached through one cross-platform Capacitor plugin (@capgo/capacitor-health) when Step Quest
  * runs as the installed app built from /native. In a plain browser there is no health API, so the game
  * falls back to the motion-sensor pedometer and "Log steps".
  *
@@ -38,7 +38,7 @@
       const a = await H.plugin.isAvailable();
       if (!a || !a.available) {
         return set('unavailable', H.platform === 'android'
-          ? 'Install or update “Health Connect by Android” from the Play Store, then reopen Stepquest.'
+          ? 'Install or update “Health Connect by Android” from the Play Store, then reopen Step Quest.'
           : (a && a.reason) || 'Apple Health isn’t available on this device.');
       }
     } catch (e) { return set('unavailable', String(e && e.message || e)); }
@@ -62,7 +62,7 @@
       const r = prompt ? await H.plugin.requestAuthorization(opts) : await H.plugin.checkAuthorization(opts);
       const denied = r && Array.isArray(r.readDenied) && r.readDenied.includes('steps');
       // HealthKit never tells an app that reading was refused (privacy), so on iOS "not denied" counts as on
-      if (denied) { hs.on = false; WB.Save.queue(); set('denied', 'Step access is off. Turn it on in ' + (H.platform === 'ios' ? 'Settings → Health → Data Access & Devices → Stepquest.' : 'Health Connect → App permissions → Stepquest.')); return false; }
+      if (denied) { hs.on = false; WB.Save.queue(); set('denied', 'Step access is off. Turn it on in ' + (H.platform === 'ios' ? 'Settings → Health → Data Access & Devices → Step Quest.' : 'Health Connect → App permissions → Step Quest.')); return false; }
       if (!hs.on) { hs.on = true; hs.since = hs.since || WB.dayKey(); }
       WB.Save.queue();
       if (WB.Steps.motion.running || WB.Steps.motion.armed) { WB.Steps.motion.stop(true); WB.Steps.setStatus('off'); }   // never count twice

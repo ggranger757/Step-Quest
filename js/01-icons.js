@@ -1,4 +1,4 @@
-/* Stepquest — hand-drawn pixel icons rendered to data URLs at boot */
+/* Step Quest — hand-drawn pixel icons rendered to data URLs at boot */
 (() => {
   const PAL = {
     k: '#140f2a', y: '#ffcc4d', Y: '#fff2a8', o: '#c8862a', v: '#8b6cff', V: '#c7b8ff', p: '#4b3a9e',

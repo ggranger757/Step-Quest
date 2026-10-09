@@ -26,7 +26,7 @@ All pixel art comes from free asset packs by **CraftPix.net** and is used under 
   - Free Skeleton Sprite Sheets: Bone Archer, Bone Lancer, Bone Knight
   - Free City Trader Character Sprite Sheets: the merchants and travelers
   - New walker packs: Biker, Punk and Cyborg; ten city walkers; two Satyrs
-  - Knight & Ranger (human_knight, human_ranger GIF sprites): idle, attack and hurt come from the pack; their walk cycles were generated from the idle frames for Stepquest. No license file was included: confirm the terms before shipping commercially.
+  - Knight & Ranger (human_knight, human_ranger GIF sprites): idle, attack and hurt come from the pack; their walk cycles were generated from the idle frames for Step Quest. No license file was included: confirm the terms before shipping commercially.
   - Animal sprites (dogs, cats, rats, birds): pets
 - More Assets pack: woodland animal sprites (Fox, Hare, Deer, Boar, Black Grouse) and Pet Rocks (pets), potion icons, and three icon sets used for the 108 artifacts and the 26 achievement badges.
 
@@ -43,7 +43,7 @@ The UI icons (coins, chests, artifacts and so on) were drawn in code for this pr
 
 ## Sound effects and music (2.7)
 
-The action sounds, the welcome song and the battle music in `assets/sfx/` and `assets/music/` were supplied by the project owner for Stepquest (converted and trimmed by `tools/prep_sounds.py`). Confirm their license before shipping commercially. The level-40+ battle themes are "Redemption" (Terra Symphonia) and "Cold Fire" (Evgeny Bardyuzha), as supplied; check the stock-music license covers an app.
+The action sounds, the welcome song and the battle music in `assets/sfx/` and `assets/music/` were supplied by the project owner for Step Quest (converted and trimmed by `tools/prep_sounds.py`). Confirm their license before shipping commercially. The level-40+ battle themes are "Redemption" (Terra Symphonia) and "Cold Fire" (Evgeny Bardyuzha), as supplied; check the stock-music license covers an app.
 
 ## Software
 

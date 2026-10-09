@@ -1,4 +1,4 @@
-/* Stepquest — step tracking abstraction + sound hooks
+/* Step Quest — step tracking abstraction + sound hooks
  *
  * Every step source calls WB.Steps.push(n, sourceId). The game never cares where steps come from.
  *
@@ -48,7 +48,7 @@
       this.check = setTimeout(() => {
         if (this.running && this.lastEvent < t0) {
           this.stop(true);
-          Steps.setStatus('nodata', 'No step sensor on this device. Open Stepquest on your phone, or log steps from your Health app.');
+          Steps.setStatus('nodata', 'No step sensor on this device. Open Step Quest on your phone, or log steps from your Health app.');
         }
       }, 2500);
       Steps.setStatus('on');
@@ -89,7 +89,7 @@
       if (this.buffer.length >= 4) { this.walking = true; Steps.push(this.buffer.length, 'motion'); this.buffer = []; }
     },
   };
-  /* Counting starts by itself whenever Stepquest is open, unless the player pressed Pause.
+  /* Counting starts by itself whenever Step Quest is open, unless the player pressed Pause.
    * Android / desktop: starts right away. iPhone: Safari only allows motion access from a tap, so the
    * first touch anywhere in the app starts it (the permission prompt only appears the first time). */
   Motion.paused = () => { try { return WB.store.get('walkbound.sensor') === false; } catch (e) { return false; } };
@@ -138,7 +138,7 @@
     total = Math.floor(Number(total)); Steps.logMsg = '';
     const have = WB.state.today.day === WB.dayKey() ? WB.state.today.steps : 0;
     const add = total - have;
-    if (!(add > 0)) { Steps.logMsg = 'That total isn’t higher than what Stepquest already has for today.'; return 0; }
+    if (!(add > 0)) { Steps.logMsg = 'That total isn’t higher than what Step Quest already has for today.'; return 0; }
     return logManual(add);
   };
 

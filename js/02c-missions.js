@@ -1,4 +1,4 @@
-/* Stepquest — field missions: 600 real-world walking missions (data only; rules live in 05c-missions.js).
+/* Step Quest — field missions: 600 real-world walking missions (data only; rules live in 05c-missions.js).
    Every mission needs walking: only steps taken after you accept a mission count toward it.
    Kinds:
      photo    walk N steps, then photograph something out in the world (the photo stays on the device)

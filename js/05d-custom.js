@@ -1,9 +1,9 @@
-/* Stepquest — your own missions: real-life goals you create (from a template or from scratch) with a due date
+/* Step Quest — your own missions: real-life goals you create (from a template or from scratch) with a due date
    and time, a difficulty and a priority. Finishing one pays coins and XP:
      base (difficulty) × priority × timing
      timing: on time = 1, finished early = up to +25% (the more of the window left, the more),
              late = half
-   Balance: Stepquest is a walking game, so your own missions top up what walking earns rather than replace it.
+   Balance: Step Quest is a walking game, so your own missions top up what walking earns rather than replace it.
    They pay at most C.DAILY_COINS coins and C.DAILY_XP XP a day in total (about what 3,000 steps earn; 10,000
    steps earn 1,000 coins). A mission can be completed once it is 15 minutes old; past the daily cap missions
    can still be completed, they just pay what is left (or nothing).

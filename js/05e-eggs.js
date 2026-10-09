@@ -1,4 +1,4 @@
-/* Stepquest — eggs. Walkers find Frost, Ember and Crystal eggs on the road (an encounter of their own) and
+/* Step Quest — eggs. Walkers find Frost, Ember and Crystal eggs on the road (an encounter of their own) and
    as battle drops, carry them, and trade sets of them to Merlin for loot. Losing a battle breaks half of
    each kind you carry (at least one). s.eggs = { frost, ember, crystal }, s.eggTrades = trades made. */
 (() => {

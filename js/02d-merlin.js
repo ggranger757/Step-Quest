@@ -1,4 +1,4 @@
-/* Stepquest — Merlin's quests: 300 harder walking quests offered by Merlin, a wandering owl-mage who turns up
+/* Step Quest — Merlin's quests: 300 harder walking quests offered by Merlin, a wandering owl-mage who turns up
    on the road now and then (data only; rules live in 05c-missions.js and 05-game.js).
    They use the same kinds as field missions (photo, gather, time, walks, distance) but ask for more walking,
    give you 48 hours instead of 24 and pay far more coins and XP. Only one Merlin quest runs at a time and it

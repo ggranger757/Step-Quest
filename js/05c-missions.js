@@ -1,4 +1,4 @@
-/* Stepquest — field mission rules. Data is in 02c-missions.js.
+/* Step Quest — field mission rules. Data is in 02c-missions.js.
    s.missions = { active: [{ id, steps, win, walks: [steps per walk], last, photo, at }], done: [ids], skip: [ids], failed }
    Only live steps taken after a mission is accepted count (health-synced steps from earlier days don't).
    Each mission must be finished within D.MISSION_HOURS of accepting it. Missing the deadline, or dropping

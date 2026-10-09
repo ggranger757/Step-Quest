@@ -1,4 +1,4 @@
-/* Stepquest — game rules: steps -> coins/xp/hp/progress, tasks, encounters, streaks, unlocks, gear */
+/* Step Quest — game rules: steps -> coins/xp/hp/progress, tasks, encounters, streaks, unlocks, gear */
 (() => {
   const D = WB.DATA;
   const S = () => WB.state;

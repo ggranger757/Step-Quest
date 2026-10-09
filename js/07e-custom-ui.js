@@ -1,4 +1,4 @@
-/* Stepquest — "My missions": create, edit, check off and complete your own real-life missions. */
+/* Step Quest — "My missions": create, edit, check off and complete your own real-life missions. */
 (() => {
   const C = WB.Custom, G = WB.Game, UI = WB.UI, S = () => WB.state, $ = (q, r = document) => r.querySelector(q);
   const esc = WB.esc;

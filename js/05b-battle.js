@@ -1,4 +1,4 @@
-/* Stepquest — turn-based battle rules (1v1, plus your pet). Pure logic: every action returns a list of
+/* Step Quest — turn-based battle rules (1v1, plus your pet). Pure logic: every action returns a list of
    events that the battle screen animates in order.
 
    Your moves:  Strike (melee weapon) · Throw / Shoot / Cast (ranged weapon, recharges) · Defend (shield)

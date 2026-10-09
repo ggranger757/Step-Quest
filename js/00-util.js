@@ -1,4 +1,4 @@
-/* Stepquest — shared utilities */
+/* Step Quest — shared utilities */
 const WB = (window.WB = window.WB || {});
 
 WB.$ = (s, r = document) => r.querySelector(s);

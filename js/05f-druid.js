@@ -1,4 +1,4 @@
-/* Stepquest — the Druid. He turns up on the road (an encounter of his own, from level 2) with a Knowledge
+/* Step Quest — the Druid. He turns up on the road (an encounter of his own, from level 2) with a Knowledge
    Challenge: one multiple-choice question from D.QUIZ (02e-quiz.js). Answer right and he pays XP and coins
    and runs off into the trees; answer wrong and you have to battle him. Lose that battle and he takes every
    egg you carry. Beat him and he runs away. s.druid = { asked: [question indexes], wins, losses } */

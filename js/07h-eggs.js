@@ -1,4 +1,4 @@
-/* Stepquest — eggs on screen: the Inventory → Eggs tab, Merlin's egg trades (also under his quest on
+/* Step Quest — eggs on screen: the Inventory → Eggs tab, Merlin's egg trades (also under his quest on
    Missions → Field) and the toasts when you find or break eggs. Rules live in 05e-eggs.js. */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, S = () => WB.state;

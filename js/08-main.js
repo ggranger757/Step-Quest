@@ -1,4 +1,4 @@
-/* Stepquest — boot, event wiring, first-time experience, developer panel */
+/* Step Quest — boot, event wiring, first-time experience, developer panel */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, $ = WB.$, S = () => WB.state;
 
@@ -57,7 +57,7 @@
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
     G.markSeen();
-    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'This browser is blocking storage (a private window?). Open Stepquest normally to keep your progress.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
+    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'This browser is blocking storage (a private window?). Open Step Quest normally to keep your progress.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
   }
 
   function showWelcome(lines) {
@@ -179,7 +179,7 @@
           <li>${WB.icon('coin', 3)}<span>Earn Walk Coins.</span></li>
           <li>${WB.icon('world', 3)}<span>Unlock new worlds.</span></li>
         </ul>
-        <p class="lead">Stepquest counts your steps automatically with your phone’s motion sensor whenever it’s open. Walked with the app closed? Log those steps from your Health app any time.</p>
+        <p class="lead">Step Quest counts your steps automatically with your phone’s motion sensor whenever it’s open. Walked with the app closed? Log those steps from your Health app any time.</p>
         <button class="btn block xl" type="button" id="i-go">Begin journey</button>`;
       $('#i-go').onclick = () => {
         S().onboarded = true;

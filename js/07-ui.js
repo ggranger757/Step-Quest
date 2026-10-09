@@ -1,4 +1,4 @@
-/* Stepquest — interface: HUD, journey panel, encounters, screens, sheets, toasts */
+/* Step Quest — interface: HUD, journey panel, encounters, screens, sheets, toasts */
 (() => {
   const D = WB.DATA, G = WB.Game, $ = WB.$, S = () => WB.state;
   const UI = (WB.UI = { tab: 'world', shopTab: 'avatar' });
@@ -220,7 +220,7 @@
         : HL.status === 'checking' ? `<div class="sensor"><div class="state"><i class="dot"></i>Connecting to ${HL.name()}…</div></div>`
         : `<div class="sensor"><p class="note">${WB.esc(HL.msg || 'Connect ' + HL.name() + ' so every step you take counts, even with the app closed.')}</p>${HL.status !== 'unavailable' ? `<button class="btn" data-act="health-connect" type="button">${WB.icon('steps', 2)}Connect ${HL.name()}</button>` : ''}${logBtn('ghost')}</div>`;
     } else if (st === 'armed') sensor = `<div class="sensor"><div class="state"><i class="dot"></i>Tap anywhere to start counting your steps.</div>${logBtn('ghost wide')}</div>`;
-    else if (st === 'on') sensor = `<div class="sensor on"><div class="state"><i class="dot"></i>Counting automatically while Stepquest is open.</div><button class="btn ghost" data-act="sensor-stop" type="button">Pause</button>${logBtn('ghost')}</div>`;
+    else if (st === 'on') sensor = `<div class="sensor on"><div class="state"><i class="dot"></i>Counting automatically while Step Quest is open.</div><button class="btn ghost" data-act="sensor-stop" type="button">Pause</button>${logBtn('ghost')}</div>`;
     else if (st === 'starting') sensor = `<div class="sensor"><div class="state"><i class="dot"></i>Starting the step counter\u2026</div></div>`;
     else if (st === 'off' && mot.supported()) sensor = `<div class="sensor"><button class="btn" data-act="sensor-start" type="button">${WB.icon('steps', 2)}Start walking</button>${logBtn('ghost')}</div>`;
     else sensor = `<div class="sensor"><p class="note">${WB.esc(WB.Steps.msg || 'This browser can\u2019t read your steps.')}</p>${logBtn(st === 'unavailable' ? 'wide' : '')}${st !== 'unavailable' ? '<button class="btn ghost" data-act="sensor-start" type="button">Try again</button>' : ''}</div>`;
@@ -232,7 +232,7 @@
           <span class="of">of ${WB.fmt(goal)} steps \u00b7 ${WB.fmtKm(td.meters)}</span>
         </div>
         <div class="bar seg ok" role="progressbar" aria-label="Daily goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct}%"></i></div>
-        <div class="earnrate"><span>${WB.icon('coin', 2)}1 coin / 10 steps</span><span>${WB.icon('xp', 2)}1 XP / 5 steps</span></div>
+        <div class="earnrate"><span>${WB.icon('coin', 2)}1 coin / ${D.STEPS_PER_COIN} steps</span><span>${WB.icon('xp', 2)}1 XP / ${D.STEPS_PER_XP} steps</span></div>
         <button class="hpline" type="button" data-act="heal-info" aria-label="Health ${WB.fmt(s.hp)} of ${WB.fmt(G.maxHp())}. Open potions.">
           <span class="lbl">HP</span><span class="bar hp ${s.hp / G.maxHp() < 0.3 ? 'low' : ''}"><i style="width:${(s.hp / G.maxHp()) * 100}%"></i></span><span class="num">${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())}</span>
         </button>
@@ -278,7 +278,7 @@
     const HL = WB.Health; S().hints.health = true; WB.Save.queue();
     UI.sheet(`
       <h3 id="sheet-title">Count steps automatically</h3>
-      <p>Connect ${HL.name()} and Stepquest reads your step count by itself. Walks you take with the app closed still move your hero, pay coins and keep your streak.</p>
+      <p>Connect ${HL.name()} and Step Quest reads your step count by itself. Walks you take with the app closed still move your hero, pay coins and keep your streak.</p>
       <ul class="rules compact">
         <li>${WB.icon('steps', 3)}<span>Only step counts are read. Nothing is written to ${HL.name()}.</span></li>
         <li>${WB.icon('flag', 3)}<span>Syncs when you open the app, and every minute while it’s open.</span></li>
@@ -293,11 +293,11 @@
   UI.logSheet = () => {
     UI.sheet(`
       <h3 id="sheet-title">Log steps</h3>
-      <p>Your phone’s Health or Fit app counts steps all day, even when Stepquest is closed. Copy today’s number here and your hero walks it.</p>
+      <p>Your phone’s Health or Fit app counts steps all day, even when Step Quest is closed. Copy today’s number here and your hero walks it.</p>
       <div class="seg" role="group" aria-label="Log mode"><button type="button" data-mode="total" aria-pressed="true">Today’s total</button><button type="button" data-mode="add" aria-pressed="false">Add steps</button></div>
       <div class="field"><label class="lbl" for="log-n" id="log-lbl">Today’s total in your Health app</label><input id="log-n" type="number" inputmode="numeric" min="1" max="${D.MANUAL_DAY_MAX}" placeholder="0"></div>
       <p class="fine">You can log up to ${WB.fmt(D.MANUAL_DAY_MAX)} steps by hand a day (${WB.fmt(WB.Steps.manualLeft())} left today). The step counter and Health sync aren’t limited.</p>
-      <p class="hint" id="log-hint">Stepquest has ${WB.fmt(S().today.day === WB.dayKey() ? S().today.steps : 0)} steps for today. Only the difference is added.</p>
+      <p class="hint" id="log-hint">Step Quest has ${WB.fmt(S().today.day === WB.dayKey() ? S().today.steps : 0)} steps for today. Only the difference is added.</p>
       <button class="btn block" type="button" id="log-go">Walk it</button>
     `, (root) => {
       let mode = 'total';
@@ -556,7 +556,7 @@
     else if (st.buy) {
       const short = it.req.cost - s.coins;
       foot = `<div class="price"><span class="cost">${WB.icon('coin', 2)}${WB.fmt(it.req.cost)}</span>${short > 0 ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>
-        <button class="btn gold sm block" type="button" data-buy="${cat}:${it.id}" ${off(short > 0 && 'You need ' + WB.fmt(short) + ' more coins for ' + it.name + '. Keep walking: 1 coin every 10 steps.')}>Buy</button>`;
+        <button class="btn gold sm block" type="button" data-buy="${cat}:${it.id}" ${off(short > 0 && 'You need ' + WB.fmt(short) + ' more coins for ' + it.name + '. Keep walking: 1 coin every ' + D.STEPS_PER_COIN + ' steps.')}>Buy</button>`;
     }
     const desc = opts.desc || '';
     const locked = !own && !st.buy;
@@ -758,7 +758,7 @@
       </div></div>
       <div class="sect"><h2>Settings</h2>
         ${WB.Health.native ? `<div class="setting pbox"><div><div>${WB.Health.name()}</div><div class="sd">${WB.Health.status === 'on' ? 'Steps sync automatically, even for walks taken with the app closed.' : WB.esc(WB.Health.msg || 'Read your step count automatically.')}</div></div><div class="acts">${WB.Health.status === 'on' ? '<button class="btn ghost sm" type="button" data-act="health-off">Turn off</button>' : WB.Health.status !== 'unavailable' ? '<button class="btn sm" type="button" data-act="health-connect">Connect</button>' : ''}</div></div>` : ''}
-        <div class="setting pbox"><div><div>Step counter</div><div class="sd">${st === 'on' ? 'Counting with the motion sensor while the app is open.' : WB.esc(WB.Steps.msg || 'Uses your phone’s motion sensor while Stepquest is open.')}</div></div>
+        <div class="setting pbox"><div><div>Step counter</div><div class="sd">${st === 'on' ? 'Counting with the motion sensor while the app is open.' : WB.esc(WB.Steps.msg || 'Uses your phone’s motion sensor while Step Quest is open.')}</div></div>
           <div class="acts">${st === 'on' ? '<button class="btn ghost sm" type="button" data-act="sensor-stop">Pause</button>' : WB.Steps.motion.supported() && st !== 'unavailable' ? '<button class="btn sm" type="button" data-act="sensor-start">Start</button>' : ''}<button class="btn ghost sm" type="button" data-act="log">Log steps</button></div></div>
         <div class="setting pbox"><div><label for="set-goal">Daily goal</label><div class="sd">Reaching it pays a 100-coin bonus.</div></div><select id="set-goal">${opt([2500, 5000, 7500, 10000], s.settings.dailyGoal, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-streak">Streak minimum</label><div class="sd">Steps needed in a day to keep the streak.</div></div><select id="set-streak">${opt(D.STREAK_GOALS, s.settings.streakMin, WB.fmt)}</select></div>
@@ -770,7 +770,7 @@
         <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : !WB.store.ok() ? '<b class="warn">Not saving:</b> this browser is blocking storage, so progress is lost when you close it.' : 'Saved on this device. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
       </div>
       <div class="about pbox card"><span class="lbl">About</span>
-        <div>Stepquest turns real steps into an adventure. Steps are counted by your phone’s motion sensor while the app is open, or logged from your Health app.</div>
+        <div>Step Quest turns real steps into an adventure. Steps are counted by your phone’s motion sensor while the app is open, or logged from your Health app.</div>
         <div>Pixel art, creatures, characters and battle effects by <a href="https://craftpix.net" target="_blank" rel="noopener">CraftPix.net</a> (free license). Fonts: Jersey 10, Pixelify Sans and Silkscreen (SIL Open Font License).</div>
         <button class="linkbtn ver" type="button" id="ver">Version ${WB.esc(WB.VERSION || '2.7.0')}</button>
       </div>

@@ -1,4 +1,4 @@
-/* Stepquest — the guided tutorial (first launch, replayable from Profile → Settings) and the one-time
+/* Step Quest — the guided tutorial (first launch, replayable from Profile → Settings) and the one-time
    "how to heal" popup the first time your health runs low. */
 (() => {
   const UI = WB.UI, G = WB.Game, D = WB.DATA, S = () => WB.state, $ = (q, r = document) => r.querySelector(q);
@@ -10,11 +10,11 @@
 
   // each step: where to go, what to highlight, and what to say
   const STEPS = [
-    { go: tab('world'), title: 'Welcome to Stepquest', text: 'Every real step moves your walker through pixel worlds. Walking earns coins and XP, wakes creatures and opens new worlds. This tour takes a minute; skip it any time.' },
+    { go: tab('world'), title: 'Welcome to Step Quest', text: 'Every real step moves your walker through pixel worlds. Walking earns coins and XP, wakes creatures and opens new worlds. This tour takes a minute; skip it any time.' },
     // ---------- world ----------
     { go: tab('world'), sel: '#hud-me', page: 'World', title: 'Your walker', text: 'Your portrait. Tap it any time to open your Profile.' },
-    { go: tab('world'), sel: '.hud-xp', page: 'World', title: 'Level, XP and health', text: 'The purple bar is XP (1 XP every 5 steps, plus battles and missions). Level up to get stronger and open worlds. The green bar is your health.' },
-    { go: tab('world'), sel: '#hud-coins', page: 'World', title: 'Walk Coins', text: '1 coin every 10 steps, plus rewards from missions, battles and crates. Spend them in the Shop.' },
+    { go: tab('world'), sel: '.hud-xp', page: 'World', title: 'Level, XP and health', text: 'The purple bar is XP (1 XP every ' + D.STEPS_PER_XP + ' steps, plus battles and missions). Level up to get stronger and open worlds. The green bar is your health.' },
+    { go: tab('world'), sel: '#hud-coins', page: 'World', title: 'Walk Coins', text: '1 coin every ' + D.STEPS_PER_COIN + ' steps, plus rewards from missions, battles and crates. Spend them in the Shop.' },
     { go: tab('world'), sel: '#hud-streak', page: 'World', title: 'Walking streak', text: 'Days in a row you’ve hit your streak minimum. Keep it alive for streak rewards.' },
     { go: tab('world'), sel: '#stage', page: 'World', title: 'The world', text: 'Your walker moves only when you do. On the road you’ll meet creatures, traders, crates, artifacts and the occasional boss.' },
     { go: tab('world'), sel: '#world-chip', page: 'World', title: 'Current world', text: 'Shows where you are and how much of it you’ve explored. Tap it to open the world map.' },

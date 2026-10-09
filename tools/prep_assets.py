@@ -1,4 +1,4 @@
-"""Prepare Stepquest game assets from the CraftPix packs.
+"""Prepare Step Quest game assets from the CraftPix packs.
 
 Usage: python3 -I prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir> <pack5_dir> <out_dir> [<pack6_dir>]
   pack1_dir: the first upload (Background, Creatures, My_Walk_Avatar folders unzipped)
@@ -400,7 +400,7 @@ def app_icon(size):
     fr = load(f'{AV1}/{PK["raider"]}/Raider_1/Walk.png').crop((256, 0, 384, 128)).crop((16, 52, 112, 128))
     bg.alpha_composite(fr, (2, 9))
     return bg.resize((size, size), Image.NEAREST)
-# App icons come from the Stepquest logo (the hiking boots), kept in assets/icons/ (icon-192/512, maskable,
+# App icons come from the Step Quest logo (the hiking boots), kept in assets/icons/ (icon-192/512, maskable,
 # apple-touch-icon, favicons, og-image). They are not regenerated here; only draw the old placeholder if missing.
 if not os.path.exists(os.path.join(OUT, 'icons', 'icon-512.png')):
     save(app_icon(192), 'icons/icon-192.png'); save(app_icon(512), 'icons/icon-512.png')

@@ -1,10 +1,11 @@
-/* Stepquest — game content. Everything here is data; add worlds, items or encounters by adding entries. */
+/* Step Quest — game content. Everything here is data; add worlds, items or encounters by adding entries. */
 (() => {
   const D = (WB.DATA = {});
 
   D.PX_PER_STEP = 18;          // native pixels of ground scroll per real step
-  D.COINS_PER_STEP = 0.1;      // 1 Walk Coin per 10 steps
-  D.XP_PER_STEP = 0.2;         // 1 XP per 5 steps
+  D.COINS_PER_STEP = 1 / 40;   // 1 Walk Coin per 40 steps
+  D.XP_PER_STEP = 1 / 50;      // 1 XP per 50 steps
+  D.STEPS_PER_COIN = Math.round(1 / D.COINS_PER_STEP); D.STEPS_PER_XP = Math.round(1 / D.XP_PER_STEP);   // for the text
   D.HEAL_MINUTES = 15;         // HP refills on its own over time (empty to full in 15 minutes); walking does not heal
   D.DEFAULT_STRIDE_M = 0.76;
   D.MANUAL_DAY_MAX = 30000;    // steps a player can log by hand per day (sensor and Health sync are not capped)
@@ -728,8 +729,8 @@
 
   // ---------- Levels ----------
   // Long-haul pacing (this is a walking game): XP to the next level = 100 × level^1.5 (+1.5% per level past 50).
-  // Walking ~7,000 steps a day plus battles and quests (~2,500 XP a day): about a month to level 20, 9 months to 50,
-  // about 2 years to the last world (level 70) and around 6 years to the cap.
+  // Walking ~7,000 steps a day (140 XP) plus battles and quests (~1,100 XP): about 2 months to level 20, 1.5 years
+  // to 50, about 4 years to the last world (level 70) and well over a decade to the cap.
   D.LEVEL_CAP = 100;
   D.EPIC_MUSIC_LEVEL = 40;   // battles get the epic soundtrack from here
   D.xpToNext = (lvl) => Math.round(100 * Math.pow(lvl, 1.5) * (1 + Math.max(0, lvl - 50) * 0.015));

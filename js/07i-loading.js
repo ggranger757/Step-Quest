@@ -1,4 +1,4 @@
-/* Stepquest — loading screens: black, a spinning ring around the logo, the name underneath.
+/* Step Quest — loading screens: black, a spinning ring around the logo, the name underneath.
    It's in the page from the first byte (#boot in body.html, logo inlined by tools/build.py), stays up until
    the first screen and its art are ready, and comes back while a new world's scenery loads. */
 (() => {

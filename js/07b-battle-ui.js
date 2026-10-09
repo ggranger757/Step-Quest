@@ -1,4 +1,4 @@
-/* Stepquest — battle screen: 1v1 turn-based fight (plus your pet) rendered over the current world.
+/* Step Quest — battle screen: 1v1 turn-based fight (plus your pet) rendered over the current world.
    Every rule lives in 05b-battle.js; this file only animates the events it returns, one after another. */
 (() => {
   const D = WB.DATA, G = WB.Game, $ = WB.$, S = () => WB.state;

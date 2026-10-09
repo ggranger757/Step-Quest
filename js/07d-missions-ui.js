@@ -1,4 +1,4 @@
-/* Stepquest — field missions on the Missions tab, the photo journal (photos stay on this device, in IndexedDB),
+/* Step Quest — field missions on the Missions tab, the photo journal (photos stay on this device, in IndexedDB),
    and the camera flow for photo missions. */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, S = () => WB.state, $ = (q, r = document) => r.querySelector(q);

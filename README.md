@@ -1,4 +1,4 @@
-# Stepquest
+# Step Quest
 
 A pixel-art walking RPG for your phone. Every real step moves your hero forward through the world. Walk to explore 49 worlds that open as you level up, earn Walk Coins, fight turn-based battles against aggressive creatures and world guardians, collect weapons, potions, food, magic items, pets and artifacts, face rare roaming bosses, and listen to your own music while you walk.
 
@@ -12,7 +12,7 @@ It is a Progressive Web App (PWA): plain HTML, CSS and JavaScript with no build 
    - Or from a terminal:
      ```bash
      cd stepquest
-     git init && git add . && git commit -m "Stepquest 2.4"
+     git init && git add . && git commit -m "Step Quest 2.4"
      git branch -M main
      git remote add origin https://github.com/<you>/stepquest.git
      git push -u origin main
@@ -31,7 +31,7 @@ The app works offline after the first visit.
 
 ## How steps are counted
 
-| Where Stepquest runs | Step source |
+| Where Step Quest runs | Step source |
 | --- | --- |
 | **Installed app** (iPhone / Android, built from `native/`) | **Automatic sync** from Apple Health (HealthKit) or Health Connect. Walks taken with the app closed count too: they move your hero, pay out and keep your streak, credited to the day they happened. |
 | **Browser / home-screen PWA** | **Motion sensor**: a pedometer on the phone's accelerometer that counts automatically whenever the app is open: on Android it starts by itself; on iPhone, Safari only allows motion access after a tap, so the first touch anywhere in the app starts it (the permission prompt appears only the first time). Players can Pause it. 4 rhythmic steps in a row are needed before counting starts, so bumps are ignored. **Log steps**: type today's total from your Health app and the difference is added. Hand-logged steps are capped at 30,000 a day (`D.MANUAL_DAY_MAX`) so logging can't replace walking; the motion sensor and Health sync are not capped. |
@@ -40,11 +40,11 @@ Browsers have no API for health data, which is why automatic sync needs the inst
 
 ## Automatic step sync (installed app)
 
-`native/` turns Stepquest into an iPhone and Android app with [Capacitor](https://capacitorjs.com) and one cross-platform health plugin, [`@capgo/capacitor-health`](https://capgo.app/docs/plugins/health/), which talks to HealthKit on iOS and Health Connect on Android.
+`native/` turns Step Quest into an iPhone and Android app with [Capacitor](https://capacitorjs.com) and one cross-platform health plugin, [`@capgo/capacitor-health`](https://capgo.app/docs/plugins/health/), which talks to HealthKit on iOS and Health Connect on Android.
 
 How the sync works (`js/04b-health.js`):
 
-- The health store's daily totals are the source of truth. On launch, whenever the app returns to the foreground, and every minute while it's open, Stepquest asks for per-day step sums since the day you connected (up to the last 7 days).
+- The health store's daily totals are the source of truth. On launch, whenever the app returns to the foreground, and every minute while it's open, Step Quest asks for per-day step sums since the day you connected (up to the last 7 days).
 - Only the difference from what the game already counted is added, so nothing is ever counted twice. While sync is on, the in-app pedometer is switched off.
 - Only step counts are read. Nothing is written.
 
@@ -62,11 +62,11 @@ After changing the game, run `npm run sync` again (or `npm run ios` / `npm run a
 
 **iPhone:** in Xcode select the **App** target → **Signing & Capabilities**, pick your team, and check that **HealthKit** is listed (`npm run add` writes the entitlement and the Health permission texts to `Info.plist`; add the capability with **+ Capability → HealthKit** if Xcode doesn't show it). Run on a real iPhone: the simulator has no step data. Change `appId` in `capacitor.config.json` to your own bundle ID first.
 
-**Android:** Health Connect is built into Android 14+. On Android 8–13 players install **Health Connect by Android** from the Play Store; Stepquest tells them if it's missing. `npm run add` sets the minimum SDK to 26 and ships the privacy policy page Health Connect requires (`privacypolicy.html`; put your contact email in `native/scripts/copy-web.mjs` before publishing). To publish on Google Play you must also complete the Health Connect permissions declaration in the Play Console.
+**Android:** Health Connect is built into Android 14+. On Android 8–13 players install **Health Connect by Android** from the Play Store; Step Quest tells them if it's missing. `npm run add` sets the minimum SDK to 26 and ships the privacy policy page Health Connect requires (`privacypolicy.html`; put your contact email in `native/scripts/copy-web.mjs` before publishing). To publish on Google Play you must also complete the Health Connect permissions declaration in the Play Console.
 
 **No Mac or Android Studio?** Run the **Android app** workflow from the repository's Actions tab: it builds a debug APK you can install on an Android phone for testing.
 
-App icons: the Stepquest logo is already in `native/assets/` (`icon.png` 1024×1024 and `splash.png`); run `npm run icons` to generate every iOS and Android size. Replace those two files to change the icon.
+App icons: the Step Quest logo is already in `native/assets/` (`icon.png` 1024×1024 and `splash.png`); run `npm run icons` to generate every iOS and Android size. Replace those two files to change the icon.
 
 ## Battles
 
@@ -129,7 +129,7 @@ Bosses never flee, and running from one only works 35% of the time (slipping awa
 
 ## Levels and pacing
 
-Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `100 × level^1.5`, plus 1.5% per level past 50. At around 2,500 XP a day (7,000 steps plus battles and quests) that's about a month to level 20, 9 months to 50, about 2 years to the last world (level 70) and around 6 years to the cap. Each level-up opens a celebration card listing everything the new level unlocks (worlds, walkers, weapons, pets, magic, potions) and how far the next level is.
+Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `100 × level^1.5`, plus 1.5% per level past 50. Walking earns 1 coin every 40 steps and 1 XP every 50 steps (`COINS_PER_STEP`, `XP_PER_STEP`), so most XP now comes from battles, quests and missions. At around 1,250 XP a day (7,000 steps plus battles and quests) that's about 2 months to level 20, 1.5 years to 50, about 4 years to the last world (level 70) and well over a decade to the cap. Each level-up opens a celebration card listing everything the new level unlocks (worlds, walkers, weapons, pets, magic, potions) and how far the next level is.
 
 ## The Druid
 
@@ -168,7 +168,7 @@ Merlin, a wandering owl-mage, now and then swoops down on the road (from level 2
 
 Players can turn real-life goals into missions. **New mission** offers 15 templates (daily workout, book outline, reading, study session, clean & tidy, meal prep, language or instrument practice, meditate & stretch, budget check-in, journal, job application, creative or coding project, call someone) or **Create your own**. Every mission has a name, optional notes, an optional checklist, a **due date and time** (with Tonight / Tomorrow / In 3 days / Next week shortcuts), a **difficulty** and a **priority**.
 
-Completing one pays coins and XP: the difficulty sets the base (Easy 15 coins / 25 XP, Medium 30 / 45, Hard 55 / 80, Epic 90 / 130), the priority multiplies it (Low ×1, Medium ×1.15, High ×1.3, Urgent ×1.5), and the timing adjusts it: finishing early earns up to +25% (more the earlier you finish), on time pays in full, and late pays half. The form previews the reward. Difficulty and priority are locked when the mission is created, and rewards always use the original due time. Because Stepquest is a walking game, your own missions together pay at most **300 coins and 450 XP a day** (about what 3,000 steps earn; 10,000 steps earn 1,000 coins); past that they can still be completed, without a reward. A mission can be completed once it's 15 minutes old. Overdue missions get a one-time reminder; there is no penalty beyond the halved reward. Templates and numbers live in `js/05d-custom.js`.
+Completing one pays coins and XP: the difficulty sets the base (Easy 15 coins / 25 XP, Medium 30 / 45, Hard 55 / 80, Epic 90 / 130), the priority multiplies it (Low ×1, Medium ×1.15, High ×1.3, Urgent ×1.5), and the timing adjusts it: finishing early earns up to +25% (more the earlier you finish), on time pays in full, and late pays half. The form previews the reward. Difficulty and priority are locked when the mission is created, and rewards always use the original due time. Because Step Quest is a walking game, your own missions together pay at most **300 coins and 450 XP a day** (about what 3,000 steps earn; 10,000 steps earn 1,000 coins); past that they can still be completed, without a reward. A mission can be completed once it's 15 minutes old. Overdue missions get a one-time reminder; there is no penalty beyond the halved reward. Templates and numbers live in `js/05d-custom.js`.
 
 ## Sound and music
 
@@ -219,7 +219,7 @@ Equipped pets walk beside your walker in every world: dogs, cats, rats, birds, d
 
 ## Music while you walk
 
-Play music from your own music app (Spotify, Apple Music, anything) while Stepquest is open. Game sounds mix in without pausing it (`navigator.audioSession` is set to ambient where supported).
+Play music from your own music app (Spotify, Apple Music, anything) while Step Quest is open. Game sounds mix in without pausing it (`navigator.audioSession` is set to ambient where supported).
 
 ## Developer mode
 
@@ -268,7 +268,7 @@ assets/ach/              achievement badges
 assets/wi/               weapon icons (melee, ranged, shields)
 assets/mg/               magic item icons
 assets/sfx/              weapon sounds
-assets/icons/            app icons from the Stepquest logo: favicon (.ico, 16, 32), 192/512, Android maskable, apple-touch-icon, og-image (link previews)
+assets/icons/            app icons from the Step Quest logo: favicon (.ico, 16, 32), 192/512, Android maskable, apple-touch-icon, og-image (link previews)
 assets/fonts/            Jersey 10, Pixelify Sans, Silkscreen (bundled for offline use, SIL OFL)
 tools/prep_assets.py     rebuilds /assets from the original downloads:
                          python3 prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir> <pack5_dir> assets [<pack6_dir>]

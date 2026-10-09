@@ -1,4 +1,4 @@
-/* Stepquest — celebrations: a short burst of pixel confetti and a warm, varied message when you level up,
+/* Step Quest — celebrations: a short burst of pixel confetti and a warm, varied message when you level up,
    earn an achievement or complete any mission. Confetti is skipped with reduced motion and waits until a
    battle is over; bursts close together merge into one. */
 (() => {
