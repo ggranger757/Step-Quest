@@ -1,4 +1,4 @@
-/* Walkbound — boot, event wiring, first-time experience, developer panel */
+/* Stepquest — boot, event wiring, first-time experience, developer panel */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, $ = WB.$, S = () => WB.state;
 
@@ -13,7 +13,15 @@
     if (!S().onboarded) intro();
     else startApp(welcome);
     WB.Cloud.init();
-    setInterval(() => { const d = S().today.day; G.rollDay(); if (d !== S().today.day) { UI.render(); UI.updateHud(); } }, 60000);
+    // once a minute (and whenever the app comes back): new day, HP refilling over time, mission deadlines
+    const tick = () => {
+      const d = S().today.day, hp = S().hp, act = S().missions.active.length;
+      G.rollDay(); G.regen(); G.checkMissions();
+      if (d !== S().today.day || hp !== S().hp || act !== S().missions.active.length) { WB.Save.queue(); UI.updateHud(); UI.soon(); }
+    };
+    tick();
+    setInterval(tick, 60000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tick(); });
     const save = () => { if (S().onboarded) G.markSeen(); WB.Save.now(); };
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
     window.addEventListener('pagehide', save);
@@ -33,7 +41,7 @@
       onDefer: (enc) => { G.deferEncounter(enc); UI.encounterGone(enc); },
     });
     const h = (location.hash || '').slice(1);
-    UI.go(['tasks', 'shop', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
+    UI.go(h === 'missions' ? 'tasks' : ['tasks', 'shop', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
     WB.Music.render();
     UI.updateHud(); UI.paintFace();
     WB.view.start();
@@ -93,7 +101,7 @@
     });
     WB.bus.on('equip', ({ cat }) => { if (cat === 'avatar' || cat === 'skin') UI.paintFace(); });
     WB.bus.on('achievement', (a) => UI.toast({ kicker: 'Achievement', title: a.title, img: 'ach/' + a.id + '.png', cls: 'gold' }));
-    WB.bus.on('taskComplete', (c) => { WB.Sfx.play('claim'); UI.toast({ kicker: 'Task complete', title: c.t.title, icon: 'check', cls: 'ok', action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
+    WB.bus.on('taskComplete', (c) => { WB.Sfx.play('claim'); UI.toast({ kicker: 'Mission complete', title: c.t.title, icon: 'check', cls: 'ok', action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
     WB.bus.on('milestone', (m) => {
       UI.toast({ kicker: 'New discovery · ' + m.pct + '% explored', title: m.landmark + '  +' + m.coins, icon: 'map', cls: 'cyan' });
       if (m.pct === 100) UI.toast({ kicker: m.world.name, title: 'Fully explored', icon: 'flag', cls: 'gold' });
@@ -124,7 +132,7 @@
     iv.start();
     let pick = S().avatar;
     const step1 = () => {
-      panel.innerHTML = `<h1 class="logo">WALK<br>BOUND</h1><p class="tagline">Every step you take in the real world moves your hero forward.</p><button class="btn block xl" type="button" id="i-go">Start adventure</button>`;
+      panel.innerHTML = `<h1 class="logo">STEP<br>QUEST</h1><p class="tagline">Every step you take in the real world moves your hero forward.</p><button class="btn block xl" type="button" id="i-go">Start adventure</button>`;
       $('#i-go').onclick = () => { WB.Sfx.play('tap'); step2(); };
     };
     const step2 = () => {
@@ -160,7 +168,7 @@
           <li>${WB.icon('coin', 3)}<span>Earn Walk Coins.</span></li>
           <li>${WB.icon('world', 3)}<span>Unlock new worlds.</span></li>
         </ul>
-        <p class="lead">Walkbound counts your steps automatically with your phone’s motion sensor whenever it’s open. Walked with the app closed? Log those steps from your Health app any time.</p>
+        <p class="lead">Stepquest counts your steps automatically with your phone’s motion sensor whenever it’s open. Walked with the app closed? Log those steps from your Health app any time.</p>
         <button class="btn block xl" type="button" id="i-go">Begin journey</button>`;
       $('#i-go').onclick = () => {
         S().onboarded = true;
@@ -182,7 +190,7 @@
         ${[100, 500, 1000, 5000].map((n) => `<button class="btn sm" type="button" data-dev="steps:${n}">+${WB.fmt(n)} steps</button>`).join('')}
         <button class="btn sm gold" type="button" data-dev="coins">+500 coins</button>
         <button class="btn sm" type="button" data-dev="level">Level up</button>
-        <button class="btn sm" type="button" data-dev="tasks">Complete tasks</button>
+        <button class="btn sm" type="button" data-dev="tasks">Complete missions</button>
         <button class="btn sm cyan" type="button" data-dev="world">Next world</button>
         <button class="btn sm cyan" type="button" data-dev="avatars">Unlock all avatars</button>
         <button class="btn sm" type="button" data-dev="enc">Trigger encounter</button>
@@ -199,7 +207,9 @@
         if (k === 'steps') WB.Steps.push(+v, 'dev');
         if (k === 'coins') { s.coins += 500; G.after(); }
         if (k === 'level') G.addXp(D.xpToNext(s.level) - s.xp);
-        if (k === 'tasks') { const td = s.today; td.encounters = Math.max(td.encounters, 2); td.fights = Math.max(td.fights, 1); td.chests = Math.max(td.chests, 1); td.meters = Math.max(td.meters, 1500); const need = Math.max(0, 4000 - td.steps); if (need) WB.Steps.push(need, 'dev'); else G.after(); }
+        if (k === 'tasks') {
+          for (const a of s.missions.active) { const m = D.missionById[a.id]; if (!m) continue; a.steps = Math.max(a.steps, m.steps * 2); a.win = Math.max(a.win, m.steps); a.photo = true; a.walks = Array(m.walks || 0).fill(m.per || 0); }
+          const td = s.today; td.encounters = Math.max(td.encounters, 2); td.fights = Math.max(td.fights, 1); td.chests = Math.max(td.chests, 1); td.meters = Math.max(td.meters, 1500); const need = Math.max(0, 4000 - td.steps); if (need) WB.Steps.push(need, 'dev'); else G.after(); }
         if (k === 'world') { const nw = G.nextWorld(); if (nw) { while (s.level < nw.unlock.level) G.addXp(D.xpToNext(s.level) - s.xp + 1); G.after(); } }
         if (k === 'avatars') { D.AVATARS.forEach((a) => G.unlock('avatar', a.id, true)); G.after(); }
         if (k === 'battle') { UI.closeSheet(); UI.go('world'); const w = G.world(), c = w.pool.find((x) => D.CREATURES[x].aggressive) || 'hyena'; WB.BattleUI.open(G.makeEncounter('creature', { creature: c })); return; }

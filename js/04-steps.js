@@ -1,4 +1,4 @@
-/* Walkbound — step tracking abstraction + sound hooks
+/* Stepquest — step tracking abstraction + sound hooks
  *
  * Every step source calls WB.Steps.push(n, sourceId). The game never cares where steps come from.
  *
@@ -48,7 +48,7 @@
       this.check = setTimeout(() => {
         if (this.running && this.lastEvent < t0) {
           this.stop(true);
-          Steps.setStatus('nodata', 'The step sensor isn\u2019t available here. Log steps from your Health app, or open Walkbound on your phone.');
+          Steps.setStatus('nodata', 'The step sensor isn\u2019t available here. Log steps from your Health app, or open Stepquest on your phone.');
         }
       }, 2500);
       Steps.setStatus('on');
@@ -89,7 +89,7 @@
       if (this.buffer.length >= 4) { this.walking = true; Steps.push(this.buffer.length, 'motion'); this.buffer = []; }
     },
   };
-  /* Counting starts by itself whenever Walkbound is open, unless the player pressed Pause.
+  /* Counting starts by itself whenever Stepquest is open, unless the player pressed Pause.
    * Android / desktop: starts right away. iPhone: Safari only allows motion access from a tap, so the
    * first touch anywhere in the app starts it (the permission prompt only appears the first time). */
   Motion.paused = () => { try { return WB.store.get('walkbound.sensor') === false; } catch (e) { return false; } };
@@ -124,7 +124,7 @@
   };
 
   /* ---------- Native bridge for a future wrapper app ---------- */
-  window.walkbound = Object.freeze({
+  window.stepquest = window.walkbound = Object.freeze({   // walkbound = the original name, kept for older wrappers
     addSteps: (n) => Steps.push(Math.floor(n), 'native'),
     setTodayTotal: (n) => Steps.logTodayTotal(n),
     version: 1,

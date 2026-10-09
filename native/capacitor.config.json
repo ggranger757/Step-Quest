@@ -1,6 +1,6 @@
 {
-  "appId": "com.walkbound.app",
-  "appName": "Walkbound",
+  "appId": "com.stepquest.app",
+  "appName": "Stepquest",
   "webDir": "www",
   "backgroundColor": "#0b0a1a",
   "android": { "allowMixedContent": false },

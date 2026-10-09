@@ -1,4 +1,4 @@
-/* Walkbound — game rules: steps -> coins/xp/hp/progress, tasks, encounters, streaks, unlocks, gear */
+/* Stepquest — game rules: steps -> coins/xp/hp/progress, tasks, encounters, streaks, unlocks, gear */
 (() => {
   const D = WB.DATA;
   const S = () => WB.state;
@@ -29,6 +29,26 @@
     if (v < before) WB.bus.emit('hpLoss', { who: 'pet', id, amount: before - v });
   };
   G.healPets = (n) => { for (const id of Object.keys(S().petHp)) G.setPetHp(id, G.petHp(id) + n); };
+  // HP does not come back from walking: it refills slowly over time (empty to full in D.HEAL_HOURS),
+  // even while the app is closed, or instantly with potions. Pets recover the same way. Never mid-battle.
+  G.regen = (now = Date.now()) => {
+    const s = S(), last = s.hpAt || now; s.hpAt = now;
+    if (WB.Battle && WB.Battle.active) return;
+    const part = Math.max(0, now - last) / (D.HEAL_HOURS * 3600000);   // fraction of max HP earned
+    if (!part) return;
+    s.frac.hp = (s.frac.hp || 0) + part * G.maxHp();
+    const n = Math.floor(s.frac.hp); s.frac.hp -= n;
+    if (s.hp >= G.maxHp()) s.frac.hp = 0; else if (n) G.heal(n);
+    const pf = (s.frac.pets = s.frac.pets || {});
+    for (const id of Object.keys(s.petHp)) {
+      pf[id] = (pf[id] || 0) + part * G.petMax(id);
+      const k = Math.floor(pf[id]); pf[id] -= k;
+      if (k) G.setPetHp(id, G.petHp(id) + k);
+      if (s.petHp[id] == null) delete pf[id];
+    }
+  };
+  // minutes until full health (for the UI)
+  G.minsToFull = () => { const s = S(), miss = G.maxHp() - s.hp; return miss <= 0 ? 0 : Math.ceil(((miss - (s.frac.hp || 0)) / G.maxHp()) * D.HEAL_HOURS * 60); };
   // ---------- weapons: three slots ----------
   G.slotKey = (slot) => (slot === 'ranged' ? 'weapon' : slot);             // equip.weapon is the ranged slot (saves from v1/v2)
   G.equipped = (slot) => D.weaponById[S().equip[G.slotKey(slot)]] || null;
@@ -44,7 +64,6 @@
     const s = S(), today = WB.dayKey();
     if (s.today.day !== today) {
       s.today = { day: today, steps: 0, encounters: 0, fights: 0, battles: 0, chests: 0, meters: 0, goalBonus: false };
-      s.hp = G.maxHp(); s.petHp = {}; // a night's rest (pets too)
     }
     if (s.tasks.day !== today || s.tasks.daily.some((d) => !G.dailyDef(d.id))) G.newDailyTasks(today);
     const keys = Object.keys(s.days).sort();
@@ -98,7 +117,7 @@
       const before = G.maxHp();
       s.xp -= D.xpToNext(s.level); s.level++; leveled = true;
       s.coins += D.levelCoins(s.level);
-      s.hp += G.maxHp() - before; // level-ups raise current HP too
+      if (s.hp >= before) s.hp = G.maxHp();   // a level-up raises max HP; only an unhurt walker is topped up (walking never heals)
       WB.bus.emit('levelup', { level: s.level, coins: D.levelCoins(s.level) });
     }
     if (leveled) G.checkUnlocks();
@@ -257,6 +276,7 @@
     s.tasks.daily.forEach((d) => { const t = G.dailyDef(d.id); if (t && !d.claimed && G.taskProgress(t) >= t.target) out.push({ type: 'daily', t, rec: d }); });
     G.activeAdventure().forEach((t) => { if (G.taskProgress(t) >= t.target) out.push({ type: 'adv', t }); });
     s.tasks.quests.forEach((q) => { if (G.taskProgress(q) >= q.target) out.push({ type: 'quest', t: q }); });
+    if (G.missionClaimable) G.missionClaimable().forEach(([m]) => out.push({ type: 'mission', t: { id: m.id, title: G.missionTitle(m), reward: m.reward } }));
     return out;
   };
   G.claimTask = (type, id) => {
@@ -274,6 +294,9 @@
       const i = s.tasks.quests.findIndex((q) => q.id === id); if (i < 0) return null;
       t = s.tasks.quests[i]; if (G.taskProgress(t) < t.target) return null;
       s.tasks.quests.splice(i, 1); reward = t.reward;
+    } else if (type === 'mission') {
+      const m = D.missionById[id]; reward = G.claimMission(id); if (!reward) return null;
+      t = { id, title: G.missionTitle(m), reward };
     }
     G.grant(reward);
     WB.Sfx.play('claim');
@@ -323,11 +346,9 @@
 
     s.frac.coins += n * D.COINS_PER_STEP;
     s.frac.xp += n * D.XP_PER_STEP;
-    s.frac.hp = (s.frac.hp || 0) + n / D.HEAL_STEPS;
-    const coins = Math.floor(s.frac.coins), xp = Math.floor(s.frac.xp), hp = Math.floor(s.frac.hp);
-    s.frac.coins -= coins; s.frac.xp -= xp; s.frac.hp -= hp;
+    const coins = Math.floor(s.frac.coins), xp = Math.floor(s.frac.xp);
+    s.frac.coins -= coins; s.frac.xp -= xp;
     s.coins += coins;
-    if (hp && !(WB.Battle && WB.Battle.active)) { G.heal(hp); G.healPets(hp); } // walking heals you and your pets (not mid-battle)
     WB.bus.emit('earn', { steps: n, coins, xp, source: meta.source });
     if (xp) G.addXp(xp);
 
@@ -335,6 +356,7 @@
       td.goalBonus = true; s.coins += 100; WB.bus.emit('dailyGoal', { coins: 100 });
     }
     if (past) updateStreak(past, s.days[past]); else updateStreak();
+    if (!past && G.missionSteps) G.missionSteps(n);
     checkWorlds();
     G.after();
     WB.bus.emit('steps', { n, meta });
@@ -491,7 +513,10 @@
       s.enc.count++; s.today.encounters++;
     } else if (b.result === 'lose') {
       s.enc.losses++;
-      s.hp = Math.round(G.maxHp() * 0.25); // you wake up bruised, never broke
+      s.hp = Math.round(G.maxHp() * 0.25); // you wake up bruised
+      // ...and some coins fall out of your pockets: 5–10% of what you carry plus a little, capped by world tier
+      const tier = w.tier || 0, lost = Math.min(s.coins, Math.round(s.coins * (0.05 + Math.random() * 0.05)) + 5 + Math.floor(Math.random() * 11) + tier * 2, 60 + tier * 25);
+      s.coins -= lost; out.lostCoins = lost;
       if (e.boss) s.enc.bossDue = null;
     } else if (e.boss) s.enc.bossDue = null;
     G.after();

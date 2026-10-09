@@ -1,4 +1,4 @@
-/* Walkbound — hand-drawn pixel icons rendered to data URLs at boot */
+/* Stepquest — hand-drawn pixel icons rendered to data URLs at boot */
 (() => {
   const PAL = {
     k: '#140f2a', y: '#ffcc4d', Y: '#fff2a8', o: '#c8862a', v: '#8b6cff', V: '#c7b8ff', p: '#4b3a9e',
@@ -87,7 +87,7 @@
     const key = name + '|' + (opts.pal || '') + '|' + (opts.sil ? 1 : 0);
     if (cache[key]) return cache[key];
     let c;
-    if (ICONS[name]) c = draw(ICONS[name], {}, opts.sil);
+    if (ICONS[name]) c = draw(ICONS[name], opts.pal === 'gold' ? { c: PAL.y, C: PAL.Y, b: PAL.o } : {}, opts.sil);   // 'gold' tints cyan icons
     else if (SHAPES[name]) c = draw(SHAPES[name], ITEM_PAL[opts.pal] || ITEM_PAL.ash, opts.sil);
     else c = draw(ICONS.gem, {}, opts.sil);
     cache[key] = c; return c;

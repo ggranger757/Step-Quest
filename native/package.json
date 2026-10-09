@@ -1,8 +1,8 @@
 {
-  "name": "walkbound-native",
+  "name": "stepquest-native",
   "version": "2.2.0",
   "private": true,
-  "description": "Walkbound as an installed iPhone / Android app with automatic step sync (Apple Health, Health Connect).",
+  "description": "Stepquest as an installed iPhone / Android app with automatic step sync (Apple Health, Health Connect).",
   "type": "module",
   "scripts": {
     "web": "node scripts/copy-web.mjs",

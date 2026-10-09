@@ -9,9 +9,9 @@ const edit = (file, fn) => { if (!existsSync(file)) return false; const a = read
 
 // ---- iOS: usage descriptions + HealthKit entitlement
 const plistKeys = {
-  NSHealthShareUsageDescription: 'Walkbound reads your step count so your steps move your hero.',
-  NSHealthUpdateUsageDescription: 'Walkbound does not write health data.',
-  NSMotionUsageDescription: 'Walkbound counts your steps while the game is open.',
+  NSHealthShareUsageDescription: 'Stepquest reads your step count so your steps move your hero.',
+  NSHealthUpdateUsageDescription: 'Stepquest does not write health data.',
+  NSMotionUsageDescription: 'Stepquest counts your steps while the game is open.',
 };
 const iosApp = join(native, 'ios', 'App', 'App');
 edit(join(iosApp, 'Info.plist'), (s) => {

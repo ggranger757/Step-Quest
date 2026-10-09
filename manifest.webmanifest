@@ -1,6 +1,6 @@
 {
-  "name": "Walkbound",
-  "short_name": "Walkbound",
+  "name": "Stepquest",
+  "short_name": "Stepquest",
   "description": "A pixel-art walking RPG. Every real step moves your hero forward.",
   "start_url": "./",
   "scope": "./",

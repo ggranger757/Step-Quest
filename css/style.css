@@ -1,4 +1,4 @@
-/* Walkbound — one deliberate dark look: a handheld console at night.
+/* Stepquest — one deliberate dark look: a handheld console at night.
    Layout: world stage on top (dominant), compact HUD, journey panel below, 5-tab bar.
    Wide or landscape: stage left, journey right.
    Spacing scale: 4 / 8 / 12 / 16 / 24 / 32. Pixel borders are 2px (controls) or 3px notched (cards). */
@@ -57,8 +57,8 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
   background: var(--b); color: var(--t); font: 400 13px/1 var(--label); letter-spacing: .05em; text-transform: uppercase;
   box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 -4px 0 0 rgba(0,0,0,.28), inset 0 3px 0 0 rgba(255,255,255,.25);
   transition: transform .06s; }
-.btn:active:not([disabled]) { transform: translateY(2px); box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 2px 0 0 rgba(0,0,0,.28); }
-.btn[disabled] { --b: var(--surface-2); --t: var(--dim); cursor: not-allowed; box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow); }
+.btn:active:not([disabled]):not([aria-disabled="true"]) { transform: translateY(2px); box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 2px 0 0 rgba(0,0,0,.28); }
+.btn[disabled], .btn[aria-disabled="true"] { --b: var(--surface-2); --t: var(--dim); cursor: not-allowed; box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow); }
 .btn.ghost { --b: var(--surface-2); --t: var(--text); }
 .btn.gold { --b: var(--gold); }
 .btn.cyan { --b: var(--cyan); }
@@ -78,7 +78,8 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .bar.gold > i { background: var(--gold); }
 .bar.cyan > i { background: var(--cyan); }
 .bar.ok > i { background: var(--ok); }
-.bar.seg > i { -webkit-mask: repeating-linear-gradient(90deg, #000 0 calc(10% - 2px), transparent calc(10% - 2px) 10%); mask: repeating-linear-gradient(90deg, #000 0 calc(10% - 2px), transparent calc(10% - 2px) 10%); }
+/* fixed-size segments, so every gauge looks the same whatever its width or fill */
+.bar.seg > i { -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); }
 
 /* ---------- app shell ---------- */
 .app { height: 100%; display: flex; flex-direction: column; max-width: 1180px; margin: 0 auto; position: relative; }
@@ -199,6 +200,32 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .task .obj-prog { grid-column: 1 / -1; }
 .task.done { box-shadow: 0 -3px 0 0 var(--gold), 0 3px 0 0 var(--gold), -3px 0 0 0 var(--gold), 3px 0 0 0 var(--gold); }
 .task.claimed { opacity: .55; }
+.sect > .m-sub { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); margin-top: var(--s4); font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.sect > .m-sub .aside { color: var(--dim); font-size: 10px; letter-spacing: .04em; }
+.m-intro .linkbtn.inl { display: inline; min-height: 0; padding: 0; font: inherit; text-transform: none; letter-spacing: 0; text-decoration: underline; color: var(--gold); }
+.task.mission { align-items: start; }
+.mission .m-main { display: flex; gap: var(--s3); align-items: flex-start; min-width: 0; }
+.mission .m-ic { flex: none; width: 40px; height: 40px; display: grid; place-items: center; background: var(--surface-2); box-shadow: 0 0 0 2px var(--shadow); }
+.mission .m-kick { font: 400 9px/1.2 var(--label); text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin-bottom: 3px; }
+.mission .m-desc { font-size: 13px; line-height: 1.35; color: var(--muted); margin-top: 3px; }
+.mission .m-acts { display: flex; flex-direction: column; align-items: flex-end; gap: var(--s1); }
+.mission .m-acts .linkbtn { min-height: 32px; font-size: 10px; color: var(--muted); }
+.mission .m-live { display: inline-block; margin-top: var(--s1); font: 400 9px/1.2 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--dim); }
+.mission .m-live.on { color: var(--ok); }
+.mission.offer { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.mission .m-clock { display: inline-flex; align-items: center; gap: 5px; margin-top: var(--s1); margin-right: var(--s3); font: 400 9px/1.2 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.mission .m-clock.urgent { color: var(--danger); }
+.mission .m-clock.done { color: var(--gold); }
+.mission .m-stake { margin-top: var(--s1); font: 400 9px/1.3 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--dim); }
+.mission .m-warn { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--danger); }
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.journal { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--s3); }
+.journal .empty { grid-column: 1 / -1; }
+.jr { display: grid; gap: 4px; padding: 4px; border: 0; cursor: pointer; text-align: left; color: var(--text); }
+.jr img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.jr span { font: 400 9px/1.25 var(--label); text-transform: uppercase; color: var(--muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.jr-big { width: 100%; max-height: 60vh; object-fit: contain; display: block; margin: var(--s3) 0; box-shadow: 0 0 0 3px var(--shadow); }
 .task .stamp { font: 400 10px/1 var(--label); color: var(--ok); text-transform: uppercase; display: inline-flex; gap: 6px; align-items: center; }
 .empty { color: var(--muted); font-size: 14px; }
 .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--s2); }
@@ -479,6 +506,16 @@ input:focus-visible, select:focus-visible { outline: 0; box-shadow: 0 0 0 2px va
 .b-log { min-height: 4.05em; font-size: 15px; line-height: 1.35; color: var(--text); }
 .b-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
 .b-actions .btn { justify-content: flex-start; min-height: 60px; padding: 0 var(--s3); text-align: left; white-space: normal; }
+/* battle buttons: dark with gold; Strike is the solid gold main move */
+.b-actions .btn, .b-actions .btn.cyan, .b-actions .btn.ghost { --b: var(--surface-2); --t: var(--text);
+  box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 0 0 2px rgba(255,204,77,.55), inset 0 -4px 0 0 rgba(0,0,0,.28); }
+.b-actions .btn .bt > span { color: var(--gold); }
+.b-actions .btn[data-b="strike"] { --b: var(--gold); --t: var(--ink); box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 -4px 0 0 rgba(0,0,0,.28), inset 0 3px 0 0 rgba(255,255,255,.25); }
+.b-actions .btn[data-b="strike"] .bt > span { color: var(--ink); }
+.b-actions .btn:active:not([disabled]):not([aria-disabled="true"]) { transform: translateY(2px); }
+.b-actions .btn[disabled], .b-actions .btn[aria-disabled="true"] { --b: var(--surface-2); --t: var(--dim); box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow); }
+.b-actions .btn[disabled] .bt > span, .b-actions .btn[aria-disabled="true"] .bt > span { color: var(--dim); }
+.b-actions .btn:focus-visible { outline-color: var(--gold); }
 .b-actions .bt { display: grid; gap: 4px; min-width: 0; }
 .b-actions .bt > span { overflow-wrap: anywhere; line-height: 1.15; }
 .b-actions .bt small { font: 400 9px/1.25 var(--label); overflow-wrap: anywhere; text-transform: none; letter-spacing: 0; opacity: .8; }
@@ -520,7 +557,7 @@ input:focus-visible, select:focus-visible { outline: 0; box-shadow: 0 0 0 2px va
 /* weapons: three loadout slots */
 .loadout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); margin-bottom: var(--s2); }
 .lslot { display: grid; justify-items: center; gap: 6px; padding: var(--s3) var(--s2); border: 0; cursor: pointer; color: var(--text); text-align: center; min-width: 0; }
-.lslot canvas { width: 40px; height: 40px; image-rendering: pixelated; }
+.lslot canvas { width: 64px; height: 64px; image-rendering: pixelated; }
 .lslot .ws-t { display: grid; gap: 2px; min-width: 0; }
 .lslot .ws-v { font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
 .lslot.on { box-shadow: 0 0 0 2px var(--violet), 0 0 0 5px var(--shadow); }
@@ -536,3 +573,16 @@ input:focus-visible, select:focus-visible { outline: 0; box-shadow: 0 0 0 2px va
 .floater.b.tag { font-size: 15px; color: var(--cyan); }
 .floater.b.bleed { color: #ff5b6b; }
 .floater.hpl { color: #ff6b5b; font-size: 22px; }
+.mu-app { margin-top: var(--s2); font-size: 12px; line-height: 1.4; color: var(--muted); }
+.mu-app a { color: var(--cyan); }
+
+/* requirement gauge on locked cards (shop, supplies) */
+.gauge { display: grid; gap: 8px; margin-top: auto; padding-top: var(--s2); }
+.g-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-width: 0; }
+.g-l { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; line-height: 1.3; color: var(--muted); }
+.g-l > span { overflow-wrap: anywhere; }
+.g-n { flex: none; font: 400 9px/1 var(--label); letter-spacing: .04em; color: var(--cyan); }
+.gauge .g-bar { height: 8px; margin: 0 2px; }
+.toast.msg .tt { font: 400 15px/1.35 var(--body); }
+.reward-pill.lost { color: #ff6b5b; }
+.floater.b.coinloss { color: var(--gold); font-size: 20px; }

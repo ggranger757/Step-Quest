@@ -1,4 +1,4 @@
-/* Walkbound — interface: HUD, journey panel, encounters, screens, sheets, toasts */
+/* Stepquest — interface: HUD, journey panel, encounters, screens, sheets, toasts */
 (() => {
   const D = WB.DATA, G = WB.Game, $ = WB.$, S = () => WB.state;
   const UI = (WB.UI = { tab: 'world', shopTab: 'avatar' });
@@ -11,6 +11,16 @@
     });
   };
   const reqBar = (st) => (st.target ? `<div class="bar seg cyan"><i style="width:${Math.min(100, (st.cur / st.target) * 100)}%"></i></div>` : '');
+  // one consistent "how close am I" gauge for locked items: requirement + numbers on one line, a full-width bar below
+  const gauge = (st) => {
+    const nums = st.target ? `<span class="g-n">${WB.fmt(Math.min(st.cur, st.target))} / ${WB.fmt(st.target)}${st.label.startsWith('Explore') ? '%' : ''}</span>` : '';
+    const pct = st.target ? Math.min(100, (st.cur / st.target) * 100) : 0;
+    return `<div class="gauge"><div class="g-top"><span class="g-l">${WB.icon('lock', 2)}<span>${WB.esc(st.label)}</span></span>${nums}</div>${st.target ? `<div class="bar seg cyan g-bar"><i style="width:${pct > 0 ? Math.max(4, pct) : 0}%"></i></div>` : ''}</div>`;
+  };
+  UI.gauge = gauge;
+  // a button that can't be used right now: looks disabled but still takes taps, and explains why
+  const off = (why) => (why ? `aria-disabled="true" data-why="${WB.esc(why)}"` : '');
+  UI.off = off;
   const pills = (granted) => granted.map((g) => g.k === 'coins' ? `<span class="reward-pill coins">${WB.icon('coin', 2)}+${WB.fmt(g.v)}</span>` : g.k === 'xp' ? `<span class="reward-pill xp">+${WB.fmt(g.v)} XP</span>` : g.k === 'potion' ? `<span class="reward-pill item">${WB.potionImg(g.v, 20)}${G.potion(g.v).name}</span>` : `<span class="reward-pill item">${G.item(g.k, g.v).name}</span>`).join('');
   UI.pills = pills;
 
@@ -73,6 +83,7 @@
     $('#world-chip').setAttribute('aria-label', w.name + ', ' + Math.floor(pct) + '% explored. Open world map.');
   };
   // replace an element's markup only when it changed (keeps focus and avoids flicker); returns true if replaced
+  UI.dur = (mins) => (mins >= 60 ? Math.floor(mins / 60) + 'h ' + (mins % 60 ? (mins % 60) + 'm' : '') : Math.max(1, mins) + 'm').trim();
   UI.set = (el, html) => { if (el._html === html) return false; el._html = html; el.innerHTML = html; return true; };
   UI.updateBadges = () => {
     const n = G.claimable().length + (G.dailyCanClaim() ? 1 : 0);
@@ -90,10 +101,14 @@
   };
   // one toast at a time; when several pile up, keep the important ones (actions, big moments)
   const tq = [];
-  let tShown = 0;
+  let tShown = 0, curDone = null;
   UI.toast = (o) => {
     if (tq.some((q) => q.kicker === o.kicker && q.title === o.title)) return;
     if (o.group) for (let i = tq.length - 1; i >= 0; i--) if (tq[i].group === o.group) tq.splice(i, 1);   // several level-ups at once: show the latest
+    if (o.cls === 'msg') {   // "why can't I…" answers jump the queue and replace whatever is showing
+      for (let i = tq.length - 1; i >= 0; i--) if (tq[i].cls === 'msg') tq.splice(i, 1);
+      tq.unshift(o); if (curDone) curDone(true); else pump(); return;
+    }
     tq.push(o);
     while (tq.length > 3) { const i = tq.findIndex((q) => !q.action && q.cls !== 'big'); tq.splice(i >= 0 ? i : 0, 1); }
     pump();
@@ -103,11 +118,12 @@
     const o = tq.shift(); tShown++;
     const el = document.createElement('div');
     el.className = 'toast ' + (o.cls || '');
-    el.innerHTML = `${o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span></div>${o.action ? `<button class="btn sm cyan" type="button">${WB.esc(o.action.label)}</button>` : ''}`;
+    el.innerHTML = `${o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span></div>${o.action ? `<button class="btn sm cyan" type="button">${WB.esc(o.action.label)}</button>` : ''}`;
     if (o.action) el.querySelector('button').onclick = () => { o.action.fn(); done(); };
     $('#toasts').appendChild(el);
     let gone = false;
-    const done = () => { if (gone) return; gone = true; el.classList.add('out'); setTimeout(() => { el.remove(); tShown--; pump(); }, 300); };
+    const done = (fast) => { if (gone) return; gone = true; curDone = null; el.classList.add('out'); setTimeout(() => { el.remove(); tShown--; pump(); }, fast === true ? 60 : 300); };
+    curDone = done;
     setTimeout(done, o.ms || (o.action ? 3600 : 2200));
     el.addEventListener('click', (e) => { if (e.target === el) done(); });
   }
@@ -130,7 +146,7 @@
         : HL.status === 'checking' ? `<div class="sensor"><div class="state"><i class="dot"></i>Connecting to ${HL.name()}…</div></div>`
         : `<div class="sensor"><p class="note">${WB.esc(HL.msg || 'Connect ' + HL.name() + ' so every step you take counts, even with the app closed.')}</p>${HL.status !== 'unavailable' ? `<button class="btn" data-act="health-connect" type="button">${WB.icon('steps', 2)}Connect ${HL.name()}</button>` : ''}${logBtn('ghost')}</div>`;
     } else if (st === 'armed') sensor = `<div class="sensor"><div class="state"><i class="dot"></i>Tap anywhere to start counting your steps.</div>${logBtn('ghost wide')}</div>`;
-    else if (st === 'on') sensor = `<div class="sensor on"><div class="state"><i class="dot"></i>Counting automatically while Walkbound is open.</div><button class="btn ghost" data-act="sensor-stop" type="button">Pause</button>${logBtn('ghost')}</div>`;
+    else if (st === 'on') sensor = `<div class="sensor on"><div class="state"><i class="dot"></i>Counting automatically while Stepquest is open.</div><button class="btn ghost" data-act="sensor-stop" type="button">Pause</button>${logBtn('ghost')}</div>`;
     else if (st === 'starting') sensor = `<div class="sensor"><div class="state"><i class="dot"></i>Starting the step counter\u2026</div></div>`;
     else if (st === 'off' && mot.supported()) sensor = `<div class="sensor"><button class="btn" data-act="sensor-start" type="button">${WB.icon('steps', 2)}Start walking</button>${logBtn('ghost')}</div>`;
     else sensor = `<div class="sensor"><p class="note">${WB.esc(WB.Steps.msg || 'This browser can\u2019t read your steps.')}</p>${logBtn(st === 'unavailable' ? 'wide' : '')}${st !== 'unavailable' ? '<button class="btn ghost" data-act="sensor-start" type="button">Try again</button>' : ''}</div>`;
@@ -143,7 +159,7 @@
           <span class="of">of ${WB.fmt(goal)} steps \u00b7 ${WB.fmtKm(td.meters)}</span>
         </div>
         <div class="bar seg ok" role="progressbar" aria-label="Daily goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct}%"></i></div>
-        <div class="earnrate"><span>${WB.icon('coin', 2)}1 coin / 10 steps</span><span>${WB.icon('xp', 2)}1 XP / 5 steps</span><span>${WB.icon('heart', 2)}1 HP / ${D.HEAL_STEPS} steps</span></div>
+        <div class="earnrate"><span>${WB.icon('coin', 2)}1 coin / 10 steps</span><span>${WB.icon('xp', 2)}1 XP / 5 steps</span><span>${WB.icon('heart', 2)}HP refills over ${D.HEAL_HOURS}h</span></div>
         <button class="hpline" type="button" data-act="heal-info" aria-label="Health ${WB.fmt(s.hp)} of ${WB.fmt(G.maxHp())}. Open potions.">
           <span class="lbl">HP</span><span class="bar hp ${s.hp / G.maxHp() < 0.3 ? 'low' : ''}"><i style="width:${(s.hp / G.maxHp()) * 100}%"></i></span><span class="num">${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())}</span>
         </button>
@@ -174,6 +190,12 @@
       const cur = G.taskProgress(t), pct = Math.min(100, (cur / t.target) * 100);
       if (!best || pct > best.pct) best = { t, pct, label: cur >= t.target ? 'Ready to claim' : t.kind === 'reach' ? 'Not yet' : WB.fmt(Math.min(cur, t.target)) + ' / ' + WB.fmt(t.target) };
     }
+    // active field missions compete too
+    for (const a of s.missions.active) {
+      const m = D.missionById[a.id]; if (!m) continue;
+      const p = G.missionProgress(m, a), pct = p.done ? 100 : Math.min(99, (p.cur / p.target) * 100);
+      if (!best || pct > best.pct) best = { t: { title: G.missionTitle(m), reward: m.reward }, pct, label: p.done ? 'Ready to claim' : p.label };
+    }
     return best;
   };
 
@@ -182,7 +204,7 @@
     const HL = WB.Health; S().hints.health = true; WB.Save.queue();
     UI.sheet(`
       <h3 id="sheet-title">Count steps automatically</h3>
-      <p>Connect ${HL.name()} and Walkbound reads your step count by itself. Walks you take with the app closed still move your hero, pay coins and keep your streak.</p>
+      <p>Connect ${HL.name()} and Stepquest reads your step count by itself. Walks you take with the app closed still move your hero, pay coins and keep your streak.</p>
       <ul class="rules compact">
         <li>${WB.icon('steps', 3)}<span>Only step counts are read. Nothing is written to ${HL.name()}.</span></li>
         <li>${WB.icon('flag', 3)}<span>Syncs when you open the app, and every minute while it’s open.</span></li>
@@ -197,10 +219,10 @@
   UI.logSheet = () => {
     UI.sheet(`
       <h3 id="sheet-title">Log steps</h3>
-      <p>Your phone’s Health or Fit app counts steps all day, even when Walkbound is closed. Copy today’s number here and your hero walks it.</p>
+      <p>Your phone’s Health or Fit app counts steps all day, even when Stepquest is closed. Copy today’s number here and your hero walks it.</p>
       <div class="seg" role="group" aria-label="Log mode"><button type="button" data-mode="total" aria-pressed="true">Today’s total</button><button type="button" data-mode="add" aria-pressed="false">Add steps</button></div>
       <div class="field"><label class="lbl" for="log-n" id="log-lbl">Today’s total in your Health app</label><input id="log-n" type="number" inputmode="numeric" min="1" max="100000" placeholder="0"></div>
-      <p class="hint" id="log-hint">Walkbound has ${WB.fmt(S().today.day === WB.dayKey() ? S().today.steps : 0)} steps for today. Only the difference is added.</p>
+      <p class="hint" id="log-hint">Stepquest has ${WB.fmt(S().today.day === WB.dayKey() ? S().today.steps : 0)} steps for today. Only the difference is added.</p>
       <button class="btn block" type="button" id="log-go">Walk it</button>
     `, (root) => {
       let mode = 'total';
@@ -215,7 +237,7 @@
         const v = $('#log-n').value;
         const n = mode === 'total' ? WB.Steps.logTodayTotal(v) : WB.Steps.logAdd(v);
         if (n > 0) { UI.closeSheet(); UI.go('world'); UI.toast({ kicker: 'Steps logged', title: '+' + WB.fmt(n) + ' steps', icon: 'steps', cls: 'ok' }); }
-        else { $('#log-hint').hidden = false; $('#log-hint').classList.add('err'); $('#log-hint').textContent = mode === 'total' ? 'That total isn’t higher than what Walkbound already has for today.' : 'Enter a number between 1 and 100,000.'; }
+        else { $('#log-hint').hidden = false; $('#log-hint').classList.add('err'); $('#log-hint').textContent = mode === 'total' ? 'That total isn’t higher than what Stepquest already has for today.' : 'Enter a number between 1 and 100,000.'; }
       };
       $('#log-go').onclick = go;
       $('#log-n').addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
@@ -234,7 +256,7 @@
     const html = `
       <canvas width="64" height="64" id="enc-face"></canvas>
       <div class="etext"><div class="etitle ${enc.aggressive || enc.boss ? 'hostile' : ''}">${encTitle(enc)}</div><p>${WB.esc(enc.text)}</p>${enc.aggressive || enc.boss ? `<p class="ehp">Your HP ${WB.fmt(S().hp)} / ${WB.fmt(G.maxHp())}${S().hp / G.maxHp() < 0.35 ? ' \u00b7 low, consider avoiding it' : ''}</p>` : ''}</div>
-      <div class="choices">${enc.choices.map((c) => `<button class="btn ${c.id === 'battle' ? 'danger' : PRIMARY.includes(c.id) ? '' : 'ghost'}" type="button" data-choice="${c.id}" ${c.need && S().coins < c.need ? 'disabled' : ''}>${WB.esc(c.label)}${c.hint ? `<small>${WB.esc(c.hint)}</small>` : ''}</button>`).join('')}</div>`;
+      <div class="choices">${enc.choices.map((c) => `<button class="btn ${c.id === 'battle' ? 'danger' : PRIMARY.includes(c.id) ? '' : 'ghost'}" type="button" data-choice="${c.id}" ${off(c.need && S().coins < c.need && 'You need ' + WB.fmt(c.need - S().coins) + ' more coins.')}>${WB.esc(c.label)}${c.hint ? `<small>${WB.esc(c.hint)}</small>` : ''}</button>`).join('')}</div>`;
     let root;
     if (where === 'stage') { root = $('#encounter'); root.innerHTML = html; root.hidden = false; }
     else { UI.sheet(`<h3 id="sheet-title">${encTitle(enc)}</h3><div class="encounter in-sheet" id="encounter-sheet">${html}</div>`); root = $('#encounter-sheet'); }
@@ -260,7 +282,7 @@
       let dy = 0;
       out.granted.forEach((g) => { if (g.k === 'coins' || g.k === 'xp') { setTimeout(() => UI.floater(g.k === 'coins' ? WB.icon('coin', 2) + '+' + g.v : '+' + g.v + ' XP', pos.x, pos.y - dy, g.k === 'xp' ? 'xp big' : 'big'), 350 + dy * 4); dy += 26; } });
     }
-    const extra = out.newKind ? `<span class="reward-pill item">New creature logged</span>` : out.find ? `<span class="reward-pill item">${WB.pxImg('art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 20)}${D.FINDS[out.find.world][out.find.i][1]}</span>` : out.quest ? `<span class="reward-pill item">New delivery task</span>` : '';
+    const extra = out.newKind ? `<span class="reward-pill item">New creature logged</span>` : out.find ? `<span class="reward-pill item">${WB.pxImg('art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 20)}${D.FINDS[out.find.world][out.find.i][1]}</span>` : out.quest ? `<span class="reward-pill item">New delivery mission</span>` : '';
     const holder = where === 'stage' ? root : $('#encounter-sheet');
     holder.innerHTML = `<canvas width="64" height="64"></canvas><div class="etext"><div class="etitle">${out.anim === 'fight' ? 'Done' : out.anim === 'leave' ? 'Moving on' : 'Done'}</div><p>${WB.esc(out.text)}</p></div><div class="outcome">${pills(out.granted)}${extra}<button class="linkbtn push" type="button" data-close-enc>Continue</button></div>`;
     const face = holder.querySelector('canvas');
@@ -329,13 +351,14 @@
       return `<div class="day ${got ? 'got' : ''} ${now2 ? 'now' : ''} ${c.rare ? 'rare' : ''}">Day ${i + 1}${c.rare ? WB.icon('trail', 2) + '<b>Rare</b>' : WB.icon('coin', 2) + '<b>' + r.coins + '</b>'}</div>`;
     }).join('');
     const canDaily = G.dailyCanClaim(), dDone = G.dailyClaimedToday();
-    UI.set($('#scr-tasks'), `<div class="scr-wrap">
-      <div class="scr-head"><h2>Tasks</h2>${n > 1 ? `<button class="btn gold sm" type="button" data-act="claim-all">Claim all (${n})</button>` : ''}</div>
+    const changed = UI.set($('#scr-tasks'), `<div class="scr-wrap">
+      <div class="scr-head"><h2>Missions</h2>${n > 1 ? `<button class="btn gold sm" type="button" data-act="claim-all">Claim all (${n})</button>` : ''}</div>
       <div class="sect"><h3>Daily reward <span class="aside">${dDone ? 'Claimed today' : canDaily ? 'Ready' : 'Walk ' + D.DAILY_MIN_STEPS + ' steps to unlock'}</span></h3>
         <div class="cal">${cal}</div>
         ${canDaily ? `<button class="btn gold block" type="button" data-act="daily">Claim day ${(ci % 7) + 1} reward</button>` : ''}
       </div>
-      <div class="sect"><h3>Daily tasks <span class="aside">New tasks in ${hh}h ${mm}m</span></h3>
+      ${UI.missionsSection ? UI.missionsSection() : ''}
+      <div class="sect"><h3>Daily missions <span class="aside">New missions in ${hh}h ${mm}m</span></h3>
         <div class="list">${s.tasks.daily.map((d) => taskRow(G.dailyDef(d.id), 'daily', d.claimed)).join('')}</div>
       </div>
       <div class="sect"><h3>Adventure <span class="aside">${s.tasks.advDone.length} / ${D.ADVENTURE.length} done</span></h3>
@@ -351,13 +374,14 @@
         <div class="streak-track">${D.STREAK_MILESTONES.map((m) => `<div class="ms ${s.streak.claimed.includes(m.days) ? 'got' : ''}"><b>${m.days}</b><span>days</span><span class="ms-c">+${m.coins}</span></div>`).join('')}</div>
       </div>
     </div>`);
+    if (changed && UI.fillJournal) UI.fillJournal();
     UI.updateBadges();
   };
 
   // ---------- SHOP (looks) ----------
   const SHOP_TABS = [
     ['avatar', 'Avatars', 'user', 'Walkers you can play as. Some are bought with Walk Coins, others unlock by leveling, streaks and exploring.'],
-    ['trail', 'Trails', 'trail', 'Particles that follow your footsteps while you walk. Rare trails come from tasks, streaks and the daily reward.'],
+    ['trail', 'Trails', 'trail', 'Particles that follow your footsteps while you walk. Rare trails come from missions, streaks and the daily reward.'],
   ];
   // item card shared by the Shop and Supplies pages
   function itemCard(cat, it, opts = {}) {
@@ -366,19 +390,19 @@
     const st = own ? null : G.reqStatus(it.req);
     let foot = '';
     const canOff = cat === 'pet' || cat === 'trail' || (cat === 'weapon' && it.slot === 'shield');
-    if (eq) foot = canOff ? `<button class="btn ghost sm block" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat}">Unequip</button>` : `<button class="btn ghost sm block" type="button" disabled>Equipped</button>`;
+    if (eq) foot = canOff ? `<button class="btn ghost sm block" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat}">Unequip</button>` : `<button class="btn ghost sm block" type="button" ${off('Already equipped.')}>Equipped</button>`;
     else if (own) foot = `<button class="btn cyan sm block" type="button" data-equip="${cat}:${it.id}">Equip</button>`;
     else if (st.buy) {
       const short = it.req.cost - s.coins;
       foot = `<div class="price"><span class="cost">${WB.icon('coin', 2)}${WB.fmt(it.req.cost)}</span>${short > 0 ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>
-        <button class="btn gold sm block" type="button" data-buy="${cat}:${it.id}" ${short > 0 ? 'disabled' : ''}>Buy</button>`;
+        <button class="btn gold sm block" type="button" data-buy="${cat}:${it.id}" ${off(short > 0 && 'You need ' + WB.fmt(short) + ' more coins for ' + it.name + '. Keep walking: 1 coin every 10 steps.')}>Buy</button>`;
     }
     const desc = opts.desc || '';
     const locked = !own && !st.buy;
-    return `<div class="item pbox ${locked ? 'locked' : ''}">
+    return `<div class="item pbox ${locked ? 'locked' : ''}" ${locked ? `data-why="${WB.esc(it.name + ' is locked. ' + st.label + ' to unlock it.')}" role="button" tabindex="0"` : ''}>
       <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${eq ? '<span class="tag eq">Equipped</span>' : own ? '<span class="tag">Owned</span>' : locked ? `<span class="tag lock">${WB.icon('lock', 1)}Locked</span>` : ''}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
       <h4>${WB.esc(it.name)}</h4>
-      <div class="req">${opts.stat && (own || st.buy) ? `<span class="stat">${opts.stat}</span>` : ''}${desc ? `<span>${WB.esc(desc)}</span>` : ''}${!own && !st.buy ? `<span class="reqline">${WB.icon('lock', 2)}<span>${WB.esc(st.label)}</span></span>${reqBar(st)}` : ''}</div>
+      <div class="req">${opts.stat && (own || st.buy) ? `<span class="stat">${opts.stat}</span>` : ''}${desc ? `<span>${WB.esc(desc)}</span>` : ''}</div>${!own && !st.buy ? gauge(st) : ''}
       ${foot ? `<div class="foot">${foot}</div>` : ''}
     </div>`;
   }
@@ -401,20 +425,28 @@
     else if (cat === 'pet') { const p = D.PETS.find((q) => q.id === id); WB.paintThumb(c, { kind: p.src, id, face: 'right' }); }
     else if (cat === 'weapon') UI.paintWeapon(c, id);
     else if (cat === 'potion') WB.paintImg(c, `pot/${id}.png`, 0.8);
-    else if (cat === 'trail') {
-      const t = D.TRAILS.find((q) => q.id === id), r = WB.rng(WB.hash(id)), W = c.width, H = c.height;
-      for (let i = 0; i < 56; i++) { const k = i / 56; x.fillStyle = t.colors[i % t.colors.length]; x.globalAlpha = 0.3 + k * 0.7; const sz = id === 'dust' || id === 'petals' || id === 'glitch' ? 5 : 4; x.fillRect(Math.round(10 + k * (W - 30) + r() * 8), Math.round(H * 0.8 - k * H * 0.2 - r() * (id === 'embers' || id === 'sparks' ? H * 0.45 : H * 0.2)), sz, sz); }
+    else if (cat === 'trail') {   // a still of the trail: particles emitted along a short walk, by style
+      const t = D.TRAILS.find((q) => q.id === id), W = c.width, H = c.height, r0 = Math.random;
+      const rng = WB.rng(WB.hash(id)); Math.random = rng;      // deterministic preview
+      const parts = [];
+      for (let i = 0; i < 46; i++) {
+        const k = i / 46, p = WB.trailParticle(t, 12 + k * (W - 34), H * 0.78, true), age = (1 - k) * p.max * 0.9;
+        p.x += p.vx * age * 0.6; p.y += p.vy * age * 0.6 + (p.grav ? 0.5 * p.grav * age * age * 0.6 : 0);
+        p.a = 0.25 + k * 0.75; parts.push(p);
+      }
+      Math.random = r0;
+      for (const p of parts) { x.globalAlpha = p.a; x.fillStyle = p.color; const sz = (p.size + 1) * 1.5; x.fillRect(Math.round(p.x), Math.round(p.y), p.streak ? p.streak * 2.5 : sz, sz); }
       x.globalAlpha = 1;
     }
   }
   UI.paintWeapon = (c, id) => {
     const w = D.weaponById[id];
-    if (w && w.icon) return WB.paintImg(c, w.icon, 0.85);
+    if (w && w.icon) return WB.paintImg(c, w.icon, c.width >= 64 ? 1 : 0.85);   // big slots: fill the box
     const v = WB.projVis(id), info = v.info, path = v.path;
     WB.Assets.load(path).then((im) => {
       if (!im._ok) return;
       const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, c.width, c.height);
-      const sc = WB.fitScale((c.width * 0.8) / info.w, (c.height * 0.8) / info.h);
+      const k = c.width >= 64 ? 0.95 : 0.8, sc = WB.fitScale((c.width * k) / info.w, (c.height * k) / info.h);
       x.drawImage(im, 0, 0, info.w, info.h, (c.width - info.w * sc) / 2, (c.height - info.h * sc) / 2, info.w * sc, info.h * sc);
     });
   };
@@ -440,21 +472,21 @@
       const own = (k) => D.WEAPONS.filter((w) => w.slot === k && G.owns('weapon', w.id)).length, all = (k) => D.WEAPONS.filter((w) => w.slot === k).length;
       const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Block ${Math.round(w.block * 100)}%` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
       body = `<div class="loadout">${['melee', 'ranged', 'shield'].map((k) => { const w = eqd(k); return `<button type="button" class="lslot pbox ${slot === k ? 'on' : ''}" data-wpnslot="${k}" aria-pressed="${slot === k}">
-          <canvas width="40" height="40" ${w ? `data-prev="weapon:${w.id}"` : ''}></canvas><span class="ws-t"><span class="lbl">${D.WEAPON_SLOTS[k]}</span><span class="ws-v">${w ? WB.esc(w.name) : '<span class="none">None</span>'}</span></span></button>`; }).join('')}</div>
+          <canvas width="64" height="64" ${w ? `data-prev="weapon:${w.id}"` : ''}></canvas><span class="ws-t"><span class="lbl">${D.WEAPON_SLOTS[k]}</span><span class="ws-v">${w ? WB.esc(w.name) : '<span class="none">None</span>'}</span></span></button>`; }).join('')}</div>
         <p class="fine wnote">${slot === 'melee' ? 'Used by Strike. Your walker holds it during the attack.' : slot === 'ranged' ? 'Used by Throw, Shoot or Cast. Flies at the creature, then recharges.' : 'Soaks part of every hit, and makes Defend block, reverse or hit back.'} ${own(slot)} of ${all(slot)} owned.</p>
         ${GROUPS[slot].map(([type, label]) => { const list = D.WEAPONS.filter((w) => w.slot === slot && w.type === type); return list.length ? `<div class="sect"><h3>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h3><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('')}`;
     } else if (tab === 'potions') {
       const hp = s.hp, max = G.maxHp();
-      body = `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">Walking heals 1 HP every ${D.HEAL_STEPS} steps, and you wake up at full health each day.</p></div>
+      body = `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">${hp >= max ? 'Full health.' : 'Full in about ' + UI.dur(G.minsToFull()) + '.'} Walking does not heal: HP refills slowly on its own (empty to full in ${D.HEAL_HOURS} hours), or drink a potion to heal now.</p></div>
         ${(() => {
           const card = (p) => {
             const have = s.potions[p.id] || 0, st = G.reqStatus(p.req), locked = !st.met && !st.buy, short = p.cost - s.coins, full = have >= D.POTION_MAX;
             return `<div class="item pbox ${locked ? 'locked' : ''}">
             <div class="prev"><canvas width="120" height="120" data-prev="potion:${p.id}"></canvas>${locked ? `<span class="tag lock">${WB.icon('lock', 1)}${p.world ? 'Undiscovered' : 'Locked'}</span>` : `<span class="tag eq">Have ${have}</span>`}</div>
             <h4>${locked && p.world ? 'Unknown potion' : WB.esc(p.name)}</h4>
-            <div class="req"><span>${locked && p.world ? 'A potion hidden somewhere in ' + WB.esc(D.worldById[p.world].name) + '.' : p.desc}</span>${locked ? `<span class="reqline">${WB.icon('lock', 2)}<span>${st.label}</span></span>` : ''}</div>
+            <div class="req"><span>${locked && p.world ? 'A potion hidden somewhere in ' + WB.esc(D.worldById[p.world].name) + '.' : p.desc}</span></div>${locked ? gauge(st) : ''}
             ${locked ? '' : `<div class="foot"><div class="price"><span class="cost">${WB.icon('coin', 2)}${p.cost}</span>${short > 0 && !full ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>
-              <div class="pair"><button class="btn gold sm" type="button" data-potion-buy="${p.id}" ${short > 0 || full ? 'disabled' : ''}>${full ? 'Full' : 'Buy'}</button>${p.kind === 'heal' ? `<button class="btn ghost sm" type="button" data-drink="${p.id}" ${have && hp < max ? '' : 'disabled'}>Drink</button>` : ''}</div></div>`}
+              <div class="pair"><button class="btn gold sm" type="button" data-potion-buy="${p.id}" ${off(full ? 'Your bag is full: you can carry ' + D.POTION_MAX + ' ' + p.name + '.' : short > 0 ? 'You need ' + WB.fmt(short) + ' more coins for ' + p.name + '.' : '')}>${full ? 'Full' : 'Buy'}</button>${p.kind === 'heal' ? `<button class="btn ghost sm" type="button" data-drink="${p.id}" ${off(!have ? 'You don’t have any ' + p.name + '. Buy one first.' : hp >= max ? 'You’re already at full health.' : '')}>Drink</button>` : ''}</div></div>`}
           </div>`;
           };
           const base = D.POTIONS.filter((p) => p.base), found = D.POTIONS.filter((p) => !p.base && G.hasFound(p.id)), hidden = D.POTIONS.filter((p) => !p.base && !G.hasFound(p.id));
@@ -467,7 +499,7 @@
           const full = s.streak.rest >= 2, short = it.cost - s.coins;
           return `<div class="item pbox"><div class="prev"><canvas width="120" height="120" data-icon-canvas="moon"></canvas><span class="tag eq">Have ${s.streak.rest}/2</span></div><h4>${it.name}</h4><div class="req"><span>${it.desc}</span></div>
             <div class="foot"><div class="price"><span class="cost">${WB.icon('coin', 2)}${WB.fmt(it.cost)}</span>${short > 0 && !full ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>
-            <button class="btn gold sm block" type="button" data-supply="${it.id}" ${short > 0 || full ? 'disabled' : ''}>${full ? 'Full' : 'Buy'}</button></div></div>`;
+            <button class="btn gold sm block" type="button" data-supply="${it.id}" ${off(full ? 'You already hold 2 Rest Day Tokens.' : short > 0 ? 'You need ' + WB.fmt(short) + ' more coins.' : '')}>${full ? 'Full' : 'Buy'}</button></div></div>`;
         }).join('')}</div></div>`;
     } else if (tab === 'pets') {
       body = `<p class="fine wnote">In battle your pet soaks part of every hit until its own HP runs out. Walking heals pets like it heals you.</p><div class="grid">${D.PETS.map((p) => { const hp = G.petHp(p.id), max = G.petMax(p.id); return itemCard('pet', p, { desc: p.kind, stat: (G.owns('pet', p.id) ? (hp <= 0 ? 'Knocked out · ' : 'HP ' + hp + '/' + max + ' · ') : 'HP ' + max + ' · ') + 'Soaks ' + Math.round(p.share * 100) + '%' }); }).join('')}</div>`;
@@ -558,9 +590,9 @@
       </div></div>
       <div class="sect"><h3>Settings</h3>
         ${WB.Health.native ? `<div class="setting pbox"><div><div>${WB.Health.name()}</div><div class="sd">${WB.Health.status === 'on' ? 'Steps sync automatically, even for walks taken with the app closed.' : WB.esc(WB.Health.msg || 'Read your step count automatically.')}</div></div><div class="acts">${WB.Health.status === 'on' ? '<button class="btn ghost sm" type="button" data-act="health-off">Turn off</button>' : WB.Health.status !== 'unavailable' ? '<button class="btn sm" type="button" data-act="health-connect">Connect</button>' : ''}</div></div>` : ''}
-        <div class="setting pbox"><div><div>Step counter</div><div class="sd">${st === 'on' ? 'Counting with the motion sensor while the app is open.' : WB.esc(WB.Steps.msg || 'Uses your phone’s motion sensor while Walkbound is open.')}</div></div>
+        <div class="setting pbox"><div><div>Step counter</div><div class="sd">${st === 'on' ? 'Counting with the motion sensor while the app is open.' : WB.esc(WB.Steps.msg || 'Uses your phone’s motion sensor while Stepquest is open.')}</div></div>
           <div class="acts">${st === 'on' ? '<button class="btn ghost sm" type="button" data-act="sensor-stop">Pause</button>' : WB.Steps.motion.supported() && st !== 'unavailable' ? '<button class="btn sm" type="button" data-act="sensor-start">Start</button>' : ''}<button class="btn ghost sm" type="button" data-act="log">Log steps</button></div></div>
-        <div class="setting pbox"><div><div>Music</div><div class="sd">Play Spotify or Apple Music inside Walkbound while you walk.</div></div><div class="acts"><button class="btn ghost sm" type="button" data-act="music">Set up music</button></div></div>
+        <div class="setting pbox"><div><div>Music</div><div class="sd">Play Spotify or Apple Music inside Stepquest while you walk.</div></div><div class="acts"><button class="btn ghost sm" type="button" data-act="music">Set up music</button></div></div>
         <div class="setting pbox"><div><label for="set-goal">Daily goal</label><div class="sd">Reaching it pays a 100-coin bonus.</div></div><select id="set-goal">${opt([2500, 5000, 7500, 10000], s.settings.dailyGoal, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-streak">Streak minimum</label><div class="sd">Steps needed in a day to keep the streak.</div></div><select id="set-streak">${opt(D.STREAK_GOALS, s.settings.streakMin, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-stride">Stride length</label><div class="sd">Used to turn steps into distance.</div></div><select id="set-stride">${opt([0.6, 0.65, 0.7, 0.76, 0.8, 0.85, 0.9], s.settings.stride, (v) => v.toFixed(2) + ' m')}</select></div>
@@ -569,9 +601,9 @@
         <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : 'Saved on this device. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
       </div>
       <div class="about pbox card"><span class="lbl">About</span>
-        <div>Walkbound turns real steps into an adventure. Steps are counted by your phone’s motion sensor while the app is open, or logged from your Health app.</div>
+        <div>Stepquest turns real steps into an adventure. Steps are counted by your phone’s motion sensor while the app is open, or logged from your Health app.</div>
         <div>Pixel art, creatures, characters and battle effects by <a href="https://craftpix.net" target="_blank" rel="noopener">CraftPix.net</a> (free license). Fonts: Jersey 10, Pixelify Sans and Silkscreen (SIL Open Font License).</div>
-        <button class="linkbtn ver" type="button" id="ver">Version ${WB.esc(WB.VERSION || '2.3.0')}</button>
+        <button class="linkbtn ver" type="button" id="ver">Version ${WB.esc(WB.VERSION || '2.5.0')}</button>
       </div>
     </div>`;
     UI.animate($('#pf-av'), 'av', s.avatar, 'idle', s.skin);
@@ -665,9 +697,10 @@
 
   // ---------- global click delegation ----------
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('button, [data-close]');
+    const t = e.target.closest('button, [data-close], [data-why]');
     if (!t) return;
     const d = t.dataset;
+    if (d.why && !document.documentElement.classList.contains('battling') && (t.getAttribute('aria-disabled') === 'true' || !t.matches('button'))) { WB.Sfx.play('tap'); return UI.toast({ kicker: t.matches('button') ? 'Not yet' : 'Locked', title: d.why, icon: 'lock', cls: 'msg', ms: 3400 }); }
     if (d.close !== undefined) return UI.closeSheet();
     if (d.tab) { WB.Sfx.play('tap'); return UI.go(d.tab); }
     if (d.shoptab) { UI.shopTab = d.shoptab; return UI.renderShop(); }

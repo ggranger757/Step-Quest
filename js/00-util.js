@@ -1,4 +1,4 @@
-/* Walkbound — shared utilities */
+/* Stepquest — shared utilities */
 const WB = (window.WB = window.WB || {});
 
 WB.$ = (s, r = document) => r.querySelector(s);

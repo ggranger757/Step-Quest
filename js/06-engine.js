@@ -1,4 +1,4 @@
-/* Walkbound — world renderer: parallax layers, avatar, pets, encounters, particles.
+/* Stepquest — world renderer: parallax layers, avatar, pets, encounters, particles.
    Sprites are atlases: one PNG per character, one row per animation (row height = frame size). */
 (() => {
   const D = WB.DATA;
@@ -186,6 +186,25 @@
   };
 
   function P(x, y, vx, vy, life, color, size, kind) { return { x, y, vx, vy, life, max: life, color, size, kind }; }
+  // one trail particle. style decides the motion; idle = standing still (slower, closer to the feet)
+  WB.trailParticle = (tr, fx, fy, moving = true) => {
+    const c = WB.pick(tr.colors), r = Math.random, k = moving ? 1 : 0.35;
+    let p;
+    switch (tr.style) {
+      case 'puff': p = P(fx, fy, (-10 - r() * 10) * k, -4 - r() * 6, 0.7, c, 2, 'trail'); break;
+      case 'rise': p = P(fx, fy - 6, (-8 - r() * 8) * k, -18 - r() * 16, 1.1, c, 1, 'trail'); break;
+      case 'spark': p = P(fx, fy - 4, (-20 - r() * 20) * k, -10 - r() * 30, 0.6, c, 1, 'trail'); break;
+      case 'fall': p = P(fx, fy - 30 - r() * 20, -14 * k, 10, 1.6, c, 2, 'trail'); break;
+      case 'twinkle': p = P(fx - r() * 10, fy - r() * 50, -6 * k, -4, 1.2, c, 1, 'trail'); p.tw = true; break;
+      case 'bubble': p = P(fx, fy - 4, (-6 - r() * 6) * k, -12 - r() * 8, 1.4, c, 2, 'trail'); p.wob = 1; break;
+      case 'stream': p = P(fx, fy - 2 - r() * 10, -42 * k - 10, 0, 0.45, c, 1, 'trail'); p.streak = 4; break;
+      case 'snow': p = P(fx - r() * 8, fy - 20 - r() * 30, -8 * k, 8 + r() * 6, 1.8, c, 1, 'trail'); p.wob = 1; break;
+      case 'drop': p = P(fx, fy - 6, (-12 - r() * 10) * k, -40 - r() * 20, 0.9, c, 2, 'trail'); p.grav = 140; break;
+      case 'pixel': p = P(fx - r() * 6, fy - r() * 30, -10 * k, -6, 0.9, c, 3, 'trail'); p.shrink = 1; break;
+      default: p = P(fx - r() * 14, fy - r() * 56, -30 * k, 0, 0.35, c, 2 + (r() < 0.4) * 2, 'trail'); p.tw = true;   // glitch
+    }
+    return p;
+  };
 
   // ---------- the world view ----------
   class WorldView {
@@ -373,24 +392,17 @@
         p.glow = amb === 'fireflies';
         this.parts.push(p);
       }
+      // trail: a steady stream while you walk, and a gentle shimmer while you stand still
       const tr = WB.state.equip.trail && D.TRAILS.find((t) => t.id === WB.state.equip.trail);
-      if (tr && this.vel > 0.3 && !this.demo && Math.random() < dt * (rm ? 3 : 14)) {
-        const fx = this.avX - 8 + Math.random() * 6, fy = g - 2 - Math.random() * 4, c = WB.pick(tr.colors);
-        let p;
-        if (tr.id === 'dust') p = P(fx, fy, -10 - Math.random() * 10, -4 - Math.random() * 6, 0.7, c, 2, 'trail');
-        else if (tr.id === 'embers') p = P(fx, fy - 6, -8 - Math.random() * 8, -18 - Math.random() * 16, 1.1, c, 1, 'trail');
-        else if (tr.id === 'sparks') p = P(fx, fy - 4, -20 - Math.random() * 20, -10 - Math.random() * 30, 0.6, c, 1, 'trail');
-        else if (tr.id === 'petals') p = P(fx, fy - 30 - Math.random() * 20, -14, 10, 1.6, c, 2, 'trail');
-        else if (tr.id === 'stardust') p = P(fx - Math.random() * 10, fy - Math.random() * 50, -6, -4, 1.2, c, 1, 'trail');
-        else p = P(fx - Math.random() * 14, fy - Math.random() * 56, -30, 0, 0.35, c, 2 + (Math.random() < 0.4) * 2, 'trail');
-        p.tw = tr.id === 'stardust' || tr.id === 'glitch';
-        this.parts.push(p);
-      }
+      const moving = this.vel > 0.3;
+      if (tr && !this.demo && Math.random() < dt * (moving ? (rm ? 3 : 14) : (rm ? 1 : 4))) this.parts.push(WB.trailParticle(tr, this.avX - 8 + Math.random() * 6, g - 2 - Math.random() * 4, moving));
       for (const p of this.parts) {
         p.life -= dt;
         p.x += p.vx * dt - (p.kind === 'amb' ? dxCam * 0.7 : p.kind === 'trail' ? dxCam * 0.4 : dxCam);
         p.y += p.vy * dt;
         if (p.kind === 'burst') p.vy += 160 * dt;
+        if (p.grav) p.vy += p.grav * dt;
+        if (p.wob) p.x += Math.sin((p.max - p.life) * 9 + p.y) * 0.3;
         if (p.glow) { p.vx += (Math.random() - 0.5) * 20 * dt; p.vy += (Math.random() - 0.5) * 20 * dt; }
         if (p.x < -10) p.x += this.W + 20;
       }
@@ -410,7 +422,8 @@
         const a = Math.min(1, p.life / (p.max * 0.5));
         x.globalAlpha = p.tw ? a * (0.4 + 0.6 * Math.abs(Math.sin(this.t * 12 + p.x))) : p.glow ? a * (0.5 + 0.5 * Math.sin(this.t * 4 + p.y)) : a;
         x.fillStyle = p.color;
-        x.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+        const sz = p.shrink ? Math.max(1, Math.round(p.size * Math.min(1, p.life / p.max + 0.3))) : p.size;
+        x.fillRect(Math.round(p.x), Math.round(p.y), p.streak ? p.streak : sz, sz);
         if (p.glow) { x.globalAlpha *= 0.3; x.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 3, 3); }
       }
       x.globalAlpha = 1;

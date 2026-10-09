@@ -1,11 +1,11 @@
-/* Walkbound — game content. Everything here is data; add worlds, items or encounters by adding entries. */
+/* Stepquest — game content. Everything here is data; add worlds, items or encounters by adding entries. */
 (() => {
   const D = (WB.DATA = {});
 
   D.PX_PER_STEP = 18;          // native pixels of ground scroll per real step
   D.COINS_PER_STEP = 0.1;      // 1 Walk Coin per 10 steps
   D.XP_PER_STEP = 0.2;         // 1 XP per 5 steps
-  D.HEAL_STEPS = 5;            // walking heals 1 HP every 5 steps
+  D.HEAL_HOURS = 6;            // HP refills on its own over time (empty to full in 6 hours); walking does not heal
   D.DEFAULT_STRIDE_M = 0.76;
 
   // parallax for the 576x324 packs: layer 1 is sky, the last layer is the ground you walk on
@@ -168,7 +168,7 @@
     centipede: { name: 'Swamp Centipede', verb: 'uncoils with a hiss', hp: 78, atk: 11, aggressive: true, boss: true },
   };
 
-  // ---------- Avatars (30) ----------
+  // ---------- Avatars (32) ----------
   D.AVATARS = [
     // starters: you pick ONE at sign-up; the other two are bought like any other walker
     { id: 'scavenger', name: 'Scavenger', role: 'Reads the ruins like a map.', req: { starter: true, cost: 300 } },
@@ -185,9 +185,11 @@
     { id: 'courier', name: 'Courier', role: 'Every step is a delivery.', req: { cost: 900, level: 4 } },
     { id: 'marauder', name: 'Marauder', role: 'Never takes the same road twice.', req: { level: 5 } },
     { id: 'biker', name: 'Biker', role: 'Left the bike. Kept the jacket.', req: { cost: 1200, level: 5 } },
+    { id: 'ranger', name: 'Ranger', role: 'Bow on his back, eyes on the horizon.', req: { cost: 1300, level: 5 } },
     { id: 'punk', name: 'Punk', role: 'Loud hair, quiet footsteps.', req: { level: 6 } },
     { id: 'ember', name: 'Ember Mage', role: 'Leaves warm footprints.', req: { level: 7 } },
     { id: 'boss', name: 'Boss', role: 'Walks like he owns the wasteland.', req: { cost: 1600, level: 7 } },
+    { id: 'paladin', name: 'Knight', role: 'Sword, shield and a very long road.', req: { cost: 1800, level: 8 } },
     { id: 'c5', name: 'Busker', role: 'Plays for every creature he meets.', req: { level: 8 } },
     { id: 'storm', name: 'Storm Mage', role: 'Walks into the weather on purpose.', req: { level: 9 } },
     { id: 'cyborg', name: 'Cyborg', role: 'Counts steps in binary.', req: { level: 11 } },
@@ -237,8 +239,8 @@
     { id: 'rock_magma', name: 'Magma', kind: 'Pet rock', src: 'pet', hop: true, req: { bosses: 3 } },
   ];
   // Pets have their own health and soak part of every hit you take in battle (share = 20% to 60%).
-  // Bigger and tougher companions soak more. A pet at 0 HP is knocked out until it heals (walking heals
-  // pets like it heals you, and everyone wakes up at full health).
+  // Bigger and tougher companions soak more. A pet at 0 HP is knocked out until it heals: pets refill
+  // slowly over time like you do (walking does not heal anyone).
   const PET_STATS = { dog: [55, 0.4], dog2: [50, 0.35], cat: [40, 0.3], cat2: [42, 0.3], rat: [28, 0.2], rat2: [30, 0.2], crow: [30, 0.2], pigeon: [28, 0.2],
     hyena: [55, 0.4], scorpio: [50, 0.35], snake: [40, 0.25], vulture: [45, 0.3], mummy: [70, 0.5], deceased: [75, 0.55],
     hare: [35, 0.25], fox: [50, 0.35], boar: [85, 0.55], grouse: [32, 0.2], deer: [70, 0.45],
@@ -252,7 +254,41 @@
     { id: 'petals', name: 'Petals', req: { level: 9 }, colors: ['#ff8fb0', '#ffc0cc'] },
     { id: 'stardust', name: 'Stardust', req: { daily: true }, colors: ['#c7b8ff', '#ffffff', '#8b6cff'] },
     { id: 'glitch', name: 'Glitch', req: { streak: 14 }, colors: ['#59e3ff', '#ff6b8a', '#6ee7a0'] },
+    // 30 more, each its own colour. style = how the particles move (see WorldView.trail)
+    { id: 'foam', name: 'Ocean Foam', style: 'bubble', req: { cost: 150 }, colors: ['#7fd6ff', '#d8f6ff'] },
+    { id: 'copper', name: 'Copper Dust', style: 'puff', req: { cost: 180 }, colors: ['#c26a3a', '#e39b6b'] },
+    { id: 'mint', name: 'Mint Bubbles', style: 'bubble', req: { cost: 240, level: 2 }, colors: ['#7dffc8', '#c9ffe9'] },
+    { id: 'sunbeam', name: 'Sunbeam', style: 'rise', req: { cost: 280, level: 3 }, colors: ['#fff3a0', '#ffd84d'] },
+    { id: 'violet', name: 'Violet Haze', style: 'puff', req: { cost: 320, level: 3 }, colors: ['#9b7bff', '#c9b8ff'] },
+    { id: 'lime', name: 'Neon Lime', style: 'stream', req: { cost: 380, level: 4 }, colors: ['#b6ff3b', '#e9ff9e'] },
+    { id: 'cherry', name: 'Cherry Pop', style: 'bubble', req: { cost: 420, level: 4 }, colors: ['#ff3b6b', '#ff9db5'] },
+    { id: 'frost', name: 'Frost Flakes', style: 'snow', req: { cost: 480, level: 5 }, colors: ['#e6f7ff', '#9fd8ff'] },
+    { id: 'electric', name: 'Electric Blue', style: 'spark', req: { cost: 540, level: 6 }, colors: ['#3b7bff', '#9fc4ff'] },
+    { id: 'jade', name: 'Jade Leaves', style: 'fall', req: { cost: 600, level: 6 }, colors: ['#3bbf7a', '#8fe0a8'] },
+    { id: 'rosegold', name: 'Rose Gold', style: 'twinkle', req: { cost: 680, level: 7 }, colors: ['#f7b3a1', '#ffd9c7'] },
+    { id: 'lava', name: 'Lava Drops', style: 'drop', req: { cost: 760, level: 8 }, colors: ['#ff5a1f', '#ffb347'] },
+    { id: 'smoke', name: 'Midnight Smoke', style: 'puff', req: { cost: 840, level: 9 }, colors: ['#3b3361', '#5a4f8f'] },
+    { id: 'teal', name: 'Teal Tide', style: 'bubble', req: { cost: 920, level: 10 }, colors: ['#2fd6c8', '#a6fff7'] },
+    { id: 'candy', name: 'Candy Stripe', style: 'pixel', req: { cost: 1000, level: 11 }, colors: ['#ff6bd6', '#ffffff', '#6bd6ff'] },
+    { id: 'ghost', name: 'Ghost Wisps', style: 'rise', req: { cost: 1100, level: 12 }, colors: ['#e8e8ff', '#b8b8d8'] },
+    { id: 'toxic', name: 'Toxic Ooze', style: 'drop', req: { cost: 1200, level: 13 }, colors: ['#8cff3b', '#3bcf2e'] },
+    { id: 'sakura', name: 'Sakura Storm', style: 'fall', req: { cost: 1300, level: 14 }, colors: ['#ffb7d5', '#ff8fb8', '#fff0f6'] },
+    { id: 'solar', name: 'Solar Flare', style: 'spark', req: { cost: 1450, level: 15 }, colors: ['#ff8c1a', '#fff066'] },
+    { id: 'shards', name: 'Amethyst Shards', style: 'pixel', req: { cost: 1600, level: 17 }, colors: ['#a05cff', '#e0c4ff'] },
+    { id: 'spores', name: 'Moss Spores', style: 'rise', req: { cost: 1750, level: 18 }, colors: ['#9acd32', '#d4f78a'] },
+    { id: 'plasma', name: 'Plasma Pink', style: 'spark', req: { cost: 1900, level: 20 }, colors: ['#ff4fd8', '#ffc2f3'] },
+    { id: 'coins', name: 'Golden Coins', style: 'drop', req: { cost: 2100, level: 22 }, colors: ['#ffd84d', '#d9a52b'] },
+    { id: 'shadow', name: 'Shadow Step', style: 'puff', req: { cost: 2300, level: 24 }, colors: ['#1b1630', '#3a2f63'] },
+    { id: 'silver', name: 'Silver Moon', style: 'twinkle', req: { cost: 2500, level: 26 }, colors: ['#d9e1ea', '#9aa7b8'] },
+    { id: 'bloodmoon', name: 'Blood Moon', style: 'twinkle', req: { streak: 21 }, colors: ['#ff2d4a', '#8f0f22'] },
+    { id: 'aurora', name: 'Aurora', style: 'stream', req: { cost: 2800, level: 29 }, colors: ['#59ffb0', '#59c8ff', '#b07bff'] },
+    { id: 'comet', name: 'Comet Tail', style: 'stream', req: { cost: 3200, level: 33 }, colors: ['#ffffff', '#9fe8ff', '#59a8ff'] },
+    { id: 'royal', name: 'Royal Glitter', style: 'twinkle', req: { bosses: 5 }, colors: ['#ffd84d', '#b28bff'] },
+    { id: 'rainbow', name: 'Rainbow', style: 'stream', req: { bosses: 10 }, colors: ['#ff5a5a', '#ffd84d', '#59ff8c', '#59c8ff', '#b07bff'] },
   ];
+  // the first six predate styles
+  Object.assign(D.TRAILS[0], { style: 'puff' }); Object.assign(D.TRAILS[1], { style: 'rise' }); Object.assign(D.TRAILS[2], { style: 'spark' });
+  Object.assign(D.TRAILS[3], { style: 'fall' }); Object.assign(D.TRAILS[4], { style: 'twinkle' }); Object.assign(D.TRAILS[5], { style: 'glitch' });
 
   // ---------- Skin tones ----------
   D.SKIN_TONES = [

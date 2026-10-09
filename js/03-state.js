@@ -1,4 +1,4 @@
-/* Walkbound — player state, persistence (local + optional cloud save) */
+/* Stepquest — player state, persistence (local + optional cloud save) */
 (() => {
   const KEY = 'walkbound.save.v1';
   const D = WB.DATA;
@@ -23,10 +23,11 @@
       world: 'rust', worldSteps: { rust: 0 }, unlocked: ['rust'], milestones: {},
       enc: { next: 120, seq: 0, pending: [], count: 0, fights: 0, battles: 0, losses: 0, chests: 0, cards: {}, finds: {} },
       tasks: { day: '', daily: [], advDone: [], quests: [] },
+      missions: { active: [], done: [], skip: [] },
       streak: { count: 0, best: 0, lastDay: '', rest: 0, claimed: [] },
       daily: { idx: 0, lastClaim: '' },
       ach: {}, purchases: 0,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, reducedMotion: null },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, reducedMotion: null, homeState: '' },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }
@@ -35,7 +36,7 @@
     const f = fresh();
     // shallow-merge defaults so new fields appear for old saves
     for (const k of Object.keys(f)) if (s[k] === undefined) s[k] = f[k];
-    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'streak', 'daily', 'settings', 'seen', 'music', 'health'])
+    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'streak', 'daily', 'settings', 'seen', 'music', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];
     // v2: dyes and auras were retired. Refund what was bought, drop the rest.
     if (s.v < 2) {

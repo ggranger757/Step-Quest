@@ -1,4 +1,4 @@
-/* Walkbound — music while you walk: a docked Spotify / Apple Music player that stays put across tabs.
+/* Stepquest — music while you walk: a docked Spotify / Apple Music player that stays put across tabs.
    Uses each service's official embed player. Full tracks play when the listener is signed in to that
    service in this browser (Spotify) or in the player (Apple Music); otherwise the services play previews. */
 (() => {
@@ -39,11 +39,15 @@
     } else {
       el._embed = p.embed;
       const frame = blocked()
-        ? `<p class="mu-note">The music player works in the installed Walkbound app. This preview can’t embed other sites.</p>`
+        ? `<p class="mu-note">The music player works in the installed Stepquest app. This preview can’t embed other sites.</p>`
         : p.provider === 'spotify'
-          ? `<iframe title="Spotify player" src="${p.embed}" height="${prov.height}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`
+          ? `<iframe title="Spotify player" src="${p.embed}" height="${prov.height}" allow="autoplay; clipboard-write; encrypted-media *; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>`
           : `<iframe title="Apple Music player" src="${p.embed}" height="${prov.height}" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"></iframe>`;
-      el.innerHTML = bar + `<div class="mu-frame ${open ? '' : 'closed'}">${frame}</div>`;
+      // Phone browsers and home-screen apps often can't stream full songs inside an embedded player (no
+      // DRM, or not signed in there), so the player can sit on a spinner or play 30-second clips. One tap
+      // opens the same playlist in the real app, which keeps playing while Stepquest stays open.
+      const app = `<p class="mu-app">Stuck loading or only hearing clips? <a href="${WB.esc(mu.url)}" target="_blank" rel="noopener">Open in ${prov.name}</a>: it keeps playing while you walk here.</p>`;
+      el.innerHTML = bar + `<div class="mu-frame ${open ? '' : 'closed'}">${frame}${app}</div>`;
     }
     WB.UI.hydrateIcons(el);
   };
@@ -56,10 +60,10 @@
       <div class="seg" role="tablist" aria-label="Music service">${Object.entries(PROVIDERS).map(([id, p]) => `<button type="button" role="tab" data-prov="${id}" aria-selected="${id === prov}" aria-pressed="${id === prov}">${p.name}</button>`).join('')}</div>
       <div class="field"><label class="lbl" for="mu-url">Link from <span id="mu-pn">${PROVIDERS[prov].name}</span></label><input id="mu-url" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="${PROVIDERS[prov].example}" value="${WB.esc(mu.url || '')}"></div>
       <p class="hint" id="mu-hint">In the ${PROVIDERS[prov].name} app: open a playlist, tap Share, then Copy link.</p>
-      <button class="btn block" type="button" id="mu-go">${WB.icon('note', 2)}Play in Walkbound</button>
+      <button class="btn block" type="button" id="mu-go">${WB.icon('note', 2)}Play in Stepquest</button>
       <div class="mu-help">
-        <p><b>Full songs:</b> Spotify plays full tracks when you’re signed in to Spotify in this browser; otherwise you hear 30-second previews. Apple Music subscribers can sign in inside the player.</p>
-        <p><b>Prefer your music app?</b> Start music in Spotify or Apple Music first, then open Walkbound. It keeps playing, and Walkbound’s sounds mix in without pausing it.</p>
+        <p><b>Full songs:</b> the built-in player streams full tracks only when you’re signed in to that service in this browser; otherwise it plays 30-second previews, and some phones can’t stream it at all. If it only loads, tap the <b>Open in Spotify / Apple Music</b> link under the player.</p>
+        <p><b>Prefer your music app?</b> Start music in Spotify or Apple Music first, then open Stepquest. It keeps playing, and Stepquest’s sounds mix in without pausing it.</p>
       </div>`, (root) => {
       const setProv = (p) => {
         prov = p;

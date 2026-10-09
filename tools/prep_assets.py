@@ -1,6 +1,6 @@
-"""Prepare Walkbound game assets from the CraftPix packs.
+"""Prepare Stepquest game assets from the CraftPix packs.
 
-Usage: python3 -I prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir> <pack5_dir> <out_dir>
+Usage: python3 -I prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir> <pack5_dir> <out_dir> [<pack6_dir>]
   pack1_dir: the first upload (Background, Creatures, My_Walk_Avatar folders unzipped)
   pack2_dir: the second upload (Worlds, New_Walker_Avatars, New_Creatures, Weapons unzipped,
              with the zips inside them unzipped in place)
@@ -9,6 +9,8 @@ Usage: python3 -I prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir>
   pack4_dir: New_Worlds unzipped, with the zips inside it unzipped in place
   pack5_dir: Weapons.zip unzipped (the icon sheets; the folder with the Cyrillic name is
              renamed "weapons_pack" and its Cyrillic sword sheet "MECH.png")
+  pack6_dir: the Knight & Ranger upload unzipped ("human_knight copy", "human_ranger copy" GIF folders).
+             They have no walk cycle, so one is generated from the idle frames (see walk_from_idle).
 
 Every character/creature becomes ONE atlas PNG with one row per animation (row height = frame size).
 """
@@ -16,6 +18,7 @@ import sys, os, json, glob, subprocess, numpy as np
 from PIL import Image, ImageSequence
 
 P1, P2, P3, P4, P5, OUT = sys.argv[1:7]
+P6 = sys.argv[7] if len(sys.argv) > 7 else None
 os.makedirs(OUT, exist_ok=True)
 MAN = {'bg': {}, 'avatars': {}, 'creatures': {}, 'pets': {}, 'npc': {}, 'weapons': {}, 'fx': {}}
 
@@ -191,6 +194,70 @@ for aid, folder in (('satyr', 'Satyr_1'), ('satyress', 'Satyr_3')):
     d = f'{NW}/{folder}'
     rows = [('idle', load(f'{d}/Idle.png')), ('walk', load(f'{d}/Walk.png')), ('attack', load(f'{d}/Attack.png')), ('hurt', load(f'{d}/Hurt.png'))]
     MAN['avatars'][aid] = {**atlas(rows, f'av/{aid}.png'), 'scale': 1}
+
+# Knight & Ranger: 100x55 GIF frames, no walk cycle. Frames are padded into 120px squares (feet on the
+# bottom row, idle body centred) and a walk cycle is generated from the idle frames: each leg swings
+# from the hip like a pendulum (a shear, so the hip joint never tears), the legs in opposite phase,
+# the swinging foot lifts, and the upper body dips 1px at full stride.
+def gif_rgba(p):
+    return [fr.convert('RGBA').copy() for fr in ImageSequence.Iterator(Image.open(p))]
+def walk_from_idle(idle, hip, x0, x1, stride=4):
+    """idle: list of RGBA frames (same size). hip: first leg row; legs live in columns x0..x1."""
+    base = np.asarray(idle[0])[..., 3] > 10
+    foot = int(np.nonzero(base.any(1))[0].max())
+    leg = base[hip:foot + 1, x0:x1 + 1].sum(0)
+    mid = len(leg) // 2; lo, hi = mid - len(leg) // 4, mid + len(leg) // 4
+    split = x0 + lo + int(np.argmin(leg[lo:hi + 1]))          # the gap between the two legs
+    out = []
+    for i in range(8):
+        t = i / 8 * 2 * np.pi
+        src = np.asarray(idle[i % len(idle)]).copy(); H, W = src.shape[:2]
+        fr = np.zeros_like(src)
+        dip = 1 if abs(np.sin(t)) > 0.7 else 0
+        for side, amp, ph in (('back', -stride, t), ('front', stride, t)):
+            dx_end = amp * np.sin(ph)
+            swing = np.cos(ph) * (1 if side == 'front' else -1)    # moving forward -> lifted
+            lift = int(round(2.4 * max(0.0, swing)))
+            xa, xb = (x0, split) if side == 'back' else (split + 1, x1)
+            for y in range(hip, foot + 1):
+                k = (y - hip) / max(1, foot - hip)
+                dx = int(round(dx_end * k)); ty = y - lift
+                row = src[y, xa:xb + 1]; m = row[..., 3] > 10
+                for j in np.nonzero(m)[0]:
+                    tx = xa + j + dx
+                    if 0 <= tx < W and 0 <= ty < H: fr[ty, tx] = row[j]
+        up = src.copy(); up[hip:] = 0
+        # keep pixels outside the leg columns below the hip (sword tips, cape) with the upper body
+        rest = src.copy(); rest[:hip] = 0; rest[:, x0:x1 + 1] = 0
+        for layer, d in ((rest, dip), (up, dip)):
+            sh = np.zeros_like(layer); sh[d:] = layer[:H - d] if d else layer
+            m = sh[..., 3] > 10; fr[m] = sh[m]
+        out.append(Image.fromarray(fr, 'RGBA'))
+    return out
+def square(frames, cx, fs=120, clip_x=None):
+    res = []
+    for f in frames:
+        a = np.asarray(f).copy()
+        if clip_x is not None: a[:, clip_x:] = 0
+        f = Image.fromarray(a, "RGBA")
+        sq = Image.new('RGBA', (fs, fs)); sq.alpha_composite(f, (fs // 2 - cx, fs - 1 - 53))   # feet (row 53) on the last row
+        res.append(sq)
+    return res
+def flash(f):
+    a = np.asarray(f).copy(); m = a[..., 3] > 10; a[m, :3] = 255; return Image.fromarray(a, 'RGBA')
+def strip(frames):
+    s = Image.new('RGBA', (frames[0].width * len(frames), frames[0].height))
+    for i, f in enumerate(frames): s.alpha_composite(f, (i * f.width, 0))
+    return s
+if P6:
+    for aid, folder, hip, x0, x1, clip in (('paladin', 'human_knight copy', 39, 30, 64, None), ('ranger', 'human_ranger copy', 38, 30, 64, 80)):
+        d = f'{P6}/{folder}'; idle = gif_rgba(f'{d}/idle.gif')
+        cx = 47   # idle body centre column
+        hurt = gif_rgba(f'{d}/hurt.gif')
+        if aid == 'ranger': hurt[0] = flash(idle[0])   # the pack's first ranger hurt frame is the knight's silhouette
+        rows = [('idle', strip(square(idle, cx))), ('walk', strip(square(walk_from_idle(idle, hip, x0, x1), cx))),
+                ('attack', strip(square(gif_rgba(f'{d}/attack.gif'), cx, clip_x=clip))), ('hurt', strip(square(hurt, cx)))]
+        MAN['avatars'][aid] = {**atlas(rows, f'av/{aid}.png'), 'scale': 2}
 
 # ------------------------------------------------------------------ pets (animals face right)
 for pid, folder in (('dog', '1 Dog'), ('dog2', '2 Dog 2'), ('cat', '3 Cat'), ('cat2', '4 Cat 2'), ('rat', '5 Rat'), ('rat2', '6 Rat 2'), ('crow', '7 Bird'), ('pigeon', '8 Bird 2')):
