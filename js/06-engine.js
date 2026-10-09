@@ -331,7 +331,7 @@
         if (!e.reached && sx <= this.avX + 50.5) {
           e.reached = true; this.vel = 0;
           if (this.cam > e.pos) this.cam = e.pos;   // land exactly at the encounter, not past it (the walked steps still count)
-          this.holdUntil = performance.now() + (e.enc.aggressive || e.enc.boss || e.enc.nemesis ? 10000 : 6000);
+          this.holdUntil = performance.now() + (e.enc.aggressive || e.enc.boss || e.enc.nemesis ? 15000 : 10000);
           this.onReach(e.enc);
         }
         if (e.reached && sx < this.avX - 30) { e.done = true; e.state = 'leave'; e.fade = 1; this.onDefer(e.enc); }
@@ -508,7 +508,7 @@
         const by = Math.round(top - 14 + Math.sin(this.t * 5) * 1.5);
         const hostile = e.enc.aggressive || e.enc.boss || e.enc.nemesis;
         x.fillStyle = '#140f2a'; x.fillRect(sx - 3, by - 1, 7, 12);
-        x.fillStyle = hostile ? '#ff6b5b' : '#ffcc4d'; x.fillRect(sx - 2, by, 5, 6); x.fillRect(sx - 2, by + 7, 5, 3);
+        x.fillStyle = hostile ? '#ff6b5b' : '#ff9a3d'; x.fillRect(sx - 2, by, 5, 6); x.fillRect(sx - 2, by + 7, 5, 3);
       }
       x.globalAlpha = 1;
     }

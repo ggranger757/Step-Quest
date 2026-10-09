@@ -75,16 +75,16 @@ Some creatures are aggressive. When one blocks the path you can fight or avoid i
 - **Strike** uses your **melee** weapon (swords, daggers, axes, maces, spears, staves). Your walker holds it in hand during the attack. Daggers stab twice, axes sunder (+25% damage taken), maces stun, spears pierce guards and hit harder on the first turn, staves heal or curse, some blades steal life.
 - **Throw / Shoot / Cast** uses your **ranged** weapon: throwing weapons arc, knives spin, arrows and the 12 spells (orb, wave and javelin in sun, frost, void and fire) fly straight at the creature. It hits hardest, may poison, burn, bleed, freeze, weaken, drain or volley, then recharges.
 - **Defend** has a **guard gauge**: each Defend uses 35% of it and every turn you don't defend restores 15% (`D.DEFEND_COST`, `D.DEFEND_REGEN`), so you can't hide behind your shield forever. The Shop calls the shield slot **Defense**.
-- **Defend** uses your **shield**: it blocks 60–85%, and some shields reverse part of the hit back, counter with spikes or heal. Every shield also soaks a little of every hit (armor). Guardians glow red and "charge up" before a heavy attack: defend then.
+- **Defend** uses your **shield**: it blocks 60–85%, and some shields reverse part of the hit back, counter with spikes or heal. Every shield also blocks a little of every hit (armor). Guardians glow red and "charge up" before a heavy attack: defend then.
 - **Every creature has five moves** (`D.CREATURE_MOVES` in `js/02-data.js`):
   - **Attack:** a plain hit.
   - **Magic:** its own named spell with its own projectile and impact (Medusa's Stone Throw, the Overthinker's What-If Flame…). 40% of the time it adds an effect (20% if you defended): poison or burn (damage each turn, never below 1 HP), weaken (your hits do 30% less for 2 turns), slow (your ranged weapon takes 2 more turns to recharge) or drain (it heals from the damage).
   - **Defend:** it braces (your next hit does half) and recovers 6% HP; guardians raise a reversing ward instead (30% of your next hit bounces back). Piercing weapons ignore both.
   - **Flee:** below 25% HP (20% for guardians) it may try to run, at most twice. If it gets away you keep half the battle XP but no coins or loot, and a guardian goes back to waiting on the world map. Creatures never flee your very first battle.
   - **Special:** a signature move it charges a turn ahead ("Charging!": defend!), every 4th turn (every 3rd for guardians): a big hit with a stun (you lose a turn; defending stops it), poison, burn, weaken, slow or drain, three quick hits, or a quake that's hard to block.
-- **Each world has its own creatures** (`pool` in `D.WORLDS`), three per world picked to suit the place: frost worlds get Medusa, the Orc Raider and the Bog Slime, city streets get the Sentry Drone and the Flying Procrastinator, forests get the Treant and the Mushroom Guard, and so on. The world map shows them on each world's card, under "Creatures here".
-- **33 creatures**, including 18 from the enemies pack: 2Face, Energy Vampire Bat, Flying Procrastinator, Land Alien, Lazy Bat, Little Cthulhu, Medusa, Mushroom Guard, Naughty Nova, Orc Raider, Self-Doubt Drone, Sentry Drone, Bog Slime and Treant roam the worlds, and four are new guardians: the Distraction Dragon, the Ice Bully, the Overthinker and the Slothful Ogre. Animations a GIF set doesn't include (a lunge for attack, a flash for hurt, sinking for death) are generated from its idle frames by `tools/prep_assets.py`.
-- **Pets** fight with you: your pet soaks 20–60% of every hit until its own HP runs out, then it's knocked out until its HP refills over time. Every HP change floats over whoever took it as "-N HP" / "+N HP".
+- **Each world has its own creatures** (`pool` in `D.WORLDS`), three per world picked to suit the place: frost worlds get Medusa, the Orc Raider and the Bog Slime, city streets get the Sentry Drone and the Flying Procrastinator, forests get the Treant and the Bulb Spitter, and so on. The world map shows them on each world's card, under "Creatures here".
+- **31 road creatures** (the Mushroom Guard and Naughty Nova were retired), including 16 from the enemies pack: 2Face, Energy Vampire Bat, Flying Procrastinator, Land Alien, Lazy Bat, Little Cthulhu, Medusa, Orc Raider, Self-Doubt Drone, Sentry Drone, Bog Slime and Treant roam the worlds, and four are new guardians: the Distraction Dragon, the Ice Bully, the Overthinker and the Slothful Ogre. Animations a GIF set doesn't include (a lunge for attack, a flash for hurt, sinking for death) are generated from its idle frames by `tools/prep_assets.py`.
+- **Pets** fight with you: your pet takes 20–60% of every hit until its own HP runs out, then it's knocked out until its HP refills over time. Every HP change floats over whoever took it as "-N HP" / "+N HP".
 - **Items** drinks a potion or eats food. **Magic** uses a magic item (see below). **Run away** may fail.
 - Losing costs some coins (about 5–10% of what you carry, capped by the world), breaks half of each kind of egg you carry (at least one) and drops your HP to 25%.
 - **Walking does not heal.** HP refills on its own, from empty to full in 15 minutes (`D.HEAL_MINUTES`), even while the app is closed, or instantly with a healing potion. Pets recover the same way. A level-up raises your max HP but only tops you up if you were unhurt.
@@ -101,11 +101,14 @@ Everything you can buy is in the **Shop**, in five sections: Walkers, Weapons, P
 
 **Ranged gear from the item pack** sits in Weapons → Ranged: the Lasso (may rope the creature so it loses a turn), Cherry Bomb (burn), Throwing Axe (bleed), Cannonball (heavy, breaks guard) and Web Snare (weakens) spin through the air like the knives; the Flintlock Pistol is the first **Firearm** and fires a bullet straight through guards.
 
-**Magic items** (Shop → Magic). Each battle item works once per battle as a free action from the **Magic** button (it doesn't use your turn):
-- **Explorer's Backpack** (level 6): while equipped, battle wins pay 50% more coins, double the potion chance and raise the egg chance.
-- **Book of Magic** (level 20): +40% damage from spells, staves and special attacks for 3 to 5 turns (longer at higher levels).
-- **Illusion Ring** (level 50): a copy of your walker appears for 3 turns: the creature attacks the copy instead of you, and the copy strikes alongside you.
-- **Lucky Clover** (level 60): choose to attack twice in a row, or dodge the creature's next two attacks.
+**Magic items** (Shop → Magic): 55 of them, bought once and kept, in two kinds (`D.MAGIC`, icons from the Magic_items pack in `assets/mg/`):
+- **Charms (23)** are worn: up to 3 at a time (`D.CHARM_SLOTS`), each with a passive perk. Examples: Lucky Horseshoe (+8% crit), Explorer's Backpack (more loot), Merchant's Purse (+20% battle coins), Amulet of Vitality (+10% max HP), Ring of Might (+8% damage), Ring of Warding (−8% damage taken), Bulwark Sigil (guard gauge refills faster), Arcane Hat (special charges faster), Soul Gem (first hit halved), Thornweave Necklace (hit back 10%), Scholar's Codex (+15% battle XP), Pendant of Renewal (heal 3% a turn), Void Ring (30% of hits pierce), Circlet of Focus (ranged recharges a turn faster), Hunter's Ring (+15% vs guardians and bosses), Ember Heart (survive one knockout per battle).
+- **Battle magic (32)** is used from the **Magic** button: each item once per battle, at most one per turn, and it doesn't use your turn. Heals (Chalice, Heartstone, Phoenix Feather), shields (Stoneskin, Aegis), damage boosts (Ember Gauntlet, Rune of Fury), blasts (Storm Orb, Starfall, Sun Orb), statuses on the creature (poison, burn, bleed, freeze, stun, weaken, guard break), utility (recharge your weapon, refill the guard gauge or special gauge, cancel a charging special, reflect, dodge, Golden Key to escape any battle) and the original Book of Magic, Illusion Ring and Lucky Clover.
+Levels and prices run from level 4 (700 coins) to level 60 (20,000 coins).
+
+## Profile stats
+
+Lifetime totals: steps, distance, coins, streak, battles won, **world guardians beaten** (each world's guardian wakes at 100% explored and is challenged from the map), **bosses beaten** (the rare roaming bosses), **Merlin's quests done**, **Knowledge Challenges** (Druid questions answered right, of those taken), worlds, avatars, artifacts and best day. Stats with a dashed border explain themselves when tapped. Distances follow **Profile → Distance units** (miles or kilometers; US English devices start on miles).
 
 ## Bosses
 
@@ -124,7 +127,7 @@ Bosses never flee, and running from one only works 35% of the time (slipping awa
 
 ## Levels and pacing
 
-Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `80 × level^1.45`, plus 3% per level past 50, so it's a long road: walking about 7,000 steps a day, expect roughly a month to level 20, 6–11 months to level 50 (the last world) and several years to the cap. Battle XP, quests and bosses add to that, but walking is the main source.
+Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `100 × level^1.5`, plus 1.5% per level past 50. At around 2,500 XP a day (7,000 steps plus battles and quests) that's about a month to level 20, 9 months to 50, about 2 years to the last world (level 70) and around 6 years to the cap. Each level-up opens a celebration card listing everything the new level unlocks (worlds, walkers, weapons, pets, magic, potions) and how far the next level is.
 
 ## The Druid
 
@@ -132,14 +135,14 @@ From level 2 a druid sometimes steps onto the road with a **Knowledge Challenge*
 
 ## Eggs
 
-Three eggs (`js/05e-eggs.js`): **Frost** (common), **Ember** (uncommon) and **Crystal** (rare; rarer eggs get likelier in later worlds). They turn up on the road as an encounter of their own, a quarter of the creatures you beat were guarding one, and guardians always drop one. You can carry 12 of each. Trade sets to **Merlin**, by owl post from Inventory → Eggs or Missions → Field at any time, or when he finds you on the road:
+Three eggs (`js/05e-eggs.js`): **Frost** (common), **Ember** (uncommon) and **Crystal** (rare; rarer eggs get likelier in later worlds). They turn up on the road as an encounter of their own, a quarter of the creatures you beat were guarding one, and guardians always drop one. You can carry 12 of each. Trade sets to **Merlin** once you've met him on the road (trading stays locked until then); after that, trade from Inventory → Eggs or Missions → Field at any time, or when he finds you again:
 
 | Trade | Eggs | Loot |
 | --- | --- | --- |
-| Basket of Frost Eggs | 5 Frost | 150 coins, 120 XP, 2 Small Tonics |
-| Ember Clutch | 3 Ember | 250 coins, 220 XP, an Iron Brew |
-| Crystal Pair | 2 Crystal | 400 coins, 400 XP, a Grand Elixir |
-| Merlin's Hoard | 3 Frost, 2 Ember, 1 Crystal | 600 coins, 600 XP and a weapon or pet you don't own yet |
+| Basket of Frost Eggs | 5 Frost | 60 coins, 50 XP, 2 Small Tonics |
+| Ember Clutch | 3 Ember | 100 coins, 90 XP, an Iron Brew |
+| Crystal Pair | 2 Crystal | 160 coins, 150 XP, a Grand Elixir |
+| Merlin's Hoard | 3 Frost, 2 Ember, 1 Crystal | 250 coins, 220 XP and a weapon or pet you don't own yet |
 
 Losing a battle breaks half of each kind you carry (losing to the Druid takes them all), so trade before a risky fight.
 
@@ -187,7 +190,7 @@ Recorded sounds live in `assets/sfx/` and music in `assets/music/`; `tools/prep_
 | Battles from level 40 (`D.EPIC_MUSIC_LEVEL`) | `music/battle_epic_1.mp3` (Redemption) or `music/battle_epic_2.mp3` (Cold Fire) |
 | While Merlin is on screen | `music/merlin.mp3` |
 
-Music streams (it isn't part of the offline download) and fades out when the fight or tutorial ends. Profile → Settings has **Sound effects** and **Game music** switches, and while the player's own Spotify or Apple Music player is on, all game sounds and music pause automatically. Browsers only allow audio after a tap, so the welcome song starts on the first tap if autoplay is blocked.
+The app song is the default theme: it plays whenever the app opens and comes back after battles and Merlin. Music streams (it isn't part of the offline download). Profile → Settings has one **Sound & music** switch, and while the player's own Spotify or Apple Music player is on, all game sounds and music pause automatically. Browsers only allow audio after a tap, so the welcome song starts on the first tap if autoplay is blocked.
 
 ## Celebrations
 
@@ -199,9 +202,11 @@ New players get a guided tour right after sign-up (existing players see it once 
 
 ## Worlds and levels
 
-There are 49 worlds. Each one opens at a level (eleven early ones from the More_Worlds upload open between levels 2 and 9: Green Downs, Canopy Vale, Leeward Shore, Misty Hollow, Violet Wood, Sunset Mesa, Cairn Peaks, Teal Tundra, Kiln Canyon, Flue Works and Sodium City), from Rust Hollow at level 1 to the Fort of Illusion at level 50, so the map grows as you level up from walking, battles, missions and achievements. The world screen and the map show the next world and roughly how many steps away it is. Creatures get stronger in later worlds, and every world has a guardian and a few artifacts to find.
+There are 49 worlds, and they open **one at a time**: each needs a level (spread from Rust Hollow at level 1 to the Fort of Illusion at level 70, `D.LAST_WORLD_LEVEL`) **and** the world before it explored to 75% (`D.WORLD_GATE_PCT`). The world screen and the map show both requirements, ticking each one off, and roughly how many steps away the next world is. Creatures get stronger in later worlds, and every world has a guardian and a few artifacts to find.
 
 ## Walkers and pets
+
+Pets cost 400–5,000 coins and unlock between levels 2 and 20 (some come from streaks, steps, the daily reward or guardians instead). In battle a pet jumps in and takes 20–60% of each hit until its own HP runs out.
 
 At sign-up a player picks one of three classic walkers (Scavenger, Wandering Mage, Healer) and a skin tone. The other two starters, and every other walker (40 in all, including the Knight, the Ranger, and the nine newest: Warrior, Shadow Archer, Ronin, Leaf Ranger, Executioner, Blaze, Huntress, Crimson Duelist and Shadow Knight), are unlocked later with coins, levels, streaks or exploration.
 

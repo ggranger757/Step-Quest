@@ -21,7 +21,8 @@
   --violet: #8b6cff;
   --violet-hi: #b3a0ff;
   --cyan: #59e3ff;
-  --gold: #ffcc4d;
+  --gold: #ff9a3d;   /* the warm highlight: orange (CTAs, rewards, "ready" states) */
+  --gold-glow: rgba(255, 154, 61, .35);
   --ok: #6ee7a0;
   --danger: #ff6b8a;
   --shadow: #05040f;
@@ -325,7 +326,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .ach .a-p .lbl { font-size: 11px; white-space: nowrap; }
 .ach .a-badge { position: relative; width: 48px; height: 48px; flex: none; display: grid; place-items: center; }
 .ach .a-badge .px-img { width: 48px; height: 48px; }
-.ach.got .a-badge { filter: drop-shadow(0 0 6px rgba(255, 204, 77, .35)); }
+.ach.got .a-badge { filter: drop-shadow(0 0 6px var(--gold-glow)); }
 .ach.locked .a-badge .px-img { filter: saturate(.7) brightness(.62); }
 .ach .b-lock { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; display: grid; place-items: center; background: var(--surface-2); box-shadow: 0 0 0 2px var(--line-hi); }
 .ach .a-r { font: 400 11px/1.25 var(--label); color: var(--gold); text-transform: uppercase; text-align: right; max-width: 110px; }
@@ -551,7 +552,7 @@ input:focus-visible, select:focus-visible { outline: 0; box-shadow: 0 0 0 2px va
 .b-actions .btn { justify-content: flex-start; min-height: 60px; padding: 0 var(--s3); text-align: left; white-space: normal; }
 /* battle buttons: dark with gold; Strike is the solid gold main move */
 .b-actions .btn, .b-actions .btn.cyan, .b-actions .btn.ghost { --b: var(--surface-2); --t: var(--text);
-  box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 0 0 2px rgba(255,204,77,.55), inset 0 -4px 0 0 rgba(0,0,0,.28); }
+  box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 0 0 2px rgba(255,154,61,.55), inset 0 -4px 0 0 rgba(0,0,0,.28); }
 .b-actions .btn .bt > span { color: var(--gold); }
 .b-actions .btn[data-b="strike"] { --b: var(--gold); --t: var(--ink); box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 -4px 0 0 rgba(0,0,0,.28), inset 0 3px 0 0 rgba(255,255,255,.25); }
 .b-actions .btn[data-b="strike"] .bt > span { color: var(--ink); }
@@ -692,7 +693,7 @@ html.scroll-lock .screen, html.scroll-lock .journey { overflow: hidden; touch-ac
 .b-actions .btn.special.ready { --b: var(--gold); --t: var(--ink); animation: sp-pulse 1.2s steps(4) infinite; }
 .b-actions .btn.special.ready .bt > span { color: var(--ink); }
 .b-actions .btn.special.ready .sp-gauge { opacity: 0; }
-@keyframes sp-pulse { 50% { box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), 0 0 0 6px rgba(255, 204, 77, .35); } }
+@keyframes sp-pulse { 50% { box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), 0 0 0 6px var(--gold-glow); } }
 @media (prefers-reduced-motion: reduce) { .b-actions .btn.special.ready { animation: none; } }
 html.rm .b-actions .btn.special.ready { animation: none; }
 /* celebrations */
@@ -722,7 +723,7 @@ html.reduce-motion .egg-img { animation: none; }
 .egg .t-title .lbl { margin-left: 6px; }
 .trades { display: grid; gap: var(--s2); }
 .trade { display: flex; gap: var(--s3); align-items: center; padding: var(--s3); }
-.trade.ready { box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(255,204,77,.25); }
+.trade.ready { box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(255,154,61,.25); }
 .trade .tr-main { flex: 1; min-width: 0; }
 .trade .tr-need { display: flex; flex-wrap: wrap; gap: var(--s2); margin: 6px 0; }
 .trade .need { display: inline-flex; align-items: center; gap: 4px; font: 400 12px/1 var(--label); color: var(--muted); }
@@ -778,3 +779,31 @@ html.booting, html.booting body { overflow: hidden; }
 .say-bubble.out { opacity: 0; transition: opacity .3s steps(3); }
 @keyframes say-in { from { transform: translate(-70%, -80%) scale(.8); opacity: 0; } }
 html.rm .say-bubble { animation: none; }
+.next-unlock .nu-req { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 400 13px/1.3 var(--body); color: var(--muted); margin: 2px 0 6px; }
+.next-unlock .nu-req .ok { color: var(--green, #6ee7a0); }
+.next-unlock .nu-req svg, .next-unlock .nu-req canvas { vertical-align: -1px; margin-right: 3px; }
+/* locked worlds in Artifacts: one compact list instead of grids of silhouettes */
+.locked-worlds { display: grid; gap: 2px; padding: var(--s2) var(--s3); }
+.locked-worlds .lw { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); padding: 6px 0; color: var(--muted); font: 400 14px/1.3 var(--body); border-bottom: 1px solid var(--line); }
+.locked-worlds .lw:last-child { border-bottom: 0; }
+/* world screen quick actions: a tidy two-column row */
+.journey .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
+.journey .chips .chipbtn { min-height: 44px; }
+.journey .chips .chipbtn:only-child { grid-column: 1 / -1; }
+/* level-up card */
+.lvlup { display: grid; gap: var(--s3); text-align: center; }
+.lvlup .lv-badge { display: grid; justify-items: center; gap: 2px; padding: var(--s3) 0 0; }
+.lvlup .lv-badge .lbl { color: var(--gold); letter-spacing: .12em; }
+.lvlup .lv-badge b { font: 400 72px/1 var(--display); color: var(--text); text-shadow: 0 4px 0 var(--shadow), 0 0 24px var(--gold-glow); animation: lv-pop .5s steps(5) both; }
+@keyframes lv-pop { from { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.12); } }
+html.rm .lvlup .lv-badge b { animation: none; }
+.lvlup .lv-msg { color: var(--muted); }
+.lvlup .outcome { justify-content: center; }
+.lvlup .lv-h { font: 400 11px/1 var(--label); text-transform: uppercase; letter-spacing: .08em; color: var(--dim); text-align: left; margin-top: var(--s2); }
+.lvlup .lv-list { display: grid; gap: var(--s2); text-align: left; }
+.lvlup .lv-it { display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); background: var(--surface-2); box-shadow: 0 0 0 2px var(--line); }
+.lvlup .lv-it span { display: grid; gap: 2px; }
+.lvlup .lv-it small { color: var(--muted); font-size: 13px; }
+.lvlup .lv-more { color: var(--muted); font-size: 13px; }
+.lvlup .row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s2); }
+.stat[data-info] { cursor: help; box-shadow: 0 0 0 2px var(--line), inset 0 0 0 1px rgba(255,255,255,.04); outline: 1px dashed var(--line-hi); outline-offset: -5px; }

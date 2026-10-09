@@ -48,7 +48,7 @@
       this.check = setTimeout(() => {
         if (this.running && this.lastEvent < t0) {
           this.stop(true);
-          Steps.setStatus('nodata', 'The step sensor isn\u2019t available here. Log steps from your Health app, or open Stepquest on your phone.');
+          Steps.setStatus('nodata', 'No step sensor on this device. Open Stepquest on your phone, or log steps from your Health app.');
         }
       }, 2500);
       Steps.setStatus('on');
@@ -200,7 +200,8 @@
         } catch (e) { delete buffers[path]; }
       },
       play(name) {
-        if (name === 'level') { const now = Date.now(); if (now - lastLevel < 3000) return; lastLevel = now; }   // level-up + achievement together: one fanfare
+        if (name === 'level') { const now = Date.now(); if (now - lastLevel < 11000) return; lastLevel = now; }   // level-up + achievement together: one fanfare, played in full
+        if ((name === 'level' || name === 'discovery') && WB.Bgm && WB.Bgm.duck) WB.Bgm.duck(name === 'level' ? 11000 : 8000);   // the music steps back while it plays
         const f = FILES[name] || (!tones[name] && 'sfx/' + name + '.mp3');   // any other name = its file in sfx/ (tools/synth_sounds.py)
         if (f) return this.file(Array.isArray(f) ? f[Math.floor(Math.random() * f.length)] : f, 0.7);
         try {
@@ -231,10 +232,13 @@
       battleEpic: ['music/battle_epic_1.mp3', 'music/battle_epic_2.mp3'],
     };
     let el = null, want = null, fadeT = null;
-    const allowed = () => !!(WB.state && WB.state.settings.sound && WB.state.settings.music !== false && !(WB.Music && WB.Music.active && WB.Music.active()));
-    const retry = () => { document.removeEventListener('pointerdown', retry, true); B.sync(); };
+    const allowed = () => !!(WB.state && WB.state.settings.sound && !(WB.Music && WB.Music.active && WB.Music.active()));
+    // browsers only start audio after a real tap: on phones that is touchend / pointerup / click (not pointerdown)
+    const GESTURES = ['pointerup', 'touchend', 'click', 'keydown'];
+    const retry = () => { GESTURES.forEach((g) => document.removeEventListener(g, retry, true)); B.sync(); };
     const B = {
-      // key: 'app' | 'battle'; plays it on a loop until stop()
+      // key: 'app' (the default theme) | 'battle' | 'merlin'; plays it on a loop until stop()
+      home() { B.play('app'); },
       play(key) {
         if (key === 'battle' && WB.state && WB.state.level >= WB.DATA.EPIC_MUSIC_LEVEL) key = 'battleEpic';
         const t = TRACKS[key]; if (!t) return;
@@ -247,6 +251,12 @@
         const a = el, v0 = a.volume, t0 = performance.now(); clearInterval(fadeT);
         fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = v0 * (1 - k); if (k >= 1) { clearInterval(fadeT); a.pause(); } }, 50);
       },
+      // lower the music while a fanfare plays, then bring it back
+      duck(ms) {
+        if (!el || el.paused) return;
+        clearTimeout(B._duckT); el.volume = 0.12;
+        B._duckT = setTimeout(() => { if (el && !el.paused && want) el.volume = 0.45; }, ms);
+      },
       playing: () => !!(el && !el.paused && want),
       key: () => want && want.key,
       stopIf(key, ms) { if (want && want.key === key) B.stop(ms); },
@@ -257,7 +267,7 @@
         const url = WB.Assets.base + want.src;
         if (el.dataset.src !== want.src) { el.src = url; el.dataset.src = want.src; }
         clearInterval(fadeT); el.volume = 0.45;
-        const p = el.play(); if (p && p.catch) p.catch(() => document.addEventListener('pointerdown', retry, true));
+        const p = el.play(); if (p && p.catch) p.catch(() => GESTURES.forEach((g) => document.addEventListener(g, retry, true)));
       },
     };
     document.addEventListener('visibilitychange', () => { if (!el) return; if (document.visibilityState === 'hidden') el.pause(); else B.sync(); });

@@ -4,9 +4,9 @@
    egg you carry. Beat him and he runs away. s.druid = { asked: [question indexes], wins, losses } */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
-  const st = () => { const s = S(); if (!s.druid) s.druid = { asked: [], wins: 0, losses: 0 }; return s.druid; };
+  const st = () => { const s = S(); if (!s.druid) s.druid = { asked: [], wins: 0, losses: 0, taken: 0 }; if (s.druid.taken == null) s.druid.taken = s.druid.wins + s.druid.losses; return s.druid; };
 
-  G.druidReward = (w) => { const lvl = S().level, tier = (w || G.world()).tier || 0; return { xp: 30 + lvl * 6 + tier * 4, coins: 25 + lvl * 4 + tier * 3 }; };
+  G.druidReward = (w) => { const lvl = S().level, tier = (w || G.world()).tier || 0, k = G.perk('druid') ? 1.3 : 1; return { xp: Math.round((30 + lvl * 6 + tier * 4) * k), coins: Math.round((25 + lvl * 4 + tier * 3) * k) }; };
   // a question you haven't had yet (once all have been asked, the bank starts over), answers shuffled
   G.druidQuestion = () => {
     const d = st(), n = D.QUIZ.length;
@@ -22,7 +22,7 @@
   G.answerDruid = (e, pick) => {
     const s = S(), qz = e.quiz, d = st();
     if (!qz || e._answered) return null;
-    e._answered = true;
+    e._answered = true; d.taken = (d.taken || 0) + 1;
     const ok = pick === qz.answer, right = qz.options[qz.answer];
     s.enc.count++; s.today.encounters++;
     if (!ok) { G.after(); return { ok, right }; }

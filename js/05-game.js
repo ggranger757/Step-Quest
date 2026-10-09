@@ -14,7 +14,10 @@
   G.hasFound = (art) => Object.entries(D.FINDS).some(([w, list]) => list.some((f, i) => f[0] === art && (S().enc.finds[w] || []).includes(i)));
 
   // ---------- hero ----------
-  G.maxHp = () => D.heroMaxHp(S().level);
+  // charms: worn magic items (up to D.CHARM_SLOTS), each with a passive perk
+  G.charms = () => (S().equip.charms || []).filter((id) => D.magicById[id] && D.magicById[id].kind === 'charm');
+  G.perk = (perk) => G.charms().some((id) => D.magicById[id].perk === perk);
+  G.maxHp = () => Math.round(D.heroMaxHp(S().level) * (G.perk && G.perk('hp') ? 1.1 : 1));
   G.heal = (n) => {
     const s = S(), before = s.hp; s.hp = Math.min(G.maxHp(), Math.max(0, s.hp + n));
     if (s.hp < before) WB.bus.emit('hpLoss', { who: 'hero', amount: before - s.hp });   // floats "-N HP" over the walker
@@ -58,7 +61,7 @@
   G.isEquipped = (cat, id) => {
     const s = S();
     if (cat === 'avatar') return s.avatar === id;
-    if (cat === 'magic') return id === 'backpack' && !!s.equip.backpack;
+    if (cat === 'magic') return G.charms().includes(id);
     if (cat === 'weapon') { const w = D.weaponById[id]; return !!w && s.equip[G.slotKey(w.slot)] === id; }
     return s.equip[cat] === id;
   };
@@ -174,11 +177,16 @@
     WB.bus.emit('world', wid);
     WB.Save.queue();
   };
-  // worlds open by level (levels come from walking, battles, tasks and achievements)
+  // a world opens when you reach its level AND have explored the world before it to D.WORLD_GATE_PCT%
+  G.gateMet = (w) => !w.unlock.after || S().unlocked.includes(w.id) || G.explorePct(w.unlock.after) >= D.WORLD_GATE_PCT;
+  G.worldReq = (w) => {
+    const prev = w.unlock.after && D.worldById[w.unlock.after];
+    return 'Level ' + w.unlock.level + (prev ? ' · explore ' + prev.name + ' ' + D.WORLD_GATE_PCT + '%' : '');
+  };
   function openWorlds() {
     const s = S();
     for (const w of D.WORLDS) {
-      if (!s.unlocked.includes(w.id) && s.level >= w.unlock.level) {
+      if (!s.unlocked.includes(w.id) && s.level >= w.unlock.level && G.gateMet(w)) {
         s.unlocked.push(w.id); s.worldSteps[w.id] = s.worldSteps[w.id] || 0;
         WB.bus.emit('worldUnlocked', w);
       }
@@ -187,8 +195,12 @@
   // total XP earned so far, and the total needed to reach a level: drives the "next world" progress bar
   G.totalXp = (lvl = S().level, xp = S().xp) => { let t = xp; for (let l = 1; l < lvl; l++) t += D.xpToNext(l); return t; };
   G.worldProgress = (w) => {
-    const need = G.totalXp(w.unlock.level, 0), have = G.totalXp();
-    return { pct: Math.min(100, (have / Math.max(1, need)) * 100), xpLeft: Math.max(0, need - have), stepsLeft: Math.max(0, Math.ceil((need - have) / D.XP_PER_STEP)) };
+    const need = G.totalXp(w.unlock.level, 0), have = G.totalXp(), prev = w.unlock.after && D.worldById[w.unlock.after];
+    const xpPct = Math.min(100, (have / Math.max(1, need)) * 100), xpSteps = Math.max(0, Math.ceil((need - have) / D.XP_PER_STEP));
+    // exploring: steps still to walk in the world before it (0 once it's explored far enough)
+    const gateSteps = prev && !G.gateMet(w) ? Math.max(0, Math.ceil(prev.length * D.WORLD_GATE_PCT / 100 - (S().worldSteps[prev.id] || 0))) : 0;
+    const gatePct = prev ? Math.min(100, G.explorePct(prev.id) / D.WORLD_GATE_PCT * 100) : 100;
+    return { pct: Math.min(xpPct, gatePct), xpLeft: Math.max(0, need - have), stepsLeft: Math.max(xpSteps, gateSteps), levelOk: S().level >= w.unlock.level, gateOk: G.gateMet(w), prev };
   };
   function checkWorlds() {
     const s = S();
@@ -379,8 +391,8 @@
   // ---------- encounters ----------
   G.makeEncounter = (forceType, opts = {}) => {
     const s = S(), w = opts.world ? D.worldById[opts.world] : G.world();
-    let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS).type;
-    const eggTrade = G.tradesReady && G.tradesReady().length && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
+    let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS.map((x) => x.type === 'find' && G.perk('finds') ? { ...x, w: x.w * 1.5 } : x)).type;
+    const eggTrade = G.setsReady && G.setsReady().length && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
     if (type === 'druid' && s.level < 2) type = 'chest';
     if (type === 'nemesis' && !opts.boss && (s.level < D.BOSS_LEVEL || Date.now() - (s.enc.nemesisAt || 0) < D.BOSS_COOLDOWN_H * 3600000)) type = 'creature';
     if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest && !eggTrade) type = 'chest';
@@ -410,8 +422,8 @@
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
       }
     } else if (type === 'merlin') {
-      const m = opts.quest ? D.missionById[opts.quest] : G.merlinEligible() ? G.merlinNext() : null, trades = G.tradesReady();
-      s.enc.merlinAt = Date.now();
+      const m = opts.quest ? D.missionById[opts.quest] : G.merlinEligible() ? G.merlinNext() : null, trades = G.setsReady();
+      s.enc.merlinAt = Date.now(); s.enc.merlinMet = true;   // meeting him opens egg trading
       e.npc = 'merlin'; e.quest = m ? m.id : null;
       e.text = m ? WB.pick(D.MERLIN_LINES) + ' ' + G.missionTitle(m) + ': ' + G.missionDesc(m) + ' Finish within ' + m.hours + ' hours.' : '“Hoo! I hear you’ve been collecting eggs. Shall we trade?”';
       e.choices = m ? [{ id: 'accept', label: 'Accept the quest', hint: G.rewardText(m.reward) }] : [];
@@ -566,10 +578,11 @@
       if (e.boss) {
         s.bosses[w.id] = Date.now(); s.enc.bossDue = null; out.boss = w;
         out.reward.potion = 'elixir';
-      } else if (Math.random() < (s.equip.backpack ? 0.6 : 0.3)) out.reward.potion = Math.random() < 0.8 ? 'tonic' : 'iron';
-      if (s.equip.backpack) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }   // the backpack carries extra loot
+      } else if (Math.random() < (G.perk('loot') ? 0.6 : 0.3)) out.reward.potion = Math.random() < 0.8 ? 'tonic' : 'iron';
+      if (G.perk('loot')) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }   // the backpack carries extra loot
+      charmRewards(out.reward);
       out.granted = G.grant(out.reward, true);
-      if (e.boss || Math.random() < (s.equip.backpack ? 0.4 : 0.25)) { const id = G.rollEgg(w.tier, e.boss); if (G.addEgg(id)) out.egg = id; }   // creatures sometimes guard an egg
+      if (e.boss || Math.random() < (G.perk('loot') ? 0.4 : 0.25) + (G.perk('eggs') ? 0.1 : 0)) { const id = G.rollEgg(w.tier, e.boss); if (G.addEgg(id)) out.egg = id; }   // creatures sometimes guard an egg
       s.enc.count++; s.today.encounters++;
     } else if (b.result === 'lose') {
       s.enc.losses++;
@@ -589,6 +602,11 @@
     return out;
   };
 
+  // charm perks on a battle win: the Merchant's Purse (+20% coins) and the Scholar's Codex (+15% XP)
+  function charmRewards(r) {
+    if (G.perk('coins') && r.coins) r.coins = Math.round(r.coins * 1.2);
+    if (G.perk('xp') && r.xp) r.xp = Math.round(r.xp * 1.15);
+  }
   // a roaming boss: a big win, or 2 levels lost
   function bossResult(b, out, w) {
     const s = S(), e = b.enc, n = (s.nemesis = s.nemesis || { beaten: {}, losses: 0 });
@@ -599,7 +617,8 @@
       n.beaten[e.creature] = (n.beaten[e.creature] || 0) + 1;
       s.enc.cards[e.creature] = (s.enc.cards[e.creature] || 0) + 1;
       if (first) { out.reward.coins += 250; out.newKind = e.creature; }
-      if (s.equip.backpack) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }
+      if (G.perk('loot')) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }
+      charmRewards(out.reward);
       out.granted = G.grant(out.reward, true);
       const id = G.rollEgg(w.tier, true); if (G.addEgg(id)) out.egg = id;
       out.nemesis = e.creature;
@@ -643,7 +662,7 @@
     const s = S(), p = G.potion(id);
     if (!p || p.kind !== 'heal' || !(s.potions[id] > 0)) return { ok: false };
     if (s.hp >= G.maxHp()) return { ok: false, msg: 'You’re already at full health.' };
-    s.potions[id]--; G.heal(Math.round(G.maxHp() * p.amount));
+    s.potions[id]--; G.heal(Math.round(G.maxHp() * Math.min(1, p.amount * (G.perk('potions') ? 1.25 : 1))));
     WB.Sfx.play('claim'); G.after();
     return { ok: true };
   };
@@ -656,11 +675,18 @@
     WB.Sfx.play('buy'); G.after();
     return { ok: true };
   };
+  G.unequipCharm = (id) => { const s = S(); s.equip.charms = G.charms().filter((x) => x !== id); WB.bus.emit('state'); WB.Save.queue(); };
   G.equip = (cat, id) => {
     const s = S();
     if (id && !G.owns(cat, id)) return;
     if (cat === 'avatar') s.avatar = id;
-    else if (cat === 'magic') { if (id === 'backpack' || !id) s.equip.backpack = !!id; }   // only the backpack is worn
+    else if (cat === 'magic') {   // charms are worn (up to D.CHARM_SLOTS); battle magic is simply carried
+      const m = D.magicById[id]; if (!m || m.kind !== 'charm') return;
+      const worn = G.charms();
+      if (worn.includes(id)) return;
+      if (worn.length >= D.CHARM_SLOTS) return { full: true };
+      s.equip.charms = [...worn, id];
+    }
     else if (cat === 'weapon') { if (!id) return; s.equip[G.slotKey(D.weaponById[id].slot)] = id; }
     else if (cat === 'shield') s.equip.shield = id;   // shields can be taken off
     else s.equip[cat] = id;
@@ -685,7 +711,7 @@
     const w = G.world();
     out.push('Your ' + w.name + ' exploration is ' + Math.floor(G.explorePct(w.id)) + '% complete.');
     const nw = G.nextWorld();
-    if (nw) out.push(nw.name + ' opens at level ' + nw.unlock.level + ' (about ' + WB.fmt(G.worldProgress(nw).stepsLeft) + ' steps away).');
+    if (nw) out.push('Next world: ' + nw.name + ' (' + G.worldReq(nw).toLowerCase() + ').');
     const sv = G.streakView();
     if (sv.alive && sv.count > 0) out.push('Your ' + sv.count + '-day streak is active.' + (sv.today ? '' : ' Walk ' + WB.fmt(s.settings.streakMin) + ' steps today to extend it.'));
     else if (sv.lost) out.push('Fresh start: today can be day 1 of a new streak.');

@@ -6,7 +6,19 @@ WB.$$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 WB.clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 WB.lerp = (a, b, t) => a + (b - a) * t;
 WB.fmt = (n) => Math.floor(n).toLocaleString('en-US');
-WB.fmtKm = (m) => (m >= 1000 ? (m / 1000).toFixed(m >= 10000 ? 1 : 2) + ' km' : Math.round(m) + ' m');
+// distances follow the player's unit setting (Profile → Distance units): metric (m / km) or imperial (ft / mi)
+WB.miles = () => !!(WB.state && WB.state.settings && WB.state.settings.units === 'mi');
+WB.fmtKm = (m) => {
+  if (WB.miles()) { const mi = m / 1609.344; return mi < 0.1 ? Math.round(m * 3.28084) + ' ft' : mi.toFixed(mi >= 10 ? 1 : 2) + ' mi'; }
+  return m >= 1000 ? (m / 1000).toFixed(m >= 10000 ? 1 : 2) + ' km' : Math.round(m) + ' m';
+};
+// short form for goals ("1.5 km" / "0.9 mi")
+WB.fmtDist = (m) => {
+  if (WB.miles()) { const mi = m / 1609.344; return (mi < 10 ? +mi.toFixed(1) : Math.round(mi)) + ' mi'; }
+  return m >= 1000 ? (m / 1000).toFixed(m % 1000 ? 1 : 0) + ' km' : m + ' m';
+};
+// rewrite "3 km" written in content text for players who use miles
+WB.unitText = (t) => (WB.miles() && t ? String(t).replace(/(\d+(?:\.\d+)?)\s?km\b/g, (_, n) => WB.fmtDist(parseFloat(n) * 1000)) : t);
 WB.esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 WB.dayKey = (d = new Date()) => {

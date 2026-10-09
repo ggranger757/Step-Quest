@@ -9,7 +9,7 @@
     return `<div class="trade pbox ${ready ? 'ready' : ''}">
       <div class="tr-main"><div class="t-title">${WB.esc(t.name)}</div><div class="tr-need">${needText(t)}</div>
         <div class="t-rew">${WB.esc(G.rewardText(t.reward))}${t.item ? ' + a weapon or pet from his hoard' : ''}</div></div>
-      <button class="btn ${ready ? 'gold' : ''} sm" type="button" data-eggtrade="${t.id}" ${UI.off(!ready && 'You need ' + miss + '.')}>Trade</button>
+      <button class="btn ${ready ? 'gold' : ''} sm" type="button" data-eggtrade="${t.id}" ${UI.off(!ready && (!G.merlinMet() ? 'Meet Merlin on the road first. After that you can trade any time.' : 'You need ' + miss + '.'))}>${G.merlinMet() ? 'Trade' : 'Locked'}</button>
     </div>`;
   }
   // used by Inventory → Eggs and by Merlin's corner of the Field tab
@@ -19,7 +19,7 @@
     return `<div class="eggs">${D.EGGS.map((x) => `<div class="egg pbox ${e[x.id] ? '' : 'none'}">${WB.eggImg(x.id, 64)}<div class="egg-b"><div class="t-title">${x.name} <span class="lbl">${x.rarity}</span></div><div class="m-desc">${x.desc}</div>
         <div class="obj-prog"><div class="bar seg"><i style="width:${(e[x.id] / D.EGG_MAX) * 100}%"></i></div><span class="num">${e[x.id] || 0} / ${D.EGG_MAX}</span></div></div></div>`).join('')}</div>
       <div class="sect"><h2>Trade with Merlin <span class="aside">${S().eggTrades || 0} made</span></h2>
-        <p class="fine">Merlin collects eggs. Send him a full set by owl post any time (or trade when he finds you on the road) and he pays in loot. Eggs turn up on the road and some creatures guard one; guardians always do. Lose a battle and half of each kind you carry breaks.</p>
+        <p class="fine">${G.merlinMet() ? 'Merlin pays loot for full sets. Trade here any time, or when he finds you on the road.' : 'Merlin the owl-mage collects eggs. Once you’ve met him on the road, you can trade full sets here any time.'} Losing a battle breaks half of each kind you carry.</p>
         ${UI.eggTrades()}</div>`;
   };
 

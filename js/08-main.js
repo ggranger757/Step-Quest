@@ -52,7 +52,8 @@
     const offerHealth = () => { if (WB.Health.status === 'off' && !S().hints.health && S().onboarded) UI.healthSheet(); };
     const health = WB.Health.init();
     // first launch (and players who haven't seen it yet): the guided tour, then the health-sync offer
-    if (S().onboarded && !S().hints.tour) { WB.Bgm.play('app'); setTimeout(() => WB.Tour.start(() => health.then(offerHealth)), 700); }   // the welcome song plays until the tutorial ends
+    WB.Bgm.play('app');   // the default theme plays whenever the app opens (from the first tap if the browser blocks autoplay)
+    if (S().onboarded && !S().hints.tour) setTimeout(() => WB.Tour.start(() => health.then(offerHealth)), 700);
     else health.then(offerHealth);
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
@@ -66,7 +67,7 @@
     w.hidden = false;
     const close = () => { w.hidden = true; };
     $('#wb-ok').onclick = close;
-    setTimeout(close, 12000);
+    setTimeout(close, 20000);
   }
 
   // ---------- event wiring ----------
@@ -98,7 +99,7 @@
     WB.bus.on('sensor', () => { if (UI.tab === 'world' || UI.tab === 'profile') UI.render(); });
     WB.bus.on('levelup', (e) => {
       WB.Sfx.play('level');
-      UI.toast({ kicker: e.regained ? 'Level regained' : 'Level up · +' + e.coins + ' coins', title: 'Level ' + e.level, sub: WB.Celebrate.fire('level', e, 110), icon: 'xp', cls: 'big', ms: 4200, group: 'level' });
+      UI.levelUp(e);   // a celebration card: new level, coins, everything it unlocks, and the next goal
       if (WB.view && UI.tab === 'world') { const p = WB.view.avatarPos(); UI.floater('LEVEL UP', p.x, p.y - 40, 'xp big'); WB.view.burst(WB.view.avX, WB.view.world.ground - 40, ['#8b6cff', '#c7b8ff', '#ffffff'], 24); }
     });
     WB.bus.on('unlock', ({ cat, id }) => {
@@ -222,7 +223,7 @@
         if (k === 'tasks') {
           for (const a of s.missions.active) { const m = D.missionById[a.id]; if (!m) continue; a.steps = Math.max(a.steps, m.steps * 2); a.win = Math.max(a.win, m.steps); a.photo = true; a.walks = Array(m.walks || 0).fill(m.per || 0); }
           const td = s.today; td.encounters = Math.max(td.encounters, 2); td.fights = Math.max(td.fights, 1); td.chests = Math.max(td.chests, 1); td.meters = Math.max(td.meters, 1500); const need = Math.max(0, 4000 - td.steps); if (need) WB.Steps.push(need, 'dev'); else G.after(); }
-        if (k === 'world') { const nw = G.nextWorld(); if (nw) { while (s.level < nw.unlock.level) G.addXp(D.xpToNext(s.level) - s.xp + 1); G.after(); } }
+        if (k === 'world') { const nw = G.nextWorld(); if (nw) { if (nw.unlock.after) s.worldSteps[nw.unlock.after] = Math.max(s.worldSteps[nw.unlock.after] || 0, D.worldById[nw.unlock.after].length); while (s.level < nw.unlock.level) G.addXp(D.xpToNext(s.level) - s.xp + 1); G.after(); } }
         if (k === 'avatars') { D.AVATARS.forEach((a) => G.unlock('avatar', a.id, true)); G.after(); }
         if (k === 'battle') { UI.closeSheet(); UI.go('world'); const w = G.world(), c = w.pool.find((x) => D.CREATURES[x].aggressive) || 'hyena'; WB.BattleUI.open(G.makeEncounter('creature', { creature: c })); return; }
         if (k === 'boss') { UI.closeSheet(); UI.go('world'); WB.BattleUI.challenge(s.world); return; }

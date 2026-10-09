@@ -201,13 +201,13 @@
       WB.drawFrame(ctx, eimg, esh, f, view.ex - sz / 2, dy, sc, es.anim === 'flee' ? false : es.run ? esh.face === 'left' : esh.face !== 'left');
       if (E && E.freeze > 0) { ctx.globalAlpha = 0.35; ctx.fillStyle = '#9fe8ff'; ctx.fillRect(view.ex - sz * 0.3, g - sz * 0.75, sz * 0.6, sz * 0.75); }
       if (E && (E.ward || E.brace) && es.fade > 0) {   // its defences, visible
-        ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(t * 6); ctx.strokeStyle = E.ward ? '#c58bff' : '#ffcc4d'; ctx.lineWidth = 2;
+        ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(t * 6); ctx.strokeStyle = E.ward ? '#c58bff' : '#ff9a3d'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.ellipse(view.ex, g - sz * 0.38, sz * 0.42, sz * 0.48, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
       }
-      if (E && E.stun > 0) { ctx.fillStyle = '#ffcc4d'; for (let i = 0; i < 3; i++) { const a = t * 4 + i * 2.1; ctx.fillRect(Math.round(view.ex + Math.cos(a) * 10), Math.round(topOf(esh, dy, sc) - 4 + Math.sin(a) * 3), 2, 2); } }
+      if (E && E.stun > 0) { ctx.fillStyle = '#ff9a3d'; for (let i = 0; i < 3; i++) { const a = t * 4 + i * 2.1; ctx.fillRect(Math.round(view.ex + Math.cos(a) * 10), Math.round(topOf(esh, dy, sc) - 4 + Math.sin(a) * 3), 2, 2); } }
       ctx.globalAlpha = 1;
       view.enemyTop = topOf(WB.sheet('cr', eid, 'idle'), dy, sc);
-      if (E && E.nemesis && E.halved && E.ability === 'enrage' && es.fade > 0 && !reducedFx && Math.random() < dt * 18) fx.push({ type: 'spark', x: view.ex - sz * 0.2 + Math.random() * sz * 0.4, y: g - Math.random() * sz * 0.6, vx: 0, vy: -40, life: 0.6, t: 0, color: Math.random() < 0.5 ? '#ff6b3d' : '#ffcc4d', size: 2 });
+      if (E && E.nemesis && E.halved && E.ability === 'enrage' && es.fade > 0 && !reducedFx && Math.random() < dt * 18) fx.push({ type: 'spark', x: view.ex - sz * 0.2 + Math.random() * sz * 0.4, y: g - Math.random() * sz * 0.6, vx: 0, vy: -40, life: 0.6, t: 0, color: Math.random() < 0.5 ? '#ff6b3d' : '#ff9a3d', size: 2 });
       view.ex = ex0;
     }
     // effects
@@ -288,11 +288,12 @@
     if (!el) return;
     if (mode === 'magic') {
       el.className = 'b-actions items';
+      const turnUsed = st.magicTurn === st.turn;
       el.innerHTML = st.magic.map((id) => {
-        const m = D.magicById[id], used = st.mused[id], why = used ? m.name + ' has been used this battle.' : '';
-        const tag = id === 'ring' ? 'A copy of you for 3 turns' : id === 'book' ? '+' + Math.round(D.BOOK_BONUS * 100) + '% magic damage' : 'Two lucky turns';
-        if (id === 'clover' && !used) return `<button class="btn ghost" type="button" data-b="magic:clover/twice">${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: strike twice</span><small>Next 2 attacks hit twice</small></span></button><button class="btn ghost" type="button" data-b="magic:clover/dodge">${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: dodge</span><small>Dodge the next 2 attacks</small></span></button>`;
-        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>${used ? 'Used' : tag}</small></span></button>`;
+        const m = D.magicById[id], used = st.mused[id];
+        const why = used ? m.name + ' was already used this battle.' : turnUsed ? 'You’ve used a magic item this turn. Try again next turn.' : m.fx.type === 'special' && !st.special.unlocked ? 'Your special attack unlocks at level ' + D.SPECIAL_LEVEL + '.' : '';
+        if (id === 'clover' && !used) return `<button class="btn ghost" type="button" data-b="magic:clover/twice" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: strike twice</span><small>Next 2 attacks hit twice</small></span></button><button class="btn ghost" type="button" data-b="magic:clover/dodge" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: dodge</span><small>Dodge the next 2 attacks</small></span></button>`;
+        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>${used ? 'Used' : WB.esc(m.tag)}</small></span></button>`;
       }).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
     } else if (mode === 'items') {
       el.className = 'b-actions items';
@@ -307,7 +308,7 @@
         <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(st.hero.guardPts < D.DEFEND_COST && 'Your guard is worn down (' + st.hero.guardPts + '%). Each Defend uses ' + D.DEFEND_COST + '%; it recovers ' + D.DEFEND_REGEN + '% every turn you don’t defend.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${sh ? 'Block ' + Math.round(sh.block * 100) + '%' + (sh.reflect ? ', reverse' : '') + (sh.counter ? ', counter' : '') : 'Block 60%, heal a little'} · guard ${st.hero.guardPts}%</small></span><span class="sp-gauge df-gauge ${st.hero.guardPts < D.DEFEND_COST ? 'low' : ''}" aria-hidden="true"><i style="width:${st.hero.guardPts}%"></i></span></button>
         <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'You have no potions. Buy them in Shop → Potions after the fight.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
         ${specialBtn(st)}
-        ${st.magic.length ? `<button class="btn ghost magic-btn" type="button" data-b="magicmenu" ${WB.UI.off(st.magic.every((id) => st.mused[id]) && 'You’ve used every magic item this battle.')}>${WB.pxImg('mg/' + st.magic[st.magic.length - 1] + '.png', 28)}<span class="bt"><span>Magic</span><small>${st.magic.filter((id) => !st.mused[id]).length} ready · free action</small></span></button>` : ''}
+        ${st.magic.length ? `<button class="btn ghost magic-btn" type="button" data-b="magicmenu" ${WB.UI.off(st.magic.every((id) => st.mused[id]) ? 'You’ve used every magic item this battle.' : st.magicTurn === st.turn && 'One magic item per turn. Attack, defend or use an item, then try again.')}>${WB.pxImg('mg/' + st.magic[st.magic.length - 1] + '.png', 28)}<span class="bt"><span>Magic</span><small>${st.magic.filter((id) => !st.mused[id]).length} ready · free</small></span></button>` : ''}
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
       const ic = el.querySelector('.wp-ic'); if (ic) WB.UI.paintWeapon(ic, wpn.id);
     }
@@ -476,17 +477,31 @@
         if (ev.heal) healHero(ev.heal);
         plates(); await sleep(450);
       } else if (ev.type === 'potion') {
-        fx.push({ type: 'ring', x: view.hx, y: g - 30, color: ev.heal ? '#6ee7a0' : '#ffcc4d', t: 0 }); WB.Sfx.play('potion');
+        fx.push({ type: 'ring', x: view.hx, y: g - 30, color: ev.heal ? '#6ee7a0' : '#ff9a3d', t: 0 }); WB.Sfx.play('potion');
         healHero(ev.heal);
         if (ev.dmg) { await sleep(250); hurtEnemy(ev.dmg, true, '#c58bff'); fx.push({ type: 'ring', x: view.ex, y: eY(), color: '#c58bff', t: 0 }); }
         plates(); await sleep(650);
       } else if (ev.type === 'magic') {
-        const col = ev.item === 'ring' ? '#c7b8ff' : ev.item === 'book' ? '#b07cff' : '#6ee7a0';
-        WB.Sfx.play(ev.item === 'book' ? 'spell_cast' : ev.item === 'ring' ? 'special_nova' : 'level');
-        fx.push({ type: 'ring', x: view.hx, y: hY(), color: col, t: 0 }); fx.push({ type: 'ring', x: view.hx, y: hY(), color: col, t: -0.15 }); burst(view.hx, hY(), col, 14);
-        floater(ev.item === 'ring' ? 'Illusion!' : ev.item === 'book' ? 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%' : ev.mode === 'dodge' ? 'Lucky dodge ×2' : 'Lucky strikes ×2', 'hero', 'tag');
-        plates(); await sleep(800);
+        const m = D.magicById[ev.item], t = m.fx.type;
+        const col = { ring: '#c7b8ff', book: '#b07cff', clover: '#6ee7a0', heal: '#6ee7a0', cleanse: '#fff3a0', dragon: '#ff8a3d', guard: '#59e3ff', valor: '#ffb347', fury: '#ff6b3d', blast: '#9fe8ff', drain: '#ff6bd5', status: '#c58bff', break: '#ffb347', seer: '#b07cff', reflect: '#9fe8ff', dodge: '#7a6cff' }[t] || '#c7b8ff';
+        WB.Sfx.play(t === 'heal' || t === 'cleanse' || t === 'dragon' ? 'potion' : t === 'ring' || t === 'blast' ? 'special_nova' : t === 'clover' ? 'level' : 'spell_cast');
+        const onEnemy = ['blast', 'drain', 'status', 'break', 'seer'].includes(t);
+        fx.push({ type: 'ring', x: view.hx, y: hY(), color: col, t: 0 }); burst(view.hx, hY(), col, 12);
+        WB.Assets.get('mg/' + ev.item + '.png');
+        fx.push({ type: 'proj', path: 'mg/' + ev.item + '.png', info: { w: 64, h: 64, n: 1 }, mode: 'straight', scale: 0.5, x0: view.hx, y0: hY() - 26, x1: onEnemy ? view.ex : view.hx, y1: onEnemy ? eY() : hY() - 40, t: 0, dur: onEnemy ? 0.45 : 0.5 });
+        await sleep(onEnemy ? 480 : 300);
+        floater(m.name, 'hero', 'tag');
+        if (onEnemy) {
+          fx.push({ type: 'ring', x: view.ex, y: eY(), color: col, t: 0 }); burst(view.ex, eY(), col, 14);
+          for (const [i, hh] of (ev.hits || []).entries()) { hurtEnemy(hh.dmg, true, col); if (i < ev.hits.length - 1) await sleep(220); }
+          if (ev.status) { WB.Sfx.play(ev.status === 'freeze' ? 'spell_frost' : ev.status === 'stun' ? 'status_stun' : 'status_' + (['poison', 'burn', 'bleed'].includes(ev.status) ? ev.status : 'stun')); floater({ poison: 'Poisoned', burn: 'Burning', bleed: 'Bleeding', freeze: 'Frozen', stun: 'Stunned', weaken: 'Weakened' }[ev.status], 'enemy', 'tag'); }
+          if (t === 'seer' || t === 'break') floater(t === 'seer' ? 'Stunned' : 'Guard broken', 'enemy', 'tag');
+        }
+        if (ev.heal) healHero(ev.heal);
+        plates(); await sleep(700);
       } else if (ev.type === 'flee') { await sleep(ev.ok ? 500 : 650); }
+      else if (ev.type === 'regen') { healHero(ev.heal); await sleep(380); }
+      else if (ev.type === 'revive') { WB.Sfx.play('level'); fx.push({ type: 'ring', x: view.hx, y: hY(), color: '#ff8a3d', t: 0 }); burst(view.hx, hY(), '#ff8a3d', 18); shown.hero = 1; floater('Ember Heart!', 'hero', 'tag'); hs.anim = 'idle'; plates(); await sleep(900); }
       else if (ev.type === 'hstun') { WB.Sfx.play('status_stun'); floater('Stunned', 'hero', 'tag'); hs.anim = 'hurt'; hs.once = true; hs.f = 0; await sleep(750); }
       else if (ev.type === 'hdot') { WB.Sfx.play('status_' + ev.dot); shown.hero -= ev.dmg; floater(hpText(-ev.dmg), 'hero', ev.dot); plates(); await sleep(520); }
       else if (ev.type === 'down') { hs.anim = 'down'; hs.once = true; hs.f = 0; WB.Sfx.play('lose'); await sleep(900); }
@@ -504,14 +519,15 @@
         else hurtHero(ev.dmg, ev.type === 'special');
         if (ev.pet && ps) { ps.flash = 0.5; shown.pet -= ev.pet; floater(hpText(-ev.pet), 'pet', 'dmg'); if (ev.petKO) setTimeout(() => floater('KO', 'pet', 'tag'), 250); plates(); }
         if (ev.reversed) { await sleep(200); bolt('hero', 'enemy', '#59e3ff'); await sleep(260); floater('Reversed!', 'hero', 'tag'); hurtEnemy(ev.reversed, false, '#59e3ff'); }
-        if (ev.countered) { await sleep(200); bolt('hero', 'enemy', '#ffcc4d'); await sleep(260); hurtEnemy(ev.countered, false, '#ffcc4d'); }
+        if (ev.countered) { await sleep(200); bolt('hero', 'enemy', '#ff9a3d'); await sleep(260); hurtEnemy(ev.countered, false, '#ff9a3d'); }
         if (ev.mirrored) { await sleep(200); bolt('hero', 'enemy', '#9fe8ff'); await sleep(260); hurtEnemy(ev.mirrored, false, '#9fe8ff'); }
+        if (ev.thorns) { await sleep(160); floater('Thorns', 'hero', 'tag'); hurtEnemy(ev.thorns, false, '#7ee06a'); }
         if (ev.status) { await sleep(220); floater(ev.status, 'hero', 'tag'); plates(); }
         if (ev.eheal) { await sleep(200); shown.enemy += ev.eheal; floater(hpText(ev.eheal), 'enemy', 'heal'); plates(); }
         await sleep(ev.combo !== undefined && ev.combo < 2 ? 180 : 560);
       } else if (ev.type === 'charge') { WB.Sfx.play('charge'); floater('Charging!', 'enemy', 'tag'); plates(); await sleep(800); }
       else if (ev.type === 'brace' || ev.type === 'ward') {
-        WB.Sfx.play('defend'); fx.push({ type: 'ring', x: view.ex, y: eY(), color: ev.type === 'ward' ? '#c58bff' : '#ffcc4d', t: 0 });
+        WB.Sfx.play('defend'); fx.push({ type: 'ring', x: view.ex, y: eY(), color: ev.type === 'ward' ? '#c58bff' : '#ff9a3d', t: 0 });
         floater(ev.type === 'brace' ? 'Defending' : 'Ward', 'enemy', 'tag');
         if (ev.heal) { shown.enemy += ev.heal; setTimeout(() => floater(hpText(ev.heal), 'enemy', 'heal'), 250); }
         plates(); await sleep(800);
@@ -579,7 +595,7 @@
     if (BU.ro) BU.ro.disconnect();
     $('#battle').hidden = true; $('#battle').innerHTML = '';
     WB.UI.histDone('battle'); WB.UI.lockScroll('battle', false);
-    WB.Bgm.stop();
+    WB.Bgm.stop(600); setTimeout(() => { if (!WB.Battle.active) WB.Bgm.home(); }, 700);   // back to the default theme
     document.documentElement.classList.remove('battling');
     if (WB.view) {
       WB.view.paused = false;

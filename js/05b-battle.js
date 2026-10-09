@@ -12,7 +12,7 @@
    Statuses on you: poison, burn (damage each turn, never below 1 HP) · weak (-30% damage) · stun (lose a turn)
    Statuses on the creature: poison, burn, bleed (damage each turn) · freeze, stun (skips a turn)
                 · weaken (-40% attack) · sunder (+25% damage taken)
-   Your pet soaks part of every hit (its `share`) until its own HP runs out. */
+   Your pet takes part of every hit (its `share`) until its own HP runs out. */
 (() => {
   const D = WB.DATA;
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -26,14 +26,15 @@
       enc, world: w, turn: 1, over: false, result: null,
       hero: { hp: Math.max(1, s.hp), max: G.maxHp(), atk: D.heroAtk(s.level), def: D.heroDef(s.level), lvl: s.level, guard: 0, guardF: 0.5, fury: 0, furyMult: 1.5, defend: false, reflect: false, poison: 0, burn: 0, weak: 0, stun: 0,
         clone: 0, tome: 0, twice: 0, dodge: 0, guardPts: 100, defended: false },
-      pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share } : null,
+      pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0) } : null,
       enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
         poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false, fled: 0,
         moves: D.CREATURE_MOVES[enc.creature] || D.CREATURE_MOVES.hyena },
       weapon: G.equipped('ranged') || D.WEAPONS[0], melee: G.equipped('melee') || D.weaponById.sw_rusty, shield: G.equipped('shield'),
       cooldown: 0,
       special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
-      magic: (s.owned.magic || []).filter((id) => D.magicById[id] && D.magicById[id].kind === 'battle'), mused: {},   // magic items, once per battle each
+      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id)).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn
+      perks: new Set(G.charms().map((id) => D.magicById[id].perk)),   // worn charms
     };
     B.active = true;
     return B.st;
@@ -76,7 +77,7 @@
     }
   }
   // attacking fills the special gauge (only once it's unlocked)
-  function chargeSpecial(st, kind) { const sp = st.special; if (sp && sp.unlocked && !st.over) sp.charge = Math.min(100, sp.charge + D.SPECIAL_CHARGE[kind]); }
+  function chargeSpecial(st, kind) { const sp = st.special; if (sp && sp.unlocked && !st.over) sp.charge = Math.min(100, sp.charge + Math.round(D.SPECIAL_CHARGE[kind] * (st.perks.has('charge') ? 1.3 : 1))); }
   const STATUS = ['poison', 'burn', 'bleed', 'freeze', 'freezeAll', 'stun', 'weaken', 'sunder', 'reflect'];
 
   // hero action, then (if the fight continues) the creature's reply and end-of-round effects
@@ -84,20 +85,51 @@
     const st = B.st, events = [];
     if (!st || st.over) return events;
     const h = st.hero, e = st.enemy;
-    const mult = (h.fury > 0 ? h.furyMult : 1) * (h.weak > 0 ? 0.7 : 1);
+    const P = st.perks, mult = (h.fury > 0 ? h.furyMult : 1) * (h.weak > 0 ? 0.7 : 1) * (P.has('dmg') ? 1.08 : 1) * (P.has('hunter') && (e.boss || e.nemesis) ? 1.15 : 1);
 
-    if (move === 'magic') {   // a magic item: instant, it doesn't use your turn
-      const [id, mode] = String(arg).split('/');
-      if (!st.magic.includes(id) || st.mused[id]) return events;
-      st.mused[id] = true;
-      const ev = { who: 'hero', type: 'magic', item: id };
-      if (id === 'ring') { h.clone = 3; ev.text = 'Illusion Ring: a copy of you shimmers into the fight for 3 turns. The creature will strike the copy.'; }
-      else if (id === 'book') { h.tome = Math.min(5, 3 + Math.floor(Math.max(0, h.lvl - 20) / 15)); ev.turns = h.tome; ev.text = 'Book of Magic: your spells, staves and special attacks do +' + Math.round(D.BOOK_BONUS * 100) + '% damage for ' + h.tome + ' turns.'; }
-      else if (id === 'clover') {
-        if (mode === 'dodge') { h.dodge = 2; ev.mode = 'dodge'; ev.text = 'Lucky Clover: you’ll dodge the creature’s next two attacks.'; }
-        else { h.twice = 2; ev.mode = 'twice'; ev.text = 'Lucky Clover: your next two attacks each strike twice.'; }
+    if (move === 'magic') {   // a magic item: instant, it doesn't use your turn (each once per battle, one per turn)
+      const [id, mode] = String(arg).split('/'), m = D.magicById[id];
+      if (!m || !st.magic.includes(id) || st.mused[id] || st.magicTurn === st.turn) return events;
+      if (m.fx.type === 'special' && !(st.special && st.special.unlocked)) return events;
+      st.mused[id] = true; st.magicTurn = st.turn;
+      const ev = { who: 'hero', type: 'magic', item: id }, fx = m.fx, nm = m.name + ': ';
+      const healBy = (frac) => { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * frac)); ev.heal = (ev.heal || 0) + h.hp - b0; return h.hp - b0; };
+      switch (fx.type) {
+        case 'ring': h.clone = 3; ev.text = nm + 'a copy of you shimmers into the fight for 3 turns. The creature will strike the copy.'; break;
+        case 'book': h.tome = Math.min(5, 3 + Math.floor(Math.max(0, h.lvl - 20) / 15)); ev.turns = h.tome; ev.text = nm + 'spells, staves and special attacks do +' + Math.round(D.BOOK_BONUS * 100) + '% damage for ' + h.tome + ' turns.'; break;
+        case 'clover':
+          if (mode === 'dodge') { h.dodge = 2; ev.mode = 'dodge'; ev.text = nm + 'you’ll dodge the creature’s next two attacks.'; }
+          else { h.twice = 2; ev.mode = 'twice'; ev.text = nm + 'your next two attacks each strike twice.'; }
+          break;
+        case 'heal': ev.text = nm + '+' + healBy(fx.amount) + ' HP.'; break;
+        case 'guard': h.guard = fx.turns; h.guardF = fx.factor; ev.text = nm + 'you take ' + pct(1 - fx.factor) + ' less damage for ' + fx.turns + ' turns.'; break;
+        case 'fury': h.fury = fx.turns + 1; h.furyMult = fx.mult; ev.text = nm + 'your attacks do ' + pct(fx.mult - 1) + ' more for ' + fx.turns + ' turns.'; break;
+        case 'valor': h.fury = fx.turns + 1; h.furyMult = 1.25; h.guard = fx.turns; h.guardF = 0.75; ev.text = nm + 'for ' + fx.turns + ' turns you hit 25% harder and take 25% less.'; break;
+        case 'dragon': healBy(fx.amount); h.fury = fx.turns + 1; h.furyMult = fx.mult; ev.text = nm + '+' + ev.heal + ' HP, and your attacks do ' + pct(fx.mult - 1) + ' more for ' + fx.turns + ' turns.'; break;
+        case 'recharge': st.cooldown = 0; ev.text = nm + 'your ' + st.weapon.name + ' is ready.'; break;
+        case 'guardfill': h.guardPts = 100; ev.text = nm + 'your guard is back to 100%.'; break;
+        case 'special': st.special.charge = 100; ev.text = nm + st.special.name + ' is ready!'; break;
+        case 'cleanse': h.poison = h.burn = h.weak = h.stun = 0; healBy(fx.amount); ev.text = nm + 'you’re cleansed of every ailment' + (ev.heal ? ' and recover ' + ev.heal + ' HP.' : '.'); break;
+        case 'reflect': h.reflect = true; ev.text = nm + 'the next hit you take is half thrown back.'; break;
+        case 'dodge': h.dodge += fx.n; ev.text = nm + 'you’ll dodge the creature’s next attack.'; break;
+        case 'escape': ev.text = nm + 'you slip through a hidden door and leave the battle.'; events.push(ev); st.over = true; st.result = 'fled'; return finish(events);
+        case 'seer': { const was = e.charging; e.charging = false; e.stun = Math.max(e.stun, 1); ev.text = nm + (was ? 'you foresee its special and break it. ' : '') + e.name + ' is stunned for a turn.'; break; }
+        case 'break': e.ward = false; e.brace = false; e.sunder = fx.turns; ev.text = nm + e.name + '’s guard shatters: it takes 25% more damage for ' + fx.turns + ' turns.'; break;
+        case 'status': {
+          const k = fx.effect === 'freeze' ? 'freeze' : fx.effect; inflict(st, fx.effect); e[k] = fx.turns;
+          ev.text = nm + ({ poison: 'poisoned', burn: 'burning', bleed: 'bleeding', freeze: 'frozen', stun: 'stunned', weaken: 'weakened' }[fx.effect]) + ' for ' + fx.turns + ' turn' + (fx.turns > 1 ? 's' : '') + '.';
+          ev.status = fx.effect; break;
+        }
+        case 'blast': {
+          ev.hits = [];
+          for (let i = 0; i < (fx.hits || 1) && e.hp > 0; i++) { const b0 = ev.dmg || 0; strikeEnemy(st, Math.max(1, Math.round(e.max * fx.power)), ev, true); ev.hits.push({ dmg: ev.dmg - b0 }); }
+          if (fx.stun && e.hp > 0) e.stun = Math.max(e.stun, fx.stun);
+          ev.text = nm + (ev.hits.length > 1 ? ev.hits.length + ' hits for ' : 'hits for ') + ev.dmg + '.' + (fx.stun && e.hp > 0 ? ' Stunned!' : ''); break;
+        }
+        case 'drain': { strikeEnemy(st, Math.max(1, Math.round(e.max * fx.power)), ev, true); healBy(ev.dmg / h.max); ev.text = nm + 'drains ' + ev.dmg + ' and heals you ' + ev.heal + '.'; break; }
       }
       events.push(ev);
+      if (e.hp <= 0) return win(st, events);
       return finish(events);
     }
     if (h.stun > 0 && move !== 'potion') {   // stunned: this turn is lost (a potion still works)
@@ -113,10 +145,10 @@
         let base = h.atk * m.power * mult * magicMult;
         if (m.effect === 'first' && st.turn === 1) base *= 1.5;
         if (m.effect === 'execute' && e.hp < e.max * 0.3) base *= 2;
-        const crit = Math.random() < 0.12 + (m.effect === 'crit' ? m.chance : 0);
-        if (crit) base *= m.critMult || 1.6;
+        const crit = Math.random() < 0.12 + (m.effect === 'crit' ? m.chance : 0) + (P.has('crit') ? 0.08 : 0);
+        if (crit) base *= (m.critMult || 1.6) + (P.has('critdmg') ? 0.5 : 0);
         const before = ev.dmg || 0;
-        strikeEnemy(st, hit(base), ev, !!m.pierce);
+        strikeEnemy(st, hit(base), ev, !!m.pierce || (P.has('pierce') && Math.random() < 0.3));
         ev.hits.push({ dmg: ev.dmg - before, crit });
       }
       if (STATUS.includes(m.effect) && e.hp > 0 && Math.random() < m.chance) extra = inflict(st, m.effect);
@@ -141,10 +173,10 @@
       const pierce = !!wpn.pierce || wpn.effect === 'pierce';
       for (let i = 0; i < n && e.hp > 0; i++) {
         let base = h.atk * wpn.power * mult * magicMult;
-        const crit = wpn.effect === 'crit' && Math.random() < (wpn.chance || 0.4);
-        if (crit) base *= 2;
+        const crit = (wpn.effect === 'crit' && Math.random() < (wpn.chance || 0.4)) || (P.has('crit') && Math.random() < 0.08);
+        if (crit) base *= 2 + (P.has('critdmg') ? 0.5 : 0);
         const before = ev.dmg || 0;
-        strikeEnemy(st, hit(base), ev, pierce);
+        strikeEnemy(st, hit(base), ev, pierce || (P.has('pierce') && Math.random() < 0.3));
         ev.hits.push({ dmg: ev.dmg - before, crit });
       }
       let extra = '';
@@ -154,7 +186,7 @@
       ev.text = wpn.name + (ev.hits.some((x) => x.crit) ? ' crits' : ev.hits.length > 1 ? ' hits ' + ev.hits.length + ' times' : verb) + ' for ' + ev.dmg + '.' +
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = wpn.name + ' passes straight through ' + e.name + '’s shadow!';
-      st.cooldown = wpn.cd + 1;
+      st.cooldown = P.has('cooldown') ? Math.max(1, wpn.cd) : wpn.cd + 1;   // the Circlet of Focus: one turn faster
       echo(st, ev);
       events.push(ev);
       chargeSpecial(st, 'throw');
@@ -199,7 +231,7 @@
       if (p.kind === 'blast') { strikeEnemy(st, Math.max(1, Math.round(e.max * p.power)), ev, true); ev.text = p.name + ' explodes for ' + ev.dmg + '!'; }
       events.push(ev);
     } else if (move === 'flee') {
-      const ok = Math.random() < (e.nemesis ? 0.35 : e.boss ? 0.45 : 0.75);
+      const ok = Math.random() < (P.has('flee') ? (e.nemesis ? 0.6 : e.boss ? 0.7 : 1) : (e.nemesis ? 0.35 : e.boss ? 0.45 : 0.75));
       events.push({ who: 'hero', type: 'flee', ok, text: ok ? 'You got away.' : 'You couldn’t get away!' });
       if (ok) { st.over = true; st.result = 'fled'; if (e.nemesis) say(st, events, 'victory'); return finish(events); }
     } else return events;
@@ -265,7 +297,8 @@
     if (e.sunder > 0) e.sunder--;
     if (h.guard > 0) h.guard--;
     if (h.fury > 0) h.fury--;
-    if (!h.defended) h.guardPts = Math.min(100, h.guardPts + D.DEFEND_REGEN);
+    if (!h.defended) h.guardPts = Math.min(100, h.guardPts + (P.has('guard') ? 25 : D.DEFEND_REGEN));
+    if (P.has('regen') && h.hp > 0 && h.hp < h.max) { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.max(1, Math.round(h.max * 0.03))); events.push({ who: 'hero', type: 'regen', heal: h.hp - b0, text: 'Pendant of Renewal: +' + (h.hp - b0) + ' HP.' }); }
     h.defend = false; h.defended = false;
     if (st.cooldown > 0) st.cooldown--;
     st.turn++;
@@ -274,7 +307,7 @@
     return finish(events);
   };
 
-  // the creature hits you: armor, defending (block / reverse / counter), potions, then your pet soaks its share
+  // the creature hits you: armor, defending (block / reverse / counter), potions, then your pet takes its share
   // the Illusion Ring's copy strikes alongside you for half the damage
   function echo(st, ev) {
     if (st.hero.clone > 0 && st.enemy.hp > 0 && ev.dmg) {
@@ -325,6 +358,8 @@
       if (sh && sh.counter) { const c = hit(h.atk * sh.counter); e.hp = Math.max(0, e.hp - c); ev.countered = c; }
     }
     if (h.guard > 0) dmg *= h.guardF;
+    if (st.perks.has('armor')) dmg *= 0.92;
+    if (st.perks.has('firsthit') && !st.firstHit) { st.firstHit = true; dmg *= 0.5; ev.soul = true; }
     dmg = hit(Math.max(1, dmg));
     if (h.reflect) { const back = Math.round(dmg / 2); dmg -= back; e.hp = Math.max(0, e.hp - back); h.reflect = false; ev.mirrored = back; }
     if (pet && pet.hp > 0 && dmg > 1) {
@@ -333,6 +368,7 @@
     }
     h.hp = Math.max(0, h.hp - dmg);
     ev.dmg = dmg;
+    if (st.perks.has('thorns') && dmg > 0) { const t = Math.max(1, Math.round(dmg * 0.1)); e.hp = Math.max(0, e.hp - t); ev.thorns = t; }
     // the log line: who did what, then what it cost you (after your shield and pet)
     const lead = kind === 'special' ? (ev.combo ? ev.name + ' hits again.' : e.name + ' unleashes ' + ev.name + '!')
       : kind === 'magic' ? e.name + ' uses ' + ev.name + '.' : e.name + ' attacks.';
@@ -342,7 +378,7 @@
     ev.text = lead + took +
       (ev.pet ? ' ' + pet.name + ' takes ' + ev.pet + (ev.petKO ? ' and is knocked out!' : '.') : '') +
       (ev.reversed ? ' Your shield reverses ' + ev.reversed + ' back at it!' : '') + (ev.countered ? ' Spikes hit back for ' + ev.countered + '.' : '') +
-      (ev.mirrored ? ' The mirror throws back ' + ev.mirrored + '.' : '') + (ev.reap ? ' He smells weakness: +40% damage.' : '');
+      (ev.mirrored ? ' The mirror throws back ' + ev.mirrored + '.' : '') + (ev.reap ? ' He smells weakness: +40% damage.' : '') + (ev.soul ? ' Soul Gem: halved.' : '') + (ev.thorns ? ' Thorns hit back for ' + ev.thorns + '.' : '');
     return ev;
   }
   function win(st, events) {
@@ -352,6 +388,11 @@
     return finish(events);
   }
   function lose(st, events) {
+    if (st.perks.has('revive') && !st.revived) {   // the Ember Heart: one knockout per battle is shrugged off
+      st.revived = true; st.hero.hp = 1;
+      events.push({ who: 'hero', type: 'revive', text: 'Ember Heart: you refuse to fall and stand back up with 1 HP!' });
+      return finish(events);
+    }
     st.over = true; st.result = 'lose'; events.push({ who: 'hero', type: 'down', text: 'You’re knocked down.' });
     if (st.enemy.nemesis) say(st, events, 'victory', 1);
     return finish(events);
@@ -370,7 +411,7 @@
   function bossNote(st, ev) {
     const e = st.enemy;
     if (ev.phased) return ' ' + (ev.phased > 1 ? ev.phased + ' hits' : 'One hit') + ' passed through the shadow.';
-    if (ev.armored) return ' Iron plating soaks up some of it.';
+    if (ev.armored) return ' Iron plating absorbs some of it.';
     return '';
   }
   function finish(events) {

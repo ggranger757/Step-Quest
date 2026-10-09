@@ -3,7 +3,7 @@
    battle is over; bursts close together merge into one. */
 (() => {
   const S = () => WB.state;
-  const COLORS = ['#ffcc4d', '#8b6cff', '#59e3ff', '#ff6b8a', '#6ee7a0', '#ffffff', '#c7b8ff'];
+  const COLORS = ['#ff9a3d', '#8b6cff', '#59e3ff', '#ff6b8a', '#6ee7a0', '#ffffff', '#c7b8ff'];
   let cv = null, parts = [], raf = 0, last = 0, pending = 0;
 
   function frame(now) {

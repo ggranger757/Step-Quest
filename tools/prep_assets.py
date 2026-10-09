@@ -633,10 +633,6 @@ if P8:
     enemy_atlas('lazybat', {k: down(G('Lazy Bat', f), 2) for k, f in (('idle', 'Lazy Bat-IdleFly-animated.gif'), ('attack', 'Lazy Bat-Attack-animated.gif'), ('hurt', 'Lazy Bat-Hurt.gif'))})
     enemy_atlas('cthulhu', {'idle': G('Little Cthulhu', 'Little Cthulhu.gif')})
     enemy_atlas('medusa', {'idle': G('Medusa', 'Medusa-animated.gif')})
-    enemy_atlas('mushroom', {k: G('Mushroom Guard', f) for k, f in (('idle', 'Mushroom_Idle.gif'), ('attack', 'Mushroom_Attack.gif'), ('hurt', 'Mushroom_Hit.gif'), ('death', 'Mushroom_Die.gif'))}, face='right')
-    nova = load(E('Naughty Nova', 'Naughty Nova.png'))
-    bob = [nova, shift(nova, 0, -1), shift(nova, 0, -2), shift(nova, 0, -1)]   # one still frame: a little hop for idle
-    enemy_atlas('nova', {'idle': bob})
     enemy_atlas('orc', {k: G('Orc', f) for k, f in (('idle', 'Orc-Idle.gif'), ('attack', 'Orc-Attack.gif'), ('hurt', 'Orc-Hurt.gif'), ('death', 'Orc-Death.gif'))})
     enemy_atlas('overthinker', {'idle': G('Overthinker', 'OverthinkerEnemy.gif')})
     enemy_atlas('selfdoubt', {'idle': G('Self Doubt Drone', 'Self Doubt Drone.gif')[::2]})
@@ -792,6 +788,26 @@ if P17:
     MAN['fx']['en_crimson_boom'] = frames_strip(crop_b(grid(f'{sp}/Projectile/Explode.png', 50, 50, range(7))), 'wp/en_crimson_boom.png')
     MAN['fx']['en_fairy'] = frames_strip(crop_b(F1('spell', 7)), 'wp/en_fairy.png')                   # thorns rising under you
     MAN['fx']['en_spirits'] = frames_strip(crop_b(grid(f'{fy}/darkfairy_phase2/spritesheets/darkfairy_phase2_spell.png', 64, 64, range(13))), 'wp/en_spirits.png')
+
+# ------------------------------------------------------------------ magic items (pack 18): 16 px fantasy icons
+# Each becomes a 64 px icon like the first four magic items (trimmed, scaled up by whole pixels, centred).
+P18 = sys.argv[18] if len(sys.argv) > 18 else None
+MAGIC_ICONS = {
+    'chalice': 140, 'heartstone': 176, 'phoenix': 7, 'aegis': 856, 'stoneskin': 2120, 'emberfist': 2171, 'furyrune': 2117,
+    'windboots': 667, 'genie': 89, 'stormorb': 1810, 'sunorb': 1809, 'frostshard': 174, 'thunderrune': 2119, 'venom': 175,
+    'flamescroll': 299, 'bloodcrystal': 173, 'hexskull': 225, 'breakrune': 315, 'mirror': 1811, 'shadowcloak': 1814,
+    'holyrelic': 670, 'guardrune': 2122, 'vampgem': 166, 'starfall': 1817, 'seer': 335, 'goldkey': 179, 'crown': 1837,
+    'dragonheart': 2129, 'sparkwand': 296,
+    'horseshoe': 118, 'vitality': 2178, 'might': 1845, 'warding': 1847, 'archat': 1842, 'fleetboots': 2163, 'codex': 292,
+    'purse': 158, 'nestpearl': 168, 'alchemist': 2125, 'bulwark': 858, 'thornweave': 2065, 'renewal': 2066, 'hunter': 2062,
+    'soulgem': 2121, 'beastbond': 1849, 'focus': 1840, 'lantern': 85, 'druidtoken': 2184, 'emberheart': 2118, 'voidring': 1846,
+    'precision': 1844,
+}
+if P18:
+    for mid, n in MAGIC_ICONS.items():
+        im = load(os.path.join(P18, '16x16', f'fa{n}.png')); im = im.crop(alpha_box(im))   # trim, then the biggest whole-pixel scale that fits 48 px
+        k = max(1, min(6, 48 // max(im.size))); im = im.resize((im.width * k, im.height * k), Image.NEAREST)
+        sq = Image.new('RGBA', (64, 64)); sq.paste(im, ((64 - im.width) // 2, (64 - im.height) // 2), im); save(sq, f'mg/{mid}.png')
 
 # ------------------------------------------------------------------ eggs (pack 9): one 8-frame strip each
 if P9:

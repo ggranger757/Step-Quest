@@ -19,12 +19,12 @@
   D.WORLDS = [
     { id: 'rust', name: 'Rust Hollow', scene: 's1', ground: 236, length: 3000, unlock: 1, ambient: 'dust', pool: ['snake', 'hyena', 'lazybat'], boss: 'turtle', merchant: 'trader1', layers: S1,
       blurb: 'Collapsed shacks under a copper sky. Every journey starts here.', landmarks: ['The Leaning Shack', 'Broken Fence Line', 'Copper Ridge', 'Hollow’s End'] },
-    { id: 'verdant', name: 'Verdant Ruins', scene: 's2', ground: 232, length: 4000, unlock: 3, ambient: 'leaves', pool: ['mushroom', 'snapjaw', 'vulture'], boss: 'thornbeast', merchant: 'trader2',
+    { id: 'verdant', name: 'Verdant Ruins', scene: 's2', ground: 232, length: 4000, unlock: 3, ambient: 'leaves', pool: ['bulbspitter', 'snapjaw', 'vulture'], boss: 'thornbeast', merchant: 'trader2',
       layers: [['sky', 0.01], ['bird1', 0.03, 9], ['bird3', 0.04, 6], ['houses_trees_bg', 0.18], ['houses', 0.36], ['bird2', 0.45, 14], ['car_trees_etc', 0.62], ['fence', 0.85], ['road', 1]],
       blurb: 'A drowned city the forest took back. Birds nest in the towers.', landmarks: ['Rooted Sedan', 'Tower of Vines', 'Birdcall Plaza', 'Green Gate'] },
     { id: 'outpost', name: 'Wasteland Outpost', scene: 'w1', ground: 300, length: 5000, unlock: 5, ambient: 'dust', pool: ['scorpio', 'alien', 'hyena'], boss: 'brute', merchant: 'trader3', layers: auto(3),
       blurb: 'Razor wire, scrap walls and a hand-painted DANGER sign. Someone still guards it.', landmarks: ['Danger Gate', 'Wrecked Plane', 'Windmill Tower', 'Stay Out Wall'] },
-    { id: 'carnival', name: 'Moonlit Carnival', scene: 's3', ground: 240, length: 5500, unlock: 6, ambient: 'fireflies', pool: ['twoface', 'nova', 'grinbloom'], boss: 'bloater', merchant: 'trader3',
+    { id: 'carnival', name: 'Moonlit Carnival', scene: 's3', ground: 240, length: 5500, unlock: 6, ambient: 'fireflies', pool: ['twoface', 'procrastinator', 'grinbloom'], boss: 'bloater', merchant: 'trader3',
       layers: [['sky', 0], ['moon', 0.01], ['sand_back', 0.14], ['sand_objects3', 0.28], ['sand_objects2', 0.46], ['sand_objects1', 0.7], ['sand', 1]],
       blurb: 'A fairground half-swallowed by dunes. The clown still smiles at the moon.', landmarks: ['The Grinning Gate', 'Rusted Wheel', 'Swing Ride Ruins', 'Moon Dune'] },
     { id: 'stilts', name: 'Stilt Woods', scene: 'w2', ground: 312, length: 6000, unlock: 8, ambient: 'leaves', pool: ['snapjaw', 'bulbspitter', 'treant'], boss: 'thornbeast', merchant: 'trader1', layers: auto(4, 3),
@@ -39,7 +39,7 @@
       blurb: 'A ghost town of saloons and cactus. The bank was robbed twice.', landmarks: ['Sheriff’s Office', 'The Saloon', 'Old Bank', 'Boot Hill'] },
     { id: 'ashfall', name: 'Ashfall Hollow', scene: 's1n', ground: 236, length: 8500, unlock: 15, ambient: 'ash', pool: ['vampbat', 'deceased', 'procrastinator'], boss: 'overthinker', merchant: 'trader2', layers: S1,
       blurb: 'Rust Hollow after nightfall. Ash drifts like violet snow.', landmarks: ['Ash Shack', 'Violet Drift', 'Night Ridge', 'The Quiet Fence'] },
-    { id: 'shrine', name: 'Shrine of Pines', scene: 'a4', ground: 306, length: 9000, unlock: 16, ambient: 'leaves', pool: ['treant', 'mushroom', 'snapjaw'], boss: 'torchbearer', merchant: 'trader1', layers: auto(6),
+    { id: 'shrine', name: 'Shrine of Pines', scene: 'a4', ground: 306, length: 9000, unlock: 16, ambient: 'leaves', pool: ['treant', 'grinbloom', 'snapjaw'], boss: 'torchbearer', merchant: 'trader1', layers: auto(6),
       blurb: 'Thatched halls and a wooden gate below a snowy peak.', landmarks: ['Torii Gate', 'Stone Lanterns', 'Thatched Hall', 'Mountain View'] },
     { id: 'coast', name: 'Palm Coast', scene: 'n3', ground: 316, length: 9500, unlock: 18, ambient: 'frost', pool: ['slime', 'cthulhu', 'snake'], boss: 'turtle', merchant: 'trader3', layers: auto(4, 3),
       blurb: 'Turquoise surf and a single bent palm. Nothing chases you here. Mostly.', landmarks: ['Lone Palm', 'Tide Pools', 'Shell Beach', 'Sunset Point'] },
@@ -56,9 +56,9 @@
     { id: 'glacier', name: 'Glacier Bay', scene: 'n2', ground: 318, length: 16000, unlock: 28, ambient: 'frost', pool: ['medusa', 'slime', 'orc'], boss: 'icebully', merchant: 'trader2', layers: auto(4, 3),
       blurb: 'An ice mountain over still blue water. The edge of the map.', landmarks: ['Ice Shelf', 'Mirror Water', 'Floe Field', 'World’s Edge'] },
     // ---- New_Worlds pack
-    { id: 'alley', name: 'Graffiti Alley', scene: 'c1', ground: 214, length: 4500, unlock: 4, ambient: 'dust', pool: ['nova', 'twoface', 'hyena'], boss: 'brute', merchant: 'trader2', layers: auto(7),
+    { id: 'alley', name: 'Graffiti Alley', scene: 'c1', ground: 214, length: 4500, unlock: 4, ambient: 'dust', pool: ['selfdoubt', 'twoface', 'hyena'], boss: 'brute', merchant: 'trader2', layers: auto(7),
       blurb: 'A back alley of crates, tyres and fresh paint. Watch your step.', landmarks: ['Hydrant Corner', 'Crate Stack', 'Tag Wall', 'Tyre Pile'] },
-    { id: 'pinehills', name: 'Pine Hills', scene: 'pine', ground: 268, length: 6000, unlock: 7, ambient: 'leaves', pool: ['mushroom', 'treant', 'vulture'], boss: 'thornbeast', merchant: 'trader1', layers: auto(14, 1.5),
+    { id: 'pinehills', name: 'Pine Hills', scene: 'pine', ground: 268, length: 6000, unlock: 7, ambient: 'leaves', pool: ['bulbspitter', 'treant', 'vulture'], boss: 'thornbeast', merchant: 'trader1', layers: auto(14, 1.5),
       blurb: 'Pink clouds over endless pines. The air smells like rain.', landmarks: ['Mossy Boulders', 'Fern Hollow', 'Ridge Trail', 'Pine Crown'] },
     { id: 'mainstreet', name: 'Main Street', scene: 'c2', ground: 220, length: 6500, unlock: 10, ambient: 'dust', pool: ['procrastinator', 'sentry', 'hyena'], boss: 'ogre', merchant: 'trader3', layers: auto(6),
       blurb: 'Shuttered shops and a cantina that never closes.', landmarks: ['Phone Booth', 'Cantina Sign', 'Corner Kiosk', 'Lamp Row'] },
@@ -66,7 +66,7 @@
       blurb: 'A fallen tower in a green valley under a pale moon.', landmarks: ['Moonrise Field', 'Fallen Tower', 'Still Lake', 'Bushline'] },
     { id: 'moonwood', name: 'Moonlit Forest', scene: 'nfa', ground: 208, length: 9000, unlock: 17, ambient: 'fireflies', pool: ['lazybat', 'cthulhu', 'vampbat'], boss: 'thornbeast', merchant: 'trader1', layers: auto(6),
       blurb: 'Blue trunks and stone paths. Something hums in the dark.', landmarks: ['Stone Path', 'Hollow Oak', 'Glow Moss', 'Deep Grove'] },
-    { id: 'neon', name: 'Neon Boulevard', scene: 'miami', ground: 193, length: 9500, unlock: 19, ambient: 'fireflies', pool: ['selfdoubt', 'nova', 'sentry'], boss: 'dragon', merchant: 'trader3', layers: [['l1', 0.02], ['l2', 0.05, 1], ['l3', 0.2], ['l4', 0.5], ['l5', 1]],
+    { id: 'neon', name: 'Neon Boulevard', scene: 'miami', ground: 193, length: 9500, unlock: 19, ambient: 'fireflies', pool: ['selfdoubt', 'procrastinator', 'sentry'], boss: 'dragon', merchant: 'trader3', layers: [['l1', 0.02], ['l2', 0.05, 1], ['l3', 0.2], ['l4', 0.5], ['l5', 1]],
       blurb: 'Sunset palms, pink sidewalks and an empty highway.', landmarks: ['Diner Sign', 'Palm Median', 'Ocean Lookout', 'Sunset Strip'] },
     { id: 'cinema', name: 'Cinema District', scene: 'c3', ground: 224, length: 10500, unlock: 22, ambient: 'dust', pool: ['selfdoubt', 'procrastinator', 'twoface'], boss: 'dragon', merchant: 'trader2', layers: auto(6),
       blurb: 'Neon billboards and a cinema still showing the last film.', landmarks: ['Cake Café', 'Ballet Poster', 'Cinema Doors', 'Crosswalk'] },
@@ -78,13 +78,13 @@
       blurb: 'Cloudy mountains and a forest of grey needles.', landmarks: ['Cloud Gap', 'Moon Ridge', 'Fog Line', 'Needle Woods'] },
     { id: 'bulkhead', name: 'Bulkhead Depths', scene: 'bulk', ground: 184, length: 13000, unlock: 32, ambient: 'drips', pool: ['cthulhu', 'sentry', 'mummy'], boss: 'centipede', merchant: 'trader1', layers: auto(4),
       blurb: 'Rusted pipes and catwalks far below the surface.', landmarks: ['Pipe Junction', 'Catwalk Seven', 'Pump Room', 'Lower Deck'] },
-    { id: 'oldtown', name: 'Old Town', scene: 'c4', ground: 232, length: 13500, unlock: 34, ambient: 'leaves', pool: ['twoface', 'nova', 'hyena'], boss: 'torchbearer', merchant: 'trader3', layers: auto(7),
+    { id: 'oldtown', name: 'Old Town', scene: 'c4', ground: 232, length: 13500, unlock: 34, ambient: 'leaves', pool: ['twoface', 'vampbat', 'hyena'], boss: 'torchbearer', merchant: 'trader3', layers: auto(7),
       blurb: 'Gabled houses, a café and a fountain at sunset.', landmarks: ['Café Corner', 'Fountain Square', 'Blue Box', 'Gable Row'] },
     { id: 'specimen', name: 'Specimen Lab', scene: 'lab', ground: 218, length: 14000, unlock: 36, ambient: 'drips', pool: ['slime', 'alien', 'bulbspitter'], boss: 'bloater', merchant: 'trader2', layers: auto(3),
       blurb: 'Glowing tanks with something still floating inside.', landmarks: ['Tank Hall', 'Pump Core', 'Cold Storage', 'Exit Hatch'] },
     { id: 'jungle', name: 'Jungle Shrine', scene: 'b3', ground: 206, length: 14500, unlock: 38, ambient: 'fireflies', pool: ['treant', 'snapjaw', 'grinbloom'], boss: 'thornbeast', merchant: 'trader1', layers: auto(8),
       blurb: 'An old tree with a face watches the path through the vines.', landmarks: ['Vine Curtain', 'Firefly Glade', 'The Old Face', 'Root Road'] },
-    { id: 'tealwood', name: 'Teal Wood', scene: 'nfb', ground: 258, length: 15000, unlock: 40, ambient: 'leaves', pool: ['mushroom', 'lazybat', 'cthulhu'], boss: 'centipede', merchant: 'trader3', layers: auto(6),
+    { id: 'tealwood', name: 'Teal Wood', scene: 'nfb', ground: 258, length: 15000, unlock: 40, ambient: 'leaves', pool: ['treant', 'lazybat', 'cthulhu'], boss: 'centipede', merchant: 'trader3', layers: auto(6),
       blurb: 'Mist and light rays between giant teal trees.', landmarks: ['Light Rays', 'Misty Hollow', 'Giant Roots', 'Fern Floor'] },
     { id: 'corridors', name: 'Cold Corridors', scene: 'cold', ground: 198, length: 15500, unlock: 42, ambient: 'frost', pool: ['selfdoubt', 'mummy', 'medusa'], boss: 'icebully', merchant: 'trader2', layers: auto(5),
       blurb: 'Blue arches that go on forever. Torches burn without heat.', landmarks: ['First Arch', 'Torch Pillar', 'Violet Floor', 'Endless Hall'] },
@@ -97,13 +97,13 @@
     { id: 'fort', name: 'Fort of Illusion', scene: 'fort', ground: 262, length: 20000, unlock: 50, ambient: 'frost', pool: ['selfdoubt', 'medusa', 'orc'], boss: 'overthinker', merchant: 'trader2', layers: [['l1', 0.02, 3], ['l2', 0.15], ['l3', 1]],
       blurb: 'The last fortress, above a sea of violet waves. Only the strongest walkers get here.', landmarks: ['Outer Wall', 'Banner Hall', 'Tower Steps', 'Illusion Gate'] },
     // More_Worlds (lower levels): Vista Ten's ten scenes and the Purple Lex forest
-    { id: 'downs', name: 'Green Downs', scene: 'v_downs', ground: 206, length: 3200, unlock: 2, ambient: 'leaves', pool: ['snake', 'lazybat', 'mushroom'], boss: 'turtle', merchant: 'trader2', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
+    { id: 'downs', name: 'Green Downs', scene: 'v_downs', ground: 206, length: 3200, unlock: 2, ambient: 'leaves', pool: ['snake', 'lazybat', 'hyena'], boss: 'turtle', merchant: 'trader2', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
       blurb: 'Rolling green hills under a wide blue sky. Perfect walking weather.', landmarks: ['Hilltop Cairn', 'Sheep Track', 'Long Meadow', 'Windy Rise'] },
     { id: 'canopy', name: 'Canopy Vale', scene: 'v_canopy', ground: 206, length: 3400, unlock: 2, ambient: 'leaves', pool: ['snapjaw', 'treant', 'vulture'], boss: 'thornbeast', merchant: 'trader3', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
       blurb: 'A misty valley of treetops that never seems to end.', landmarks: ['Mossy Gate', 'Green Arch', 'Fern Hollow', 'Treetop Ridge'] },
     { id: 'leeward', name: 'Leeward Shore', scene: 'v_leeward', ground: 206, length: 3600, unlock: 3, ambient: 'frost', pool: ['slime', 'cthulhu', 'snake'], boss: 'turtle', merchant: 'trader1', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
       blurb: 'Grey rocks by a calm, cold sea. The tide hums.', landmarks: ['Tide Pools', 'Stone Teeth', 'Driftwood Bay', 'Gull Rock'] },
-    { id: 'hollow', name: 'Misty Hollow', scene: 'v_hollow', ground: 206, length: 3800, unlock: 3, ambient: 'fireflies', pool: ['deceased', 'lazybat', 'mushroom'], boss: 'thornbeast', merchant: 'trader2', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
+    { id: 'hollow', name: 'Misty Hollow', scene: 'v_hollow', ground: 206, length: 3800, unlock: 3, ambient: 'fireflies', pool: ['deceased', 'lazybat', 'vampbat'], boss: 'thornbeast', merchant: 'trader2', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
       blurb: 'Quiet woods in a soft grey fog. Something rustles nearby.', landmarks: ['Fog Bank', 'Old Stump', 'Whisper Path', 'Lantern Glade'] },
     { id: 'violet', name: 'Violet Wood', scene: 'violet', ground: 216, length: 4200, unlock: 4, ambient: 'leaves', pool: ['vampbat', 'treant', 'twoface'], boss: 'bloater', merchant: 'trader3', layers: [['l1', 0.02, 1], ['l2', 0.05, 3], ['l3', 0.25], ['l4', 1], ['l5', 1], ['l6', 1]],
       blurb: 'Purple trees on a snowy shelf, with a signpost pointing somewhere.', landmarks: ['Signpost', 'Great Tree', 'Frost Ledge', 'Bramble Wall'] },
@@ -123,7 +123,13 @@
   // worlds open by LEVEL. Sorted so the map reads in the order you unlock them; creature strength
   // (tier) follows the unlock level.
   D.WORLDS.sort((a, b) => a.unlock - b.unlock);
-  D.WORLDS.forEach((w) => { w.tier = Math.round((w.unlock - 1) * 0.65); w.unlock = { level: w.unlock }; });
+  // Pacing: the listed levels set the ORDER; the real unlock levels are spread from 1 to D.LAST_WORLD_LEVEL, and
+  // each world also needs the one before it explored to D.WORLD_GATE_PCT%, so worlds open one at a time.
+  D.LAST_WORLD_LEVEL = 70; D.WORLD_GATE_PCT = 75;
+  D.WORLDS.forEach((w, i, all) => {
+    const lvl = i === 0 ? 1 : Math.max(2, Math.round(1 + (D.LAST_WORLD_LEVEL - 1) * Math.pow(i / (all.length - 1), 1.1)));
+    w.tier = Math.round((lvl - 1) * 0.65); w.unlock = { level: lvl, after: i ? all[i - 1].id : null };
+  });
   D.worldById = Object.fromEntries(D.WORLDS.map((w) => [w.id, w]));
 
   // ---------- Finds (6 per world) ----------
@@ -210,8 +216,6 @@
     lazybat: { name: 'Lazy Bat', verb: 'flaps by, yawning', hp: 24, atk: 6, scale: 1.5 },
     cthulhu: { name: 'Little Cthulhu', verb: 'wriggles its tentacles at you', hp: 34, atk: 9, aggressive: true, scale: 1.25 },
     medusa: { name: 'Medusa', verb: 'fixes you with a stony stare', hp: 30, atk: 9, aggressive: true, scale: 1.4 },
-    mushroom: { name: 'Mushroom Guard', verb: 'stands guard on the path', hp: 36, atk: 8, aggressive: true, scale: 1.1 },
-    nova: { name: 'Naughty Nova', verb: 'hops out with a wicked grin', hp: 30, atk: 8, aggressive: true },
     orc: { name: 'Orc Raider', verb: 'swings its axe and roars', hp: 38, atk: 9, aggressive: true, scale: 1.7 },
     selfdoubt: { name: 'Self-Doubt Drone', verb: 'whispers that you can’t do it', hp: 30, atk: 8, aggressive: true, scale: 0.75 },
     sentry: { name: 'Sentry Drone', verb: 'locks on with a beep', hp: 32, atk: 8, aggressive: true, scale: 1.3 },
@@ -264,8 +268,6 @@
     lazybat: { magic: ['Yawn Wave', 'void', 'p:wave_violet', 'b:violet', '', 'weaken'], special: ['Snooze Swoop', 'stun'] },
     cthulhu: { magic: ['Ink Splash', 'frost', 'p:orb_blue', 'w:blueflame', 'en_blip', 'weaken'], special: ['Tentacle Grab', 'multi'], mw: 0.45 },
     medusa: { magic: ['Stone Throw', 'earth', 'w:asteroid', 'fx:en_gaze', 'en_zap', 'slow'], special: ['Stone Gaze', 'stun'], mw: 0.5 },
-    mushroom: { magic: ['Spore Star', 'nature', 'w:star', 'fx:en_ring', '', 'poison'], special: ['Spore Cloud', 'poison'] },
-    nova: { magic: ['Mischief Spark', 'shock', '', 'fx:en_spark', 'spark', 'weaken'], special: ['Prank Storm', 'multi'] },
     orc: { magic: ['Axe Throw', 'earth', 'w:star', 'w:star', '', 'weaken'], special: ['Berserk Chop', 'multi'], mw: 0.2 },
     selfdoubt: { magic: ['Second Guess', 'void', 'fx:en_orb', 'b:blue', 'en_blip', 'weaken'], special: ['Doubt Beam', 'slow'], mw: 0.55 },
     sentry: { magic: ['Laser Shot', 'shock', 'p:javelin_gold', 'fx:en_ring', 'en_blip', 'burn'], special: ['Lockdown', 'stun'], mw: 0.5 },
@@ -380,38 +382,38 @@
   // ---------- Pets (27) ----------
   // src 'pet' = animal sheets (face right), 'cr' = creature sheets (face left)
   D.PETS = [
-    { id: 'dog', name: 'Rex', kind: 'Doberman', src: 'pet', req: { level: 2 } },
-    { id: 'rat', name: 'Nibbles', kind: 'Rat', src: 'pet', req: { cost: 150 } },
-    { id: 'pigeon', name: 'Coo', kind: 'Pigeon', src: 'pet', req: { cost: 200 } },
-    { id: 'cat', name: 'Ginger', kind: 'Cat', src: 'pet', req: { cost: 300, level: 2 } },
-    { id: 'dog2', name: 'Shiba', kind: 'Shiba', src: 'pet', req: { cost: 500, level: 4 } },
-    { id: 'rat2', name: 'Dusty', kind: 'Rat', src: 'pet', req: { level: 6 } },
+    { id: 'dog', name: 'Rex', kind: 'Doberman', src: 'pet', req: { cost: 1200, level: 6 } },
+    { id: 'rat', name: 'Nibbles', kind: 'Rat', src: 'pet', req: { cost: 600, level: 3 } },
+    { id: 'pigeon', name: 'Coo', kind: 'Pigeon', src: 'pet', req: { cost: 800, level: 4 } },
+    { id: 'cat', name: 'Ginger', kind: 'Cat', src: 'pet', req: { cost: 1500, level: 8 } },
+    { id: 'dog2', name: 'Shiba', kind: 'Shiba', src: 'pet', req: { cost: 2500, level: 12 } },
+    { id: 'rat2', name: 'Dusty', kind: 'Rat', src: 'pet', req: { cost: 1000, level: 10 } },
     { id: 'cat2', name: 'Shadow', kind: 'Black cat', src: 'pet', req: { streak: 5 } },
     { id: 'crow', name: 'Corvo', kind: 'Crow', src: 'pet', req: { daily: true } },
-    { id: 'hyena', name: 'Pup Hyena', kind: 'Hyena', src: 'cr', req: { cost: 450, level: 3 } },
-    { id: 'scorpio', name: 'Glass Scorp', kind: 'Scorpion', src: 'cr', req: { cost: 650, level: 5 } },
-    { id: 'snake', name: 'Pocket Viper', kind: 'Snake', src: 'cr', req: { level: 7 } },
-    { id: 'vulture', name: 'Sky Buddy', kind: 'Vulture', src: 'cr', req: { cost: 900, level: 6 }, fly: true },
+    { id: 'hyena', name: 'Pup Hyena', kind: 'Hyena', src: 'cr', req: { cost: 2200, level: 11 } },
+    { id: 'scorpio', name: 'Glass Scorp', kind: 'Scorpion', src: 'cr', req: { cost: 3200, level: 15 } },
+    { id: 'snake', name: 'Pocket Viper', kind: 'Snake', src: 'cr', req: { cost: 1800, level: 14 } },
+    { id: 'vulture', name: 'Sky Buddy', kind: 'Vulture', src: 'cr', req: { cost: 4500, level: 18 }, fly: true },
     { id: 'mummy', name: 'Little Mummy', kind: 'Mummy', src: 'cr', req: { streak: 30 } },
     { id: 'deceased', name: 'Ghoul Pal', kind: 'Ghoul', src: 'cr', req: { steps: 100000 } },
     // woodland animals
-    { id: 'hare', scale: 2, name: 'Clover', kind: 'Hare', src: 'pet', req: { cost: 250, level: 2 } },
-    { id: 'fox', scale: 2, name: 'Rusty', kind: 'Fox', src: 'pet', req: { cost: 400, level: 3 } },
-    { id: 'boar', scale: 2, name: 'Tusk', kind: 'Boar', src: 'pet', req: { cost: 700, level: 6 } },
+    { id: 'hare', scale: 2, name: 'Clover', kind: 'Hare', src: 'pet', req: { cost: 1200, level: 7 } },
+    { id: 'fox', scale: 2, name: 'Rusty', kind: 'Fox', src: 'pet', req: { cost: 2000, level: 10 } },
+    { id: 'boar', scale: 2, name: 'Tusk', kind: 'Boar', src: 'pet', req: { cost: 5000, level: 20 } },
     { id: 'grouse', scale: 2, name: 'Ruffle', kind: 'Black grouse', src: 'pet', req: { streak: 10 } },
-    { id: 'deer', scale: 2, name: 'Fawn', kind: 'Deer', src: 'pet', req: { level: 8 } },
+    { id: 'deer', scale: 2, name: 'Fawn', kind: 'Deer', src: 'pet', req: { cost: 3800, level: 16 } },
     // pet rocks: they hop along behind you
-    { id: 'rock_lime', name: 'Pebble', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 80 } },
-    { id: 'rock_sand', name: 'Sandy', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 120 } },
-    { id: 'rock_moss', name: 'Mossy', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 180, level: 2 } },
-    { id: 'rock_rust', name: 'Clay', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 240, level: 3 } },
+    { id: 'rock_lime', name: 'Pebble', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 400, level: 2 } },
+    { id: 'rock_sand', name: 'Sandy', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 500, level: 3 } },
+    { id: 'rock_moss', name: 'Mossy', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 700, level: 5 } },
+    { id: 'rock_rust', name: 'Clay', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 900, level: 6 } },
     { id: 'rock_cobble', name: 'Cobble', kind: 'Pet rock', src: 'pet', hop: true, req: { steps: 15000 } },
-    { id: 'rock_marble', name: 'Marble', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 500, level: 5 } },
-    { id: 'rock_frost', name: 'Frosty', kind: 'Pet rock', src: 'pet', hop: true, req: { level: 10 } },
+    { id: 'rock_marble', name: 'Marble', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 2500, level: 13 } },
+    { id: 'rock_frost', name: 'Frosty', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 3000, level: 18 } },
     { id: 'rock_magma', name: 'Magma', kind: 'Pet rock', src: 'pet', hop: true, req: { bosses: 3 } },
   ];
-  // Pets have their own health and soak part of every hit you take in battle (share = 20% to 60%).
-  // Bigger and tougher companions soak more. A pet at 0 HP is knocked out until it heals: pets refill
+  // Pets have their own health and take part of every hit aimed at you in battle (share = 20% to 60%).
+  // Bigger and tougher companions take more. A pet at 0 HP is knocked out until it heals: pets refill
   // slowly over time like you do (walking does not heal anyone).
   const PET_STATS = { dog: [55, 0.4], dog2: [50, 0.35], cat: [40, 0.3], cat2: [42, 0.3], rat: [28, 0.2], rat2: [30, 0.2], crow: [30, 0.2], pigeon: [28, 0.2],
     hyena: [55, 0.4], scorpio: [50, 0.35], snake: [40, 0.25], vulture: [45, 0.3], mummy: [70, 0.5], deceased: [75, 0.55],
@@ -468,25 +470,83 @@
   D.SPECIAL_CHARGE = { strike: 25, throw: 30 };
   D.SPECIALS = {
     nova: { id: 'nova', name: 'Arcane Nova', cls: 'Wandering Mage', fx: 'sa_nova', sfx: 'special_nova',
-      desc: 'A blast of arcane force that hits hard (stronger every level) and stuns the creature for 3 turns.' },
+      desc: 'A big arcane blast that stuns the creature for 3 turns. Grows with your level.' },
     drain: { id: 'drain', name: 'Life Drain', cls: 'Healer', fx: 'sa_drain', sfx: 'special_drain',
-      desc: 'Drains the creature for 3 turns and turns it into your HP; the drain heals 50% more while your HP is low.' },
+      desc: 'Drains the creature for 3 turns and heals you, 50% more while your HP is low.' },
     raid: { id: 'raid', name: 'Scavenger’s Raid', cls: 'Scavenger', fx: 'sa_raid', sfx: 'special_raid',
-      desc: 'A raiding strike (stronger every level) that snatches a potion from the creature, ready to use in this fight.' },
+      desc: 'A heavy strike that steals a potion you can use right away. Grows with your level.' },
   };
   D.STARTER_SPECIAL = { wanderer: 'nova', kunoichi: 'drain', scavenger: 'raid' };
   // what a Scavenger's Raid can snatch, by world tier (later worlds carry better loot)
   D.RAID_LOOT = [['tonic', 'tonic', 'iron'], ['tonic', 'iron', 'fury'], ['iron', 'fury', 'elixir'], ['fury', 'elixir', 'elixir']];
 
   // ---------- Magic items (Shop → Magic) ----------
-  // Bought once and kept. The ring, the book and the clover are used from the Magic button in battle, once per
-  // battle each; the backpack works on its own while it's equipped.
+  // Bought once and kept. Two kinds:
+  //  battle: used from the Magic button in battle. Each works once per battle, at most one per turn, and doesn't
+  //          use your turn. fx = what it does (handled in 05b-battle.js); tag = the short line on its button.
+  //  charm:  worn. Up to D.CHARM_SLOTS at once; each gives a passive perk (see G.perk in 05-game.js).
+  const B = (id, name, lvl, cost, fx, tag, desc) => ({ id, name, kind: 'battle', fx, tag, desc, req: { cost, level: lvl } });
+  const C = (id, name, lvl, cost, perk, tag, desc) => ({ id, name, kind: 'charm', perk, tag, desc, req: { cost, level: lvl } });
   D.MAGIC = [
-    { id: 'backpack', name: 'Explorer’s Backpack', kind: 'pack', desc: 'While equipped, every battle you win pays more: +50% coins, double the chance of a potion and a better chance of an egg.', req: { cost: 900, level: 6 } },
-    { id: 'book', name: 'Book of Magic', kind: 'battle', desc: 'Your magic hits harder: spells, staves and special attacks do +40% damage for 3 to 5 turns (longer as you level up). Once per battle.', req: { cost: 2500, level: 20 } },
-    { id: 'ring', name: 'Illusion Ring', kind: 'battle', desc: 'Conjures a copy of your walker for 3 turns. The creature attacks the copy instead of you, and the copy strikes alongside you. Once per battle.', req: { cost: 7500, level: 50 } },
-    { id: 'clover', name: 'Lucky Clover', kind: 'battle', desc: 'Luck for two turns: either attack twice in a row, or dodge the creature’s next two attacks. You choose. Once per battle.', req: { cost: 10000, level: 60 } },
+    // ---- battle magic
+    B('windboots', 'Wind Boots', 4, 700, { type: 'recharge' }, 'Weapon ready now', 'Your ranged weapon recharges instantly.'),
+    B('chalice', 'Chalice of Vigor', 4, 750, { type: 'heal', amount: 0.3 }, '+30% HP', 'Restores 30% of your HP.'),
+    B('venom', 'Venom Crystal', 5, 900, { type: 'status', effect: 'poison', turns: 3 }, 'Poison 3 turns', 'Poisons the creature for 3 turns.'),
+    B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill' }, 'Guard to 100%', 'Refills your Defend gauge to 100%.'),
+    B('stoneskin', 'Stoneskin Rune', 7, 1100, { type: 'guard', turns: 4, factor: 0.65 }, '−35% damage, 4 turns', 'You take 35% less damage for 4 turns.'),
+    B('holyrelic', 'Holy Relic', 8, 1250, { type: 'cleanse', amount: 0.15 }, 'Cure + 15% HP', 'Cures poison, burn, weakness and stun, and restores 15% HP.'),
+    B('stormorb', 'Storm Orb', 8, 1350, { type: 'blast', power: 0.15 }, '15% of its HP', 'A lightning blast for 15% of the creature’s max HP. Ignores guards.'),
+    B('emberfist', 'Ember Gauntlet', 9, 1500, { type: 'fury', turns: 3, mult: 1.35 }, '+35% damage, 3 turns', 'Your attacks do 35% more damage for 3 turns.'),
+    B('flamescroll', 'Scroll of Flame', 10, 1700, { type: 'status', effect: 'burn', turns: 3 }, 'Burn 3 turns', 'Sets the creature burning for 3 turns.'),
+    B('frostshard', 'Frost Shard', 11, 1900, { type: 'status', effect: 'freeze', turns: 1 }, 'Freeze 1 turn', 'Freezes the creature: it loses its next turn.'),
+    B('aegis', 'Aegis Shard', 12, 2200, { type: 'guard', turns: 3, factor: 0.5 }, '−50% damage, 3 turns', 'You take half damage for 3 turns.'),
+    B('hexskull', 'Hex Skull', 13, 2400, { type: 'status', effect: 'weaken', turns: 3 }, 'Weaken 3 turns', 'Curses the creature: its attacks do 40% less for 3 turns.'),
+    B('bloodcrystal', 'Blood Crystal', 14, 2600, { type: 'status', effect: 'bleed', turns: 4 }, 'Bleed 4 turns', 'Makes the creature bleed for 4 turns.'),
+    B('genie', 'Genie Lamp', 15, 3200, { type: 'special' }, 'Special ready', 'Fills your special attack gauge (from level 10).'),
+    B('breakrune', 'Rune of Breaking', 16, 3400, { type: 'break', turns: 3 }, 'Break its guard', 'Shatters the creature’s ward or stance; it takes 25% more damage for 3 turns.'),
+    B('goldkey', 'Golden Key', 17, 3000, { type: 'escape' }, 'Escape, guaranteed', 'Unlocks a way out: you leave any battle, even a boss fight.'),
+    B('mirror', 'Mirror Charm', 18, 3600, { type: 'reflect' }, 'Reflect next hit', 'Throws half of the next hit you take back at the creature.'),
+    B('seer', 'Seer’s Crystal Ball', 19, 3800, { type: 'seer' }, 'Cancel its special', 'Sees what’s coming: cancels a special the creature is charging and stuns it for a turn.'),
+    B('starfall', 'Starfall Shard', 20, 4400, { type: 'blast', power: 0.07, hits: 3 }, '3 × 7% of its HP', 'Three falling stars, each for 7% of the creature’s max HP. Ignores guards.'),
+    B('book', 'Book of Magic', 20, 2500, { type: 'book' }, '+40% magic damage', 'Spells, staves and special attacks do 40% more damage for 3 to 5 turns (longer at higher levels).'),
+    B('heartstone', 'Heartstone', 22, 4200, { type: 'heal', amount: 0.5 }, '+50% HP', 'Restores 50% of your HP.'),
+    B('shadowcloak', 'Shadow Cloak', 24, 5000, { type: 'dodge', n: 1 }, 'Dodge next attack', 'You melt into shadow and dodge the creature’s next attack.'),
+    B('vampgem', 'Vampire Gem', 26, 5600, { type: 'drain', power: 0.12 }, 'Steal 12% of its HP', 'Drains 12% of the creature’s max HP and heals you by the same amount.'),
+    B('sunorb', 'Sun Orb', 28, 6000, { type: 'blast', power: 0.25 }, '25% of its HP', 'A blazing blast for 25% of the creature’s max HP. Ignores guards.'),
+    B('furyrune', 'Rune of Fury', 30, 6500, { type: 'fury', turns: 3, mult: 1.6 }, '+60% damage, 3 turns', 'Your attacks do 60% more damage for 3 turns.'),
+    B('sparkwand', 'Spark Wand', 32, 7000, { type: 'blast', power: 0.1, stun: 1 }, '10% + stun', 'A crackling bolt for 10% of the creature’s max HP that stuns it for a turn.'),
+    B('thunderrune', 'Thunder Rune', 35, 8000, { type: 'status', effect: 'stun', turns: 2 }, 'Stun 2 turns', 'A thunderclap stuns the creature for 2 turns.'),
+    B('phoenix', 'Phoenix Feather', 45, 12000, { type: 'heal', amount: 1 }, 'Full heal', 'Restores all of your HP.'),
+    B('ring', 'Illusion Ring', 50, 7500, { type: 'ring' }, 'A copy of you, 3 turns', 'Conjures a copy of your walker for 3 turns. The creature attacks the copy instead of you, and the copy strikes alongside you.'),
+    B('crown', 'Crown of Valor', 50, 14000, { type: 'valor', turns: 4 }, '+25% dmg, −25% taken', 'For 4 turns your attacks do 25% more and you take 25% less.'),
+    B('clover', 'Lucky Clover', 60, 10000, { type: 'clover' }, 'Two lucky turns', 'Choose: your next two attacks strike twice, or you dodge the creature’s next two attacks.'),
+    B('dragonheart', 'Dragon Heart', 60, 20000, { type: 'dragon', amount: 0.4, turns: 3, mult: 1.4 }, '+40% HP, +40% damage', 'Restores 40% HP and your attacks do 40% more for 3 turns.'),
+    // ---- charms (worn)
+    C('horseshoe', 'Lucky Horseshoe', 5, 900, 'crit', '+8% crit chance', 'Your strikes and throws have an extra 8% chance to land a critical hit.'),
+    C('backpack', 'Explorer’s Backpack', 6, 900, 'loot', 'More loot', 'Battle wins pay 50% more coins, potions drop twice as often and eggs more often.'),
+    C('lantern', 'Wayfinder’s Lantern', 7, 1400, 'finds', 'More artifacts', 'Hidden artifacts turn up 50% more often on the road.'),
+    C('purse', 'Merchant’s Purse', 8, 1600, 'coins', '+20% battle coins', 'Battle wins pay 20% more coins.'),
+    C('fleetboots', 'Fleet Boots', 9, 1800, 'flee', 'Always escape', 'Run away always works against creatures (and more often against guardians and bosses).'),
+    C('vitality', 'Amulet of Vitality', 10, 2500, 'hp', '+10% max HP', 'Raises your max HP by 10%.'),
+    C('nestpearl', 'Nest Pearl', 11, 2000, 'eggs', 'More eggs', 'Creatures you beat drop an egg 10% more often.'),
+    C('might', 'Ring of Might', 12, 3000, 'dmg', '+8% damage', 'All your attacks do 8% more damage.'),
+    C('alchemist', 'Alchemist’s Orb', 13, 2600, 'potions', 'Potions +25%', 'Healing potions and food heal 25% more.'),
+    C('warding', 'Ring of Warding', 14, 3200, 'armor', '−8% damage taken', 'You take 8% less damage from every hit.'),
+    C('bulwark', 'Bulwark Sigil', 15, 3000, 'guard', 'Guard refills faster', 'Your Defend gauge refills 25% a turn instead of 15%.'),
+    C('archat', 'Arcane Hat', 16, 3500, 'charge', 'Special charges +30%', 'Your special attack gauge fills 30% faster.'),
+    C('soulgem', 'Soul Gem', 18, 3800, 'firsthit', 'First hit halved', 'The first hit you take in each battle does half damage.'),
+    C('druidtoken', 'Druid’s Token', 19, 3600, 'druid', 'Druid pays +30%', 'The Druid’s Knowledge Challenge pays 30% more XP and coins.'),
+    C('beastbond', 'Beast Bond Amulet', 20, 4200, 'pet', 'Pet guards +10%', 'Your pet takes 10% more of each hit for you.'),
+    C('thornweave', 'Thornweave Necklace', 22, 4800, 'thorns', 'Hit back 10%', 'Creatures that hit you take 10% of the damage back.'),
+    C('codex', 'Scholar’s Codex', 25, 6000, 'xp', '+15% battle XP', 'Battle wins give 15% more XP.'),
+    C('renewal', 'Pendant of Renewal', 28, 6200, 'regen', 'Heal 3% a turn', 'You recover 3% of your HP at the end of every turn in battle.'),
+    C('voidring', 'Void Ring', 30, 7500, 'pierce', '30% of hits pierce', '30% of your hits ignore wards, stances and shadow.'),
+    C('focus', 'Circlet of Focus', 32, 8000, 'cooldown', 'Recharge −1 turn', 'Your ranged weapon recharges one turn faster.'),
+    C('hunter', 'Hunter’s Ring', 35, 9000, 'hunter', '+15% vs bosses', 'Your attacks do 15% more to guardians and bosses.'),
+    C('precision', 'Ring of Precision', 38, 10000, 'critdmg', 'Crits +50%', 'Your critical hits do 50% more damage.'),
+    C('emberheart', 'Ember Heart', 40, 12000, 'revive', 'Survive one KO', 'Once per battle, a knockout leaves you standing at 1 HP instead.'),
   ];
+  D.CHARM_SLOTS = 3;
   D.magicById = Object.fromEntries(D.MAGIC.map((m) => [m.id, m]));
   D.BOOK_BONUS = 0.4;
 
@@ -512,7 +572,7 @@
   // Every weapon sits in one of three loadout slots:
   //   melee  — used by Strike; drawn in your walker's hand during the attack animation
   //   ranged — used by Throw / Shoot / Cast; recharges for `cd` turns
-  //   shield — makes Defend stronger and soaks some of every hit (armor)
+  //   shield — makes Defend stronger and blocks some of every hit (armor)
   // chance = how often the effect triggers (1 = always).
   const M = (id, name, type, power, effect, chance, desc, req, extra) => ({ id, name, slot: 'melee', type, power, effect, chance, desc, req, icon: 'wi/' + id + '.png', ...(extra || {}) });
   const R = (id, name, type, power, cd, effect, desc, req, extra) => ({ id, name, slot: 'ranged', type, power, cd, effect, desc, req, icon: type === 'spell' ? null : 'wi/' + id + '.png', ...(extra || {}) });
@@ -667,11 +727,12 @@
   };
 
   // ---------- Levels ----------
-  // Long-haul pacing (this is a walking game). Walking 7,000 steps a day plus encounters: about a month to level 20,
-  // 6-11 months to 50 (the last world), several years to the cap. Past level 50 every level costs 3% more.
+  // Long-haul pacing (this is a walking game): XP to the next level = 100 × level^1.5 (+1.5% per level past 50).
+  // Walking ~7,000 steps a day plus battles and quests (~2,500 XP a day): about a month to level 20, 9 months to 50,
+  // about 2 years to the last world (level 70) and around 6 years to the cap.
   D.LEVEL_CAP = 100;
   D.EPIC_MUSIC_LEVEL = 40;   // battles get the epic soundtrack from here
-  D.xpToNext = (lvl) => Math.round(80 * Math.pow(lvl, 1.45) * (1 + Math.max(0, lvl - 50) * 0.03));
+  D.xpToNext = (lvl) => Math.round(100 * Math.pow(lvl, 1.5) * (1 + Math.max(0, lvl - 50) * 0.015));
   D.levelCoins = (lvl) => 25 * lvl;
 
   // ---------- Streaks ----------

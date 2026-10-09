@@ -13,10 +13,10 @@
   D.EGG_MAX = 12;   // per kind
   // Merlin's trades: hand over a set, get the loot. "hoard" also pays an item you don't own yet.
   D.EGG_TRADES = [
-    { id: 'frost', name: 'Basket of Frost Eggs', need: { frost: 5 }, reward: { coins: 150, xp: 120, potion: 'tonic', potionN: 2 } },
-    { id: 'ember', name: 'Ember Clutch', need: { ember: 3 }, reward: { coins: 250, xp: 220, potion: 'iron' } },
-    { id: 'crystal', name: 'Crystal Pair', need: { crystal: 2 }, reward: { coins: 400, xp: 400, potion: 'elixir' } },
-    { id: 'hoard', name: 'Merlin’s Hoard', need: { frost: 3, ember: 2, crystal: 1 }, reward: { coins: 600, xp: 600 }, item: true },
+    { id: 'frost', name: 'Basket of Frost Eggs', need: { frost: 5 }, reward: { coins: 60, xp: 50, potion: 'tonic', potionN: 2 } },
+    { id: 'ember', name: 'Ember Clutch', need: { ember: 3 }, reward: { coins: 100, xp: 90, potion: 'iron' } },
+    { id: 'crystal', name: 'Crystal Pair', need: { crystal: 2 }, reward: { coins: 160, xp: 150, potion: 'elixir' } },
+    { id: 'hoard', name: 'Merlin’s Hoard', need: { frost: 3, ember: 2, crystal: 1 }, reward: { coins: 250, xp: 220 }, item: true },
   ];
 
   const eggs = () => { const s = S(); if (!s.eggs) s.eggs = { frost: 0, ember: 0, crystal: 0 }; return s.eggs; };
@@ -37,8 +37,12 @@
   };
   G.eggText = (m) => Object.entries(m).filter(([, n]) => n > 0).map(([k, n]) => n + ' ' + D.eggById[k].name + (n > 1 ? 's' : '')).join(', ');
 
-  G.canTrade = (t) => Object.entries(t.need).every(([k, n]) => (eggs()[k] || 0) >= n);
+  // you can trade once you've met Merlin on the road (s.enc.merlinMet), and only with a full set
+  G.merlinMet = () => !!S().enc.merlinMet;
+  G.hasSet = (t) => Object.entries(t.need).every(([k, n]) => (eggs()[k] || 0) >= n);
+  G.canTrade = (t) => G.merlinMet() && G.hasSet(t);
   G.tradesReady = () => D.EGG_TRADES.filter(G.canTrade);
+  G.setsReady = () => D.EGG_TRADES.filter(G.hasSet);
   // an item from Merlin's hoard: a weapon or pet you don't own (cheapest first, so it's never a huge jump)
   function hoardItem() {
     const pool = [...D.WEAPONS.filter((w) => !G.owns('weapon', w.id) && w.req && w.req.cost).map((w) => ['weapon', w.id, w.req.cost]),
@@ -50,7 +54,7 @@
     if (!t || !G.canTrade(t)) return null;
     for (const [k, n] of Object.entries(t.need)) eggs()[k] -= n;
     const reward = { ...t.reward };
-    if (t.item) { const it = hoardItem(); if (it) reward[it[0]] = it[1]; else reward.coins += 500; }
+    if (t.item) { const it = hoardItem(); if (it) reward[it[0]] = it[1]; else reward.coins += 200; }
     s.eggTrades = (s.eggTrades || 0) + 1;
     if (noGrant) return { trade: t, reward };   // the caller grants it (Merlin's encounter)
     const granted = G.grant(reward, true);

@@ -6,7 +6,7 @@
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
   const fmt = (n) => WB.fmt(n);
-  const km = (m) => (m >= 1000 ? (m / 1000).toFixed(m % 1000 ? 1 : 0) + ' km' : m + ' m');
+  const km = (m) => WB.fmtDist(m);
 
   G.homeState = () => D.stateById[S().settings.homeState] || null;
   // the subject of a photo mission, with the player's state symbols filled in
@@ -27,7 +27,8 @@
       default: return m.name;
     }
   };
-  G.missionDesc = (m) => {
+  G.missionDesc = (m) => WB.unitText(missionDesc(m));   // "3 km" in content follows the distance setting
+  const missionDesc = (m) => {
     switch (m.kind) {
       case 'photo': return 'Walk ' + fmt(m.steps) + ' steps, then snap a photo' + (m.merlin ? ' of ' + m.subject : '') + '. ' + (D.MISSION_CAT_HINT[m.cat] || '') + (m.cat === 'state' && !G.homeState() ? ' Set your home state in Profile to see which one.' : '');
       case 'gather': return 'Walk ' + fmt(m.steps) + ' steps. ' + m.item + ' turn up along the way as you walk.';

@@ -8,10 +8,10 @@
     return {
       v: 2, created: Date.now(), savedAt: 0, name: 'Wanderer', onboarded: false,
       avatar: 'scavenger', skin: null,
-      equip: { pet: null, weapon: 'star', melee: 'sw_rusty', shield: null, backpack: false },
+      equip: { pet: null, weapon: 'star', melee: 'sw_rusty', shield: null, charms: [] },
       owned: { avatars: ['scavenger'],   // replaced by the walker picked at sign-up
                 pets: [], weapons: ['star', 'sw_rusty'], magic: [] },
-      petHp: {},          // pets have their own health (soak part of every hit in battle)
+      petHp: {},          // pets have their own health (they take part of every hit in battle)
       hp: D.heroMaxHp(1), potions: { tonic: 2 }, bosses: {},
       music: { provider: 'spotify', url: '', open: false },
       health: { on: false, since: null, last: 0 },   // Apple Health / Health Connect sync (installed app only)
@@ -31,7 +31,7 @@
       eggs: { frost: 0, ember: 0, crystal: 0 }, eggTrades: 0,
       druid: { asked: [], wins: 0, losses: 0 },
       nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, music: true, reducedMotion: null, homeState: '' },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, homeState: '' },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }
@@ -69,6 +69,12 @@
       delete s.owned.trails;
     }
     delete s.equip.trail;
+    // the backpack became a charm (charms: worn magic items)
+    if (!Array.isArray(s.equip.charms)) s.equip.charms = [];
+    if (s.equip.backpack && !s.equip.charms.includes('backpack')) s.equip.charms.push('backpack');
+    delete s.equip.backpack;
+    delete s.settings.music;
+    if (s.enc.merlinAt && !s.enc.merlinMet) s.enc.merlinMet = true;   // players who already met Merlin   // one Sound & music switch now
     s.peakLevel = Math.max(s.peakLevel || 0, s.level);   // levels won back after losing to a boss don't pay level-up coins twice
     // the walker picked at sign-up decides the special attack; older saves: the first starter owned is the one picked
     if (!s.starter) {
@@ -80,6 +86,9 @@
     if (!s.equip.melee || !D.weaponById[s.equip.melee]) s.equip.melee = 'sw_rusty';
     if (s.equip.shield && !D.weaponById[s.equip.shield]) s.equip.shield = null;
     s.owned.weapons = s.owned.weapons.filter((id) => D.weaponById[id]);
+    // retired creatures (the Mushroom Guard and Naughty Nova): drop them from the log and the road
+    for (const id of ['mushroom', 'nova']) delete s.enc.cards[id];
+    s.enc.pending = s.enc.pending.filter((e) => !e.creature || D.CREATURES[e.creature]);
     // drop references to content that no longer exists
     const ok = (list, id) => list.some((x) => x.id === id);
     s.owned.avatars = s.owned.avatars.filter((id) => ok(D.AVATARS, id));
