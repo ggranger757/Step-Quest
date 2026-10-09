@@ -78,7 +78,7 @@
   };
   G.newDailyTasks = (day) => {
     const s = S(), r = WB.rng(WB.hash(day + s.created));
-    const pool = D.DAILY_TASKS.filter((t) => !t.always).slice();
+    const pool = D.DAILY_TASKS.filter((t) => !t.always && (t.kind !== 'today_battles' || s.level >= D.BATTLE_LEVEL)).slice();   // no battle goals before battles unlock
     const picks = [D.DAILY_TASKS.find((t) => t.always)];
     while (picks.length < 3 && pool.length) picks.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
     s.tasks.day = day;
@@ -393,7 +393,8 @@
     const s = S(), w = opts.world ? D.worldById[opts.world] : G.world();
     let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS.map((x) => x.type === 'find' && G.perk('finds') ? { ...x, w: x.w * 1.5 } : x)).type;
     const eggTrade = G.setsReady && G.setsReady().length && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
-    if (type === 'druid' && s.level < 2) type = 'chest';
+    if (type === 'druid' && s.level < D.BATTLE_LEVEL && !forceType) type = 'chest';   // a wrong answer means a fight, so he waits until battles unlock
+    if (type === 'boss' && !G.battlesOpen() && !forceType) type = 'chest';
     if (type === 'nemesis' && !opts.boss && (s.level < D.BOSS_LEVEL || Date.now() - (s.enc.nemesisAt || 0) < D.BOSS_COOLDOWN_H * 3600000)) type = 'creature';
     if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest && !eggTrade) type = 'chest';
     const e = { id: 'e' + ++s.enc.seq, type, world: w.id };
@@ -411,10 +412,16 @@
       e.choices = [{ id: 'battle', label: 'Battle', hint: 'Boss · Lv ' + D.bossStats(e.creature, s.level).lvl }, { id: 'avoid', label: 'Try to slip away', hint: '50% to escape · losing one costs ' + D.BOSS_LEVEL_LOSS + ' levels' }];
     } else if (type === 'creature') {
       const hostile = w.pool.filter((c) => D.CREATURES[c].aggressive);
-      // mostly the aggressive ones (they start battles); always one for your first fights
-      e.creature = opts.creature || ((opts.hostile || s.enc.battles < 3 || Math.random() < 0.7) && hostile.length ? WB.pick(hostile) : WB.pick(w.pool));
+      // half the time a fighting creature (they start battles), half the time a harmless one; always a fighter for
+      // your first three battles
+      const calm = w.pool.filter((c) => !D.CREATURES[c].aggressive);
+      const fight = opts.hostile || s.enc.battles < 3 || !calm.length || Math.random() < D.FIGHT_CHANCE;
+      e.creature = opts.creature || (fight && hostile.length ? WB.pick(hostile) : WB.pick(calm.length ? calm : w.pool));
       const c = D.CREATURES[e.creature];
-      if (c.aggressive) {
+      if (c.aggressive && !G.battlesOpen()) {   // too early to fight: it can only be shooed off or snuck past
+        e.text = 'A ' + c.name + ' ' + c.verb + '! You’re not ready to fight yet (battles unlock at level ' + D.BATTLE_LEVEL + ').';
+        e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
+      } else if (c.aggressive) {
         e.aggressive = true;
         e.text = 'A ' + c.name + ' ' + c.verb + '!';
         e.choices = [{ id: 'battle', label: 'Battle', hint: 'Lv ' + D.creatureStats(e.creature, w.tier).lvl }, { id: 'avoid', label: 'Avoid it', hint: 'Walk on' }];
@@ -459,11 +466,12 @@
     return e;
   };
   G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 260 + Math.floor(Math.random() * 260); };
+  G.battlesOpen = () => S().level >= D.BATTLE_LEVEL;
   G.firstEncounterType = () => {
     const s = S();
     if (s.enc.seq === 0) return 'chest';
-    if (s.enc.bossDue === s.world) return 'boss';
-    if (s.enc.battles === 0 && s.enc.seq >= 2 && s.enc.seq % 2 === 0) return 'creature'; // make sure new players meet a battle early
+    if (s.enc.bossDue === s.world && G.battlesOpen()) return 'boss';
+    if (G.battlesOpen() && s.enc.battles === 0 && s.enc.seq >= 2 && s.enc.seq % 2 === 0) return 'creature'; // make sure new players meet a battle early
     return null;
   };
   G.deferEncounter = (e) => {

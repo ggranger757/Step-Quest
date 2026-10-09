@@ -43,16 +43,16 @@
     { go: shop('pets'), sel: '#scr-shop .grid', page: 'Shop', title: 'Pets', text: 'Pets walk with you and jump in during battles, taking 20–60% of each hit until they run out of HP. They recover over time.' },
     { go: col('finds'), sel: '#scr-collection .seg', page: 'Inventory', title: 'Inventory', text: 'Your Artifacts, Achievements and Eggs. Artifacts hide in every world; achievements pay coins and XP for milestones.' },
     { go: col('eggs'), sel: '#scr-collection .eggs', page: 'Inventory', title: 'Eggs', text: 'Find Frost, Ember and Crystal eggs on the road or win them in battle. Carry up to ' + D.EGG_MAX + ' of each and trade sets to Merlin for loot. Lose a battle and you lose half of each kind.' },
-    { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'The Druid', text: 'From level 2 a druid may ask a trivia question. Right: XP and coins. Wrong: you battle him, and if he wins he takes all your eggs.' },
+    { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'The Druid', text: 'From level ' + D.BATTLE_LEVEL + ' a druid may ask a trivia question. Right: XP and coins. Wrong: you battle him, and if he wins he takes all your eggs.' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'Bosses', text: 'From level ' + D.BOSS_LEVEL + ', six rare bosses roam the roads. They hit hard, have unique powers and talk trash. Win big, or lose ' + D.BOSS_LEVEL_LOSS + ' levels.' },
     // ---------- battles ----------
-    { go: tab('world'), sel: '#stage', page: 'Battles', title: 'Encounters and battles', text: 'Fight or avoid creatures that block your path. In battle: Strike, Throw/Cast, Defend (uses ' + D.DEFEND_COST + '% of your guard gauge), Items, Magic or Run away. When a creature is “Charging!”, defend. From level ' + D.SPECIAL_LEVEL + ' your Special attack fills as you fight.' },
+    { go: tab('world'), sel: '#stage', page: 'Battles', title: 'Encounters and battles', text: 'From level ' + D.BATTLE_LEVEL + ', fight or avoid creatures that block your path. In battle: Strike, Throw/Cast, Defend (uses ' + D.DEFEND_COST + '% of your guard gauge), Items, Magic or Run away. When a creature is “Charging!”, defend. From level ' + D.SPECIAL_LEVEL + ' your Special attack fills as you fight.' },
     // ---------- profile ----------
     { go: tab('profile'), sel: '#scr-profile .hero', page: 'Profile', title: 'Profile', text: 'Your walker, title, level and HP. Tap the pencil to rename yourself.' },
     { go: tab('profile'), sel: '#scr-profile .stats', page: 'Profile', title: 'Stats', text: 'Lifetime totals: steps, distance, battles, guardians and bosses beaten, Merlin’s quests, Knowledge Challenges and more. Tap a stat with a dashed border to see what it means.' },
     { go: tab('profile'), sel: '#scr-profile .chart', page: 'Profile', title: 'Last 14 days', text: 'Steps per day. Highlighted bars met your streak minimum.' },
     { go: tab('profile'), sel: '#scr-profile .wardrobe', page: 'Profile', title: 'Loadout', text: 'Change your walker, skin tone, weapons, defense and pet in one place.' },
-    { go: tab('profile'), sel: () => sect('#scr-profile', 'Settings'), page: 'Profile', title: 'Settings', text: 'Step counter, music, daily goal, streak minimum, distance units, stride, sound and your save. Replay this tour from here.' },
+    { go: tab('profile'), sel: () => sect('#scr-profile', 'Settings'), page: 'Profile', title: 'Settings', text: 'Step counter, daily goal, streak minimum, distance units, stride, sound and your save. Replay this tour from here.' },
     { go: tab('world'), title: 'You’re ready', text: 'Start walking: every step counts. Good luck out there!' },
   ];
 
@@ -130,6 +130,7 @@
     UI.histDone('tour', fromPop);
     UI.lockScroll('tour', false);
     T.active = false; el.hidden = true; document.documentElement.classList.remove('touring');
+    WB.Bgm.stopIf('app', 1600);   // the theme song ends with the tutorial (finished or skipped)
     S().hints.tour = true; WB.Save.queue();
     UI.go('world', { replace: true }); window.scrollTo(0, 0);
     const f = onDone; onDone = null; if (f) f();

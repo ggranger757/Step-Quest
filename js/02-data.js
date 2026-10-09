@@ -825,6 +825,8 @@
   ];
   D.MERLIN_ACCEPT = ['I’ll be watching from the treetops.', 'Walk well and the reward is yours.', 'Don’t keep an old owl waiting.', 'May your shoes hold out.'];
   D.MERLIN_DECLINE = ['Another day, then. I’ll find you.', 'Rest those legs. I’ll be back.', 'Hoo. Not everyone is ready. Yet.'];
+  D.BATTLE_LEVEL = 7;    // battles (creatures, guardians, the Druid) unlock at this level
+  D.FIGHT_CHANCE = 0.5;   // a creature encounter is a fighting creature half the time
   D.ENCOUNTER_WEIGHTS = [{ type: 'creature', w: 40 }, { type: 'chest', w: 20 }, { type: 'find', w: 16 }, { type: 'merchant', w: 11 }, { type: 'traveler', w: 13 }, { type: 'merlin', w: 5 }, { type: 'egg', w: 9 }, { type: 'druid', w: 6 }, { type: 'nemesis', w: 3 }];   // Merlin only when a quest can be offered (else a crate)
   D.CHEST_LINES = ['A supply crate sits half-buried in the dirt.', 'You spot a rusted footlocker by the road.', 'A crate with a faded star stencil. Still sealed.'];
   D.FIND_LINES = ['Something glints in the rubble.', 'A small object catches the light.', 'You notice something half-hidden by the path.'];

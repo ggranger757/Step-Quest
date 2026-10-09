@@ -33,7 +33,12 @@
     const x = canvas.getContext('2d'), W = canvas.width, H = canvas.height; x.imageSmoothingEnabled = false; x.clearRect(0, 0, W, H);
     const sc = Math.max(1, Math.floor(Math.min(W / im.width, H / im.height) * fill));
     x.drawImage(im, Math.round((W - im.width * sc) / 2), Math.round((H - im.height * sc) / 2), im.width * sc, im.height * sc);
+    WB.silIfLocked(canvas);
   });
+  // locked or not-yet-found things are drawn as flat silhouettes in the app's teal (--cyan)
+  WB.silColor = () => (getComputedStyle(document.documentElement).getPropertyValue('--cyan') || '#59e3ff').trim();
+  WB.sil = (canvas) => { const x = canvas.getContext('2d'); x.save(); x.globalCompositeOperation = 'source-in'; x.fillStyle = WB.silColor(); x.fillRect(0, 0, canvas.width, canvas.height); x.restore(); };
+  WB.silIfLocked = (canvas) => { if (canvas.closest && canvas.closest('.item.locked, .sil')) WB.sil(canvas); };
 
   // ---------- weapons: held in the hand during attacks, and what ranged weapons fire ----------
   // The equipped melee weapon is drawn at the walker's hand point (precomputed per attack frame by
@@ -189,7 +194,7 @@
         x.drawImage(src, bx, sh.r * sh.fs + by, bw, bh, flip ? W - dx - dw : dx, dy, dw, dh);
       }
       x.restore();
-      if (opts.sil) { x.save(); x.globalCompositeOperation = 'source-in'; x.fillStyle = opts.sil; x.fillRect(0, 0, W, H); x.restore(); }   // locked: a flat silhouette
+      if (opts.sil) WB.sil(canvas); else WB.silIfLocked(canvas);   // locked: a flat silhouette
     };
     Assets.load(sh.path).then(go);
   };

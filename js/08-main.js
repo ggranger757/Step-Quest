@@ -4,6 +4,7 @@
 
   function boot() {
     WB.Save.load();
+    if (!S().onboarded || !S().hints.tour) WB.Bgm.play('app');   // first open (or after a reset): the theme song starts on the loading screen and plays until the tutorial ends
     const welcome = G.welcomeLines();
     G.rollDay(); G.checkUnlocks(); G.primeAnnounced();
     document.documentElement.classList.toggle('rm', !!WB.reducedMotion());
@@ -13,7 +14,7 @@
     if (!S().onboarded) intro();
     else startApp(welcome);
     // the loading screen lifts once fonts and the first screen's scenery and walker are ready
-    { const w = G.world(); WB.Loading.boot([...w.layers.map((l) => WB.layerPath(w, l[0])), WB.sheet('av', S().avatar, 'idle').path]); }
+    { const w = G.world(); WB.Loading.boot([...w.layers.map((l) => WB.layerPath(w, l[0])), WB.sheet('av', S().avatar, 'idle').path], !S().onboarded); }
     WB.Cloud.init();
     // every 15 seconds (and whenever the app comes back): new day, HP refilling over time, mission deadlines
     const tick = () => {
@@ -44,7 +45,6 @@
     });
     const h = (location.hash || '').slice(1);
     UI.go(h === 'missions' ? 'tasks' : ['tasks', 'shop', 'collection', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
-    WB.Music.render();
     UI.updateHud(); UI.paintFace();
     WB.view.start();
     if (welcome && welcome.length) showWelcome(welcome);
@@ -52,8 +52,7 @@
     const offerHealth = () => { if (WB.Health.status === 'off' && !S().hints.health && S().onboarded) UI.healthSheet(); };
     const health = WB.Health.init();
     // first launch (and players who haven't seen it yet): the guided tour, then the health-sync offer
-    WB.Bgm.play('app');   // the default theme plays whenever the app opens (from the first tap if the browser blocks autoplay)
-    if (S().onboarded && !S().hints.tour) setTimeout(() => WB.Tour.start(() => health.then(offerHealth)), 700);
+    if (S().onboarded && !S().hints.tour) { WB.Bgm.play('app'); setTimeout(() => WB.Tour.start(() => health.then(offerHealth)), 700); }   // the theme song plays until the tutorial ends
     else health.then(offerHealth);
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
@@ -124,7 +123,7 @@
       // an account save arrived while onboarding on a new device: load it instead
       if (!$('#intro').hidden && S().onboarded) { location.reload(); return; }
       if (WB.view) WB.view.setWorld(S().world);
-      UI.updateHud(); UI.paintFace(); UI.render(); WB.Music.render();
+      UI.updateHud(); UI.paintFace(); UI.render();
     });
     window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'dev' && WB.isDev()) { $('#dev-fab').hidden = false; } });
   }

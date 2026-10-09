@@ -192,12 +192,13 @@
       ...D.POTIONS.filter((p) => p.base && p.req.level && inRange(p.req.level)).map((p) => ({ k: p.food ? 'Food' : 'Potion', n: p.name, img: 'pot/' + p.id + '.png' })),
     ];
     const worlds = D.WORLDS.filter((w) => inRange(w.unlock.level));
+    if (inRange(D.BATTLE_LEVEL)) items.unshift({ k: 'New', n: 'Battles! Fight creatures, guardians and the Druid', img: null });
     const s = S(), need = D.xpToNext(s.level), maxed = s.level >= D.LEVEL_CAP;
     UI.sheet(`<div class="lvlup">
       <div class="lv-badge"><span class="lbl">${L.regained ? 'Level regained' : 'Level up'}</span><b>${L.level}</b></div>
       <p class="lv-msg">${WB.esc(L.msg || '')}</p>
       ${L.coins ? `<div class="outcome"><span class="reward-pill coins">${WB.icon('coin', 2)}+${WB.fmt(L.coins)}</span><span class="reward-pill">Max HP ${WB.fmt(G.maxHp())}</span></div>` : ''}
-      ${items.length || worlds.length ? `<h4 class="lv-h">Now unlocked</h4><div class="lv-list">${worlds.map((w) => `<div class="lv-it">${WB.icon('map', 2)}<span><b>${WB.esc(w.name)}</b><small>World · ${G.gateMet(w) ? 'open now' : 'explore ' + WB.esc(D.worldById[w.unlock.after].name) + ' ' + D.WORLD_GATE_PCT + '% to enter'}</small></span></div>`).join('')}${items.slice(0, 8).map((it) => `<div class="lv-it">${it.img ? WB.pxImg(it.img, 28) : WB.icon(it.k === 'Pet' ? 'paw' : it.k === 'Walker' ? 'user' : 'shop', 2)}<span><b>${WB.esc(it.n)}</b><small>${it.k} · in the Shop</small></span></div>`).join('')}${items.length > 8 ? `<div class="lv-more">+${items.length - 8} more in the Shop</div>` : ''}</div>` : ''}
+      ${items.length || worlds.length ? `<h4 class="lv-h">Now unlocked</h4><div class="lv-list">${worlds.map((w) => `<div class="lv-it">${WB.icon('map', 2)}<span><b>${WB.esc(w.name)}</b><small>World · ${G.gateMet(w) ? 'open now' : 'explore ' + WB.esc(D.worldById[w.unlock.after].name) + ' ' + D.WORLD_GATE_PCT + '% to enter'}</small></span></div>`).join('')}${items.slice(0, 8).map((it) => `<div class="lv-it">${it.img ? WB.pxImg(it.img, 28) : WB.icon(it.k === 'Pet' ? 'paw' : it.k === 'Walker' ? 'user' : it.k === 'New' ? 'sword' : 'shop', 2)}<span><b>${WB.esc(it.n)}</b><small>${it.k === 'New' ? 'Unlocked' : it.k + ' · in the Shop'}</small></span></div>`).join('')}${items.length > 8 ? `<div class="lv-more">+${items.length - 8} more in the Shop</div>` : ''}</div>` : ''}
       <p class="fine lv-next">${maxed ? 'You reached the level cap. Legendary!' : 'Next level in ' + WB.fmt(need - s.xp) + ' XP (about ' + WB.fmt(Math.ceil((need - s.xp) / D.XP_PER_STEP)) + ' steps).'}</p>
       <div class="row">${items.length ? '<button class="btn ghost" type="button" data-act="lv-shop">Open the Shop</button>' : ''}<button class="btn gold" type="button" data-close>Keep walking</button></div>
     </div>`);
@@ -224,7 +225,6 @@
     else if (st === 'off' && mot.supported()) sensor = `<div class="sensor"><button class="btn" data-act="sensor-start" type="button">${WB.icon('steps', 2)}Start walking</button>${logBtn('ghost')}</div>`;
     else sensor = `<div class="sensor"><p class="note">${WB.esc(WB.Steps.msg || 'This browser can\u2019t read your steps.')}</p>${logBtn(st === 'unavailable' ? 'wide' : '')}${st !== 'unavailable' ? '<button class="btn ghost" data-act="sensor-start" type="button">Try again</button>' : ''}</div>`;
     const pend = s.enc.pending.length, daily = G.dailyCanClaim();
-    const musicOn = !!(s.music && s.music.url);
     UI.set($('#journey'), `
       <div class="today">
         <div class="today-row">
@@ -238,7 +238,7 @@
         </button>
       </div>
       ${sensor}
-      <div class="chips"><button class="chipbtn" data-act="map" type="button">${WB.icon('map', 2)}World map</button>${pend ? `<button class="chipbtn" data-act="pending" type="button">${WB.icon('flag', 2)}${pend} encounter${pend > 1 ? 's' : ''} waiting</button>` : ''}${daily ? `<button class="chipbtn cyan" data-act="daily" type="button">${WB.icon('chest', 2)}Claim daily reward</button>` : ''}${musicOn ? '' : `<button class="chipbtn" data-act="music" type="button">${WB.icon('note', 2)}Add music</button>`}</div>
+      <div class="chips"><button class="chipbtn" data-act="map" type="button">${WB.icon('map', 2)}World map</button>${pend ? `<button class="chipbtn" data-act="pending" type="button">${WB.icon('flag', 2)}${pend} encounter${pend > 1 ? 's' : ''} waiting</button>` : ''}${daily ? `<button class="chipbtn cyan" data-act="daily" type="button">${WB.icon('chest', 2)}Claim daily reward</button>` : ''}</div>
       ${obj ? `<button class="objective pbox card" data-act="tasks" data-mt="${obj.tab || 'today'}" type="button">
         <span class="obj-head"><span class="lbl">Next objective</span><span class="obj-reward">${WB.esc(G.rewardText(obj.t.reward))}</span></span>
         <span class="obj-title">${WB.esc(WB.unitText(obj.t.title))}</span>
@@ -587,6 +587,7 @@
   };
   function paintAll(root) {
     WB.$$('[data-prev]', root).forEach((c) => paintPreview(c, ...c.dataset.prev.split(':')));
+    WB.$$('[data-silimg]', root).forEach((c) => WB.paintImg(c, c.dataset.silimg, 1).then(() => WB.sil(c)));   // not found yet: a teal silhouette
     WB.$$('[data-icon-canvas]', root).forEach((c) => { const ic = WB.iconCanvas(c.dataset.iconCanvas), x = c.getContext('2d'); x.imageSmoothingEnabled = false; const sc = 7; x.drawImage(ic, (c.width - ic.width * sc) / 2, (c.height - ic.height * sc) / 2, ic.width * sc, ic.height * sc); });
   }
   function paintPreview(c, cat, id) {
@@ -606,6 +607,7 @@
       const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, c.width, c.height);
       const k = c.width >= 64 ? 0.95 : 0.8, sc = WB.fitScale((c.width * k) / info.w, (c.height * k) / info.h);
       x.drawImage(im, 0, 0, info.w, info.h, (c.width - info.w * sc) / 2, (c.height - info.h * sc) / 2, info.w * sc, info.h * sc);
+      WB.silIfLocked(c);
     });
   };
 
@@ -674,7 +676,7 @@
       body = D.WORLDS.filter((w) => s.unlocked.includes(w.id)).map((w) => {
         const got = s.enc.finds[w.id] || [], open = true;
         return `<div class="sect"><h2>${w.name} <span class="aside">${got.length} / ${D.FINDS[w.id].length} found</span></h2>
-          <div class="finds">${D.FINDS[w.id].map((f, i) => { const has = got.includes(i); return `<div class="find pbox ${has ? 'got' : ''}">${WB.pxImg('art/' + f[0] + '.png', 64)}${has ? WB.esc(f[1]) : open ? 'Not found yet' : 'Locked world'}</div>`; }).join('')}</div></div>`;
+          <div class="finds">${D.FINDS[w.id].map((f, i) => { const has = got.includes(i); return `<div class="find pbox ${has ? 'got' : ''}">${has ? WB.pxImg('art/' + f[0] + '.png', 64) : `<canvas class="px-img" width="64" height="64" data-silimg="art/${f[0]}.png" aria-hidden="true"></canvas>`}${has ? WB.esc(f[1]) : open ? 'Not found yet' : 'Locked world'}</div>`; }).join('')}</div></div>`;
       }).join('') + (locked.length ? `<div class="sect"><h2>Locked worlds <span class="aside">${locked.reduce((n, w) => n + D.FINDS[w.id].length, 0)} artifacts</span></h2><div class="locked-worlds pbox card">${locked.map((w) => `<div class="lw"><span>${WB.icon('lock', 1)} ${WB.esc(w.name)}</span><span class="lbl">${D.FINDS[w.id].length} to find</span></div>`).join('')}</div></div>` : '');
     } else if (tab === 'eggs') {
       body = UI.eggSection();
@@ -758,12 +760,11 @@
         ${WB.Health.native ? `<div class="setting pbox"><div><div>${WB.Health.name()}</div><div class="sd">${WB.Health.status === 'on' ? 'Steps sync automatically, even for walks taken with the app closed.' : WB.esc(WB.Health.msg || 'Read your step count automatically.')}</div></div><div class="acts">${WB.Health.status === 'on' ? '<button class="btn ghost sm" type="button" data-act="health-off">Turn off</button>' : WB.Health.status !== 'unavailable' ? '<button class="btn sm" type="button" data-act="health-connect">Connect</button>' : ''}</div></div>` : ''}
         <div class="setting pbox"><div><div>Step counter</div><div class="sd">${st === 'on' ? 'Counting with the motion sensor while the app is open.' : WB.esc(WB.Steps.msg || 'Uses your phone’s motion sensor while Stepquest is open.')}</div></div>
           <div class="acts">${st === 'on' ? '<button class="btn ghost sm" type="button" data-act="sensor-stop">Pause</button>' : WB.Steps.motion.supported() && st !== 'unavailable' ? '<button class="btn sm" type="button" data-act="sensor-start">Start</button>' : ''}<button class="btn ghost sm" type="button" data-act="log">Log steps</button></div></div>
-        <div class="setting pbox"><div><div>Music</div><div class="sd">Play Spotify or Apple Music inside Stepquest while you walk.</div></div><div class="acts"><button class="btn ghost sm" type="button" data-act="music">Set up music</button></div></div>
         <div class="setting pbox"><div><label for="set-goal">Daily goal</label><div class="sd">Reaching it pays a 100-coin bonus.</div></div><select id="set-goal">${opt([2500, 5000, 7500, 10000], s.settings.dailyGoal, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-streak">Streak minimum</label><div class="sd">Steps needed in a day to keep the streak.</div></div><select id="set-streak">${opt(D.STREAK_GOALS, s.settings.streakMin, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-units">Distance units</label><div class="sd">How distances are shown.</div></div><select id="set-units">${opt(['mi', 'km'], s.settings.units || 'km', (v) => (v === 'mi' ? 'Miles' : 'Kilometers'))}</select></div>
         <div class="setting pbox"><div><label for="set-stride">Stride length</label><div class="sd">Turns steps into distance.</div></div><select id="set-stride">${opt([0.6, 0.65, 0.7, 0.76, 0.8, 0.85, 0.9], s.settings.stride, (v) => WB.miles() ? Math.round(v * 39.37) + ' in' : v.toFixed(2) + ' m')}</select></div>
-        <div class="setting pbox"><div><div id="lbl-sound">Sound &amp; music</div><div class="sd">${WB.Music.active() ? 'Paused while your music player is on.' : 'Game sounds and music. They pause while your own music plays.'}</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
+        <div class="setting pbox"><div><div id="lbl-sound">Sound &amp; music</div><div class="sd">Game sounds and music.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
         <div class="setting pbox"><div><div id="lbl-rm">Reduce motion</div><div class="sd">Fewer particles and animations.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-rm" aria-checked="${!!WB.reducedMotion()}" data-toggle="reducedMotion"></button></div>
         <div class="setting pbox"><div><div>Tutorial</div><div class="sd">A guided tour of every page and feature.</div></div><div class="acts"><button class="btn ghost sm" type="button" data-act="tour">Replay tutorial</button></div></div>
         <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : !WB.store.ok() ? '<b class="warn">Not saving:</b> this browser is blocking storage, so progress is lost when you close it.' : 'Saved on this device. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
@@ -854,11 +855,11 @@
           <div class="wbody"><h3>${w.name}</h3><p class="wb">${w.blurb}</p>
           <div class="wcr"><span class="lbl">Creatures here</span><div class="crts">${w.pool.map((c) => `<span class="crt" title="${WB.esc(D.CREATURES[c].name)}"><canvas width="80" height="80" data-crthumb="${c}" aria-label="${WB.esc(D.CREATURES[c].name)}" role="img"></canvas></span>`).join('')}</div></div>
           ${open ? `<div class="wrow"><div class="bar seg cyan"><i style="width:${pct}%"></i></div><div class="wmeta"><span class="lbl">${Math.floor(pct)}% explored · ${(s.enc.finds[w.id] || []).length}/${D.FINDS[w.id].length} artifacts</span>${cur ? '<span class="lbl here">You are here</span>' : `<button class="btn sm" type="button" data-travel="${w.id}">Travel</button>`}</div>
-            <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${!s.bosses[w.id] && pct >= 100 ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : !s.bosses[w.id] ? '<span class="lbl dim">Appears at 100%</span>' : ''}</div></div>`
+            <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${!s.bosses[w.id] && pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : !s.bosses[w.id] ? '<span class="lbl dim">Appears at 100%</span>' : ''}</div></div>`
           : `<div class="wrow"><div class="bar seg"><i style="width:${wp.pct}%"></i></div><div class="wmeta"><span class="lbl">${WB.icon('lock', 2)} ${WB.esc(G.worldReq(w))}</span><span class="lbl">≈ ${WB.fmt(wp.stepsLeft)} steps</span></div></div>`}
           </div></div>`;
       }).join('')}</div></div>`);
-    if (changed) WB.$$('[data-crthumb]', $('#scr-map')).forEach((c) => WB.paintThumb(c, { kind: 'cr', id: c.dataset.crthumb, face: 'left', sil: c.closest('.wnode.locked') ? '#2f9fb3' : null }));
+    if (changed) WB.$$('[data-crthumb]', $('#scr-map')).forEach((c) => WB.paintThumb(c, { kind: 'cr', id: c.dataset.crthumb, face: 'left', sil: !!c.closest('.wnode.locked') }));
     if (changed) WB.$$('[data-thumb]', $('#scr-map')).forEach((c) => {
       const w = D.worldById[c.dataset.thumb], x = c.getContext('2d'); x.imageSmoothingEnabled = false;
       Promise.all(w.layers.map((L) => WB.Assets.load(WB.layerPath(w, L[0])))).then((ims) => { ims.forEach((im) => im._ok && x.drawImage(im, 0, 0, im.width, im.height, 0, 0, 120, 68)); });
@@ -901,7 +902,6 @@
       case 'health-off': WB.Health.disconnect(); UI.render(); break;
       case 'log': UI.logSheet(); break;
       case 'skin': UI.skinSheet(); break;
-      case 'music': WB.Music.sheet(); break;
       case 'lv-shop': UI.closeSheet(); UI.go('shop'); break;
       case 'heal-info': UI.supTab = 'potions'; UI.go('supplies'); break;
       case 'tasks': if (d.mt) UI.missionTab = d.mt; UI.go('tasks'); break;

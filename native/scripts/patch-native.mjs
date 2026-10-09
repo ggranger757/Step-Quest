@@ -29,4 +29,37 @@ edit(join(native, 'ios', 'App', 'App.xcodeproj', 'project.pbxproj'), (s) =>
 // ---- Android: Health Connect needs minSdk 26
 edit(join(native, 'android', 'variables.gradle'), (s) => s.replace(/minSdkVersion\s*=\s*(\d+)/, (m, n) => (Number(n) < 26 ? 'minSdkVersion = 26' : m)));
 
+// ---- Music from the loading screen: let the app's web view start audio without waiting for a tap
+// Android: MainActivity turns off "media playback requires a user gesture"
+const javaDir = join(native, 'android', 'app', 'src', 'main', 'java', 'com', 'stepquest', 'app');
+edit(join(javaDir, 'MainActivity.java'), (s) => s.includes('setMediaPlaybackRequiresUserGesture') ? s
+  : s.replace(/public class MainActivity extends BridgeActivity \{\s*\}/, `public class MainActivity extends BridgeActivity {
+    @Override
+    public void onStart() {
+        super.onStart();
+        // the theme song plays from the loading screen
+        this.bridge.getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
+    }
+}`));
+// iOS: a bridge view controller whose web view may autoplay audio, used by the main storyboard
+const vc = join(iosApp, 'MainViewController.swift');
+if (existsSync(iosApp) && !existsSync(vc)) {
+  writeFileSync(vc, `import UIKit
+import WebKit
+import Capacitor
+
+// The theme song plays from the loading screen: allow audio without a tap.
+class MainViewController: CAPBridgeViewController {
+    override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
+        let config = super.webViewConfiguration(for: instanceConfiguration)
+        config.mediaTypesRequiringUserActionForPlayback = []
+        config.allowsInlineMediaPlayback = true
+        return config
+    }
+}
+`);
+  console.log('created ios/App/App/MainViewController.swift (add it to the App target in Xcode if it is not picked up)');
+}
+edit(join(iosApp, 'Base.lproj', 'Main.storyboard'), (s) => s.replace(/customClass="CAPBridgeViewController" customModule="Capacitor"/, 'customClass="MainViewController" customModule="App" customModuleProvider="target"'));
+
 console.log('Native projects are ready for step sync.');

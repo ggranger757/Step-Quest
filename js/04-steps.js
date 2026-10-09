@@ -184,9 +184,9 @@
       creature: ['sfx/creature_attack_1.mp3', 'sfx/creature_attack_2.mp3', 'sfx/creature_attack_3.mp3'],
       proj: ['sfx/projectile_1.mp3', 'sfx/projectile_2.mp3', 'sfx/projectile_5.mp3'],
     };
-    // game sounds stay quiet when the player turned them off, or while their own music player is on
+    // game sounds stay quiet when the player turned Sound & music off
     let lastLevel = 0;
-    const muted = () => !WB.state || !WB.state.settings.sound || !!(WB.Music && WB.Music.active && WB.Music.active());
+    const muted = () => !WB.state || !WB.state.settings.sound;
     return {
       muted,
       // play a recorded sound file (weapon impacts, actions); decoded once and cached
@@ -220,7 +220,7 @@
 
   /* Background music: the app song (first launch, until the tutorial ends) and battle music.
      Streams with an <audio> element so long tracks don't have to download before playing. Off when the player
-     turns Game music off, turns sounds off, or has their own music player on. Browsers only allow audio after a
+     turns Sound & music off. Browsers only allow audio after a
      tap, so a blocked start is retried on the next tap. */
   WB.Bgm = (() => {
     const TRACKS = {
@@ -232,7 +232,7 @@
       battleEpic: ['music/battle_epic_1.mp3', 'music/battle_epic_2.mp3'],
     };
     let el = null, want = null, fadeT = null;
-    const allowed = () => !!(WB.state && WB.state.settings.sound && !(WB.Music && WB.Music.active && WB.Music.active()));
+    const allowed = () => !!(WB.state && WB.state.settings.sound);
     // browsers only start audio after a real tap: on phones that is touchend / pointerup / click (not pointerdown)
     const GESTURES = ['pointerup', 'touchend', 'click', 'keydown'];
     const retry = () => { GESTURES.forEach((g) => document.removeEventListener(g, retry, true)); B.sync(); };

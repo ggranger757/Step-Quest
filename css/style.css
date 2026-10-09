@@ -304,7 +304,6 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .item .reqline .px-icon { margin-top: 1px; }
 .item .req .bar { height: 6px; }
 /* locked or undiscovered: a dark purple silhouette */
-.item.locked .prev canvas { filter: brightness(0) invert(16%) sepia(60%) saturate(2400%) hue-rotate(245deg) brightness(0.8); }
 .item .prev .tag.lock { background: var(--surface-2); color: var(--muted); box-shadow: 0 0 0 2px var(--line); display: inline-flex; gap: 4px; align-items: center; }
 .item .prev .tag.leg { left: 6px; right: auto; background: var(--gold); }
 .item .foot { display: grid; gap: var(--s2); padding-top: var(--s1); }
@@ -316,7 +315,6 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .find { display: grid; justify-items: center; align-content: start; gap: var(--s2); padding: var(--s3) var(--s2); text-align: center; font-size: 12px; line-height: 1.25; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
 .find.got { color: var(--text); }
 .find .px-img { width: 64px; height: 64px; }
-.find:not(.got) .px-img { filter: brightness(0) invert(16%) sepia(60%) saturate(2400%) hue-rotate(245deg) brightness(0.8); }
 .ach { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s3); align-items: center; padding: var(--s3) var(--s4); }
 .ach .a-t { font-size: 16px; }
 .ach .a-b { display: grid; gap: var(--s1); min-width: 0; }
@@ -580,16 +578,6 @@ input:focus-visible, select:focus-visible { outline: 0; box-shadow: 0 0 0 2px va
   .b-actions .btn { min-height: 48px; }
 }
 
-/* music dock */
-.music { flex: none; background: var(--surface); box-shadow: 0 -2px 0 0 var(--line); z-index: 4; }
-.mu-bar { display: flex; align-items: center; gap: var(--s2); min-height: 48px; padding: 0 var(--s2) 0 var(--gutter); }
-.mu-ic { display: grid; place-items: center; flex: none; }
-.mu-t { display: grid; gap: 2px; min-width: 0; flex: 1; }
-.mu-k { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.music .linkbtn { padding: 0 var(--s2); font-size: 11px; }
-.mu-x { width: 44px; height: 44px; border: 0; background: none; cursor: pointer; color: var(--muted); font: 400 26px/1 var(--display); flex: none; }
-.mu-frame { padding: 0 var(--gutter) var(--s3); }
-.mu-frame.closed { height: 0; padding: 0; overflow: hidden; }
 .mu-frame iframe { display: block; width: 100%; border: 0; border-radius: 12px; background: var(--inset); }
 .mu-note { font-size: 13px; color: var(--muted); padding: var(--s2) 0; }
 .mu-help { display: grid; gap: var(--s2); font-size: 13px; line-height: 1.45; color: var(--muted); padding-top: var(--s1); }
@@ -811,8 +799,12 @@ html.rm .lvlup .lv-badge b { animation: none; }
 .btn.gold, .b-actions .btn[data-b="strike"], .b-actions .btn.special.ready, .badge, .cm-seg button[aria-checked="true"], .item .prev .tag.leg { --t: #000; color: #000; }
 .btn.gold *, .b-actions .btn[data-b="strike"] *, .b-actions .btn.special.ready *, .item .prev .tag.leg * { color: #000 !important; }
 .btn.gold small, .b-actions .btn[data-b="strike"] small, .b-actions .btn.special.ready small { opacity: 1; }
-.btn.gold[aria-disabled="true"], .btn.gold[disabled] { --t: var(--dim); color: var(--dim); }
-.btn.gold[aria-disabled="true"] *, .btn.gold[disabled] * { color: var(--dim) !important; }
+/* an orange button you can't use yet looks the same: black text, never faded (tapping it says why) */
+.btn.gold[aria-disabled="true"], .btn.gold[disabled] { --b: var(--gold); --t: #000; color: #000; opacity: 1; }
 /* locked or undiscovered things: a teal silhouette (the app's accent) */
-.item.locked .prev canvas, .find:not(.got) .px-img { filter: brightness(0) saturate(100%) invert(76%) sepia(43%) saturate(1046%) hue-rotate(155deg) brightness(.72); }
 .wnode.locked .crt canvas { filter: none; }
+.boot .boot-go { min-width: 200px; margin-top: 6px; animation: boot-pulse 1.4s steps(4) infinite; }
+@keyframes boot-pulse { 50% { box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), 0 0 0 6px var(--gold-glow); } }
+html.rm .boot .boot-go { animation: none; }
+.boot.ready .boot-ring { animation: none; opacity: .35; }
+.encounter .choices .btn.gold small, .b-actions .btn.gold small { opacity: 1; color: #000 !important; }

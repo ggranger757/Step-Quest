@@ -77,7 +77,7 @@
       for (let i = 0; i < row.length; i++) {
         const ch = row[i]; if (ch === '.' || ch === ' ') continue;
         const col = pal[ch] || PAL[ch]; if (!col) continue;
-        x.fillStyle = silhouette ? (ch === 'k' ? '#0e0b20' : '#2f9fb3') : col;   // locked: a teal silhouette
+        x.fillStyle = silhouette ? (ch === 'k' ? '#0e0b20' : '#59e3ff') : col;   // locked: a teal silhouette
         x.fillRect(i, j, 1, 1);
       }
     });

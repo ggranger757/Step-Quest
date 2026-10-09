@@ -29,10 +29,22 @@
       L.hide();
     },
     // first launch of the page: fonts, then the art the first screen needs
-    boot(paths = []) {
+    // gate: on a first open (or after a reset) the theme song should start on the loading screen. Browsers only
+    // allow sound after a tap, so if it couldn't start by itself, the screen waits with a "Tap to start" button.
+    async boot(paths = [], gate = false) {
       const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
       const art = paths.filter(Boolean).map((p) => WB.Assets.load(p));
-      return L.until([fonts, ...art], Math.max(0, 1100 - (performance.now() - T0)));
+      const min = Math.max(0, 1100 - (performance.now() - T0));
+      if (!gate) return L.until([fonts, ...art], min);
+      const start = performance.now();
+      await Promise.race([Promise.allSettled([fonts, ...art]), new Promise((r) => setTimeout(r, 6000))]);
+      const left = min - (performance.now() - start); if (left > 0) await new Promise((r) => setTimeout(r, left));
+      if (WB.Bgm.playing()) return L.hide();
+      const sub = $('#boot-sub');
+      sub.innerHTML = '<button class="btn gold boot-go" type="button" id="boot-go">Tap to start</button>'; $('#boot').classList.add('ready');   // loaded: the ring stops
+      const go = () => { WB.Bgm.home(); L.hide(); };
+      $('#boot-go').addEventListener('click', go, { once: true });
+      setTimeout(() => { const b = $('#boot-go'); if (b) b.focus(); }, 50);
     },
     // a short loading screen while a world's scenery and creatures load (e.g. after travelling)
     world(w) {

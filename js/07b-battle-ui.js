@@ -40,6 +40,7 @@
   }
 
   BU.challenge = (worldId) => {
+    if (!G.battlesOpen()) return WB.UI.toast({ kicker: 'Not yet', title: 'Battles unlock at level ' + D.BATTLE_LEVEL + '.', cls: 'msg' });
     if (S().hp < 1) S().hp = 1;
     BU.open(G.makeEncounter('boss', { world: worldId }));
   };
@@ -595,7 +596,7 @@
     if (BU.ro) BU.ro.disconnect();
     $('#battle').hidden = true; $('#battle').innerHTML = '';
     WB.UI.histDone('battle'); WB.UI.lockScroll('battle', false);
-    WB.Bgm.stop(600); setTimeout(() => { if (!WB.Battle.active) WB.Bgm.home(); }, 700);   // back to the default theme
+    WB.Bgm.stop();
     document.documentElement.classList.remove('battling');
     if (WB.view) {
       WB.view.paused = false;

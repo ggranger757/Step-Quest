@@ -13,7 +13,6 @@
                 pets: [], weapons: ['star', 'sw_rusty'], magic: [] },
       petHp: {},          // pets have their own health (they take part of every hit in battle)
       hp: D.heroMaxHp(1), potions: { tonic: 2 }, bosses: {},
-      music: { provider: 'spotify', url: '', open: false },
       health: { on: false, since: null, last: 0 },   // Apple Health / Health Connect sync (installed app only)
       hints: {},
       level: 1, xp: 0, coins: 0, frac: { coins: 0, xp: 0 },
@@ -40,7 +39,7 @@
     const f = fresh();
     // shallow-merge defaults so new fields appear for old saves
     for (const k of Object.keys(f)) if (s[k] === undefined) s[k] = f[k];
-    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'streak', 'daily', 'settings', 'seen', 'music', 'health'])
+    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'streak', 'daily', 'settings', 'seen', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];
     // v2: dyes and auras were retired. Refund what was bought, drop the rest.
     if (s.v < 2) {
@@ -73,8 +72,9 @@
     if (!Array.isArray(s.equip.charms)) s.equip.charms = [];
     if (s.equip.backpack && !s.equip.charms.includes('backpack')) s.equip.charms.push('backpack');
     delete s.equip.backpack;
-    delete s.settings.music;
-    if (s.enc.merlinAt && !s.enc.merlinMet) s.enc.merlinMet = true;   // players who already met Merlin   // one Sound & music switch now
+    delete s.settings.music;   // one Sound & music switch now
+    delete s.music;            // the in-app music player was removed: players use their own music app
+    if (s.enc.merlinAt && !s.enc.merlinMet) s.enc.merlinMet = true;   // players who already met Merlin
     s.peakLevel = Math.max(s.peakLevel || 0, s.level);   // levels won back after losing to a boss don't pay level-up coins twice
     // the walker picked at sign-up decides the special attack; older saves: the first starter owned is the one picked
     if (!s.starter) {

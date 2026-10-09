@@ -70,6 +70,8 @@ App icons: the Stepquest logo is already in `native/assets/` (`icon.png` 1024×1
 
 ## Battles
 
+Battles unlock at **level 7** (`D.BATTLE_LEVEL`). Before that, fighting creatures can only be shooed off or snuck past, guardians wait on the map, the Druid doesn't appear yet and no daily battle goals are given. The level-up card announces when battles open.
+
 Some creatures are aggressive. When one blocks the path you can fight or avoid it; fighting opens a 1v1 turn-based battle:
 
 - **Strike** uses your **melee** weapon (swords, daggers, axes, maces, spears, staves). Your walker holds it in hand during the attack. Daggers stab twice, axes sunder (+25% damage taken), maces stun, spears pierce guards and hit harder on the first turn, staves heal or curse, some blades steal life.
@@ -131,7 +133,7 @@ Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `100 × level^1.5`
 
 ## The Druid
 
-From level 2 a druid sometimes steps onto the road with a **Knowledge Challenge**: one multiple-choice question from a bank of **945 questions in 20 topics** (history, geography, science, space, the human body, nature, animals, food, sports, language, pop culture, movies & TV, music, video games, books & myths, general knowledge, art, inventions & tech, math, world cultures), in `js/02e-quiz.js`. Questions don't repeat until you've seen them all. Answer right and he pays XP and coins (more at higher levels and in later worlds) and runs off into the trees. Answer wrong and the right answer is shown, then you must battle him: beat him and he flees, lose and he takes **every egg you carry**. You can also walk away from him for no reward. Logic in `js/05f-druid.js`.
+From level 7 (when battles unlock) a druid sometimes steps onto the road with a **Knowledge Challenge**: one multiple-choice question from a bank of **945 questions in 20 topics** (history, geography, science, space, the human body, nature, animals, food, sports, language, pop culture, movies & TV, music, video games, books & myths, general knowledge, art, inventions & tech, math, world cultures), in `js/02e-quiz.js`. Questions don't repeat until you've seen them all. Answer right and he pays XP and coins (more at higher levels and in later worlds) and runs off into the trees. Answer wrong and the right answer is shown, then you must battle him: beat him and he flees, lose and he takes **every egg you carry**. You can also walk away from him for no reward. Logic in `js/05f-druid.js`.
 
 ## Eggs
 
@@ -185,12 +187,12 @@ Recorded sounds live in `assets/sfx/` and music in `assets/music/`; `tools/prep_
 | Losing a battle | `sfx/battle_loss.mp3` |
 | Level-up, achievement or a finished Merlin quest | `sfx/level_up.mp3` |
 | Weapon impacts by kind, bow and spell launches, spell impacts by element, Wind Blade, shield blocks, poison/burn/bleed/stun ticks, the three special attacks | synthesized by `tools/synth_sounds.py` (`sfx/hit_*`, `spell_*`, `status_*`, `special_*`, `bow_release`, `wind_blade`, `shield_block`) |
-| First launch, through the end (or skip) of the tutorial | `music/app_song.mp3` |
+| First open, from the loading screen until the tutorial ends | `music/app_song.mp3` |
 | Battles below level 40 | a random battle track from `music/` (`battle_2/4/6/8`, app song) |
 | Battles from level 40 (`D.EPIC_MUSIC_LEVEL`) | `music/battle_epic_1.mp3` (Redemption) or `music/battle_epic_2.mp3` (Cold Fire) |
 | While Merlin is on screen | `music/merlin.mp3` |
 
-The app song is the default theme: it plays whenever the app opens and comes back after battles and Merlin. Music streams (it isn't part of the offline download). Profile → Settings has one **Sound & music** switch, and while the player's own Spotify or Apple Music player is on, all game sounds and music pause automatically. Browsers only allow audio after a tap, so the welcome song starts on the first tap if autoplay is blocked.
+The app song is the theme: on a first open (or after a reset) it starts on the loading screen and plays until the tutorial ends or is skipped. Browsers only allow sound after a tap, so when autoplay is blocked the loading screen waits with a **Tap to start** button (the native app lets its web view autoplay; see `native/scripts/patch-native.mjs`). Music streams (it isn't part of the offline download). Profile → Settings has one **Sound & music** switch. Browsers only allow audio after a tap, so the welcome song starts on the first tap if autoplay is blocked.
 
 ## Celebrations
 
@@ -217,7 +219,7 @@ Equipped pets walk beside your walker in every world: dogs, cats, rats, birds, d
 
 ## Music while you walk
 
-Profile → **Music** (or the music button on the world screen) takes a Spotify or Apple Music share link for a playlist, album or song. Stepquest plays it in the official embedded player docked above the tab bar, so it keeps playing on every tab. Players signed in to Spotify or Apple Music in that browser hear full tracks; otherwise the services play 30-second previews. Game sounds are set to mix with music, so you can also start music in the Spotify or Apple Music app first and then open Stepquest. If the embedded player only spins or plays clips (phones often block embedded playback until you sign in), the **Open in Spotify / Apple Music** link under the player opens the playlist in the app, and it keeps playing while you walk here.
+Play music from your own music app (Spotify, Apple Music, anything) while Stepquest is open. Game sounds mix in without pausing it (`navigator.audioSession` is set to ambient where supported).
 
 ## Developer mode
 
@@ -249,7 +251,6 @@ js/05f-druid.js          the Druid: questions, rewards, taking your eggs
 js/06-engine.js          canvas renderer: parallax worlds, avatar, pets, particles
 js/07-ui.js              screens, HUD, sheets, toasts
 js/07b-battle-ui.js      battle screen
-js/07c-music.js          Spotify / Apple Music player
 js/07d-missions-ui.js    field missions on the Missions tab, camera flow, photo journal
 js/07e-custom-ui.js      "My missions": create, edit, check off and complete your own missions
 js/07f-tour.js           the guided tutorial and the one-time low-health tip
