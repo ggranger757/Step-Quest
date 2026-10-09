@@ -86,7 +86,7 @@ Some creatures are aggressive. When one blocks the path you can fight or avoid i
 - **31 road creatures** (the Mushroom Guard and Naughty Nova were retired), including 16 from the enemies pack: 2Face, Energy Vampire Bat, Flying Procrastinator, Land Alien, Lazy Bat, Little Cthulhu, Medusa, Orc Raider, Self-Doubt Drone, Sentry Drone, Bog Slime and Treant roam the worlds, and four are new guardians: the Distraction Dragon, the Ice Bully, the Overthinker and the Slothful Ogre. Animations a GIF set doesn't include (a lunge for attack, a flash for hurt, sinking for death) are generated from its idle frames by `tools/prep_assets.py`.
 - **Pets** fight with you: your pet takes 20–60% of every hit until its own HP runs out, then it's knocked out until its HP refills over time. Every HP change floats over whoever took it as "-N HP" / "+N HP".
 - **Items** drinks a potion or eats food. **Magic** uses a magic item (see below). **Run away** may fail.
-- Losing costs some coins (about 5–10% of what you carry, capped by the world), breaks half of each kind of egg you carry (at least one) and drops your HP to 25%.
+- Losing costs some coins (about 5–10% of what you carry, capped by the world), costs half of each kind of egg you carry (at least one) and drops your HP to 25%.
 - **Walking does not heal.** HP refills on its own, from empty to full in 15 minutes (`D.HEAL_MINUTES`), even while the app is closed, or instantly with a healing potion. Pets recover the same way. A level-up raises your max HP but only tops you up if you were unhurt.
 - **Special attacks** (from level 10): the walker picked at sign-up decides which one you get. A gauge on the Special button fills as you attack (Strike +25%, Throw/Cast +30%); when it's full, tap it.
   - **Scavenger – Scavenger's Raid:** a raiding strike (damage grows with level) that snatches a potion from the creature, usable straight away from Items (better loot in later worlds; coins if your bag is full).
@@ -144,7 +144,7 @@ Three eggs (`js/05e-eggs.js`): **Frost** (common), **Ember** (uncommon) and **Cr
 | Crystal Pair | 2 Crystal | 160 coins, 150 XP, a Grand Elixir |
 | Merlin's Hoard | 3 Frost, 2 Ember, 1 Crystal | 250 coins, 220 XP and a weapon or pet you don't own yet |
 
-Losing a battle breaks half of each kind you carry (losing to the Druid takes them all), so trade before a risky fight.
+Losing a battle costs you half of each kind of egg you carry (losing to the Druid costs all of them), so trade before a risky fight.
 
 ## Missions
 

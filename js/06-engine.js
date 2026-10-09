@@ -189,6 +189,7 @@
         x.drawImage(src, bx, sh.r * sh.fs + by, bw, bh, flip ? W - dx - dw : dx, dy, dw, dh);
       }
       x.restore();
+      if (opts.sil) { x.save(); x.globalCompositeOperation = 'source-in'; x.fillStyle = opts.sil; x.fillRect(0, 0, W, H); x.restore(); }   // locked: a flat silhouette
     };
     Assets.load(sh.path).then(go);
   };
@@ -273,6 +274,16 @@
           const jump = backlog - 200;
           this.cam += jump; this.flash = 1;
           this.ents.forEach((e) => { if (!e.done) this.onDefer(e.enc); }); this.ents = [];
+          // the road you skipped still had encounters on it: they wait for you (Missions-style "waiting" chip), at
+          // least one of them a creature to battle
+          if (s.onboarded) {
+            const n = Math.min(3, Math.floor(jump / 400));
+            for (let i = 0; i < n; i++) {   // the creature goes in last so it's never the one dropped
+              const last = i === n - 1, enc = WB.Game.makeEncounter(last ? 'creature' : null, last ? { hostile: true } : {});
+              if (enc.type !== 'boss') this.onDefer(enc);
+            }
+            WB.Game.scheduleNext();
+          }
           WB.bus.emit('fastTravel', jump);
           backlog = real - this.cam;
         }
@@ -329,6 +340,8 @@
         if (e.done) continue;
         const sx = this.entScreenX(e);
         if (!e.reached && sx <= this.avX + 50.5) {
+          // a card is open over the world (level-up, a sheet): wait at the encounter until it's closed
+          if (WB.UI && WB.UI.overlayOpen && WB.UI.overlayOpen()) { this.vel = 0; if (this.cam > e.pos) this.cam = e.pos; this.holdUntil = performance.now() + 400; continue; }
           e.reached = true; this.vel = 0;
           if (this.cam > e.pos) this.cam = e.pos;   // land exactly at the encounter, not past it (the walked steps still count)
           this.holdUntil = performance.now() + (e.enc.aggressive || e.enc.boss || e.enc.nemesis ? 15000 : 10000);

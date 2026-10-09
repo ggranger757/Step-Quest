@@ -19,7 +19,7 @@
     return `<div class="eggs">${D.EGGS.map((x) => `<div class="egg pbox ${e[x.id] ? '' : 'none'}">${WB.eggImg(x.id, 64)}<div class="egg-b"><div class="t-title">${x.name} <span class="lbl">${x.rarity}</span></div><div class="m-desc">${x.desc}</div>
         <div class="obj-prog"><div class="bar seg"><i style="width:${(e[x.id] / D.EGG_MAX) * 100}%"></i></div><span class="num">${e[x.id] || 0} / ${D.EGG_MAX}</span></div></div></div>`).join('')}</div>
       <div class="sect"><h2>Trade with Merlin <span class="aside">${S().eggTrades || 0} made</span></h2>
-        <p class="fine">${G.merlinMet() ? 'Merlin pays loot for full sets. Trade here any time, or when he finds you on the road.' : 'Merlin the owl-mage collects eggs. Once you’ve met him on the road, you can trade full sets here any time.'} Losing a battle breaks half of each kind you carry.</p>
+        <p class="fine">${G.merlinMet() ? 'Trade a full set for loot, here or when Merlin finds you on the road.' : 'Merlin the owl-mage trades loot for eggs. Meet him on the road to start trading.'} If you lose a battle, you lose half of each kind of egg you carry.</p>
         ${UI.eggTrades()}</div>`;
   };
 

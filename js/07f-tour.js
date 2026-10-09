@@ -42,7 +42,7 @@
     { go: shop('potions'), sel: '#scr-shop .hpcard', page: 'Shop', title: 'Potions', text: 'Potions heal, guard, boost damage, recharge your weapon or explode on enemies. Food heals cheaply. Use them here or from Items in battle.' },
     { go: shop('pets'), sel: '#scr-shop .grid', page: 'Shop', title: 'Pets', text: 'Pets walk with you and jump in during battles, taking 20–60% of each hit until they run out of HP. They recover over time.' },
     { go: col('finds'), sel: '#scr-collection .seg', page: 'Inventory', title: 'Inventory', text: 'Your Artifacts, Achievements and Eggs. Artifacts hide in every world; achievements pay coins and XP for milestones.' },
-    { go: col('eggs'), sel: '#scr-collection .eggs', page: 'Inventory', title: 'Eggs', text: 'Frost, Ember and Crystal eggs turn up on the road and in battle wins. Carry up to ' + D.EGG_MAX + ' of each and trade sets to Merlin for loot. Losing a battle breaks half.' },
+    { go: col('eggs'), sel: '#scr-collection .eggs', page: 'Inventory', title: 'Eggs', text: 'Find Frost, Ember and Crystal eggs on the road or win them in battle. Carry up to ' + D.EGG_MAX + ' of each and trade sets to Merlin for loot. Lose a battle and you lose half of each kind.' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'The Druid', text: 'From level 2 a druid may ask a trivia question. Right: XP and coins. Wrong: you battle him, and if he wins he takes all your eggs.' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'Bosses', text: 'From level ' + D.BOSS_LEVEL + ', six rare bosses roam the roads. They hit hard, have unique powers and talk trash. Win big, or lose ' + D.BOSS_LEVEL_LOSS + ' levels.' },
     // ---------- battles ----------

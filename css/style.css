@@ -807,3 +807,12 @@ html.rm .lvlup .lv-badge b { animation: none; }
 .lvlup .lv-more { color: var(--muted); font-size: 13px; }
 .lvlup .row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s2); }
 .stat[data-info] { cursor: help; box-shadow: 0 0 0 2px var(--line), inset 0 0 0 1px rgba(255,255,255,.04); outline: 1px dashed var(--line-hi); outline-offset: -5px; }
+/* orange CTAs: black text everywhere on them, including small sub-labels */
+.btn.gold, .b-actions .btn[data-b="strike"], .b-actions .btn.special.ready, .badge, .cm-seg button[aria-checked="true"], .item .prev .tag.leg { --t: #000; color: #000; }
+.btn.gold *, .b-actions .btn[data-b="strike"] *, .b-actions .btn.special.ready *, .item .prev .tag.leg * { color: #000 !important; }
+.btn.gold small, .b-actions .btn[data-b="strike"] small, .b-actions .btn.special.ready small { opacity: 1; }
+.btn.gold[aria-disabled="true"], .btn.gold[disabled] { --t: var(--dim); color: var(--dim); }
+.btn.gold[aria-disabled="true"] *, .btn.gold[disabled] * { color: var(--dim) !important; }
+/* locked or undiscovered things: a teal silhouette (the app's accent) */
+.item.locked .prev canvas, .find:not(.got) .px-img { filter: brightness(0) saturate(100%) invert(76%) sepia(43%) saturate(1046%) hue-rotate(155deg) brightness(.72); }
+.wnode.locked .crt canvas { filter: none; }

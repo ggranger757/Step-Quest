@@ -411,7 +411,8 @@
       e.choices = [{ id: 'battle', label: 'Battle', hint: 'Boss · Lv ' + D.bossStats(e.creature, s.level).lvl }, { id: 'avoid', label: 'Try to slip away', hint: '50% to escape · losing one costs ' + D.BOSS_LEVEL_LOSS + ' levels' }];
     } else if (type === 'creature') {
       const hostile = w.pool.filter((c) => D.CREATURES[c].aggressive);
-      e.creature = opts.creature || (s.enc.battles === 0 && hostile.length ? WB.pick(hostile) : WB.pick(w.pool));
+      // mostly the aggressive ones (they start battles); always one for your first fights
+      e.creature = opts.creature || ((opts.hostile || s.enc.battles < 3 || Math.random() < 0.7) && hostile.length ? WB.pick(hostile) : WB.pick(w.pool));
       const c = D.CREATURES[e.creature];
       if (c.aggressive) {
         e.aggressive = true;
@@ -517,7 +518,7 @@
           const i = WB.pick(left); got.push(i);
           out.find = { world: e.world, i }; out.text = 'You found: ' + all[i][1] + '.';
           out.reward = { xp: 25 + lvl * 2 };
-          if (G.potion(all[i][0])) { out.reward.potion = all[i][0]; out.text = 'You found a new potion: ' + all[i][1] + '. You can buy more in Shop → Potions.'; }
+          if (G.potion(all[i][0])) { out.reward.potion = all[i][0]; out.text = 'You found a new potion: ' + all[i][1] + '. Buy more in Shop → Potions & Food.'; }
         } else { out.text = 'Just old coins. Every artifact here is already yours.'; out.reward = { coins: 40 }; }
         break;
       }

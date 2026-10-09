@@ -170,6 +170,7 @@
   }
 
   UI.flushToasts = pump;
+  UI.overlayOpen = () => !$('#sheet').hidden && UI.tab === 'world';
   // ---------- level-up card ----------
   // Shown over the game (after a battle if one is running): the new level, the coins it paid, what it unlocks
   // in the Shop and on the map, and how far the next level is. Several level-ups at once show one card.
@@ -248,7 +249,7 @@
         <div class="nu-line"><strong>${WB.esc(nw.name)}</strong></div>
         <div class="nu-req">${(() => { const wp = G.worldProgress(nw); return `<span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Level ${nw.unlock.level}</span>${wp.prev ? `<span class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : ''}${WB.esc(wp.prev.name)} ${D.WORLD_GATE_PCT}% explored</span>` : ''}`; })()}</div>
         <div class="bar seg cyan"><i style="width:${G.worldProgress(nw).pct}%"></i></div>
-      </div>` : `<div class="next-unlock pbox card"><span class="lbl">Every world unlocked</span><div class="nu-line">Keep exploring for artifacts, cards and streak rewards.</div></div>`}
+      </div>` : `<div class="next-unlock pbox card"><span class="lbl">Every world unlocked</span><div class="nu-line">Keep exploring for artifacts and rewards.</div></div>`}
     `);
     $('#first-steps').hidden = !(s.onboarded && s.totalSteps === 0 && st !== 'on');
   };
@@ -432,7 +433,7 @@
     const p = S().enc.pending;
     if (!p.length) return;
     if (p.length === 1) return UI.showEncounter(p[0], 'sheet');
-    UI.sheet(`<h3 id="sheet-title">Waiting on the road</h3><p>These kept walking past while you were busy. They’ll wait for you.</p>
+    UI.sheet(`<h3 id="sheet-title">Waiting on the road</h3><p>Encounters you missed while you were busy. They’ll wait for you.</p>
       ${p.map((e) => `<button class="pbox card objective" type="button" data-pid="${e.id}"><span class="lbl">${encTitle(e)}</span><span class="obj-title">${WB.esc(e.text)}</span></button>`).join('')}`, (root) => {
       WB.$$('[data-pid]', root).forEach((b) => b.onclick = () => { const e = p.find((x) => x.id === b.dataset.pid); UI.closeSheet(); setTimeout(() => UI.showEncounter(e, 'sheet'), 50); });
     });
@@ -538,7 +539,7 @@
     ['weapons', 'Weapons', 'sword', 'Three slots: melee (Strike), ranged (Throw, Shoot or Cast) and Defense (your shield for Defend).'],
     ['potions', 'Potions & Food', 'img:pot/tonic.png', 'Use them in battle from Items. Healing ones also work here. Carry up to 9 of each.'],
     ['pets', 'Pets', 'paw', 'Companions that walk with you and take part of every hit in battle.'],
-    ['magic', 'Magic', 'img:mg/book.png', 'Buy once, keep forever. Wear up to ' + D.CHARM_SLOTS + ' charms for passive perks. Battle magic: once per battle each, one per turn, free action.'],
+    ['magic', 'Magic', 'img:mg/book.png', 'Buy once, keep forever. Wear up to ' + D.CHARM_SLOTS + ' charms for passive perks. Battle magic works once per battle, one item per turn, and doesn’t use your turn.'],
   ];
   const GEAR = ['weapons', 'potions', 'pets'];
   // item card shared by the Shop and Supplies pages
@@ -614,7 +615,7 @@
   const COL_TABS = [
     ['finds', 'Artifacts', 'img:art/m30.png', 'Hidden on the road in every world. Walk and explore to find them.'],
     ['ach', 'Achievements', 'img:ach/legend.png', 'Milestones that pay coins and XP.'],
-    ['eggs', 'Eggs', 'img:egg1', 'Found on the road or won in battle. Trade sets to Merlin for loot. Losing a battle breaks half.'],
+    ['eggs', 'Eggs', 'img:egg1', 'Find eggs on the road or win them in battle, then trade sets to Merlin for loot. Lose a battle and you lose half of each kind.'],
   ];
   UI.supTab = 'finds';
   function gearBody(tab) {
@@ -658,7 +659,7 @@
             <button class="btn gold sm block" type="button" data-supply="${it.id}" ${off(full ? 'You already hold 2 Rest Day Tokens.' : short > 0 ? 'You need ' + WB.fmt(short) + ' more coins.' : '')}>${full ? 'Full' : 'Buy'}</button></div></div>`;
         }).join('')}</div></div>`;
     } else {
-      body = `<p class="fine wnote">In battle your pet jumps in and takes part of every hit until its own HP runs out. Pets recover over time, like you do.</p><div class="grid">${D.PETS.map((p) => { const hp = G.petHp(p.id), max = G.petMax(p.id); return itemCard('pet', p, { desc: p.kind, stat: (G.owns('pet', p.id) ? (hp <= 0 ? 'Knocked out · ' : 'HP ' + hp + '/' + max + ' · ') : 'HP ' + max + ' · ') + 'Guards ' + Math.round(p.share * 100) + '% of hits' }); }).join('')}</div>`;
+      body = `<p class="fine wnote">Pets recover HP over time, like you do.</p><div class="grid">${D.PETS.map((p) => { const hp = G.petHp(p.id), max = G.petMax(p.id); return itemCard('pet', p, { desc: p.kind, stat: (G.owns('pet', p.id) ? (hp <= 0 ? 'Knocked out · ' : 'HP ' + hp + '/' + max + ' · ') : 'HP ' + max + ' · ') + 'Guards ' + Math.round(p.share * 100) + '% of hits' }); }).join('')}</div>`;
     }
     return body;
   }
@@ -743,7 +744,7 @@
       </div></div>
       ${(() => { const sp = G.special(), on = G.specialUnlocked(); return `<div class="pbox card sp-card"><div class="obj-head"><span class="lbl">Special attack · ${WB.esc(sp.cls)}</span><span class="lbl">${on ? 'Unlocked' : 'Unlocks at level ' + D.SPECIAL_LEVEL}</span></div><div class="sp-name">${WB.icon(sp.id === 'raid' ? 'chest' : sp.id === 'drain' ? 'heart' : 'spark', 2)} ${WB.esc(sp.name)}</div><p class="fine">${WB.esc(sp.desc)} Its gauge fills as you strike and throw in battle.</p></div>`; })()}
       <div class="stats">
-        ${[['Total steps', WB.fmt(s.totalSteps)], ['Distance', WB.fmtKm(s.meters)], ['Walk Coins', WB.fmt(s.coins)], ['Streak', sv.count + ' <small>best ' + s.streak.best + '</small>'], ['Battles won', WB.fmt(s.enc.battles)], ['World guardians beaten', G.bossCount() + '/' + D.WORLDS.length, 'Each world’s guardian wakes when you explore it 100%. Challenge it from the world map.'], ['Bosses beaten', Object.values((s.nemesis || {}).beaten || {}).reduce((a, b) => a + b, 0), 'Rare roaming bosses (from level ' + D.BOSS_LEVEL + ').'], ['Merlin’s quests done', G.merlinDone ? G.merlinDone() : 0], ['Knowledge Challenges', ((s.druid || {}).wins || 0) + ' <small>right of ' + ((s.druid || {}).taken || 0) + '</small>', 'The Druid’s trivia questions on the road.'], ['Worlds', s.unlocked.length + '/' + D.WORLDS.length], ['Avatars', own('avatar')], ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL], ['Best day', WB.fmt(s.bestDay)]].map(([l, v, why]) => `<div class="stat pbox" ${why ? `data-info="${WB.esc(why)}" data-info-k="${WB.esc(l)}" role="button" tabindex="0"` : ''}><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}
+        ${[['Total steps', WB.fmt(s.totalSteps)], ['Distance', WB.fmtKm(s.meters)], ['Walk Coins', WB.fmt(s.coins)], ['Streak', sv.count + ' <small>best ' + s.streak.best + '</small>'], ['Battles won', WB.fmt(s.enc.battles)], ['Missions completed', WB.fmt(G.missionsDone() - (G.merlinDone ? G.merlinDone() : 0) + ((s.custom || {}).done || 0)), 'Field missions and your own missions you’ve finished.'], ['World creatures beaten', G.bossCount() + '/' + D.WORLDS.length, 'Each world has a guardian: one big creature that appears once you explore the world 100%. Challenge it from the world map.'], ['Bosses beaten', Object.values((s.nemesis || {}).beaten || {}).reduce((a, b) => a + b, 0), 'Rare roaming bosses (from level ' + D.BOSS_LEVEL + ').'], ['Merlin’s quests done', G.merlinDone ? G.merlinDone() : 0], ['Knowledge Challenges', ((s.druid || {}).wins || 0) + ' <small>right of ' + ((s.druid || {}).taken || 0) + '</small>', 'The Druid’s trivia questions on the road.'], ['Worlds', s.unlocked.length + '/' + D.WORLDS.length], ['Avatars', own('avatar')], ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL], ['Best day', WB.fmt(s.bestDay)]].map(([l, v, why]) => `<div class="stat pbox" ${why ? `data-info="${WB.esc(why)}" data-info-k="${WB.esc(l)}" role="button" tabindex="0"` : ''}><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}
       </div>
       <div class="sect"><h2>Last 14 days <span class="aside">steps per day</span></h2><div class="chart pbox card">
         <div class="bars">${days.map(([k, v], i) => `<div class="${i === 13 ? 'today' : v >= s.settings.streakMin ? 'goal' : ''}" style="height:${Math.max(2, (v / mx) * 100)}%" title="${k}: ${WB.fmt(v)} steps"></div>`).join('')}</div>
@@ -857,7 +858,7 @@
           : `<div class="wrow"><div class="bar seg"><i style="width:${wp.pct}%"></i></div><div class="wmeta"><span class="lbl">${WB.icon('lock', 2)} ${WB.esc(G.worldReq(w))}</span><span class="lbl">≈ ${WB.fmt(wp.stepsLeft)} steps</span></div></div>`}
           </div></div>`;
       }).join('')}</div></div>`);
-    if (changed) WB.$$('[data-crthumb]', $('#scr-map')).forEach((c) => WB.paintThumb(c, { kind: 'cr', id: c.dataset.crthumb, face: 'left' }));
+    if (changed) WB.$$('[data-crthumb]', $('#scr-map')).forEach((c) => WB.paintThumb(c, { kind: 'cr', id: c.dataset.crthumb, face: 'left', sil: c.closest('.wnode.locked') ? '#2f9fb3' : null }));
     if (changed) WB.$$('[data-thumb]', $('#scr-map')).forEach((c) => {
       const w = D.worldById[c.dataset.thumb], x = c.getContext('2d'); x.imageSmoothingEnabled = false;
       Promise.all(w.layers.map((L) => WB.Assets.load(WB.layerPath(w, L[0])))).then((ims) => { ims.forEach((im) => im._ok && x.drawImage(im, 0, 0, im.width, im.height, 0, 0, 120, 68)); });
