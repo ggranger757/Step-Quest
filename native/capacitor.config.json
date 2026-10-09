@@ -1,0 +1,8 @@
+{
+  "appId": "com.walkbound.app",
+  "appName": "Walkbound",
+  "webDir": "www",
+  "backgroundColor": "#0b0a1a",
+  "android": { "allowMixedContent": false },
+  "ios": { "contentInset": "never" }
+}

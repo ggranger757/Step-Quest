@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Walkbound</title>
+<meta name="description" content="A pixel-art walking RPG. Every real step moves your hero forward.">
+<meta name="theme-color" content="#0b0a1a">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Walkbound">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="preload" href="assets/fonts/jersey10.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="assets/fonts/pixelifysans.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="assets/fonts/silkscreen.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+<style>[hidden]{display:none!important}</style>
+<script>window.WB = { BUILD: 'pwa', VERSION: '2.3.0' };</script>
+</head>
+<body>
+<div id="app" class="app" hidden>
+  <header class="hud" id="hud">
+    <button class="hud-me" id="hud-me" type="button" aria-label="Open profile">
+      <canvas id="hud-face" width="40" height="40"></canvas>
+    </button>
+    <div class="hud-xp">
+      <div class="hud-xp-top"><span class="lbl">LV <b id="hud-level">1</b></span><span class="num" id="hud-xpnum">0 / 80 XP</span></div>
+      <div class="bar xp" role="progressbar" aria-label="Experience" aria-valuemin="0" aria-valuemax="100" id="hud-xpbar-wrap"><i id="hud-xpbar"></i></div>
+      <div class="bar hp thin" role="progressbar" aria-label="Health" aria-valuemin="0" aria-valuemax="100" id="hud-hpbar-wrap"><i id="hud-hpbar"></i></div>
+    </div>
+    <div class="hud-chip coin" id="hud-coins" title="Walk Coins"><span class="ic" data-icon="coin"></span><b id="hud-coinnum">0</b><span class="sr">Walk Coins</span></div>
+    <div class="hud-chip streak" id="hud-streak" title="Walking streak"><span class="ic" data-icon="flame" id="hud-flame"></span><b id="hud-streaknum">0</b><span class="sr">day streak</span></div>
+  </header>
+
+  <main class="screens">
+    <section id="scr-world" class="screen" aria-label="World">
+      <div class="stage" id="stage">
+        <canvas id="world-canvas" aria-label="Your avatar walking through the world"></canvas>
+        <button class="world-chip" id="world-chip" type="button"></button>
+        <div class="fx" id="fx" aria-hidden="true"></div>
+        <div class="first-steps" id="first-steps" hidden><span>Take your first steps.</span></div>
+        <div class="welcome" id="welcome" hidden></div>
+        <div class="encounter" id="encounter" hidden role="dialog" aria-live="polite"></div>
+      </div>
+      <div class="journey" id="journey"></div>
+    </section>
+    <section id="scr-map" class="screen" aria-label="World map"></section>
+    <section id="scr-tasks" class="screen" aria-label="Tasks"></section>
+    <section id="scr-shop" class="screen" aria-label="Shop"></section>
+    <section id="scr-supplies" class="screen" aria-label="Supplies"></section>
+    <section id="scr-profile" class="screen" aria-label="Profile"></section>
+  </main>
+
+  <div class="music" id="music" hidden></div>
+  <nav class="tabs" id="tabs" aria-label="Main">
+    <button type="button" data-tab="world"><span class="ic" data-icon="world"></span><span>World</span></button>
+    <button type="button" data-tab="tasks"><span class="ic" data-icon="tasks"></span><span>Tasks</span><i class="badge" id="badge-tasks" hidden></i></button>
+    <button type="button" data-tab="shop"><span class="ic" data-icon="shop"></span><span>Shop</span></button>
+    <button type="button" data-tab="supplies"><span class="ic" data-icon="sword"></span><span>Supplies</span></button>
+    <button type="button" data-tab="profile"><span class="ic" data-icon="user"></span><span>Profile</span></button>
+  </nav>
+</div>
+
+<div class="intro" id="intro" hidden>
+  <div class="intro-stage"><canvas id="intro-canvas" aria-hidden="true"></canvas></div>
+  <div class="intro-panel" id="intro-panel"></div>
+</div>
+
+<div class="battle" id="battle" hidden role="dialog" aria-modal="true" aria-label="Battle"></div>
+
+<div class="sheet-wrap" id="sheet" hidden>
+  <div class="sheet-scrim" data-close></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" id="sheet-body"></div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<button class="dev-fab" id="dev-fab" type="button" hidden>DEV</button>
+<noscript><p style="padding:24px;color:#ece9ff">Walkbound needs JavaScript to run.</p></noscript>
+
+<script src="js/assets.js"></script>
+<script src="js/00-util.js"></script>
+<script src="js/01-icons.js"></script>
+<script src="js/02-data.js"></script>
+<script src="js/03-state.js"></script>
+<script src="js/04-steps.js"></script>
+<script src="js/04b-health.js"></script>
+<script src="js/05-game.js"></script>
+<script src="js/05b-battle.js"></script>
+<script src="js/06-engine.js"></script>
+<script src="js/07-ui.js"></script>
+<script src="js/07b-battle-ui.js"></script>
+<script src="js/07c-music.js"></script>
+<script src="js/08-main.js"></script>
+</body>
+</html>
