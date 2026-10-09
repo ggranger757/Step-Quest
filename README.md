@@ -34,7 +34,7 @@ The app works offline after the first visit.
 | Where Stepquest runs | Step source |
 | --- | --- |
 | **Installed app** (iPhone / Android, built from `native/`) | **Automatic sync** from Apple Health (HealthKit) or Health Connect. Walks taken with the app closed count too: they move your hero, pay out and keep your streak, credited to the day they happened. |
-| **Browser / home-screen PWA** | **Motion sensor**: a pedometer on the phone's accelerometer that counts automatically whenever the app is open: on Android it starts by itself; on iPhone, Safari only allows motion access after a tap, so the first touch anywhere in the app starts it (the permission prompt appears only the first time). Players can Pause it. 4 rhythmic steps in a row are needed before counting starts, so bumps are ignored. **Log steps**: type today's total from your Health app and the difference is added. |
+| **Browser / home-screen PWA** | **Motion sensor**: a pedometer on the phone's accelerometer that counts automatically whenever the app is open: on Android it starts by itself; on iPhone, Safari only allows motion access after a tap, so the first touch anywhere in the app starts it (the permission prompt appears only the first time). Players can Pause it. 4 rhythmic steps in a row are needed before counting starts, so bumps are ignored. **Log steps**: type today's total from your Health app and the difference is added. Hand-logged steps are capped at 30,000 a day (`D.MANUAL_DAY_MAX`) so logging can't replace walking; the motion sensor and Health sync are not capped. |
 
 Browsers have no API for health data, which is why automatic sync needs the installed app. Both paths feed the same function, so the game never changes: see `js/04-steps.js` and `js/04b-health.js`.
 
@@ -66,7 +66,7 @@ After changing the game, run `npm run sync` again (or `npm run ios` / `npm run a
 
 **No Mac or Android Studio?** Run the **Android app** workflow from the repository's Actions tab: it builds a debug APK you can install on an Android phone for testing.
 
-App icons: put a 1024×1024 `icon.png` in `native/assets/` and run `npm run icons`.
+App icons: the Stepquest logo is already in `native/assets/` (`icon.png` 1024×1024 and `splash.png`); run `npm run icons` to generate every iOS and Android size. Replace those two files to change the icon.
 
 ## Battles
 
@@ -82,13 +82,13 @@ Some creatures are aggressive. When one blocks the path you can fight or avoid i
 - **Walking does not heal.** HP refills on its own, from empty to full in 15 minutes (`D.HEAL_MINUTES`), even while the app is closed, or instantly with a healing potion. Pets recover the same way. A level-up raises your max HP but only tops you up if you were unhurt.
 - Exploring a world to 100% wakes its **guardian**. Challenge it from the world map. Defeating guardians unlocks the legendary weapons.
 
-Weapons, potions, pets, artifacts and achievements live on the **Supplies** tab. Avatars and trails are in the **Shop**.
+Everything you can buy is in the **Shop**, in five sections: Walkers, Trails, Weapons, Potions and Pets. Artifacts and achievements live on the **Collection** tab.
 
 There are 48 potions, one for every flask in the potion pack. Four everyday potions are sold from the start; the other 44 are hidden as artifacts in the newer worlds. Finding one gives you a bottle and adds it to the shop. Potions heal, cut damage, boost damage, recharge your weapon instantly or explode on the enemy.
 
 ## Missions
 
-The **Missions** tab has the daily reward, daily missions, the adventure chain, deliveries and **600 field missions**. Every field mission needs real walking. You pick missions from the board, and from the moment you pick one you have **24 hours** to finish it; only steps walked after that count. If the time runs out, or you drop the mission, you lose coins (half the mission's coin reward) and 15% of your max HP (never below 1 HP), and the mission goes to the back of the board to try again later. A finished mission never fails, even before you claim it.
+The **Missions** tab has four sub-tabs, each showing how many rewards are ready: **Today** (daily reward, daily missions, streak), **My missions**, **Field** (the **600 field missions**) and **Adventure** (the adventure chain and deliveries). Every field mission needs real walking. You pick missions from the board, and from the moment you pick one you have **24 hours** to finish it; only steps walked after that count. If the time runs out, or you drop the mission, you lose coins (half the mission's coin reward) and 15% of your max HP (never below 1 HP), and the mission goes to the back of the board to try again later. A finished mission never fails, even before you claim it.
 
 - **Photo hunts (240):** walk a set number of steps, then the camera opens to photograph something out in the world: an oak leaf, a red door, the letter Q on a sign, your state bird or state flower… Photos are shrunk and kept on the phone in the **photo journal** (IndexedDB). They are never uploaded, and the game can't check what's in them, so photo hunts run on the honor system.
 - **Gathering runs (180):** items such as hawk feathers, brass gears or lucky coins turn up along the way as you walk.
@@ -102,11 +102,11 @@ The board offers the next four in order. You can run three at a time, and you ca
 
 Players can turn real-life goals into missions. **New mission** offers 15 templates (daily workout, book outline, reading, study session, clean & tidy, meal prep, language or instrument practice, meditate & stretch, budget check-in, journal, job application, creative or coding project, call someone) or **Create your own**. Every mission has a name, optional notes, an optional checklist, a **due date and time** (with Tonight / Tomorrow / In 3 days / Next week shortcuts), a **difficulty** and a **priority**.
 
-Completing one pays coins and XP: the difficulty sets the base (Easy 30 coins / 40 XP, Medium 60 / 80, Hard 110 / 150, Epic 200 / 280), the priority multiplies it (Low ×1, Medium ×1.15, High ×1.3, Urgent ×1.5), and the timing adjusts it: finishing early earns up to +25% (more the earlier you finish), on time pays in full, and late pays half. The form previews the reward. To stop farming, a mission can be completed once it's 15 minutes old, and up to 6 created missions pay out per day (more can be completed without a reward). Overdue missions get a one-time reminder; there is no penalty beyond the halved reward. Templates and numbers live in `js/05d-custom.js`.
+Completing one pays coins and XP: the difficulty sets the base (Easy 15 coins / 25 XP, Medium 30 / 45, Hard 55 / 80, Epic 90 / 130), the priority multiplies it (Low ×1, Medium ×1.15, High ×1.3, Urgent ×1.5), and the timing adjusts it: finishing early earns up to +25% (more the earlier you finish), on time pays in full, and late pays half. The form previews the reward. Difficulty and priority are locked when the mission is created, and rewards always use the original due time. Because Stepquest is a walking game, your own missions together pay at most **300 coins and 450 XP a day** (about what 3,000 steps earn; 10,000 steps earn 1,000 coins); past that they can still be completed, without a reward. A mission can be completed once it's 15 minutes old. Overdue missions get a one-time reminder; there is no penalty beyond the halved reward. Templates and numbers live in `js/05d-custom.js`.
 
 ## Tutorial and tips
 
-New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, the Shop, every Supplies section, battles and the Profile. It can be skipped and replayed from Profile → Settings → Tutorial. The first time a player's HP drops to 35% or below, a one-time tip explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal).
+New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, every Shop section, the Collection, battles and the Profile. A **Skip tutorial** button sits at the top of every step (Back on the phone ends it too), and it can be replayed from Profile → Settings → Tutorial. The first time a player's HP drops to 35% or below, a one-time tip explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal).
 
 ## Worlds and levels
 
@@ -128,7 +128,7 @@ Profile → **Music** (or the music button on the world screen) takes a Spotify 
 
 ## Developer mode
 
-Open the site with `#dev` at the end of the URL, or tap the version number at the bottom of the Profile screen 5 times. A **DEV** button appears with tools to add simulated steps and coins, level up, complete missions, unlock worlds and avatars, trigger an encounter or battle, fight the guardian, heal, add potions, unlock weapons and simulate the next day. Players never see it unless they turn it on.
+The developer panel exists only in **dev builds**: `python3 -I tools/build.py . --dev` (or `STEPQUEST_DEV=1`). In a dev build, open the site with `#dev` at the end of the URL, or tap the version number at the bottom of the Profile screen 5 times, and a **DEV** button appears with tools to add simulated steps and coins, level up, complete missions, unlock worlds and avatars, trigger an encounter or battle, fight the guardian, heal, add potions, unlock weapons and simulate the next day. Release builds (the default, and this repository's `index.html`) can't open it.
 
 ## Project layout
 
@@ -168,7 +168,7 @@ assets/art/              artifact icons (r = creature relics, m = minerals, c = 
 assets/ach/              achievement badges
 assets/wi/               weapon icons (melee, ranged, shields)
 assets/sfx/              weapon sounds
-assets/icons/            app icons
+assets/icons/            app icons from the Stepquest logo: favicon (.ico, 16, 32), 192/512, Android maskable, apple-touch-icon, og-image (link previews)
 assets/fonts/            Jersey 10, Pixelify Sans, Silkscreen (bundled for offline use, SIL OFL)
 tools/prep_assets.py     rebuilds /assets from the original downloads:
                          python3 prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir> <pack5_dir> assets [<pack6_dir>]

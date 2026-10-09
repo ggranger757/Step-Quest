@@ -81,12 +81,12 @@
   UI.missionsSection = () => {
     const ms = S().missions, act = ms.active.map((a) => [D.missionById[a.id], a]).filter(([m]) => m);
     const board = G.missionBoard(), st = G.homeState();
-    return `<div class="sect" id="field-missions"><h3>Field missions <span class="aside">${ms.done.length} / ${D.MISSIONS.length} done</span></h3>
+    return `<div class="sect" id="field-missions"><h2>Field missions <span class="aside">${ms.done.length} / ${D.MISSIONS.length} done</span></h2>
       <p class="fine m-intro">Real walks with a goal: photo hunts, gathering runs, timed and multi-day walks. Pick a mission and you have ${D.MISSION_HOURS} hours to finish it; only steps walked after you pick it count. Miss the deadline or drop it and you lose coins and HP. Run up to ${D.MISSION_ACTIVE_MAX} at once.${st ? '' : ' <button class="linkbtn inl" type="button" data-act="home-state">Set your home state</button> for state bird and flower missions.'}</p>
       ${act.length ? `<div class="list">${act.map(([m, a]) => activeCard(m, a)).join('')}</div>` : ''}
-      ${board.length ? `<h4 class="m-sub">Mission board <span class="aside">${act.length} / ${D.MISSION_ACTIVE_MAX} active</span></h4><div class="list">${board.map(boardCard).join('')}</div>` : '<p class="empty">Every field mission is complete. Legendary.</p>'}
+      ${board.length ? `<h3 class="m-sub">Mission board <span class="aside">${act.length} / ${D.MISSION_ACTIVE_MAX} active</span></h3><div class="list">${board.map(boardCard).join('')}</div>` : '<p class="empty">Every field mission is complete. Legendary.</p>'}
       <p class="fine">Stay on sidewalks and public paths, keep your distance from wildlife, and ask before photographing people or their pets. Photos stay on this phone.</p>
-      <h4 class="m-sub">Photo journal <span class="aside" id="jr-count"></span></h4><div class="journal" id="journal"><p class="empty">Photos from your photo hunts appear here.</p></div>
+      <h3 class="m-sub">Photo journal <span class="aside" id="jr-count"></span></h3><div class="journal" id="journal"><p class="empty">Photos from your photo hunts appear here.</p></div>
     </div>`;
   };
   UI.fillJournal = async () => {
@@ -143,5 +143,6 @@
     UI.toast({ kicker: why === 'dropped' ? 'Mission dropped' : 'Mission failed: time ran out', title: G.missionTitle(m) + ' · -' + WB.fmt(pen.coins) + ' coins' + (pen.hp ? ', -' + pen.hp + ' HP' : ''), icon: 'lock', cls: 'msg', ms: 4200 });
     UI.updateHud();
   });
-  WB.bus.on('missionPhotoReady', ({ m }) => UI.toast({ kicker: 'Photo hunt', title: 'Ready: ' + G.missionSubject(m), icon: 'photo', ms: 3000, action: { label: 'Open', fn: () => UI.go('tasks') } }));
+  WB.bus.on('missionSoon', ({ m, a }) => UI.toast({ kicker: 'Mission ends in ' + UI.dur(Math.ceil(G.missionLeft(a) / 60000)), title: G.missionTitle(m) + ' · finish it or lose ' + ((p) => p.coins + ' coins' + (p.hp ? ' and ' + p.hp + ' HP' : ''))(G.missionPenalty(m)), icon: 'calendar', cls: 'msg', ms: 5000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
+  WB.bus.on('missionPhotoReady', ({ m }) => UI.toast({ kicker: 'Photo hunt', title: 'Ready: ' + G.missionSubject(m), icon: 'photo', ms: 3000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
 })();

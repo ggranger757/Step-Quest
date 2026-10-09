@@ -40,6 +40,8 @@ WB.store = {
   get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
   del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  // can this browser keep data at all? (private windows and blocked site data can't)
+  ok() { try { localStorage.setItem('stepquest.probe', '1'); localStorage.removeItem('stepquest.probe'); return true; } catch (e) { return false; } },
 };
 
 // Tiny event bus
@@ -57,6 +59,8 @@ WB.reducedMotion = () => {
   try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
 };
 
+// the developer panel exists only in dev builds (tools/build.py --dev); release builds never show it
 WB.isDev = () => {
+  if (!window.WB.DEV_TOOLS) return false;
   try { return location.hash === '#dev' || WB.store.get('walkbound.dev') === true; } catch (e) { return false; }
 };

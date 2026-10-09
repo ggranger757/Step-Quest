@@ -41,7 +41,7 @@
       onDefer: (enc) => { G.deferEncounter(enc); UI.encounterGone(enc); },
     });
     const h = (location.hash || '').slice(1);
-    UI.go(h === 'missions' ? 'tasks' : ['tasks', 'shop', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
+    UI.go(h === 'missions' ? 'tasks' : ['tasks', 'shop', 'collection', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
     WB.Music.render();
     UI.updateHud(); UI.paintFace();
     WB.view.start();
@@ -55,6 +55,7 @@
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
     G.markSeen();
+    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'This browser is blocking storage (a private window?). Open Stepquest normally to keep your progress.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
   }
 
   function showWelcome(lines) {
@@ -122,7 +123,7 @@
       if (WB.view) WB.view.setWorld(S().world);
       UI.updateHud(); UI.paintFace(); UI.render(); WB.Music.render();
     });
-    window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'dev') { $('#dev-fab').hidden = false; } });
+    window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'dev' && WB.isDev()) { $('#dev-fab').hidden = false; } });
   }
 
   // ---------- first-time experience ----------
@@ -188,6 +189,7 @@
 
   // ---------- developer / testing panel (#dev, or tap the version 5 times) ----------
   function devPanel() {
+    if (!WB.isDev()) return;
     const s = S();
     UI.sheet(`<h3 id="sheet-title">Developer mode</h3><p>Testing tools only. Steps added here are simulated and do not reflect real walking.</p>
       <div class="devgrid">

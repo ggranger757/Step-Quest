@@ -114,19 +114,38 @@
   Steps.motion = Motion;
 
   /* ---------- Manual log (from a health app) ---------- */
-  Steps.logAdd = (n) => { n = Math.floor(Number(n)); if (n > 0 && n <= 100000) { Steps.push(n, 'manual'); return n; } return 0; };
+  // Hand-logged steps are capped per day (D.MANUAL_DAY_MAX) so the log can't replace walking.
+  // Both return the steps added (0 = nothing) and leave the reason in Steps.logMsg.
+  Steps.manualLeft = () => {
+    const td = WB.state.today, used = td.day === WB.dayKey() ? td.manual || 0 : 0;
+    return Math.max(0, WB.DATA.MANUAL_DAY_MAX - used);
+  };
+  const logManual = (n) => {
+    const left = Steps.manualLeft();
+    if (!left) { Steps.logMsg = 'You’ve logged ' + WB.fmt(WB.DATA.MANUAL_DAY_MAX) + ' steps by hand today, the daily limit. Steps from the step counter still count.'; return 0; }
+    const add = Math.min(n, left);
+    WB.Game.rollDay(); Steps.push(add, 'manual');
+    WB.state.today.manual = (WB.state.today.manual || 0) + add;
+    Steps.logMsg = add < n ? 'Added ' + WB.fmt(add) + ': you can log up to ' + WB.fmt(WB.DATA.MANUAL_DAY_MAX) + ' steps by hand a day.' : '';
+    return add;
+  };
+  Steps.logAdd = (n) => {
+    n = Math.floor(Number(n)); Steps.logMsg = '';
+    if (!(n > 0 && n <= WB.DATA.MANUAL_DAY_MAX)) { Steps.logMsg = 'Enter a number between 1 and ' + WB.fmt(WB.DATA.MANUAL_DAY_MAX) + '.'; return 0; }
+    return logManual(n);
+  };
   Steps.logTodayTotal = (total) => {
-    total = Math.floor(Number(total));
+    total = Math.floor(Number(total)); Steps.logMsg = '';
     const have = WB.state.today.day === WB.dayKey() ? WB.state.today.steps : 0;
     const add = total - have;
-    if (add > 0 && add <= 100000) { Steps.push(add, 'manual'); return add; }
-    return 0;
+    if (!(add > 0)) { Steps.logMsg = 'That total isn’t higher than what Stepquest already has for today.'; return 0; }
+    return logManual(add);
   };
 
   /* ---------- Native bridge for a future wrapper app ---------- */
   window.stepquest = window.walkbound = Object.freeze({   // walkbound = the original name, kept for older wrappers
     addSteps: (n) => Steps.push(Math.floor(n), 'native'),
-    setTodayTotal: (n) => Steps.logTodayTotal(n),
+    setTodayTotal: (n) => { const t = Math.floor(Number(n)), have = WB.state.today.day === WB.dayKey() ? WB.state.today.steps : 0; if (t > have) Steps.push(t - have, 'native'); },   // a wrapper's own counter: not hand-logged, not capped
     version: 1,
   });
 

@@ -40,6 +40,7 @@
         <div class="b-actions" id="b-actions"></div>
       </div>`;
     el.hidden = false;
+    WB.UI.histPush('battle');
     document.documentElement.classList.add('battling');
     cv = $('#b-canvas'); ctx = cv.getContext('2d', { alpha: false });
     if (WB.view) WB.view.paused = true;
@@ -231,7 +232,7 @@
         <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(m.name)}</small></span></button>
         <button class="btn cyan" type="button" data-b="throw" ${WB.UI.off(!ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(wpn.name)} · ${ready ? 'ready' : st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
         <button class="btn ghost" type="button" data-b="defend">${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${sh ? 'Block ' + Math.round(sh.block * 100) + '%' + (sh.reflect ? ', reverse' : '') + (sh.counter ? ', counter' : '') : 'Block 60%, heal a little'}</small></span></button>
-        <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'You have no potions. Buy them in Supplies → Potions after the fight.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
+        <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'You have no potions. Buy them in Shop → Potions after the fight.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
       const ic = el.querySelector('.wp-ic'); if (ic) WB.UI.paintWeapon(ic, wpn.id);
     }
@@ -381,6 +382,7 @@
     cancelAnimationFrame(raf);
     if (BU.ro) BU.ro.disconnect();
     $('#battle').hidden = true; $('#battle').innerHTML = '';
+    WB.UI.histDone('battle');
     document.documentElement.classList.remove('battling');
     if (WB.view) {
       WB.view.paused = false;

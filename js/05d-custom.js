@@ -3,18 +3,20 @@
      base (difficulty) × priority × timing
      timing: on time = 1, finished early = up to +25% (the more of the window left, the more),
              late = half
-   To keep it fair, a mission can be completed once it is 15 minutes old, and up to 6 created missions pay
-   per day (more can still be completed, just without a reward).
-   s.custom = { list: [{ id, tpl, title, notes, steps: [{ t, done }], due, diff, pri, at, warned }], history: [], day, paid } */
+   Balance: Stepquest is a walking game, so your own missions top up what walking earns rather than replace it.
+   They pay at most C.DAILY_COINS coins and C.DAILY_XP XP a day in total (about what 3,000 steps earn; 10,000
+   steps earn 1,000 coins). A mission can be completed once it is 15 minutes old; past the daily cap missions
+   can still be completed, they just pay what is left (or nothing).
+   s.custom = { list: [{ id, tpl, title, notes, steps: [{ t, done }], due, diff, pri, at, warned, lock }], history: [], day, coinsToday, xpToday } */
 (() => {
   const G = WB.Game, S = () => WB.state;
 
   const C = (WB.Custom = {});
   C.DIFF = {
-    easy: { name: 'Easy', coins: 30, xp: 40 },
-    medium: { name: 'Medium', coins: 60, xp: 80 },
-    hard: { name: 'Hard', coins: 110, xp: 150 },
-    epic: { name: 'Epic', coins: 200, xp: 280 },
+    easy: { name: 'Easy', coins: 15, xp: 25 },
+    medium: { name: 'Medium', coins: 30, xp: 45 },
+    hard: { name: 'Hard', coins: 55, xp: 80 },
+    epic: { name: 'Epic', coins: 90, xp: 130 },
   };
   C.PRI = {
     low: { name: 'Low', mult: 1 },
@@ -23,7 +25,8 @@
     urgent: { name: 'Urgent', mult: 1.5 },
   };
   C.MIN_AGE_MIN = 15;
-  C.DAILY_PAID = 6;
+  C.DAILY_COINS = 300;   // all of your own missions together, per day
+  C.DAILY_XP = 450;
   C.MAX_OPEN = 30;
 
   // templates: due = hours from now (rounded to the next full hour) or 'tonight' (9 pm today)
@@ -60,14 +63,17 @@
     const bonus = Math.round(Math.max(0, Math.min(1, left)) * 25);
     return { mult: 1 + bonus / 100, label: bonus ? 'Early bonus +' + bonus + '%' : 'On time' };
   };
+  // rewards always use what was chosen at creation (m.lock), so editing can't raise them or dodge lateness
   C.reward = (m, at = Date.now()) => {
-    const d = C.DIFF[m.diff] || C.DIFF.medium, p = C.PRI[m.pri] || C.PRI.medium, t = C.timing(m, at);
+    const L = m.lock || m;
+    const d = C.DIFF[L.diff] || C.DIFF.medium, p = C.PRI[L.pri] || C.PRI.medium, t = C.timing({ due: L.due, at: m.at }, at);
     const k = p.mult * t.mult, r5 = (v) => Math.max(5, Math.round(v / 5) * 5);
     return { coins: r5(d.coins * k), xp: r5(d.xp * k), timing: t.label };
   };
   // what a new mission would pay if finished on time (form preview)
   C.preview = (diff, pri) => C.reward({ diff, pri, due: Date.now() + 3600000, at: Date.now() }, Date.now() + 3600000);
-  C.paidToday = () => { const c = S().custom; return c.day === WB.dayKey() ? c.paid : 0; };
+  C.earnedToday = () => { const c = S().custom, t = c.day === WB.dayKey(); return { coins: t ? c.coinsToday || 0 : 0, xp: t ? c.xpToday || 0 : 0 }; };
+  C.leftToday = () => { const e = C.earnedToday(); return { coins: Math.max(0, C.DAILY_COINS - e.coins), xp: Math.max(0, C.DAILY_XP - e.xp) }; };
 
   // ---------- list ----------
   C.list = () => {
@@ -92,15 +98,17 @@
     if (c.list.length >= C.MAX_OPEN) return { ok: false, msg: 'You have ' + C.MAX_OPEN + ' open missions. Finish or delete some first.' };
     const v = C.validate(f); if (!v.ok) return v;
     const m = { id: 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), tpl: tplId || 'blank', title: v.m.title, notes: v.m.notes,
-      steps: v.m.stepsText.map((t) => ({ t, done: false })), due: v.m.due, diff: v.m.diff, pri: v.m.pri, at: Date.now(), warned: false };
+      steps: v.m.stepsText.map((t) => ({ t, done: false })), due: v.m.due, diff: v.m.diff, pri: v.m.pri, at: Date.now(), warned: false,
+      lock: { diff: v.m.diff, pri: v.m.pri, due: v.m.due } };
     c.list.push(m); G.after(); return { ok: true, m };
   };
   C.update = (id, f) => {
     const m = C.get(id); if (!m) return { ok: false, msg: 'That mission no longer exists.' };
     const v = C.validate(f, m); if (!v.ok) return v;
     const old = new Map(m.steps.map((s) => [s.t, s.done]));
-    Object.assign(m, { title: v.m.title, notes: v.m.notes, due: v.m.due, diff: v.m.diff, pri: v.m.pri, steps: v.m.stepsText.map((t) => ({ t, done: !!old.get(t) })) });
-    if (m.due > Date.now()) m.warned = false;
+    if (!m.lock) m.lock = { diff: m.diff, pri: m.pri, due: m.due };   // missions made before 2.7.0 lock on first edit
+    Object.assign(m, { title: v.m.title, notes: v.m.notes, due: v.m.due, steps: v.m.stepsText.map((t) => ({ t, done: !!old.get(t) })) });   // difficulty and priority stay as created
+    if (m.due > Date.now() && m.lock.due > Date.now()) m.warned = false;
     G.after(); return { ok: true, m };
   };
   C.toggleStep = (id, i) => { const m = C.get(id); if (m && m.steps[i]) { m.steps[i].done = !m.steps[i].done; WB.Save.queue(); } };
@@ -111,14 +119,21 @@
     return age < C.MIN_AGE_MIN ? 'You can complete a mission once it is ' + C.MIN_AGE_MIN + ' minutes old (' + Math.ceil(C.MIN_AGE_MIN - age) + ' min to go).' : '';
   };
   // why a completion won't pay (or '' if it will)
-  C.noPayWhy = (m) => {
-    if (C.paidToday() >= C.DAILY_PAID) return 'You’ve been paid for ' + C.DAILY_PAID + ' of your own missions today. More can be completed, just without a reward.';
+  C.noPayWhy = () => {
+    const l = C.leftToday();
+    if (!l.coins && !l.xp) return 'Your own missions have paid today’s maximum (' + C.DAILY_COINS + ' coins and ' + C.DAILY_XP + ' XP). You can still complete them; rewards return tomorrow.';
     return '';
   };
+  // what completing it right now would actually pay, after the daily cap
+  C.payout = (m) => { const r = C.reward(m), l = C.leftToday(); return { coins: Math.min(r.coins, l.coins), xp: Math.min(r.xp, l.xp), timing: r.timing, capped: r.coins > l.coins || r.xp > l.xp }; };
   C.complete = (id) => {
     const s = S(), c = s.custom, m = C.get(id); if (!m || C.tooNewWhy(m)) return null;
-    const why = C.noPayWhy(m), r = why ? { coins: 0, xp: 0, timing: '' } : C.reward(m);
-    if (!why) { if (c.day !== WB.dayKey()) { c.day = WB.dayKey(); c.paid = 0; } c.paid++; G.grant({ coins: r.coins, xp: r.xp }); }
+    const why = C.noPayWhy(m), r = why ? { coins: 0, xp: 0, timing: '' } : C.payout(m);
+    if (!why) {
+      if (c.day !== WB.dayKey()) { c.day = WB.dayKey(); c.coinsToday = 0; c.xpToday = 0; }
+      c.coinsToday = (c.coinsToday || 0) + r.coins; c.xpToday = (c.xpToday || 0) + r.xp;
+      G.grant({ coins: r.coins, xp: r.xp });
+    }
     c.list = c.list.filter((x) => x.id !== id);
     c.history.unshift({ title: m.title, diff: m.diff, pri: m.pri, at: Date.now(), late: Date.now() > m.due, coins: r.coins, xp: r.xp });
     c.history = c.history.slice(0, 30);
@@ -129,6 +144,6 @@
   // a mission passing its due time: tell the player once (no penalty: it just pays half now)
   C.check = () => {
     const now = Date.now();
-    for (const m of S().custom.list) if (!m.warned && m.due < now) { m.warned = true; WB.bus.emit('customOverdue', m); }
+    for (const m of S().custom.list) if (!m.warned && Math.min(m.due, (m.lock || m).due) < now) { m.warned = true; WB.bus.emit('customOverdue', m); }
   };
 })();

@@ -7,6 +7,7 @@
   D.XP_PER_STEP = 0.2;         // 1 XP per 5 steps
   D.HEAL_MINUTES = 15;         // HP refills on its own over time (empty to full in 15 minutes); walking does not heal
   D.DEFAULT_STRIDE_M = 0.76;
+  D.MANUAL_DAY_MAX = 30000;    // steps a player can log by hand per day (sensor and Health sync are not capped)
 
   // parallax for the 576x324 packs: layer 1 is sky, the last layer is the ground you walk on
   const auto = (n, drift = 2) => Array.from({ length: n }, (_, i) => ['l' + (i + 1), i === 0 ? 0.02 : i === n - 1 ? 1 : +(0.1 + 0.75 * Math.pow(i / (n - 1), 1.4)).toFixed(2), i === 0 ? drift : 0]);

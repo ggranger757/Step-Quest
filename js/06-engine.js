@@ -279,6 +279,7 @@
         if (backlog > 0.001 && !holding) target = WB.clamp(backlog * 1.6, 1.7, 70);
         this.vel = WB.lerp(this.vel, target, 1 - Math.exp(-dt * (target > this.vel ? 5 : 8)));
         if (this.vel < 0.05 && target === 0) this.vel = 0;
+        if (holding) this.vel = 0;   // an encounter blocks the path: stop dead (coasting at speed used to slide past and skip it)
         this.cam = Math.min(real, this.cam + this.vel * dt);
         if (backlog <= 0.001) this.cam = real;
         this.encounters();
@@ -326,7 +327,8 @@
         if (e.done) continue;
         const sx = this.entScreenX(e);
         if (!e.reached && sx <= this.avX + 50.5) {
-          e.reached = true;
+          e.reached = true; this.vel = 0;
+          if (this.cam > e.pos) this.cam = e.pos;   // land exactly at the encounter, not past it (the walked steps still count)
           this.holdUntil = performance.now() + (e.enc.aggressive || e.enc.boss ? 10000 : 6000);
           this.onReach(e.enc);
         }

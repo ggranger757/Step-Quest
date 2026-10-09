@@ -12,14 +12,23 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Stepquest">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
-<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+<meta property="og:title" content="Stepquest">
+<meta property="og:description" content="A pixel-art walking RPG. Every real step moves your hero forward.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/icons/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="assets/icons/og-image.png">
 <link rel="preload" href="assets/fonts/jersey10.woff" as="font" type="font/woff" crossorigin>
 <link rel="preload" href="assets/fonts/pixelifysans.woff" as="font" type="font/woff" crossorigin>
 <link rel="preload" href="assets/fonts/silkscreen.woff" as="font" type="font/woff" crossorigin>
 <link rel="stylesheet" href="css/style.css">
 <style>[hidden]{display:none!important}</style>
-<script>window.WB = { BUILD: 'pwa', VERSION: '2.6.0' };</script>
+<script>window.WB = { BUILD: 'pwa', VERSION: '2.7.0', DEV_TOOLS: false };</script>
 </head>
 <body>
 <div id="app" class="app" hidden>
@@ -51,7 +60,7 @@
     <section id="scr-map" class="screen" aria-label="World map"></section>
     <section id="scr-tasks" class="screen" aria-label="Missions"></section>
     <section id="scr-shop" class="screen" aria-label="Shop"></section>
-    <section id="scr-supplies" class="screen" aria-label="Supplies"></section>
+    <section id="scr-collection" class="screen" aria-label="Collection"></section>
     <section id="scr-profile" class="screen" aria-label="Profile"></section>
   </main>
 
@@ -60,7 +69,7 @@
     <button type="button" data-tab="world"><span class="ic" data-icon="world"></span><span>World</span></button>
     <button type="button" data-tab="tasks"><span class="ic" data-icon="tasks"></span><span>Missions</span><i class="badge" id="badge-tasks" hidden></i></button>
     <button type="button" data-tab="shop"><span class="ic" data-icon="shop"></span><span>Shop</span></button>
-    <button type="button" data-tab="supplies"><span class="ic" data-icon="sword"></span><span>Supplies</span></button>
+    <button type="button" data-tab="collection"><span class="ic" data-icon="trophy"></span><span>Collection</span></button>
     <button type="button" data-tab="profile"><span class="ic" data-icon="user"></span><span>Profile</span></button>
   </nav>
 </div>

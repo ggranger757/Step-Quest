@@ -469,7 +469,7 @@
           const i = WB.pick(left); got.push(i);
           out.find = { world: e.world, i }; out.text = 'You found: ' + all[i][1] + '.';
           out.reward = { xp: 25 + lvl * 2 };
-          if (G.potion(all[i][0])) { out.reward.potion = all[i][0]; out.text = 'You found a new potion: ' + all[i][1] + '. You can buy more in Supplies.'; }
+          if (G.potion(all[i][0])) { out.reward.potion = all[i][0]; out.text = 'You found a new potion: ' + all[i][1] + '. You can buy more in Shop → Potions.'; }
         } else { out.text = 'Just old coins. Every artifact here is already yours.'; out.reward = { coins: 40 }; }
         break;
       }

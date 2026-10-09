@@ -24,7 +24,7 @@
       enc: { next: 120, seq: 0, pending: [], count: 0, fights: 0, battles: 0, losses: 0, chests: 0, cards: {}, finds: {} },
       tasks: { day: '', daily: [], advDone: [], quests: [] },
       missions: { active: [], done: [], skip: [] },
-      custom: { list: [], history: [], day: '', paid: 0, done: 0 },
+      custom: { list: [], history: [], day: '', coinsToday: 0, xpToday: 0, done: 0 },
       streak: { count: 0, best: 0, lastDay: '', rest: 0, claimed: [] },
       daily: { idx: 0, lastClaim: '' },
       ach: {}, purchases: 0,

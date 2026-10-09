@@ -98,6 +98,7 @@
       const m = D.missionById[a.id];
       if (!m) { S().missions.active = S().missions.active.filter((x) => x !== a); continue; }
       if (G.missionLeft(a) <= 0 && !G.missionProgress(m, a).done) { fail(a, 'expired'); n++; }
+      else if (!a.soon && G.missionLeft(a) < 2 * 3600000 && !G.missionProgress(m, a).done) { a.soon = true; WB.bus.emit('missionSoon', { m, a }); WB.Save.queue(); }   // one warning, 2 h before
     }
     if (n) G.after();
     return n;

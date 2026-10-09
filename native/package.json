@@ -12,7 +12,7 @@
     "sync": "npm run web && npx cap sync && node scripts/patch-native.mjs",
     "ios": "npm run sync && npx cap open ios",
     "android": "npm run sync && npx cap open android",
-    "icons": "npx @capacitor/assets generate --iconBackgroundColor '#0b0a1a' --splashBackgroundColor '#0b0a1a'"
+    "icons": "npx @capacitor/assets generate --iconBackgroundColor '#000000' --splashBackgroundColor '#000000'"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",

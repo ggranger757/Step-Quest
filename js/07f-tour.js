@@ -2,14 +2,15 @@
    "how to heal" popup the first time your health runs low. */
 (() => {
   const UI = WB.UI, G = WB.Game, D = WB.DATA, S = () => WB.state, $ = (q, r = document) => r.querySelector(q);
-  const sect = (scr, text) => [...document.querySelectorAll(scr + ' .sect')].find((x) => { const h = x.querySelector('h3'); return h && h.textContent.trim().toLowerCase().startsWith(text.toLowerCase()); });
-  const tab = (t) => () => { if (UI.tab !== t) UI.go(t); };
-  const shop = (t) => () => { UI.shopTab = t; UI.go('shop'); UI.renderShop(); };
-  const sup = (t) => () => { UI.supTab = t; UI.go('supplies'); UI.renderSupplies(); };
+  const sect = (scr, text) => [...document.querySelectorAll(scr + ' .sect')].find((x) => { const h = x.querySelector('h2'); return h && h.textContent.trim().toLowerCase().startsWith(text.toLowerCase()); });
+  const tab = (t) => () => { if (UI.tab !== t) UI.go(t, { replace: true }); };   // the tour doesn't add Back entries
+  const shop = (t) => () => { UI.shopTab = t; UI.go('shop', { replace: true }); UI.renderShop(); };
+  const col = (t) => () => { UI.supTab = t; UI.go('collection', { replace: true }); UI.renderCollection(); };
+  const mis = (t) => () => { UI.missionTab = t; UI.go('tasks', { replace: true }); UI.renderTasks(); };
 
   // each step: where to go, what to highlight, and what to say
   const STEPS = [
-    { go: tab('world'), title: 'Welcome to Stepquest', text: 'Every real step you take moves your walker through pixel worlds. Walking earns coins and XP, wakes up creatures to battle, uncovers artifacts and opens new worlds. This quick tour shows every page. You can replay it any time from Profile → Settings.' },
+    { go: tab('world'), title: 'Welcome to Stepquest', text: 'Every real step you take moves your walker through pixel worlds. Walking earns coins and XP, wakes up creatures to battle, uncovers artifacts and opens new worlds. This quick tour shows every page. Tap Skip tutorial at any point to jump straight in; you can replay it any time from Profile → Settings.' },
     // ---------- world ----------
     { go: tab('world'), sel: '#hud-me', page: 'World', title: 'Your walker', text: 'Your portrait. Tap it any time to open your Profile.' },
     { go: tab('world'), sel: '.hud-xp', page: 'World', title: 'Level, XP and health', text: 'The purple bar is XP: you earn 1 XP every 5 steps, plus more from battles and missions. Level up to open new worlds, get stronger and earn coins. The thin green bar under it is your health (HP).' },
@@ -26,24 +27,22 @@
     // ---------- map ----------
     { go: tab('map'), sel: '#scr-map .path', page: 'World map', title: 'World map', text: 'Every world in order. Open worlds show how much you’ve explored and how many artifacts you’ve found; tap one to travel there. Explore a world fully to wake its guardian, then challenge it here. Locked worlds show the level they open at.' },
     // ---------- missions ----------
-    { go: tab('tasks'), sel: '[data-tab="tasks"]', page: 'Missions', title: 'Missions', text: 'Everything that pays out lives here. The badge shows how many rewards are ready to claim, and Claim all collects them at once.' },
-    { go: tab('tasks'), sel: () => sect('#scr-tasks', 'Daily reward'), page: 'Missions', title: 'Daily reward', text: 'Walk ' + D.DAILY_MIN_STEPS + ' steps a day to claim a reward. The calendar runs for 7 days and ends with a rare prize.' },
-    { go: tab('tasks'), sel: '#my-missions', page: 'Missions', title: 'My missions', text: 'Your own real-life missions. Tap New mission, pick a template (like Daily workout or Book outline) or create your own, then set a due date and time, a difficulty and a priority. Check off steps as you go and tap Complete for coins and XP: harder, higher-priority missions finished early pay the most, and late ones pay half.' },
-    { go: tab('tasks'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' walking missions: photo hunts, gathering runs, timed walks, multi-walk missions and distance runs. Accept up to ' + D.MISSION_ACTIVE_MAX + ' from the board; you then have ' + D.MISSION_HOURS + ' hours to finish each. Miss the deadline or drop one and you lose coins and HP.' },
-    { go: tab('tasks'), sel: '#journal', page: 'Missions', title: 'Photo journal', text: 'Photos from your photo hunts are kept here, on this phone only. Set your home state from the link above to get your state bird and flower missions.' },
-    { go: tab('tasks'), sel: () => sect('#scr-tasks', 'Daily missions'), page: 'Missions', title: 'Daily missions', text: 'Three quick goals that refresh every day at midnight.' },
-    { go: tab('tasks'), sel: () => sect('#scr-tasks', 'Adventure'), page: 'Missions', title: 'Adventure', text: 'A long chain of milestones: reach worlds, win battles, find artifacts, defeat guardians. Two are active at a time.' },
-    { go: tab('tasks'), sel: () => sect('#scr-tasks', 'Walking streak'), page: 'Missions', title: 'Streak', text: 'Your streak and its milestones. Missed a day? A Rest Day Token covers it automatically; you earn one every 7 streak days.' },
+    { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'Everything that pays out lives here, in four tabs: Today, My missions, Field and Adventure. Each tab shows how many rewards are ready, the badge on Missions counts them all, and Claim all collects them at once.' },
+    { go: mis('today'), sel: () => sect('#scr-tasks', 'Daily reward'), page: 'Missions', title: 'Daily reward', text: 'Walk ' + D.DAILY_MIN_STEPS + ' steps a day to claim a reward. The calendar runs for 7 days and ends with a rare prize.' },
+    { go: mis('today'), sel: () => sect('#scr-tasks', 'Daily missions'), page: 'Missions', title: 'Daily missions', text: 'Three quick goals that refresh every day at midnight.' },
+    { go: mis('today'), sel: () => sect('#scr-tasks', 'Walking streak'), page: 'Missions', title: 'Streak', text: 'Your streak and its milestones. Missed a day? A Rest Day Token covers it automatically; you earn one every 7 streak days.' },
+    { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'My missions', text: 'Your own real-life missions. Tap New mission, pick a template (like Daily workout or Book outline) or create your own, then set a due date and time, a difficulty and a priority. Check off steps as you go and tap Complete for coins and XP: harder, higher-priority missions finished early pay the most, and late ones pay half.' },
+    { go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' walking missions: photo hunts, gathering runs, timed walks, multi-walk missions and distance runs. Accept up to ' + D.MISSION_ACTIVE_MAX + ' from the board; you then have ' + D.MISSION_HOURS + ' hours to finish each. Miss the deadline or drop one and you lose coins and HP.' },
+    { go: mis('field'), sel: '#journal', page: 'Missions', title: 'Photo journal', text: 'Photos from your photo hunts are kept here, on this phone only. Set your home state from the link above to get your state bird and flower missions.' },
+    { go: mis('adventure'), sel: () => sect('#scr-tasks', 'Adventure'), page: 'Missions', title: 'Adventure', text: 'A long chain of milestones: reach worlds, win battles, find artifacts, defeat guardians. Two are active at a time.' },
     // ---------- shop ----------
-    { go: shop('avatar'), sel: '#scr-shop .seg', page: 'Shop', title: 'Shop', text: 'Two sections: Avatars (walkers you can play as) and Trails (particles that follow your steps).' },
+    { go: shop('avatar'), sel: '#scr-shop .seg', page: 'Shop', title: 'Shop', text: 'Everything you can buy, in five sections: Walkers you can play as, Trails that follow your steps, Weapons, Potions and Pets.' },
     { go: shop('avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Buying and unlocking', text: 'Some items cost coins, others unlock with levels, streaks or exploring. The gauge shows how close you are. Tap a locked item or a greyed-out button and Stepquest tells you exactly why you can’t get it yet.' },
     { go: shop('trail'), sel: '#scr-shop .grid', page: 'Shop', title: 'Trails', text: 'Each trail has its own colors and style. Equip one and it streams behind you as you walk.' },
-    // ---------- supplies ----------
-    { go: sup('weapons'), sel: '#scr-supplies .seg', page: 'Supplies', title: 'Supplies', text: 'Your battle gear and collections: Weapons, Potions, Pets, Artifacts and Achievements.' },
-    { go: sup('weapons'), sel: '.loadout', page: 'Supplies', title: 'Weapon slots', text: 'Three slots. Melee is used by Strike (your walker holds it during the attack), Ranged & magic flies at the creature and then recharges, and Shield powers Defend. Tap a slot to see and equip weapons for it.' },
-    { go: sup('potions'), sel: '#scr-supplies .hpcard', page: 'Supplies', title: 'Potions', text: 'Healing potions restore HP right away; others guard, boost damage, recharge your weapon or explode on enemies. Drink them here or from Items in battle. Rare potions are found in the newer worlds.' },
-    { go: sup('pets'), sel: '#scr-supplies .grid', page: 'Supplies', title: 'Pets', text: 'Pets walk beside you and fight with you, soaking 20–60% of each hit until their own HP runs out. They recover over time, just like you.' },
-    { go: sup('finds'), sel: '#scr-supplies .seg', page: 'Supplies', title: 'Artifacts and achievements', text: 'Artifacts are hidden in every world: walk and explore to find them. Achievements pay coins and XP for milestones like total steps, battles won and streaks.' },
+    { go: shop('weapons'), sel: '.loadout', page: 'Shop', title: 'Weapon slots', text: 'Three slots. Melee is used by Strike (your walker holds it during the attack), Ranged & magic flies at the creature and then recharges, and Shield powers Defend. Tap a slot to see and equip weapons for it.' },
+    { go: shop('potions'), sel: '#scr-shop .hpcard', page: 'Shop', title: 'Potions', text: 'Healing potions restore HP right away; others guard, boost damage, recharge your weapon or explode on enemies. Drink them here or from Items in battle. Rare potions are found in the newer worlds.' },
+    { go: shop('pets'), sel: '#scr-shop .grid', page: 'Shop', title: 'Pets', text: 'Pets walk beside you and fight with you, soaking 20–60% of each hit until their own HP runs out. They recover over time, just like you.' },
+    { go: col('finds'), sel: '#scr-collection .seg', page: 'Collection', title: 'Collection', text: 'Your Artifacts and Achievements. Artifacts are hidden in every world: walk and explore to find them. Achievements pay coins and XP for milestones like total steps, battles won and streaks.' },
     // ---------- battles ----------
     { go: tab('world'), sel: '#stage', page: 'Battles', title: 'Encounters and battles', text: 'When a creature blocks your path you can fight or avoid it. In battle: Strike with your melee weapon, Throw/Cast your ranged weapon, Defend with your shield, use Items, or Run away. Creatures brace and guardians raise wards. Winning pays coins and XP; losing costs some coins and HP.' },
     // ---------- profile ----------
@@ -60,9 +59,9 @@
   function build() {
     el = document.createElement('div'); el.className = 'tour'; el.id = 'tour';
     el.innerHTML = `<div class="tour-hole"></div><div class="tour-card pbox" role="dialog" aria-modal="true" aria-labelledby="tour-t">
-      <div class="tour-kick" id="tour-k"></div><h3 id="tour-t"></h3><p id="tour-b"></p>
+      <div class="tour-top"><div class="tour-kick" id="tour-k"></div><button class="btn ghost sm tour-skip" type="button" data-tour="skip">Skip tutorial</button></div><h3 id="tour-t"></h3><p id="tour-b"></p>
       <div class="tour-bar"><i id="tour-p"></i></div>
-      <div class="tour-nav"><button class="linkbtn" type="button" data-tour="skip">Skip tour</button><span></span><button class="btn ghost sm" type="button" data-tour="back">Back</button><button class="btn gold sm" type="button" data-tour="next">Next</button></div></div>`;
+      <div class="tour-nav"><span></span><button class="btn ghost sm" type="button" data-tour="back">Back</button><button class="btn gold sm" type="button" data-tour="next">Next</button></div></div>`;
     document.body.appendChild(el);
     hole = $('.tour-hole', el); card = $('.tour-card', el);
     el.addEventListener('click', (e) => {
@@ -120,13 +119,15 @@
     if (!el) build();
     onDone = done || null;
     T.active = true; el.hidden = false; document.documentElement.classList.add('touring');
+    UI.histPush('tour');   // Back ends the tour
     show(0);
   };
-  T.end = () => {
+  T.end = (fromPop) => {
     if (!T.active) return;
+    UI.histDone('tour', fromPop);
     T.active = false; el.hidden = true; document.documentElement.classList.remove('touring');
     S().hints.tour = true; WB.Save.queue();
-    UI.go('world'); window.scrollTo(0, 0);
+    UI.go('world', { replace: true }); window.scrollTo(0, 0);
     const f = onDone; onDone = null; if (f) f();
   };
   T.steps = STEPS;
@@ -142,7 +143,7 @@
       <p>You’re at ${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())} HP. Here’s how to get it back:</p>
       <ul class="heal-list">
         <li>${WB.icon('heart', 3)}<span><b>Wait it out.</b> HP refills on its own, from empty to full in about ${D.HEAL_MINUTES} minutes, even with the app closed.</span></li>
-        <li>${WB.pxImg('pot/tonic.png', 32)}<span><b>Drink a healing potion</b> to heal right away: from Supplies → Potions, or from Items during a battle. Buy more with Walk Coins.</span></li>
+        <li>${WB.pxImg('pot/tonic.png', 32)}<span><b>Drink a healing potion</b> to heal right away: from Shop → Potions, or from Items during a battle. Buy more with Walk Coins.</span></li>
         <li>${WB.icon('steps', 3)}<span><b>Walking doesn’t heal.</b> It still earns coins and XP, but HP only comes back with time or potions.</span></li>
       </ul>
       <p class="fine">Battles you lose and missions you fail cost HP. Your pets recover over time too. You’ll only see this message once.</p>
