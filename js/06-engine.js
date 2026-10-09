@@ -148,6 +148,16 @@
     if (x1 < x0) { x0 = 0; y0 = 0; x1 = fs - 1; y1 = fs - 1; }
     return (bboxCache[key] = { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 });
   };
+  /* Where each walker's head is in the first idle frame: [centre x, centre y, head size] in frame pixels,
+     measured by hand from the sprites (weapons, hats and capes make automatic detection unreliable).
+     Used for the round portrait in the HUD. A walker missing here falls back to the top of its figure. */
+  WB.AVATAR_FACE = { scavenger: [62, 68, 13], outrider: [64, 68, 12], marauder: [64, 67, 13], wanderer: [61, 68, 14], ember: [52.5, 68, 14], storm: [56, 69.5, 13], kunoichi: [63.5, 70, 14], monk: [46.5, 33, 19], farmer: [44.5, 37, 20], fixer: [61, 64.5, 16], courier: [63, 65, 15], boss: [60, 66.5, 15], archer: [56, 71, 13], lancer: [61, 67.6, 10], knight: [67.5, 76, 12], biker: [16, 17, 9], punk: [14.5, 19.5, 11], cyborg: [13.5, 17.5, 9], c1: [14.5, 15, 8], c2: [14.7, 15, 10], c3: [14, 18.8, 9], c4: [15.4, 19, 9], c5: [15.8, 19.5, 10], c6: [15.7, 19.7, 9], c9: [16, 19.5, 11], c10: [15.8, 22.6, 9], c11: [15.8, 25, 9], c12: [14, 24.5, 10], satyr: [62, 62, 17], satyress: [62.6, 63, 16], paladin: [62, 82.8, 9], ranger: [63.4, 82, 9] };
+  WB.headBox = (img, sh, id) => {
+    const f = id && WB.AVATAR_FACE[id];
+    if (f) return { cx: f[0], cy: f[1], s: f[2] * 1.6 };   // ~20% padding on every side
+    const box = WB.frameBox(img, sh), hh = Math.max(10, Math.round(box.h * 0.3));
+    return { cx: box.x + box.w / 2, cy: box.y + hh / 2, s: Math.max(hh, Math.min(box.w, hh * 1.3)) * 1.4 };
+  };
   WB.fitScale = (a, b) => { const s = Math.min(a, b); return s >= 2 ? Math.floor(s) : s; };
 
   /* Draw a sprite's first frame into a canvas, cropped to the figure and scaled to fit.
@@ -158,16 +168,23 @@
       if (!img || !img._ok) return;
       const src = opts.kind === 'av' ? WB.recolor(img, sh.path, opts.skin) : img;
       const box = WB.frameBox(img, sh);
-      let bx = box.x, by = box.y, bw = box.w, bh = box.h;
-      if (opts.head) { const hh = Math.max(12, Math.round(bh * 0.42)); bh = hh; const hw = Math.max(hh, Math.round(bw * 0.9)); bx = Math.max(0, Math.round(box.x + box.w / 2 - hw / 2)); bw = Math.min(hw, sh.fs - bx); }
       const W = canvas.width, H = canvas.height;
-      const sc = WB.fitScale(W / bw, H / bh);
       const x = canvas.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, W, H);
-      const dw = bw * sc, dh = bh * sc, dx = Math.round((W - dw) / 2), dy = opts.head ? Math.round((H - dh) / 2) : Math.round(H - dh);
       const flip = opts.face && opts.face !== sh.face;
       x.save();
       if (flip) { x.translate(W, 0); x.scale(-1, 1); }
-      x.drawImage(src, sh.fs * 0 + bx, sh.r * sh.fs + by, bw, bh, flip ? W - dx - dw : dx, dy, dw, dh);
+      if (opts.head) {
+        // portrait: a square around the head, centred in the canvas with padding on every side
+        const hb = WB.headBox(img, sh, opts.kind === 'av' && opts.id), sc = Math.min(W, H) / hb.s;   // exact fit so every walker gets the same padding
+        const ox = W / 2 - (hb.cx * sc), oy = H / 2 - (hb.cy * sc);   // frame -> canvas offset (head centre at canvas centre)
+        const sx0 = Math.max(0, Math.floor(hb.cx - W / sc / 2)), sy0 = Math.max(0, Math.floor(hb.cy - H / sc / 2));
+        const sx1 = Math.min(sh.fs, Math.ceil(hb.cx + W / sc / 2)), sy1 = Math.min(sh.fs, Math.ceil(hb.cy + H / sc / 2));
+        if (sx1 > sx0 && sy1 > sy0) x.drawImage(src, sx0, sh.r * sh.fs + sy0, sx1 - sx0, sy1 - sy0, Math.round(ox + sx0 * sc), Math.round(oy + sy0 * sc), (sx1 - sx0) * sc, (sy1 - sy0) * sc);
+      } else {
+        const bx = box.x, by = box.y, bw = box.w, bh = box.h, sc = WB.fitScale(W / bw, H / bh);
+        const dw = bw * sc, dh = bh * sc, dx = Math.round((W - dw) / 2), dy = Math.round(H - dh);
+        x.drawImage(src, bx, sh.r * sh.fs + by, bw, bh, flip ? W - dx - dw : dx, dy, dw, dh);
+      }
       x.restore();
     };
     Assets.load(sh.path).then(go);
