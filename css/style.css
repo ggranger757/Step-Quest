@@ -808,3 +808,7 @@ html.rm .lvlup .lv-badge b { animation: none; }
 html.rm .boot .boot-go { animation: none; }
 .boot.ready .boot-ring { animation: none; opacity: .35; }
 .encounter .choices .btn.gold small, .b-actions .btn.gold small { opacity: 1; color: #000 !important; }
+/* notes with a button: a × to close (they stay up to 2 minutes otherwise) */
+.toast.has-act { padding-right: var(--s1); }
+.toast .t-x { pointer-events: auto; flex: none; width: 36px; height: 36px; border: 0; background: none; color: var(--muted); font: 400 24px/1 var(--display); cursor: pointer; }
+.toast .t-x:hover, .toast .t-x:focus-visible { color: var(--text); }

@@ -129,7 +129,7 @@ Bosses never flee, and running from one only works 35% of the time (slipping awa
 
 ## Levels and pacing
 
-Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `100 × level^1.5`, plus 1.5% per level past 50. Walking earns 1 coin every 40 steps and 1 XP every 50 steps (`COINS_PER_STEP`, `XP_PER_STEP`), so most XP now comes from battles, quests and missions. At around 1,250 XP a day (7,000 steps plus battles and quests) that's about 2 months to level 20, 1.5 years to 50, about 4 years to the last world (level 70) and well over a decade to the cap. Each level-up opens a celebration card listing everything the new level unlocks (worlds, walkers, weapons, pets, magic, potions) and how far the next level is.
+Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `35 × level^1.35`. Walking earns 1 coin every 40 steps and 1 XP every 50 steps (`COINS_PER_STEP`, `XP_PER_STEP`), so most XP now comes from battles, quests and missions. At around 1,250 XP a day (7,000 steps plus battles and quests) that's about 2 weeks to level 20, 4 months to 50, 8 months to the last world (level 70; each world also needs the one before it explored) and about 1.5 years to the cap. Each level-up opens a celebration card listing everything the new level unlocks (worlds, walkers, weapons, pets, magic, potions) and how far the next level is.
 
 ## The Druid
 

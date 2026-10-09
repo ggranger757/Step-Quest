@@ -728,12 +728,12 @@
   };
 
   // ---------- Levels ----------
-  // Long-haul pacing (this is a walking game): XP to the next level = 100 × level^1.5 (+1.5% per level past 50).
-  // Walking ~7,000 steps a day (140 XP) plus battles and quests (~1,100 XP): about 2 months to level 20, 1.5 years
-  // to 50, about 4 years to the last world (level 70) and well over a decade to the cap.
+  // Pacing: XP to the next level = 35 × level^1.35. Walking ~7,000 steps a day (140 XP) plus battles, quests and
+  // missions (~1,100 XP): about 2 weeks to level 20, 4 months to 50, 8 months to the last world (level 70, which
+  // also needs each world explored in turn) and about 1.5 years to the cap.
   D.LEVEL_CAP = 100;
   D.EPIC_MUSIC_LEVEL = 40;   // battles get the epic soundtrack from here
-  D.xpToNext = (lvl) => Math.round(100 * Math.pow(lvl, 1.5) * (1 + Math.max(0, lvl - 50) * 0.015));
+  D.xpToNext = (lvl) => Math.round(35 * Math.pow(lvl, 1.35));
   D.levelCoins = (lvl) => 25 * lvl;
 
   // ---------- Streaks ----------

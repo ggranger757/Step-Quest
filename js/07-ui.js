@@ -150,23 +150,38 @@
     while (tq.length > 3) { const i = tq.findIndex((q) => !q.action && q.cls !== 'big'); tq.splice(i >= 0 ? i : 0, 1); }
     pump();
   };
+  // Notes with a button (Claim, Equip, Travel, Open…) stay up to 2 minutes, until you use the button or close it
+  // with ×. They stack (up to 2) so other notes keep flowing underneath. Plain notes show one at a time.
+  const ACTION_MS = 120000;
+  let pinned = 0;
   function pump() {
-    if (tShown >= 1 || !tq.length || document.documentElement.classList.contains('battling')) return;   // hold toasts until the fight ends
-    const o = tq.shift(); tShown++;
+    if (!tq.length || document.documentElement.classList.contains('battling')) return;   // hold toasts until the fight ends
+    const k = tq.findIndex((q) => q.action ? pinned < 2 : tShown < 1);
+    if (k < 0) return;
+    const o = tq.splice(k, 1)[0], act = !!o.action;
+    if (act) pinned++; else tShown++;
     const el = document.createElement('div');
-    el.className = 'toast ' + (o.cls || '');
-    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${o.action ? `<button class="btn sm cyan" type="button">${WB.esc(o.action.label)}</button>` : ''}`;
-    if (o.action) el.querySelector('button').onclick = () => { o.action.fn(); done(); };
+    el.className = 'toast ' + (o.cls || '') + (act ? ' has-act' : '');
+    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${act ? `<button class="btn sm cyan t-act" type="button">${WB.esc(o.action.label)}</button><button class="t-x" type="button" aria-label="Close">×</button>` : ''}`;
     $('#toasts').appendChild(el);
     let gone = false;
-    const done = (fast) => { if (gone) return; gone = true; curDone = null; el.classList.add('out'); setTimeout(() => { el.remove(); tShown--; pump(); }, fast === true ? 60 : 300); };
-    curDone = done;
-    // a backlog moves faster so a burst (two level-ups, a new world, an achievement) doesn't sit over the screen
-    const busy = tq.length > 0 && !o.action && o.cls !== 'msg' && !o.sub;   // celebrations keep their full time
-    // long enough to read: plain notes ~4.5 s, notes with a button ~7 s, celebrations at least 8 s (tap to dismiss sooner)
-    const ms = o.ms ? Math.max(o.ms * 1.6, o.sub || o.cls === 'big' ? 8000 : 4000) : o.action ? 7000 : 4500;
-    setTimeout(done, busy ? Math.min(ms, 3200) : ms);
-    el.addEventListener('click', (ev) => { if (!ev.target.closest('button')) done(); });
+    const done = (fast) => {
+      if (gone) return; gone = true; if (curDone === done) curDone = null; el.classList.add('out');
+      setTimeout(() => { el.remove(); if (act) pinned--; else tShown--; pump(); }, fast === true ? 60 : 300);
+    };
+    if (act) {
+      el.querySelector('.t-act').onclick = () => { o.action.fn(); done(); };
+      el.querySelector('.t-x').onclick = () => done();
+      setTimeout(done, ACTION_MS);
+    } else {
+      curDone = done;
+      // a backlog moves faster so a burst (two level-ups, a new world, an achievement) doesn't sit over the screen
+      const busy = tq.some((q) => !q.action) && o.cls !== 'msg' && !o.sub;   // celebrations keep their full time
+      // long enough to read: plain notes ~4.5 s, celebrations at least 8 s
+      const ms = o.ms ? Math.max(o.ms * 1.6, o.sub || o.cls === 'big' ? 8000 : 4000) : 4500;
+      setTimeout(done, busy ? Math.min(ms, 3200) : ms);
+    }
+    pump();   // an action note and a plain note can show together
   }
 
   UI.flushToasts = pump;
