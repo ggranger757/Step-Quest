@@ -50,7 +50,7 @@
     const offerHealth = () => { if (WB.Health.status === 'off' && !S().hints.health && S().onboarded) UI.healthSheet(); };
     const health = WB.Health.init();
     // first launch (and players who haven't seen it yet): the guided tour, then the health-sync offer
-    if (S().onboarded && !S().hints.tour) setTimeout(() => WB.Tour.start(() => health.then(offerHealth)), 700);
+    if (S().onboarded && !S().hints.tour) { WB.Bgm.play('app'); setTimeout(() => WB.Tour.start(() => health.then(offerHealth)), 700); }   // the welcome song plays until the tutorial ends
     else health.then(offerHealth);
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
@@ -96,7 +96,7 @@
     WB.bus.on('sensor', () => { if (UI.tab === 'world' || UI.tab === 'profile') UI.render(); });
     WB.bus.on('levelup', (e) => {
       WB.Sfx.play('level');
-      UI.toast({ kicker: 'Level up · +' + e.coins + ' coins', title: 'Level ' + e.level, icon: 'xp', cls: 'big', ms: 2800, group: 'level' });
+      UI.toast({ kicker: 'Level up · +' + e.coins + ' coins', title: 'Level ' + e.level, sub: WB.Celebrate.fire('level', e, 110), icon: 'xp', cls: 'big', ms: 4200, group: 'level' });
       if (WB.view && UI.tab === 'world') { const p = WB.view.avatarPos(); UI.floater('LEVEL UP', p.x, p.y - 40, 'xp big'); WB.view.burst(WB.view.avX, WB.view.world.ground - 40, ['#8b6cff', '#c7b8ff', '#ffffff'], 24); }
     });
     WB.bus.on('unlock', ({ cat, id }) => {
@@ -105,8 +105,8 @@
       UI.toast({ kicker: name, title: it.name, icon: { avatar: 'user', pet: 'paw', trail: 'trail', weapon: 'sword' }[cat], cls: it.legendary ? 'big' : 'cyan', action: { label: 'Equip', fn: () => { G.equip(cat, id); UI.render(); } } });
     });
     WB.bus.on('equip', ({ cat }) => { if (cat === 'avatar' || cat === 'skin') UI.paintFace(); });
-    WB.bus.on('achievement', (a) => UI.toast({ kicker: 'Achievement', title: a.title, img: 'ach/' + a.id + '.png', cls: 'gold' }));
-    WB.bus.on('taskComplete', (c) => { WB.Sfx.play('claim'); UI.toast({ kicker: 'Mission complete', title: c.t.title, icon: 'check', cls: 'ok', action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
+    WB.bus.on('achievement', (a) => (WB.Sfx.play('level'), UI.toast({ kicker: 'Achievement', title: a.title, sub: WB.Celebrate.fire('achievement', a, 90), img: 'ach/' + a.id + '.png', cls: 'gold', ms: 4000 })));
+    WB.bus.on('taskComplete', (c) => { const mer = c.type === 'mission' && (D.missionById[c.t.id] || {}).merlin; WB.Sfx.play(mer ? 'level' : 'claim'); UI.toast({ kicker: mer ? 'Merlin’s quest complete' : 'Mission complete', title: c.t.title, sub: WB.Celebrate.fire(mer ? 'merlin' : 'mission', c.t, mer ? 120 : 70), icon: 'check', cls: 'ok', ms: 4600, action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
     WB.bus.on('milestone', (m) => {
       UI.toast({ kicker: 'New discovery · ' + m.pct + '% explored', title: m.landmark + '  +' + m.coins, icon: 'map', cls: 'cyan' });
       if (m.pct === 100) UI.toast({ kicker: m.world.name, title: 'Fully explored', icon: 'flag', cls: 'gold' });
@@ -128,6 +128,8 @@
 
   // ---------- first-time experience ----------
   function intro() {
+    WB.Bgm.play('app');            // first launch: the welcome song (starts on the first tap if the browser blocks autoplay)
+    UI.lockScroll('intro', true);
     $('#intro').hidden = false;
     const panel = $('#intro-panel'), stage = $('#intro .intro-stage');
     // the scene always fills exactly the space above the panel, so the hero is never covered
@@ -143,8 +145,9 @@
     const step2 = () => {
       const starters = D.AVATARS.filter((a) => a.req.starter), locked = D.AVATARS.length - 1;
       panel.innerHTML = `<div class="istep"><span class="lbl">Step 1 of 2</span><h2>Choose your walker</h2></div>
-        <div class="pick" role="radiogroup" aria-label="Walker">${starters.map((a) => `<button type="button" role="radio" data-pick="${a.id}" aria-checked="${a.id === pick}"><canvas width="72" height="84"></canvas><span class="pn">${a.name}</span></button>`).join('')}</div>
+        <div class="pick" role="radiogroup" aria-label="Walker">${starters.map((a) => `<button type="button" role="radio" data-pick="${a.id}" aria-checked="${a.id === pick}"><canvas width="72" height="84"></canvas><span class="pn">${a.name}</span><span class="psp">${D.SPECIALS[D.STARTER_SPECIAL[a.id]].name}</span></button>`).join('')}</div>
         <p class="lockedrow">${WB.icon('lock', 2)}<span>Pick one to start. The other ${locked} walkers unlock as you walk, level up and explore.</span></p>
+        <p class="lockedrow">${WB.icon('spark', 2)}<span id="i-sp">Your pick also decides your special attack from level ${D.SPECIAL_LEVEL}: ${D.SPECIALS[D.STARTER_SPECIAL[pick] || 'raid'].desc}</span></p>
         <div class="field" id="sk-field" ${WB.hasSkin(pick) ? '' : 'hidden'}><span class="lbl" id="sk-l">Skin tone · <span id="sk-n">${UI.skinName(S().skin)}</span></span><div id="sk-wrap">${UI.swatches(S().skin, pick)}</div></div>
         <div class="field"><label class="lbl" for="i-name">Your name</label><input id="i-name" type="text" maxlength="18" autocomplete="nickname" value="${WB.esc(S().name)}"></div>
         <button class="btn block xl" type="button" id="i-go">Continue</button>`;
@@ -157,12 +160,13 @@
       });
       WB.$$('[data-pick]', panel).forEach((b) => b.onclick = () => {
         pick = b.dataset.pick; S().avatar = pick;
+        const spEl = $('#i-sp'); if (spEl) spEl.textContent = 'Your pick also decides your special attack from level ' + D.SPECIAL_LEVEL + ': ' + D.SPECIALS[D.STARTER_SPECIAL[pick]].desc;
         WB.$$('[data-pick]', panel).forEach((x) => x.setAttribute('aria-checked', x === b));
         $('#sk-wrap').innerHTML = UI.swatches(S().skin, pick); bindSkins(); $('#sk-field').hidden = !WB.hasSkin(pick);
         WB.Sfx.play('tap');
       });
       paintPicks(); bindSkins();
-      $('#i-go').onclick = () => { S().avatar = pick; S().owned.avatars = [pick];   // the other starters must be unlocked later
+      $('#i-go').onclick = () => { S().avatar = pick; S().owned.avatars = [pick]; S().starter = pick;   // the starter decides the special attack   // the other starters must be unlocked later
         S().name = $('#i-name').value.trim().slice(0, 18) || 'Wanderer'; step3(); };
     };
     const step3 = () => {
@@ -177,7 +181,7 @@
         <button class="btn block xl" type="button" id="i-go">Begin journey</button>`;
       $('#i-go').onclick = () => {
         S().onboarded = true;
-        WB.Save.now();
+        WB.Save.now(); UI.lockScroll('intro', false);
         iv.stop(); ro.disconnect(); window.removeEventListener('resize', fit);
         WB.Sfx.play('claim');
         startApp([]);

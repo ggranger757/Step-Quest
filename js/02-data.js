@@ -174,7 +174,7 @@
     // starters: you pick ONE at sign-up; the other two are bought like any other walker
     { id: 'scavenger', name: 'Scavenger', role: 'Reads the ruins like a map.', req: { starter: true, cost: 300 } },
     { id: 'wanderer', name: 'Wandering Mage', role: 'Walks to keep the old spells awake.', req: { starter: true, cost: 300 } },
-    { id: 'kunoichi', name: 'Kunoichi', role: 'Light feet, long roads.', req: { starter: true, cost: 300 } },
+    { id: 'kunoichi', name: 'Healer', role: 'Light feet, long roads, and a cure for every scrape.', req: { starter: true, cost: 300 } },
     { id: 'c11', name: 'Paperboy', role: 'Never misses a delivery.', req: { cost: 250 } },
     { id: 'c3', name: 'Street Artist', role: 'Leaves a tag in every world.', req: { cost: 400, level: 2 } },
     { id: 'c10', name: 'Wheels', role: 'Rolls further than anyone expects.', req: { cost: 700, level: 3 } },
@@ -322,12 +322,29 @@
 
   // ---------- Battle gear ----------
   // power: damage multiplier on your attack. cd: turns before it can be thrown again.
+  // ---------- Special attacks: one per starter class, chosen at sign-up; unlock at level 10 ----------
+  // The gauge fills as you attack (Strike +25, Throw / Cast +30); when it's full the Special button lights up.
+  D.SPECIAL_LEVEL = 10;
+  D.SPECIAL_CHARGE = { strike: 25, throw: 30 };
+  D.SPECIALS = {
+    nova: { id: 'nova', name: 'Arcane Nova', cls: 'Wandering Mage', fx: 'sa_nova', sfx: 'special_nova',
+      desc: 'A blast of arcane force that hits hard (stronger every level) and stuns the creature for 3 turns.' },
+    drain: { id: 'drain', name: 'Life Drain', cls: 'Healer', fx: 'sa_drain', sfx: 'special_drain',
+      desc: 'Drains the creature for 3 turns and turns it into your HP; the drain heals 50% more while your HP is low.' },
+    raid: { id: 'raid', name: 'Scavenger’s Raid', cls: 'Scavenger', fx: 'sa_raid', sfx: 'special_raid',
+      desc: 'A raiding strike (stronger every level) that snatches a potion from the creature, ready to use in this fight.' },
+  };
+  D.STARTER_SPECIAL = { wanderer: 'nova', kunoichi: 'drain', scavenger: 'raid' };
+  // what a Scavenger's Raid can snatch, by world tier (later worlds carry better loot)
+  D.RAID_LOOT = [['tonic', 'tonic', 'iron'], ['tonic', 'iron', 'fury'], ['iron', 'fury', 'elixir'], ['fury', 'elixir', 'elixir']];
+
   D.WEAPONS = [
     { id: 'star', name: 'Throwing Star', power: 1.25, cd: 1, effect: 'none', desc: 'Reliable and quick. Ready every other turn.', req: { starter: true } },
     { id: 'leaf', name: 'Poison Leaf', power: 0.9, cd: 2, effect: 'poison', desc: 'Poisons the target for 3 turns.', req: { cost: 250, level: 2 } },
     { id: 'fireball', name: 'Fireball', power: 1.45, cd: 2, effect: 'burn', desc: 'Big hit that leaves a 2-turn burn.', req: { cost: 400, level: 4 } },
     { id: 'spark', name: 'Spark Bomb', power: 1.3, cd: 2, effect: 'crit', desc: '40% chance of a critical double hit.', req: { cost: 500, level: 5 } },
     { id: 'freeze', name: 'Frost Lash', power: 1.1, cd: 2, effect: 'freeze', desc: '50% chance to freeze the target for a turn.', req: { cost: 650, level: 6 } },
+    { id: 'windblade', name: 'Wind Blade', power: 1.35, cd: 2, effect: 'pierce', desc: 'A crescent of wind that slices straight through braces and wards.', req: { cost: 900, level: 8 } },
     { id: 'prickler', name: 'Prickler', power: 0.6, cd: 2, effect: 'multi', desc: 'Bursts into three hits.', req: { cost: 800, level: 8 } },
     { id: 'ghost', name: 'Dread Ghost', power: 1.0, cd: 3, effect: 'weaken', desc: 'Cuts the target’s attack by 40% for 3 turns.', req: { cost: 1000, level: 9 } },
     { id: 'mirror', name: 'Mirror Orb', power: 1.0, cd: 3, effect: 'reflect', desc: 'Throws back half of the next hit you take.', req: { cost: 1200, level: 10 } },
@@ -560,7 +577,16 @@
   ];
 
   // ---------- Encounters ----------
-  D.ENCOUNTER_WEIGHTS = [{ type: 'creature', w: 40 }, { type: 'chest', w: 20 }, { type: 'find', w: 16 }, { type: 'merchant', w: 11 }, { type: 'traveler', w: 13 }];
+  D.MERLIN_LINES = [
+    '“Hoo! A walker with strong legs. I am Merlin, and I have a task worthy of you.”',
+    'A dark-winged owl lands on a signpost. “Merlin, at your service. Care for a real challenge?”',
+    '“Ah, there you are. The old roads told me you’d come. I have a quest, if you dare.”',
+    'Wings beat overhead. “Merlin here. Easy roads make soft walkers. Try this one.”',
+    '“Hoo-hoo! I pay handsomely for hard miles. Interested?”',
+  ];
+  D.MERLIN_ACCEPT = ['I’ll be watching from the treetops.', 'Walk well and the reward is yours.', 'Don’t keep an old owl waiting.', 'May your shoes hold out.'];
+  D.MERLIN_DECLINE = ['Another day, then. I’ll find you.', 'Rest those legs. I’ll be back.', 'Hoo. Not everyone is ready. Yet.'];
+  D.ENCOUNTER_WEIGHTS = [{ type: 'creature', w: 40 }, { type: 'chest', w: 20 }, { type: 'find', w: 16 }, { type: 'merchant', w: 11 }, { type: 'traveler', w: 13 }, { type: 'merlin', w: 5 }];   // Merlin only when a quest can be offered (else a crate)
   D.CHEST_LINES = ['A supply crate sits half-buried in the dirt.', 'You spot a rusted footlocker by the road.', 'A crate with a faded star stencil. Still sealed.'];
   D.FIND_LINES = ['Something glints in the rubble.', 'A small object catches the light.', 'You notice something half-hidden by the path.'];
   D.MERCHANT_LINES = ['A trader waves you over. “Tonics, fresh from the road.”', 'A merchant has set up camp. “I sell what keeps walkers alive.”'];

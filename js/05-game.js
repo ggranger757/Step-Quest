@@ -19,6 +19,9 @@
     const s = S(), before = s.hp; s.hp = Math.min(G.maxHp(), Math.max(0, s.hp + n));
     if (s.hp < before) WB.bus.emit('hpLoss', { who: 'hero', amount: before - s.hp });   // floats "-N HP" over the walker
   };
+  // ---------- special attack (one per starter class, unlocks at level 10) ----------
+  G.special = () => D.SPECIALS[D.STARTER_SPECIAL[S().starter] || 'raid'];
+  G.specialUnlocked = () => S().level >= D.SPECIAL_LEVEL;
   // ---------- pets: their own health ----------
   G.pet = (id) => D.PETS.find((p) => p.id === id);
   G.petMax = (id) => { const p = G.pet(id); return p ? D.petMaxHp(p, S().level) : 0; };
@@ -374,6 +377,7 @@
   G.makeEncounter = (forceType, opts = {}) => {
     const s = S(), w = opts.world ? D.worldById[opts.world] : G.world();
     let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS).type;
+    if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest) type = 'chest';
     const e = { id: 'e' + ++s.enc.seq, type, world: w.id };
     if (type === 'boss') {
       e.creature = w.boss; e.boss = true;
@@ -392,6 +396,12 @@
         e.text = 'A ' + c.name + ' ' + c.verb + '.';
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
       }
+    } else if (type === 'merlin') {
+      const m = opts.quest ? D.missionById[opts.quest] : G.merlinNext();
+      s.enc.merlinAt = Date.now();
+      e.npc = 'merlin'; e.quest = m.id;
+      e.text = WB.pick(D.MERLIN_LINES) + ' ' + G.missionTitle(m) + ': ' + G.missionDesc(m) + ' Finish within ' + m.hours + ' hours.';
+      e.choices = [{ id: 'accept', label: 'Accept the quest', hint: G.rewardText(m.reward) }, { id: 'decline', label: 'Not this time', hint: 'No penalty' }];
     } else if (type === 'chest') {
       e.text = WB.pick(D.CHEST_LINES);
       e.choices = [{ id: 'open', label: 'Open crate', hint: 'Coins, maybe a potion' }];
@@ -473,7 +483,7 @@
         } else { out.text = 'Just old coins. Every artifact here is already yours.'; out.reward = { coins: 40 }; }
         break;
       }
-      case 'merchant:buy':
+      case 'merchant:buy': WB.Sfx.play('buy');
         s.coins -= e.cost; out.reward = { potion: 'tonic' }; out.text = '“Drink it when the fight turns bad.”'; out.anim = 'talk';
         break;
       case 'merchant:chat': out.reward = { xp: 10 }; out.text = '“Aggressive ones get tougher in later worlds. Carry tonics.”'; out.anim = 'talk'; break;
@@ -485,6 +495,13 @@
         break;
       }
       case 'traveler:decline': out.text = '“Safe roads, then.”'; out.anim = 'talk'; break;
+      case 'merlin:accept': {
+        out.anim = 'talk'; out.reward = { xp: 10 };
+        if (G.acceptMerlin(e.quest)) { out.merlin = e.quest; out.text = '“Hoo! Splendid. ' + WB.pick(D.MERLIN_ACCEPT) + '” Find the quest under Missions → Field.'; }
+        else out.text = '“You already carry one of my quests. Finish that one first, walker.”';
+        break;
+      }
+      case 'merlin:decline': G.declineMerlin(e.quest); out.anim = 'talk'; out.reward = { xp: 5 }; out.text = '“' + WB.pick(D.MERLIN_DECLINE) + '”'; break;
     }
     s.enc.count++; s.today.encounters++;
     out.granted = G.grant(out.reward, true);

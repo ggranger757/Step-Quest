@@ -177,20 +177,34 @@
       level: [[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.18]], chest: [[392, 0.06], [523, 0.06], [784, 0.12]],
       hit: [[180, 0.06], [120, 0.1]], hurt: [[140, 0.08], [90, 0.12]], win: [[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.08], [1319, 0.2]], lose: [[392, 0.12], [330, 0.12], [262, 0.25]], charge: [[220, 0.06], [330, 0.06], [440, 0.06]], buy: [[784, 0.06], [988, 0.1]], tap: [[600, 0.03]], unlock: [[523, 0.07], [784, 0.07], [1047, 0.07], [1568, 0.15]],
     };
+    // recorded sounds (tools/prep_sounds.py); a list = pick one at random each time
+    const FILES = {
+      level: 'sfx/level_up.mp3', potion: 'sfx/potion.mp3', buy: 'sfx/buy.mp3', equip: 'sfx/equip.mp3', discovery: 'sfx/discovery.mp3',
+      lose: 'sfx/battle_loss.mp3', defend: 'sfx/defend.mp3', strike: 'sfx/walker_attack.mp3',
+      creature: ['sfx/creature_attack_1.mp3', 'sfx/creature_attack_2.mp3', 'sfx/creature_attack_3.mp3'],
+      proj: ['sfx/projectile_1.mp3', 'sfx/projectile_2.mp3', 'sfx/projectile_5.mp3'],
+    };
+    // game sounds stay quiet when the player turned them off, or while their own music player is on
+    let lastLevel = 0;
+    const muted = () => !WB.state || !WB.state.settings.sound || !!(WB.Music && WB.Music.active && WB.Music.active());
     return {
-      // play a recorded sound file (weapon impacts); decoded once and cached
-      async file(path) {
+      muted,
+      // play a recorded sound file (weapon impacts, actions); decoded once and cached
+      async file(path, vol = 0.55) {
         try {
-          if (!WB.state || !WB.state.settings.sound || !path || !ensure()) return;
+          if (muted() || !path || !ensure()) return;
           if (!buffers[path]) buffers[path] = fetch(WB.Assets.base + path).then((r) => r.arrayBuffer()).then((b) => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no)));
           const buf = await buffers[path];
           const src = ctx.createBufferSource(), g = ctx.createGain();
-          g.gain.value = 0.55; src.buffer = buf; src.connect(g).connect(ctx.destination); src.start();
+          g.gain.value = vol; src.buffer = buf; src.connect(g).connect(ctx.destination); src.start();
         } catch (e) { delete buffers[path]; }
       },
       play(name) {
+        if (name === 'level') { const now = Date.now(); if (now - lastLevel < 3000) return; lastLevel = now; }   // level-up + achievement together: one fanfare
+        const f = FILES[name] || (!tones[name] && 'sfx/' + name + '.mp3');   // any other name = its file in sfx/ (tools/synth_sounds.py)
+        if (f) return this.file(Array.isArray(f) ? f[Math.floor(Math.random() * f.length)] : f, 0.7);
         try {
-          if (!WB.state || !WB.state.settings.sound || !ensure()) return;
+          if (muted() || !ensure()) return;
           let t = ctx.currentTime;
           for (const [f, d] of tones[name] || []) {
             const o = ctx.createOscillator(), g = ctx.createGain();
@@ -201,5 +215,49 @@
         } catch (e) {}
       },
     };
+  })();
+
+  /* Background music: the app song (first launch, until the tutorial ends) and battle music.
+     Streams with an <audio> element so long tracks don't have to download before playing. Off when the player
+     turns Game music off, turns sounds off, or has their own music player on. Browsers only allow audio after a
+     tap, so a blocked start is retried on the next tap. */
+  WB.Bgm = (() => {
+    const TRACKS = {
+      app: 'music/app_song.mp3',
+      merlin: 'music/merlin.mp3',   // only while Merlin is on screen
+      // Battle music 1 is the same recording as the app song, and 7 the same as 4, so they share a file
+      battle: ['music/app_song.mp3', 'music/battle_2.mp3', 'music/battle_4.mp3', 'music/battle_6.mp3', 'music/battle_8.mp3'],
+    };
+    let el = null, want = null, fadeT = null;
+    const allowed = () => !!(WB.state && WB.state.settings.sound && WB.state.settings.music !== false && !(WB.Music && WB.Music.active && WB.Music.active()));
+    const retry = () => { document.removeEventListener('pointerdown', retry, true); B.sync(); };
+    const B = {
+      // key: 'app' | 'battle'; plays it on a loop until stop()
+      play(key) {
+        const t = TRACKS[key]; if (!t) return;
+        if (want && want.key === key && el && !el.paused) return;
+        want = { key, src: Array.isArray(t) ? t[Math.floor(Math.random() * t.length)] : t };
+        B.sync();
+      },
+      stop(ms = 900) {
+        want = null; if (!el) return;
+        const a = el, v0 = a.volume, t0 = performance.now(); clearInterval(fadeT);
+        fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = v0 * (1 - k); if (k >= 1) { clearInterval(fadeT); a.pause(); } }, 50);
+      },
+      playing: () => !!(el && !el.paused && want),
+      key: () => want && want.key,
+      stopIf(key, ms) { if (want && want.key === key) B.stop(ms); },
+      // start, stop or resume to match what's wanted and what's allowed right now
+      sync() {
+        if (!want || !allowed()) { if (el && !el.paused) { clearInterval(fadeT); el.pause(); } return; }
+        if (!el) { el = new Audio(); el.loop = true; el.preload = 'auto'; }
+        const url = WB.Assets.base + want.src;
+        if (el.dataset.src !== want.src) { el.src = url; el.dataset.src = want.src; }
+        clearInterval(fadeT); el.volume = 0.45;
+        const p = el.play(); if (p && p.catch) p.catch(() => document.addEventListener('pointerdown', retry, true));
+      },
+    };
+    document.addEventListener('visibilitychange', () => { if (!el) return; if (document.visibilityState === 'hidden') el.pause(); else B.sync(); });
+    return B;
   })();
 })();

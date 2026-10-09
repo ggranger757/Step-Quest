@@ -18,6 +18,7 @@
     return m.subject.endsWith('2') ? (bird ? 'a ' + what + ' in flight or at a feeder' : 'a ' + what + ' in a park or garden') : (bird ? 'a ' + what + ', the ' + st.name + ' state bird' : 'a ' + what + ', the ' + st.name + ' state flower');
   };
   G.missionTitle = (m) => {
+    if (m.merlin) return m.name;
     switch (m.kind) {
       case 'photo': return 'Photograph ' + G.missionSubject(m);
       case 'gather': return 'Gather ' + m.count + ' ' + m.item.toLowerCase();
@@ -28,7 +29,7 @@
   };
   G.missionDesc = (m) => {
     switch (m.kind) {
-      case 'photo': return 'Walk ' + fmt(m.steps) + ' steps, then snap a photo. ' + (D.MISSION_CAT_HINT[m.cat] || '') + (m.cat === 'state' && !G.homeState() ? ' Set your home state in Profile to see which one.' : '');
+      case 'photo': return 'Walk ' + fmt(m.steps) + ' steps, then snap a photo' + (m.merlin ? ' of ' + m.subject : '') + '. ' + (D.MISSION_CAT_HINT[m.cat] || '') + (m.cat === 'state' && !G.homeState() ? ' Set your home state in Profile to see which one.' : '');
       case 'gather': return 'Walk ' + fmt(m.steps) + ' steps. ' + m.item + ' turn up along the way as you walk.';
       case 'time': return 'Walk ' + fmt(m.steps) + ' steps ' + D.MISSION_WINDOWS[m.win].when + '.';
       case 'walks': return 'Take ' + m.walks + ' separate walks of at least ' + fmt(m.per) + ' steps each. A ' + D.MISSION_WALK_GAP_MIN + '-minute break starts a new walk.';
@@ -68,7 +69,8 @@
     const later = ms.skip.map((id) => D.missionById[id]).filter((m) => m && !busy.has(m.id));
     return [...open, ...later].slice(0, D.MISSION_BOARD);
   };
-  G.acceptWhy = () => (S().missions.active.length >= D.MISSION_ACTIVE_MAX ? 'You already have ' + D.MISSION_ACTIVE_MAX + ' active missions. Finish or drop one first.' : '');
+  const fieldActive = () => S().missions.active.filter((a) => !(D.missionById[a.id] || {}).merlin);
+  G.acceptWhy = () => (fieldActive().length >= D.MISSION_ACTIVE_MAX ? 'You already have ' + D.MISSION_ACTIVE_MAX + ' active missions. Finish or drop one first.' : '');
   G.acceptMission = (id) => {
     const ms = S().missions, m = D.missionById[id];
     if (!m || G.acceptWhy() || ms.done.includes(id) || G.missionRec(id)) return false;
@@ -77,14 +79,16 @@
     G.after(); return true;
   };
   // ---------- deadlines and penalties ----------
-  G.missionLeft = (a) => a.at + D.MISSION_HOURS * 3600000 - Date.now();
+  G.missionLeft = (a) => a.at + ((D.missionById[a.id] || {}).hours || D.MISSION_HOURS) * 3600000 - Date.now();
   G.missionPenalty = (m) => {
     const s = S();
+    if (m.merlin) return { coins: 0, hp: 0 };   // Merlin's quests never cost anything: he just offers them again later
     return { coins: Math.min(s.coins, Math.max(15, Math.round((m.reward.coins || 0) * 0.5 / 5) * 5)), hp: Math.max(0, Math.min(Math.round(G.maxHp() * 0.15), s.hp - 1)) };
   };
   function fail(a, why) {
     const ms = S().missions, m = D.missionById[a.id], pen = G.missionPenalty(m), s = S();
     ms.active = ms.active.filter((x) => x !== a);
+    if (m.merlin) { ms.mskip = (ms.mskip || []).filter((x) => x !== a.id).concat(a.id); WB.bus.emit('merlinGone', { m, why }); return pen; }
     if (!ms.skip.includes(a.id)) ms.skip.push(a.id);      // it comes back later on the board
     ms.failed = (ms.failed || 0) + 1;
     s.coins -= pen.coins; if (pen.hp) G.heal(-pen.hp);
@@ -134,6 +138,25 @@
       if (m.kind === 'photo' && !was && a.steps >= m.steps) WB.bus.emit('missionPhotoReady', { m });
     }
   };
+  // ---------- Merlin's quests (data in 02d-merlin.js): one at a time, offered on the road ----------
+  G.merlinActive = () => { const a = S().missions.active.find((x) => (D.missionById[x.id] || {}).merlin); return a ? [D.missionById[a.id], a] : null; };
+  G.merlinNext = () => {
+    const ms = S().missions, done = new Set(ms.done), skip = ms.mskip || [];
+    return D.MERLIN.find((m) => !done.has(m.id) && !skip.includes(m.id)) || skip.map((id) => D.missionById[id]).find((m) => m && !done.has(m.id)) || null;
+  };
+  G.merlinEligible = () => {
+    const s = S();
+    return s.level >= D.MERLIN_MIN_LEVEL && !G.merlinActive() && !!G.merlinNext() && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
+  };
+  G.merlinDone = () => S().missions.done.filter((id) => id[0] === 'w').length;
+  G.acceptMerlin = (id) => {
+    const ms = S().missions, m = D.missionById[id];
+    if (!m || !m.merlin || G.merlinActive() || ms.done.includes(id)) return false;
+    ms.active.push({ id, steps: 0, win: 0, walks: [], last: 0, photo: false, at: Date.now() });
+    ms.mskip = (ms.mskip || []).filter((x) => x !== id);
+    return true;
+  };
+  G.declineMerlin = (id) => { const ms = S().missions; ms.mskip = (ms.mskip || []).filter((x) => x !== id).concat(id); };
   G.missionClaimable = () => S().missions.active.map((a) => [D.missionById[a.id], a]).filter(([m, a]) => m && G.missionProgress(m, a).done);
   G.claimMission = (id) => {
     const ms = S().missions, a = G.missionRec(id), m = D.missionById[id];

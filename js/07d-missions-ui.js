@@ -48,7 +48,7 @@
   // ---------- rendering ----------
   const ic = (m, scale = 3) => WB.icon(m.icon, scale, m.pal ? { pal: m.pal } : {});
   const tag = (m) => ({ photo: 'Photo hunt', gather: 'Gather', time: 'Timed walk', walks: 'Multi-walk', distance: 'Distance' })[m.kind];
-  const penText = (m) => { const p = G.missionPenalty(m); return '-' + WB.fmt(p.coins) + ' coins' + (p.hp ? ', -' + p.hp + ' HP' : ''); };
+  const penText = (m) => { const p = G.missionPenalty(m); if (!p.coins && !p.hp) return 'no penalty'; return '-' + WB.fmt(p.coins) + ' coins' + (p.hp ? ', -' + p.hp + ' HP' : ''); };
   const left = (a) => { const ms = G.missionLeft(a); return ms <= 0 ? 'Time’s up' : UI.dur(Math.ceil(ms / 60000)) + ' left'; };
   function activeCard(m, a) {
     const p = G.missionProgress(m, a), pct = Math.max(p.done ? 100 : 0, Math.min(100, (p.cur / p.target) * 100));
@@ -61,11 +61,11 @@
     const clock = p.done ? '<span class="m-clock done">Finished: claim it</span>' : `<span class="m-clock ${urgent ? 'urgent' : ''}">${WB.icon('calendar', 1)}${left(a)}</span>`;
     const armed = UI.dropArm === m.id && !p.done;
     const live = m.kind === 'time' ? `<span class="m-live ${G.missionInWindow(m) ? 'on' : ''}">${G.missionInWindow(m) ? 'Counting now' : 'Counts ' + D.MISSION_WINDOWS[m.win].when}</span>` : '';
-    return `<div class="task mission pbox ${p.done ? 'done' : ''}">
-      <div class="m-main"><span class="m-ic">${ic(m)}</span><div><div class="m-kick">#${m.n} · ${tag(m)}</div><div class="t-title">${WB.esc(G.missionTitle(m))}</div>
+    return `<div class="task mission pbox ${p.done ? 'done' : ''} ${m.merlin ? 'merlin' : ''}">
+      <div class="m-main"><span class="m-ic">${ic(m)}</span><div><div class="m-kick">${m.merlin ? 'Merlin’s quest #' + m.n : '#' + m.n} · ${tag(m)}</div><div class="t-title">${WB.esc(G.missionTitle(m))}</div>
         <div class="m-desc">${WB.esc(G.missionDesc(m))}</div><div class="t-rew">${WB.esc(G.rewardText(m.reward))}</div>${clock}${live}</div></div>
       <div class="m-acts">${act}${p.done ? '' : armed ? `<button class="btn danger sm" type="button" data-mdrop="${m.id}" data-sure="1">Drop it</button><button class="linkbtn" type="button" data-mkeep="1">Keep</button>` : `<button class="linkbtn" type="button" data-mdrop="${m.id}">Drop</button>`}</div>
-      ${armed ? `<p class="m-warn">Dropping counts as failing: ${penText(m)}.</p>` : ''}
+      ${armed ? `<p class="m-warn">${m.merlin ? 'Hand the quest back to Merlin? No penalty; he’ll offer it again another day.' : 'Dropping counts as failing: ' + penText(m) + '.'}</p>` : ''}
       <div class="obj-prog"><div class="bar seg ${p.done ? 'gold' : 'cyan'}"><i style="width:${Math.max(p.cur ? 4 : 0, pct)}%"></i></div><span class="num">${WB.esc(p.label)}</span></div>
     </div>`;
   }
@@ -79,9 +79,12 @@
     </div>`;
   }
   UI.missionsSection = () => {
-    const ms = S().missions, act = ms.active.map((a) => [D.missionById[a.id], a]).filter(([m]) => m);
-    const board = G.missionBoard(), st = G.homeState();
-    return `<div class="sect" id="field-missions"><h2>Field missions <span class="aside">${ms.done.length} / ${D.MISSIONS.length} done</span></h2>
+    const ms = S().missions, act = ms.active.map((a) => [D.missionById[a.id], a]).filter(([m]) => m && !m.merlin);
+    const board = G.missionBoard(), st = G.homeState(), mer = G.merlinActive(), fieldDone = ms.done.filter((id) => id[0] === 'm').length;
+    const merlin = `<div class="sect merlin-sect" id="merlin-quest"><h2><canvas class="mer-face" width="40" height="40" aria-hidden="true"></canvas>Merlin’s quest <span class="aside">${G.merlinDone()} / ${D.MERLIN.length} done</span></h2>
+      ${mer ? `<div class="list">${activeCard(mer[0], mer[1])}</div>` : `<p class="fine">Merlin, a wandering owl-mage, sometimes swoops down on the road with a harder quest: longer walks, ${D.MERLIN[0].hours} hours to finish, and big rewards. Keep walking${S().level < D.MERLIN_MIN_LEVEL ? ' (he starts appearing at level ' + D.MERLIN_MIN_LEVEL + ')' : ''} and he’ll find you. Turning him down or running out of time costs nothing.</p>`}
+    </div>`;
+    return `${merlin}<div class="sect" id="field-missions"><h2>Field missions <span class="aside">${fieldDone} / ${D.MISSIONS.length} done</span></h2>
       <p class="fine m-intro">Real walks with a goal: photo hunts, gathering runs, timed and multi-day walks. Pick a mission and you have ${D.MISSION_HOURS} hours to finish it; only steps walked after you pick it count. Miss the deadline or drop it and you lose coins and HP. Run up to ${D.MISSION_ACTIVE_MAX} at once.${st ? '' : ' <button class="linkbtn inl" type="button" data-act="home-state">Set your home state</button> for state bird and flower missions.'}</p>
       ${act.length ? `<div class="list">${act.map(([m, a]) => activeCard(m, a)).join('')}</div>` : ''}
       ${board.length ? `<h3 class="m-sub">Mission board <span class="aside">${act.length} / ${D.MISSION_ACTIVE_MAX} active</span></h3><div class="list">${board.map(boardCard).join('')}</div>` : '<p class="empty">Every field mission is complete. Legendary.</p>'}
@@ -143,6 +146,7 @@
     UI.toast({ kicker: why === 'dropped' ? 'Mission dropped' : 'Mission failed: time ran out', title: G.missionTitle(m) + ' · -' + WB.fmt(pen.coins) + ' coins' + (pen.hp ? ', -' + pen.hp + ' HP' : ''), icon: 'lock', cls: 'msg', ms: 4200 });
     UI.updateHud();
   });
-  WB.bus.on('missionSoon', ({ m, a }) => UI.toast({ kicker: 'Mission ends in ' + UI.dur(Math.ceil(G.missionLeft(a) / 60000)), title: G.missionTitle(m) + ' · finish it or lose ' + ((p) => p.coins + ' coins' + (p.hp ? ' and ' + p.hp + ' HP' : ''))(G.missionPenalty(m)), icon: 'calendar', cls: 'msg', ms: 5000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
+  WB.bus.on('merlinGone', ({ m, why }) => UI.toast({ kicker: why === 'dropped' ? 'Quest returned to Merlin' : 'Merlin’s quest faded', title: G.missionTitle(m) + ' · no penalty, he’ll offer it again', icon: 'feather', pal: 'violet', cls: 'msg', ms: 4200 }));
+  WB.bus.on('missionSoon', ({ m, a }) => UI.toast({ kicker: (m.merlin ? 'Merlin’s quest ends in ' : 'Mission ends in ') + UI.dur(Math.ceil(G.missionLeft(a) / 60000)), title: G.missionTitle(m) + (m.merlin ? ' · the reward is still waiting' : ' · finish it or lose ' + ((p) => p.coins + ' coins' + (p.hp ? ' and ' + p.hp + ' HP' : ''))(G.missionPenalty(m))), icon: 'calendar', cls: 'msg', ms: 5000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
   WB.bus.on('missionPhotoReady', ({ m }) => UI.toast({ kicker: 'Photo hunt', title: 'Ready: ' + G.missionSubject(m), icon: 'photo', ms: 3000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
 })();

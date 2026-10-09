@@ -80,9 +80,14 @@ Some creatures are aggressive. When one blocks the path you can fight or avoid i
 - **Items** drinks a potion. **Run away** may fail.
 - Losing costs some coins (about 5–10% of what you carry, capped by the world) and drops your HP to 25%.
 - **Walking does not heal.** HP refills on its own, from empty to full in 15 minutes (`D.HEAL_MINUTES`), even while the app is closed, or instantly with a healing potion. Pets recover the same way. A level-up raises your max HP but only tops you up if you were unhurt.
+- **Special attacks** (from level 10): the walker picked at sign-up decides which one you get. A gauge on the Special button fills as you attack (Strike +25%, Throw/Cast +30%); when it's full, tap it.
+  - **Scavenger – Scavenger's Raid:** a raiding strike (damage grows with level) that snatches a potion from the creature, usable straight away from Items (better loot in later worlds; coins if your bag is full).
+  - **Wandering Mage – Arcane Nova:** a blast (damage grows with level) that stuns the creature for 3 turns.
+  - **Healer – Life Drain:** drains the creature for 3 turns and heals you with it; 50% more healing while your HP is under half.
+- Magic attacks gather energy at the caster's hand, trail sparks, and burst by element on impact (fire and sun explode, frost shatters, void pulses). Every weapon kind has its own impact sound.
 - Exploring a world to 100% wakes its **guardian**. Challenge it from the world map. Defeating guardians unlocks the legendary weapons.
 
-Everything you can buy is in the **Shop**, in five sections: Walkers, Trails, Weapons, Potions and Pets. Artifacts and achievements live on the **Collection** tab.
+Everything you can buy is in the **Shop**, in five sections: Walkers, Trails, Weapons, Potions and Pets. Artifacts and achievements live on the **Inventory** tab. The **World map** button sits on the World screen (and in Profile).
 
 There are 48 potions, one for every flask in the potion pack. Four everyday potions are sold from the start; the other 44 are hidden as artifacts in the newer worlds. Finding one gives you a bottle and adds it to the shop. Potions heal, cut damage, boost damage, recharge your weapon instantly or explode on the enemy.
 
@@ -98,15 +103,46 @@ The **Missions** tab has four sub-tabs, each showing how many rewards are ready:
 
 The board offers the next four in order. You can run three at a time, and you can skip or drop missions (they go to the back of the line). They get longer as you go, from about 650 steps to roughly 12,000, and every 25th pays a potion too. Set your **home state** (link on the Missions tab) to see your official state bird and flower. Missions live in `js/02c-missions.js`: edit the content lists there to change subjects, items or pacing.
 
+### Merlin's quests
+
+Merlin, a wandering owl-mage, now and then swoops down on the road (from level 2, at most once every couple of hours) and offers one of **300 harder quests**. They use the same five kinds as field missions but ask for far more walking: photo quests after 4,500–15,000 steps (the highest lookout, a bridge you've never crossed, the oldest tree in a park…), gathering 10–26 arcane items, timed walks of 2,700–9,000 steps, 3–5 separate walks of 2,000–4,500 steps, and distance runs of 5–16 km. You get **48 hours**, and they pay **about 150–600 coins and 200–900 XP** (every 10th adds an Elixir). One Merlin quest runs at a time, at the top of Missions → Field, and it doesn't take a field-mission slot. Turning him down, handing a quest back or running out of time costs nothing; he offers it again another day. All quests stay on public sidewalks, parks and trails. Merlin's own music plays only while he is on screen. Quests live in `js/02d-merlin.js`.
+
 ### My missions
 
 Players can turn real-life goals into missions. **New mission** offers 15 templates (daily workout, book outline, reading, study session, clean & tidy, meal prep, language or instrument practice, meditate & stretch, budget check-in, journal, job application, creative or coding project, call someone) or **Create your own**. Every mission has a name, optional notes, an optional checklist, a **due date and time** (with Tonight / Tomorrow / In 3 days / Next week shortcuts), a **difficulty** and a **priority**.
 
 Completing one pays coins and XP: the difficulty sets the base (Easy 15 coins / 25 XP, Medium 30 / 45, Hard 55 / 80, Epic 90 / 130), the priority multiplies it (Low ×1, Medium ×1.15, High ×1.3, Urgent ×1.5), and the timing adjusts it: finishing early earns up to +25% (more the earlier you finish), on time pays in full, and late pays half. The form previews the reward. Difficulty and priority are locked when the mission is created, and rewards always use the original due time. Because Stepquest is a walking game, your own missions together pay at most **300 coins and 450 XP a day** (about what 3,000 steps earn; 10,000 steps earn 1,000 coins); past that they can still be completed, without a reward. A mission can be completed once it's 15 minutes old. Overdue missions get a one-time reminder; there is no penalty beyond the halved reward. Templates and numbers live in `js/05d-custom.js`.
 
+## Sound and music
+
+Recorded sounds live in `assets/sfx/` and music in `assets/music/`; `tools/prep_sounds.py <uploads_folder> assets` rebuilds them from the original uploads (it finds each file by its label, trims silence and compresses):
+
+| Moment | Sound |
+| --- | --- |
+| Drinking a potion or power boost (in battle or from the Shop) | `sfx/potion.mp3` |
+| Any purchase (Shop, potions, supplies, merchants) | `sfx/buy.mp3` |
+| Equipping an item | `sfx/equip.mp3` |
+| An artifact discovery on the road | `sfx/discovery.mp3` |
+| Strike (melee) | `sfx/walker_attack.mp3` |
+| Throw / Shoot / Cast launch | one of `sfx/projectile_1, _2, _5.mp3` (the weapon's own impact sound plays when it lands; Frost Lash uses `sfx/freeze.mp3`) |
+| A creature hits you | one of `sfx/creature_attack_1..3.mp3` |
+| Defend | `sfx/defend.mp3` |
+| Losing a battle | `sfx/battle_loss.mp3` |
+| Level-up, achievement or a finished Merlin quest | `sfx/level_up.mp3` |
+| Weapon impacts by kind, bow and spell launches, spell impacts by element, Wind Blade, shield blocks, poison/burn/bleed/stun ticks, the three special attacks | synthesized by `tools/synth_sounds.py` (`sfx/hit_*`, `spell_*`, `status_*`, `special_*`, `bow_release`, `wind_blade`, `shield_block`) |
+| First launch, through the end (or skip) of the tutorial | `music/app_song.mp3` |
+| Battles | a random battle track from `music/` |
+| While Merlin is on screen | `music/merlin.mp3` |
+
+Music streams (it isn't part of the offline download) and fades out when the fight or tutorial ends. Profile → Settings has **Sound effects** and **Game music** switches, and while the player's own Spotify or Apple Music player is on, all game sounds and music pause automatically. Browsers only allow audio after a tap, so the welcome song starts on the first tap if autoplay is blocked.
+
+## Celebrations
+
+Level-ups, achievements and every completed mission (daily, adventure, delivery, field, Merlin's or your own) fire a short burst of pixel confetti and a warm message that changes each time: it uses your name, the time of day, today's steps, your streak and what you just did. Confetti waits until a battle is over and is skipped with Reduce motion.
+
 ## Tutorial and tips
 
-New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, every Shop section, the Collection, battles and the Profile. A **Skip tutorial** button sits at the top of every step (Back on the phone ends it too), and it can be replayed from Profile → Settings → Tutorial. The first time a player's HP drops to 35% or below, a one-time tip explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal).
+New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, every Shop section, the Inventory, battles and the Profile. A **Skip tutorial** button sits at the top of every step (Back on the phone ends it too), and it can be replayed from the **Tutorial** button at the top of Profile (or Settings → Tutorial). While any sheet, battle, the tutorial or onboarding is open, the page behind it can't scroll. A discovery on the road stays on screen for 40 seconds, with a × to close it sooner. The first time a player's HP drops to 35% or below, a one-time tip explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal).
 
 ## Worlds and levels
 
@@ -142,6 +178,7 @@ js/00-util.js            helpers, storage, event bus
 js/01-icons.js           hand-drawn pixel icons
 js/02-data.js            ALL game content: worlds, avatars, items, daily missions, achievements, encounters
 js/02c-missions.js       the 600 field missions, state birds and flowers
+js/02d-merlin.js         Merlin's 300 harder quests
 js/03-state.js           save data and persistence
 js/04-steps.js           step tracking sources, wake lock, sound hooks
 js/04b-health.js         automatic step sync (Apple Health / Health Connect) in the installed app

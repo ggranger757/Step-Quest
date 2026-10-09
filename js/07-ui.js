@@ -28,6 +28,9 @@
   // history: each tab change is a history entry, so the phone's Back button returns to the previous tab
   // (and first closes an open sheet or the tour). opt.pop = navigating because of Back; opt.replace = don't add an entry.
   let navInit = false, ignorePop = 0, pendingPush = null;
+  // scroll lock: while any overlay is up (sheet, battle, tour, onboarding) the page behind can't scroll
+  const locks = new Set();
+  UI.lockScroll = (key, on) => { if (on) locks.add(key); else locks.delete(key); document.documentElement.classList.toggle('scroll-lock', locks.size > 0); };
   // overlays (sheet, tour, battle) get their own history entry, so Back closes them instead of leaving the app
   const pushed = new Set();
   UI.histPush = (key) => { if (pushed.has(key) || ignorePop || !navInit) return; try { history.pushState({ sq: 1, tab: UI.tab, o: key }, ''); pushed.add(key); } catch (e) {} };
@@ -151,14 +154,14 @@
     const o = tq.shift(); tShown++;
     const el = document.createElement('div');
     el.className = 'toast ' + (o.cls || '');
-    el.innerHTML = `${o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span></div>${o.action ? `<button class="btn sm cyan" type="button">${WB.esc(o.action.label)}</button>` : ''}`;
+    el.innerHTML = `${o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${o.action ? `<button class="btn sm cyan" type="button">${WB.esc(o.action.label)}</button>` : ''}`;
     if (o.action) el.querySelector('button').onclick = () => { o.action.fn(); done(); };
     $('#toasts').appendChild(el);
     let gone = false;
     const done = (fast) => { if (gone) return; gone = true; curDone = null; el.classList.add('out'); setTimeout(() => { el.remove(); tShown--; pump(); }, fast === true ? 60 : 300); };
     curDone = done;
     // a backlog moves faster so a burst (two level-ups, a new world, an achievement) doesn't sit over the screen
-    const busy = tq.length > 0 && !o.action && o.cls !== 'msg';
+    const busy = tq.length > 0 && !o.action && o.cls !== 'msg' && !o.sub;   // celebrations keep their full time
     setTimeout(done, o.ms ? (busy ? Math.min(o.ms, 1600) : o.ms) : o.action ? 3600 : busy ? 1300 : 2200);
   }
 
@@ -199,7 +202,7 @@
         </button>
       </div>
       ${sensor}
-      ${pend || daily || !musicOn ? `<div class="chips">${pend ? `<button class="chipbtn" data-act="pending" type="button">${WB.icon('flag', 2)}${pend} encounter${pend > 1 ? 's' : ''} waiting</button>` : ''}${daily ? `<button class="chipbtn cyan" data-act="daily" type="button">${WB.icon('chest', 2)}Claim daily reward</button>` : ''}${musicOn ? '' : `<button class="chipbtn" data-act="music" type="button">${WB.icon('note', 2)}Add music</button>`}</div>` : ''}
+      <div class="chips"><button class="chipbtn" data-act="map" type="button">${WB.icon('map', 2)}World map</button>${pend ? `<button class="chipbtn" data-act="pending" type="button">${WB.icon('flag', 2)}${pend} encounter${pend > 1 ? 's' : ''} waiting</button>` : ''}${daily ? `<button class="chipbtn cyan" data-act="daily" type="button">${WB.icon('chest', 2)}Claim daily reward</button>` : ''}${musicOn ? '' : `<button class="chipbtn" data-act="music" type="button">${WB.icon('note', 2)}Add music</button>`}</div>
       ${obj ? `<button class="objective pbox card" data-act="tasks" data-mt="${obj.tab || 'today'}" type="button">
         <span class="obj-head"><span class="lbl">Next objective</span><span class="obj-reward">${WB.esc(G.rewardText(obj.t.reward))}</span></span>
         <span class="obj-title">${WB.esc(obj.t.title)}</span>
@@ -282,7 +285,7 @@
 
   // ---------- encounters ----------
   let encCur = null, encTimer = null;
-  const ENC_TITLE = { creature: 'Encounter', chest: 'Discovery', find: 'Discovery', merchant: 'Merchant', traveler: 'Traveler', boss: 'World guardian' };
+  const ENC_TITLE = { creature: 'Encounter', chest: 'Discovery', find: 'Discovery', merchant: 'Merchant', traveler: 'Traveler', boss: 'World guardian', merlin: 'Merlin the owl-mage' };
   const encTitle = (e) => (e.aggressive ? 'Hostile creature' : ENC_TITLE[e.type]);
   const PRIMARY = ['battle', 'shoo', 'open', 'take', 'accept', 'buy'];
   UI.showEncounter = (enc, where = 'stage') => {
@@ -295,6 +298,7 @@
     let root;
     if (where === 'stage') { root = $('#encounter'); root.innerHTML = html; root.hidden = false; }
     else { UI.sheet(`<h3 id="sheet-title">${encTitle(enc)}</h3><div class="encounter in-sheet" id="encounter-sheet">${html}</div>`); root = $('#encounter-sheet'); }
+    root.dataset.npc = enc.npc || '';
     const face = root.querySelector('canvas');
     if (enc.creature) WB.paintThumb(face, { kind: 'cr', id: enc.creature, face: 'left' });
     else if (enc.npc) WB.paintThumb(face, { kind: 'npc', id: enc.npc, face: 'left' });
@@ -313,15 +317,17 @@
       return;
     }
     if (!out.granted) { root.querySelector('p').textContent = out.text; return; }
+    const discovery = enc.type === 'find' || !!out.find;
+    if (discovery) WB.Sfx.play('discovery');
     if (WB.view) WB.view.playOutcome(enc, out);
     const pos = WB.view && WB.view.entPos(enc.id);
     if (pos && where === 'stage') {
       let dy = 0;
       out.granted.forEach((g) => { if (g.k === 'coins' || g.k === 'xp') { setTimeout(() => UI.floater(g.k === 'coins' ? WB.icon('coin', 2) + '+' + g.v : '+' + g.v + ' XP', pos.x, pos.y - dy, g.k === 'xp' ? 'xp big' : 'big'), 350 + dy * 4); dy += 26; } });
     }
-    const extra = out.newKind ? `<span class="reward-pill item">New creature logged</span>` : out.find ? `<span class="reward-pill item">${WB.pxImg('art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 20)}${D.FINDS[out.find.world][out.find.i][1]}</span>` : out.quest ? `<span class="reward-pill item">New delivery mission</span>` : '';
+    const extra = out.newKind ? `<span class="reward-pill item">New creature logged</span>` : out.find ? `<span class="reward-pill item">${WB.pxImg('art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 20)}${D.FINDS[out.find.world][out.find.i][1]}</span>` : out.quest ? `<span class="reward-pill item">New delivery mission</span>` : out.merlin ? `<span class="reward-pill item">New Merlin quest · ${D.missionById[out.merlin].hours}h</span>` : '';
     const holder = where === 'stage' ? root : $('#encounter-sheet');
-    holder.innerHTML = `<canvas width="64" height="64"></canvas><div class="etext"><div class="etitle">${out.anim === 'fight' ? 'Done' : out.anim === 'leave' ? 'Moving on' : 'Done'}</div><p>${WB.esc(out.text)}</p></div><div class="outcome">${pills(out.granted)}${extra}<button class="linkbtn push" type="button" data-close-enc>Continue</button></div>`;
+    holder.innerHTML = `<canvas width="64" height="64"></canvas><div class="etext"><div class="etitle">${out.anim === 'fight' ? 'Done' : out.anim === 'leave' ? 'Moving on' : 'Done'}</div><p>${WB.esc(out.text)}</p></div><div class="outcome">${pills(out.granted)}${extra}<button class="linkbtn push" type="button" data-close-enc>Continue</button></div>${discovery ? '<button class="enc-x" type="button" data-close-enc aria-label="Close">×</button>' : ''}`;
     const face = holder.querySelector('canvas');
     if (out.find) WB.paintImg(face, 'art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 1);
     else if (enc.creature) WB.paintThumb(face, { kind: 'cr', id: enc.creature, face: 'left' });
@@ -329,9 +335,21 @@
     else { const ic = WB.iconCanvas('chestopen'); const c = face.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(ic, 8, 14, 48, 36); }
     if (out.find) UI.toast({ kicker: 'New artifact', title: D.FINDS[out.find.world][out.find.i][1], img: 'art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', cls: 'cyan' });
     const close = () => { clearTimeout(encTimer); if (where === 'stage') { root.hidden = true; root.innerHTML = ''; } else UI.closeSheet(); encCur = null; UI.render(); };
-    holder.querySelector('[data-close-enc]').onclick = close;
-    encTimer = setTimeout(close, where === 'stage' ? 3200 : 60000);
+    holder.querySelectorAll('[data-close-enc]').forEach((b) => (b.onclick = close));
+    // a discovery stays up for 40 s (or until closed) so there's time to read about the find
+    encTimer = setTimeout(close, discovery ? 40000 : where === 'stage' ? 3200 : 60000);
   };
+  // Merlin's own music plays only while his card is on screen (on the road or in a sheet), then the previous track resumes
+  let merlinPrev = null, merlinOn = false;
+  setInterval(() => {
+    const st = $('#encounter'), sh = $('#encounter-sheet');
+    const on = !!((st && !st.hidden && st.dataset.npc === 'merlin') || (sh && !$('#sheet').hidden && sh.dataset.npc === 'merlin'));
+    if (on === merlinOn) return;
+    merlinOn = on;
+    if (on) { merlinPrev = WB.Bgm.key(); if (merlinPrev === 'merlin') merlinPrev = null; WB.Bgm.play('merlin'); }
+    else { WB.Bgm.stopIf('merlin', 600); if (merlinPrev) setTimeout(() => WB.Bgm.play(merlinPrev), 650); merlinPrev = null; }
+  }, 300);
+  UI.merlinMusicOn = () => merlinOn;
   UI.encounterGone = (enc) => {
     if (encCur && encCur.id === enc.id && !$('#encounter').hidden && $('#encounter').querySelector('[data-choice]')) {
       $('#encounter').hidden = true; encCur = null;
@@ -354,6 +372,7 @@
     const w = $('#sheet'), b = $('#sheet-body');
     b.innerHTML = `<button class="x" type="button" data-close aria-label="Close">×</button>` + html;
     if (w.hidden) UI.histPush('sheet');   // Back closes the sheet
+    UI.lockScroll('sheet', true);
     w.hidden = false;
     UI.hydrateIcons(b);
     if (mount) mount(b);
@@ -372,6 +391,7 @@
   UI.closeSheet = (fromPop) => {
     if ($('#sheet').hidden) return;
     UI.histDone('sheet', fromPop);
+    UI.lockScroll('sheet', false);
     $('#sheet').hidden = true; $('#sheet-body').innerHTML = '';
     UI.stopAnims();
     if (UI.tab === 'profile') UI.renderProfile();
@@ -435,6 +455,7 @@
       ${body}
     </div>`);
     if (changed && UI.fillJournal) UI.fillJournal();
+    if (changed) { const mf = $('#scr-tasks .mer-face'); if (mf) WB.paintThumb(mf, { kind: 'npc', id: 'merlin' }); }
     UI.updateBadges();
   };
 
@@ -592,8 +613,8 @@
     }
     const counts = { finds: G.findCount() + '/' + D.FIND_TOTAL, ach: Object.keys(s.ach).length + '/' + D.ACHIEVEMENTS.length };
     const changed = UI.set($('#scr-collection'), `<div class="scr-wrap">
-      <div class="scr-head"><h1>Collection</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
-      <div class="seg" role="tablist" aria-label="Collection sections">${COL_TABS.map(([id, l, ic]) => `<button type="button" role="tab" data-suptab="${id}" aria-selected="${id === tab}" aria-pressed="${id === tab}">${ic.startsWith('img:') ? WB.pxImg(ic.slice(4), 20) : WB.icon(ic, 2)}<span>${l}</span><span class="cnt">${counts[id]}</span></button>`).join('')}</div>
+      <div class="scr-head"><h1>Inventory</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
+      <div class="seg" role="tablist" aria-label="Inventory sections">${COL_TABS.map(([id, l, ic]) => `<button type="button" role="tab" data-suptab="${id}" aria-selected="${id === tab}" aria-pressed="${id === tab}">${ic.startsWith('img:') ? WB.pxImg(ic.slice(4), 20) : WB.icon(ic, 2)}<span>${l}</span><span class="cnt">${counts[id]}</span></button>`).join('')}</div>
       <p class="scr-note">${def[3]}</p>
       ${body}
     </div>`);
@@ -638,7 +659,7 @@
     const opt = (arr, v, f) => arr.map((a) => `<option value="${a}" ${a === v ? 'selected' : ''}>${f(a)}</option>`).join('');
     const st = WB.Steps.status;
     const pf = $('#scr-profile'); pf._html = null; pf.innerHTML = `<div class="scr-wrap">
-      <div class="scr-head"><h1>Profile</h1><button class="linkbtn" type="button" data-act="map">${WB.icon('map', 2)} World map</button></div>
+      <div class="scr-head"><h1>Profile</h1><span class="head-acts"><button class="linkbtn" type="button" data-act="tour">${WB.icon('flag', 2)} Tutorial</button><button class="linkbtn" type="button" data-act="map">${WB.icon('map', 2)} World map</button></span></div>
       <div class="hero pbox"><canvas width="144" height="144" id="pf-av"></canvas><div class="meta">
         <span class="title">${WB.esc(title())}</span>
         <div class="namerow"><h2 title="${WB.esc(s.name)}">${WB.esc(s.name)}</h2><button class="linkbtn" type="button" data-act="rename" aria-label="Change name">${WB.icon('pencil', 2)}</button></div>
@@ -648,6 +669,7 @@
         <div class="bar hp"><i style="width:${(s.hp / G.maxHp()) * 100}%"></i></div>
         <div class="lbl">${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())} HP · ATK ${D.heroAtk(s.level)}</div>
       </div></div>
+      ${(() => { const sp = G.special(), on = G.specialUnlocked(); return `<div class="pbox card sp-card"><div class="obj-head"><span class="lbl">Special attack · ${WB.esc(sp.cls)}</span><span class="lbl">${on ? 'Unlocked' : 'Unlocks at level ' + D.SPECIAL_LEVEL}</span></div><div class="sp-name">${WB.icon(sp.id === 'raid' ? 'chest' : sp.id === 'drain' ? 'heart' : 'spark', 2)} ${WB.esc(sp.name)}</div><p class="fine">${WB.esc(sp.desc)} Its gauge fills as you strike and throw in battle.</p></div>`; })()}
       <div class="stats">
         ${[['Total steps', WB.fmt(s.totalSteps)], ['Distance', WB.fmtKm(s.meters)], ['Walk Coins', WB.fmt(s.coins)], ['Streak', sv.count + ' <small>best ' + s.streak.best + '</small>'], ['Battles won', WB.fmt(s.enc.battles)], ['Guardians', G.bossCount() + '/' + D.WORLDS.length], ['Worlds', s.unlocked.length + '/' + D.WORLDS.length], ['Avatars', own('avatar')], ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL], ['Best day', WB.fmt(s.bestDay)]].map(([l, v]) => `<div class="stat pbox"><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}
       </div>
@@ -667,7 +689,8 @@
         <div class="setting pbox"><div><label for="set-goal">Daily goal</label><div class="sd">Reaching it pays a 100-coin bonus.</div></div><select id="set-goal">${opt([2500, 5000, 7500, 10000], s.settings.dailyGoal, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-streak">Streak minimum</label><div class="sd">Steps needed in a day to keep the streak.</div></div><select id="set-streak">${opt(D.STREAK_GOALS, s.settings.streakMin, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-stride">Stride length</label><div class="sd">Used to turn steps into distance.</div></div><select id="set-stride">${opt([0.6, 0.65, 0.7, 0.76, 0.8, 0.85, 0.9], s.settings.stride, (v) => v.toFixed(2) + ' m')}</select></div>
-        <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Game sounds mix with your music instead of pausing it.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
+        <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">${WB.Music.active() ? 'Paused while your music player is on.' : 'Turn off to silence all game sounds and music. They pause by themselves while your music player is on.'}</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
+        <div class="setting pbox"><div><div id="lbl-music">Game music</div><div class="sd">Battle music and the welcome song.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-music" aria-checked="${s.settings.music !== false}" data-toggle="music"></button></div>
         <div class="setting pbox"><div><div id="lbl-rm">Reduce motion</div><div class="sd">Fewer particles and animations.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-rm" aria-checked="${!!WB.reducedMotion()}" data-toggle="reducedMotion"></button></div>
         <div class="setting pbox"><div><div>Tutorial</div><div class="sd">A guided tour of every page and feature.</div></div><div class="acts"><button class="btn ghost sm" type="button" data-act="tour">Replay tutorial</button></div></div>
         <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : !WB.store.ok() ? '<b class="warn">Not saving:</b> this browser is blocking storage, so progress is lost when you close it.' : 'Saved on this device. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
@@ -780,12 +803,12 @@
     if (d.suptab) { UI.supTab = d.suptab; return UI.renderCollection(); }
     if (d.wpnslot) { UI.wpnSlot = d.wpnslot; WB.Sfx.play('tap'); return UI.renderShop(); }
     if (d.potionBuy) { const r = G.buyPotion(d.potionBuy); UI.toast(r.ok ? { kicker: 'Purchased', title: G.potion(d.potionBuy).name, img: `pot/${d.potionBuy}.png`, cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
-    if (d.drink) { const r = G.drink(d.drink); if (r.ok) UI.toast({ kicker: 'Healed', title: WB.fmt(S().hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', img: `pot/${d.drink}.png`, cls: 'ok' }); else if (r.msg) UI.toast({ kicker: 'Not now', title: r.msg }); UI.updateHud(); return UI.render(); }
+    if (d.drink) { const r = G.drink(d.drink); if (r.ok) WB.Sfx.play('potion'); if (r.ok) UI.toast({ kicker: 'Healed', title: WB.fmt(S().hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', img: `pot/${d.drink}.png`, cls: 'ok' }); else if (r.msg) UI.toast({ kicker: 'Not now', title: r.msg }); UI.updateHud(); return UI.render(); }
     if (d.boss) { WB.BattleUI.challenge(d.boss); return; }
     if (d.claim) { const [ty, id] = d.claim.split(':'); const r = G.claimTask(ty, id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); return UI.render(); }
     if (d.buy) { const [c, id] = d.buy.split(':'); const r = G.buy(c, id); if (r.ok) UI.toast({ kicker: 'Purchased', title: G.item(c, id).name, icon: 'shop', cls: 'gold' }); else if (r.msg) UI.toast({ kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.supply) { const r = G.buySupply(d.supply); UI.toast(r.ok ? { kicker: 'Purchased', title: 'Rest Day Token', icon: 'moon', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
-    if (d.equip) { const [c, id] = d.equip.split(':'); G.equip(c, id); WB.Sfx.play('tap'); return UI.render(); }
+    if (d.equip) { const [c, id] = d.equip.split(':'); G.equip(c, id); WB.Sfx.play('equip'); return UI.render(); }
     if (d.unequip) { G.equip(d.unequip, null); return UI.render(); }
     if (d.travel) { G.travel(d.travel); return UI.go('world'); }
     if (d.wslot) {
@@ -793,7 +816,7 @@
       if (d.wsub) UI.wpnSlot = d.wsub;
       UI.supTab = d.wslot === 'weapon' ? 'weapons' : 'pets'; return UI.go('supplies');
     }
-    if (d.toggle) { const s = S(); s.settings[d.toggle] = !(d.toggle === 'reducedMotion' ? WB.reducedMotion() : s.settings[d.toggle]); document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); return UI.renderProfile(); }
+    if (d.toggle) { const s = S(); s.settings[d.toggle] = !(d.toggle === 'reducedMotion' ? WB.reducedMotion() : s.settings[d.toggle]); document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Bgm.sync(); return UI.renderProfile(); }
     switch (d.act) {
       case 'sensor-start': WB.Steps.motion.start().then(() => UI.render()); UI.render(); break;
       case 'sensor-stop': WB.Steps.motion.stop(); UI.render(); break;

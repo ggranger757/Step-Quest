@@ -41,6 +41,10 @@ Weapon projectiles, explosions and their sound effects come from the "projectile
 
 The UI icons (coins, chests, artifacts and so on) were drawn in code for this project (`js/01-icons.js`).
 
+## Sound effects and music (2.7)
+
+The action sounds, the welcome song and the battle music in `assets/sfx/` and `assets/music/` were supplied by the project owner for Stepquest (converted and trimmed by `tools/prep_sounds.py`). Confirm their license before shipping commercially.
+
 ## Software
 
 - [Capacitor](https://capacitorjs.com) (MIT) and [@capgo/capacitor-health](https://github.com/Cap-go/capacitor-health) (see each package for its license) for the installed app's step sync. They are installed by `npm install` in `native/` and are not bundled in this repository.

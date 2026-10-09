@@ -28,7 +28,7 @@
       streak: { count: 0, best: 0, lastDay: '', rest: 0, claimed: [] },
       daily: { idx: 0, lastClaim: '' },
       ach: {}, purchases: 0,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, reducedMotion: null, homeState: '' },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, music: true, reducedMotion: null, homeState: '' },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }
@@ -51,6 +51,11 @@
       s.hp = D.heroMaxHp(s.level);
       s.enc.pending = [];
       s.v = 2;
+    }
+    // the walker picked at sign-up decides the special attack; older saves: the first starter owned is the one picked
+    if (!s.starter) {
+      const starters = ['scavenger', 'wanderer', 'kunoichi'];
+      s.starter = s.owned.avatars.find((id) => starters.includes(id)) || (starters.includes(s.avatar) ? s.avatar : 'scavenger');
     }
     // v3: melee + shield slots, pet health
     if (!s.owned.weapons.includes('sw_rusty')) s.owned.weapons.push('sw_rusty');

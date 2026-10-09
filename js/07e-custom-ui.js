@@ -105,8 +105,9 @@
     if (d.cdel) { UI.cdelArm = null; C.remove(d.cdel); UI.toast({ kicker: 'Mission deleted', title: '', icon: 'check' }); return UI.render(); }
     if (d.cdone) {
       const res = C.complete(d.cdone); if (!res) return;
-      UI.toast(res.why ? { kicker: 'Mission complete', title: res.m.title + ' · no reward: ' + res.why, icon: 'check', cls: 'msg', ms: 4200 }
-        : { kicker: 'Mission complete · ' + res.r.timing, title: '+' + res.r.coins + ' coins · +' + res.r.xp + ' XP', icon: 'coin', cls: 'gold' });
+      const cheer = WB.Celebrate.fire('custom', { title: res.m.title, late: Date.now() > (res.m.lock || res.m).due }, 80);
+      UI.toast(res.why ? { kicker: 'Mission complete', title: res.m.title, sub: cheer + ' (' + res.why + ')', icon: 'check', cls: 'ok', ms: 5200 }
+        : { kicker: 'Mission complete · ' + res.r.timing, title: '+' + res.r.coins + ' coins · +' + res.r.xp + ' XP', sub: cheer, icon: 'coin', cls: 'gold', ms: 4600 });
       UI.updateHud(); UI.render();
     }
   });

@@ -21,7 +21,7 @@
     { go: tab('world'), sel: '.today', page: 'World', title: 'Today', text: 'Your steps and distance for today, and your daily goal. Reaching the goal pays a 100-coin bonus. You can change the goal in Settings.' },
     { go: tab('world'), sel: '.hpline', page: 'World', title: 'Health', text: 'Battles and failed missions cost HP. Walking does not heal: HP refills on its own over about ' + D.HEAL_MINUTES + ' minutes, or drink a healing potion to heal right away. Tap the bar to open your potions.' },
     { go: tab('world'), sel: '.sensor', page: 'World', title: 'Step counter', text: 'Stepquest counts steps with your phone’s motion sensor while it’s open. Pause it here, or use Log steps to add a walk you took with the app closed. In the installed app, steps sync from Apple Health or Health Connect automatically.' },
-    { go: tab('world'), sel: '.journey .chips', page: 'World', title: 'Quick actions', text: 'Shortcuts appear here when something needs you: encounters waiting for a decision, your daily reward, or adding music for your walk.' },
+    { go: tab('world'), sel: '.journey .chips', page: 'World', title: 'Quick actions', text: 'World map is always here: see every world, travel and challenge guardians. Other shortcuts appear when something needs you: encounters waiting for a decision, your daily reward, or adding music for your walk.' },
     { go: tab('world'), sel: '.objective', page: 'World', title: 'Next objective', text: 'The mission closest to done. Tap it to jump to Missions.' },
     { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'The next world and the level it opens at, with roughly how many steps away it is. There are ' + D.WORLDS.length + ' worlds in all.' },
     // ---------- map ----------
@@ -32,7 +32,7 @@
     { go: mis('today'), sel: () => sect('#scr-tasks', 'Daily missions'), page: 'Missions', title: 'Daily missions', text: 'Three quick goals that refresh every day at midnight.' },
     { go: mis('today'), sel: () => sect('#scr-tasks', 'Walking streak'), page: 'Missions', title: 'Streak', text: 'Your streak and its milestones. Missed a day? A Rest Day Token covers it automatically; you earn one every 7 streak days.' },
     { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'My missions', text: 'Your own real-life missions. Tap New mission, pick a template (like Daily workout or Book outline) or create your own, then set a due date and time, a difficulty and a priority. Check off steps as you go and tap Complete for coins and XP: harder, higher-priority missions finished early pay the most, and late ones pay half.' },
-    { go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' walking missions: photo hunts, gathering runs, timed walks, multi-walk missions and distance runs. Accept up to ' + D.MISSION_ACTIVE_MAX + ' from the board; you then have ' + D.MISSION_HOURS + ' hours to finish each. Miss the deadline or drop one and you lose coins and HP.' },
+    { go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' walking missions: photo hunts, gathering runs, timed walks, multi-walk missions and distance runs. Accept up to ' + D.MISSION_ACTIVE_MAX + ' from the board; you then have ' + D.MISSION_HOURS + ' hours to finish each. Miss the deadline or drop one and you lose coins and HP. Merlin, a wandering owl-mage, may also swoop down on the road with a harder ' + D.MERLIN[0].hours + '-hour quest and a big reward; his quests show at the top of this tab and never cost you anything if you turn them down.' },
     { go: mis('field'), sel: '#journal', page: 'Missions', title: 'Photo journal', text: 'Photos from your photo hunts are kept here, on this phone only. Set your home state from the link above to get your state bird and flower missions.' },
     { go: mis('adventure'), sel: () => sect('#scr-tasks', 'Adventure'), page: 'Missions', title: 'Adventure', text: 'A long chain of milestones: reach worlds, win battles, find artifacts, defeat guardians. Two are active at a time.' },
     // ---------- shop ----------
@@ -42,9 +42,9 @@
     { go: shop('weapons'), sel: '.loadout', page: 'Shop', title: 'Weapon slots', text: 'Three slots. Melee is used by Strike (your walker holds it during the attack), Ranged & magic flies at the creature and then recharges, and Shield powers Defend. Tap a slot to see and equip weapons for it.' },
     { go: shop('potions'), sel: '#scr-shop .hpcard', page: 'Shop', title: 'Potions', text: 'Healing potions restore HP right away; others guard, boost damage, recharge your weapon or explode on enemies. Drink them here or from Items in battle. Rare potions are found in the newer worlds.' },
     { go: shop('pets'), sel: '#scr-shop .grid', page: 'Shop', title: 'Pets', text: 'Pets walk beside you and fight with you, soaking 20–60% of each hit until their own HP runs out. They recover over time, just like you.' },
-    { go: col('finds'), sel: '#scr-collection .seg', page: 'Collection', title: 'Collection', text: 'Your Artifacts and Achievements. Artifacts are hidden in every world: walk and explore to find them. Achievements pay coins and XP for milestones like total steps, battles won and streaks.' },
+    { go: col('finds'), sel: '#scr-collection .seg', page: 'Inventory', title: 'Inventory', text: 'Your Artifacts and Achievements. Artifacts are hidden in every world: walk and explore to find them. Achievements pay coins and XP for milestones like total steps, battles won and streaks.' },
     // ---------- battles ----------
-    { go: tab('world'), sel: '#stage', page: 'Battles', title: 'Encounters and battles', text: 'When a creature blocks your path you can fight or avoid it. In battle: Strike with your melee weapon, Throw/Cast your ranged weapon, Defend with your shield, use Items, or Run away. Creatures brace and guardians raise wards. Winning pays coins and XP; losing costs some coins and HP.' },
+    { go: tab('world'), sel: '#stage', page: 'Battles', title: 'Encounters and battles', text: 'When a creature blocks your path you can fight or avoid it. In battle: Strike with your melee weapon, Throw/Cast your ranged weapon, Defend with your shield, use Items, or Run away. Creatures brace and guardians raise wards. From level ' + D.SPECIAL_LEVEL + ' you also get a Special attack from the walker you picked at sign-up (Scavenger: Raid, Wandering Mage: Arcane Nova, Healer: Life Drain); its gauge fills as you attack. Winning pays coins and XP; losing costs some coins and HP.' },
     // ---------- profile ----------
     { go: tab('profile'), sel: '#scr-profile .hero', page: 'Profile', title: 'Profile', text: 'Your walker, title, level, XP and HP. Tap the pencil to rename yourself.' },
     { go: tab('profile'), sel: '#scr-profile .stats', page: 'Profile', title: 'Stats', text: 'Lifetime totals: steps, distance, coins, streak, battles and guardians.' },
@@ -120,11 +120,14 @@
     onDone = done || null;
     T.active = true; el.hidden = false; document.documentElement.classList.add('touring');
     UI.histPush('tour');   // Back ends the tour
+    UI.lockScroll('tour', true);
     show(0);
   };
   T.end = (fromPop) => {
     if (!T.active) return;
     UI.histDone('tour', fromPop);
+    UI.lockScroll('tour', false);
+    WB.Bgm.stopIf('app', 1600);   // the welcome song ends with the tutorial (finished or skipped)
     T.active = false; el.hidden = true; document.documentElement.classList.remove('touring');
     S().hints.tour = true; WB.Save.queue();
     UI.go('world', { replace: true }); window.scrollTo(0, 0);

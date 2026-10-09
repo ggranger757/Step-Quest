@@ -9,6 +9,9 @@ Usage: python3 -I prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir>
   pack4_dir: New_Worlds unzipped, with the zips inside it unzipped in place
   pack5_dir: Weapons.zip unzipped (the icon sheets; the folder with the Cyrillic name is
              renamed "weapons_pack" and its Cyrillic sword sheet "MECH.png")
+  pack7_dir: Special_Attacks.zip and Wind_Blade_Attack.zip unzipped into one folder ("special/", "wind/"):
+             the three special attack effects and the Wind Blade projectile; plus "magic/fire_blast.gif" and
+             "magic/ice_shatter.gif" (spell impact bursts).
   pack6_dir: the Knight & Ranger upload unzipped ("human_knight copy", "human_ranger copy" GIF folders).
              They have no walk cycle, so one is generated from the idle frames (see walk_from_idle).
 
@@ -19,6 +22,7 @@ from PIL import Image, ImageSequence
 
 P1, P2, P3, P4, P5, OUT = sys.argv[1:7]
 P6 = sys.argv[7] if len(sys.argv) > 7 else None
+P7 = sys.argv[8] if len(sys.argv) > 8 else None   # Special_Attacks + Wind_Blade_Attack uploads, unzipped into one folder
 os.makedirs(OUT, exist_ok=True)
 MAN = {'bg': {}, 'avatars': {}, 'creatures': {}, 'pets': {}, 'npc': {}, 'weapons': {}, 'fx': {}}
 
@@ -495,6 +499,31 @@ for x in range(2, 14): px(ar, x, 2, (139, 94, 52))
 for x, y in ((14, 2), (15, 2), (16, 2), (17, 2), (14, 1), (14, 3), (15, 1), (15, 3)): px(ar, x, y, (214, 220, 230))
 for x, y in ((0, 0), (1, 1), (0, 4), (1, 3), (2, 1), (2, 3), (0, 1), (0, 3)): px(ar, x, y, (230, 80, 70))
 MAN['fx']['arrow'] = frames_strip([ar], 'wp/arrow_proj.png')
+
+# special attacks (one per starter class) and the Wind Blade
+if P7:
+    def png_frames(folder): return [load(f) for f in sorted(glob.glob(os.path.join(folder, '*.png')))]
+    sa = os.path.join(P7, 'special')
+    MAN['fx']['sa_nova'] = frames_strip(png_frames(os.path.join(sa, 'Special attack 1')), 'wp/sa_nova.png')     # Wandering Mage: shockwave ring
+    MAN['fx']['sa_drain'] = frames_strip(gif_frames(glob.glob(os.path.join(sa, 'Special attack 2', '*.gif'))[0]), 'wp/sa_drain.png')   # Healer: life orb
+    MAN['fx']['sa_raid'] = frames_strip([f for f in png_frames(os.path.join(sa, 'Special attack 3')) if f.getbbox()], 'wp/sa_raid.png')  # Scavenger: skull burst
+    wb = png_frames(os.path.join(P7, 'wind', 'Wind Blade Attack'))
+    box = None
+    for f in wb:
+        b = f.getbbox(); box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
+    wb = [f.crop(box) for f in wb]
+    # magic impact bursts (the "More animations for magic attacks" GIFs, saved as magic/fire_blast.gif and magic/ice_shatter.gif)
+    mg = os.path.join(P7, 'magic')
+    if os.path.isdir(mg):
+        MAN['fx']['fx_blast'] = frames_strip(gif_frames(os.path.join(mg, 'fire_blast.gif')), 'wp/fx_blast.png')      # fire and sun spells
+        MAN['fx']['fx_shatter'] = frames_strip(gif_frames(os.path.join(mg, 'ice_shatter.gif')), 'wp/fx_shatter.png')  # frost spells
+    # Merlin, the wandering bird who hands out hard quests (merlin/merlin.gif, 4 frames, 48 px)
+    mf = os.path.join(P7, 'merlin', 'merlin.gif')
+    if os.path.exists(mf):
+        fr = gif_frames(mf); strip_im = Image.new('RGBA', (48 * len(fr), 48))
+        for i, f in enumerate(fr): strip_im.alpha_composite(f, (i * 48, 0))
+        MAN['npc']['merlin'] = {**atlas([('idle', strip_im), ('talk', strip_im)], 'npc/merlin.png'), 'scale': 2}
+    MAN['weapons']['windblade'] = {'proj': frames_strip(wb[:4], 'wp/windblade_proj.png'), 'boom': frames_strip(wb[2:], 'wp/windblade_boom.png'), 'sfx': 'sfx/wind_blade.mp3', 'mode': 'straight'}
 
 # figure bounds of each animation's first frame ("b": [x, y, w, h]) so thumbnails crop correctly even
 # where the browser cannot read pixels back (sandboxed previews)

@@ -63,7 +63,7 @@
     if (w.type === 'bow') return { path: 'wp/arrow_proj.png', info: A.fx.arrow, mode: 'straight', boomPath: 'wp/star_boom.png', boomInfo: star.boom, sfx: null };
     if (w.type === 'knife') { const im = Assets.get(w.icon); return { path: w.icon, info: { w: im.width || 20, h: im.height || 10, n: 1 }, mode: 'spin', boomPath: 'wp/star_boom.png', boomInfo: star.boom, sfx: null }; }
     const m = A.weapons[wid];
-    return { path: `wp/${wid}_proj.png`, info: m.proj, mode: 'arc', boomPath: `wp/${wid}_boom.png`, boomInfo: m.boom, sfx: m.sfx };
+    return { path: `wp/${wid}_proj.png`, info: m.proj, mode: m.mode || 'arc', boomPath: `wp/${wid}_boom.png`, boomInfo: m.boom, sfx: m.sfx };
   };
 
   // sheet(kind, id, anim) -> { path, r (row), n (frames), fs (frame size), scale, anim, face }
@@ -478,7 +478,11 @@
         }
       } else if (e.kind === 'npc') {
         const sh = WB.sheet('npc', e.id, e.state === 'talk' ? 'talk' : 'idle'), img = Assets.ok(sh.path);
-        if (img) { WB.drawFrame(x, img, sh, Math.floor(e.f) % sh.n, sx - sh.fs / 2, g - sh.fs + 1, 1, true); top = g - 72; }
+        if (img) {
+          const sc = sh.scale, sz = sh.fs * sc, fly = e.id === 'merlin' ? Math.round(Math.sin(this.t * 2.2) * 3) - 6 : 0;   // Merlin hovers
+          WB.drawFrame(x, img, sh, Math.floor(e.f) % sh.n, sx - sz / 2, g - sz + 1 + fly, sc, true);
+          top = sc > 1 ? g - sz + sh.box[1] * sc + fly : g - 72;
+        }
       } else if (e.kind === 'chest') {
         const ic = WB.iconCanvas(e.state === 'open' || e.state === 'gone' ? 'chestopen' : 'chest');
         x.drawImage(ic, sx - ic.width, g - ic.height * 2 + 1, ic.width * 2, ic.height * 2);

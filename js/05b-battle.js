@@ -2,7 +2,9 @@
    events that the battle screen animates in order.
 
    Your moves:  Strike (melee weapon) · Throw / Shoot / Cast (ranged weapon, recharges) · Defend (shield)
-                · Items (potions) · Run away
+                · Items (potions) · Special (from level 10, when its gauge is full) · Run away
+   Specials:    Arcane Nova (mage: big hit + 3-turn stun) · Life Drain (healer: 3 turns of draining that heal
+                you, more when you're low) · Scavenger's Raid (big hit + steals a potion you can use right away)
    Its moves:   attack · brace (halves your next hit) · ward (reverses part of your next hit, guardians)
                 · charge → big special attack (guardians)
    Statuses on the creature: poison, burn, bleed (damage each turn) · freeze, stun (skips a turn)
@@ -22,9 +24,10 @@
       hero: { hp: Math.max(1, s.hp), max: G.maxHp(), atk: D.heroAtk(s.level), def: D.heroDef(s.level), lvl: s.level, guard: 0, guardF: 0.5, fury: 0, furyMult: 1.5, defend: false, reflect: false },
       pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share } : null,
       enemy: { id: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
-        poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, brace: false, ward: false, charging: false },
+        poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false },
       weapon: G.equipped('ranged') || D.WEAPONS[0], melee: G.equipped('melee') || D.weaponById.sw_rusty, shield: G.equipped('shield'),
       cooldown: 0,
+      special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
     };
     B.active = true;
     return B.st;
@@ -64,6 +67,8 @@
       default: return '';
     }
   }
+  // attacking fills the special gauge (only once it's unlocked)
+  function chargeSpecial(st, kind) { const sp = st.special; if (sp && sp.unlocked && !st.over) sp.charge = Math.min(100, sp.charge + D.SPECIAL_CHARGE[kind]); }
   const STATUS = ['poison', 'burn', 'bleed', 'freeze', 'freezeAll', 'stun', 'weaken', 'sunder', 'reflect'];
 
   // hero action, then (if the fight continues) the creature's reply and end-of-round effects
@@ -97,6 +102,7 @@
       ev.text = (crits ? 'Critical! ' : '') + m.name + (ev.hits.length > 1 ? ' hits ' + ev.hits.length + ' times for ' : ' hits for ') + ev.dmg + '.' +
         (ev.braced ? ' It braced and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + extra;
       events.push(ev);
+      chargeSpecial(st, 'strike');
     } else if (move === 'throw') {
       if (st.cooldown > 0) return events;
       const wpn = st.weapon, ev = { who: 'hero', type: 'throw', weapon: wpn.id, hits: [] };
@@ -117,6 +123,27 @@
       ev.text = wpn.name + (ev.hits.some((x) => x.crit) ? ' crits' : ev.hits.length > 1 ? ' hits ' + ev.hits.length + ' times' : verb) + ' for ' + ev.dmg + '.' +
         (ev.braced ? ' It braced and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + extra;
       st.cooldown = wpn.cd + 1;
+      events.push(ev);
+      chargeSpecial(st, 'throw');
+    } else if (move === 'special') {
+      const sp = st.special;
+      if (!sp.unlocked || sp.charge < 100) return events;
+      sp.charge = 0;
+      const lvl = h.lvl, ev = { who: 'hero', type: 'spAttack', sp: sp.id };
+      if (sp.id === 'nova') {
+        strikeEnemy(st, hit(h.atk * (1.8 + lvl * 0.04) * mult), ev, true);
+        if (e.hp > 0) e.stun = 3;
+        ev.text = 'Arcane Nova blasts for ' + ev.dmg + '!' + (e.hp > 0 ? ' ' + e.name + ' is stunned for 3 turns.' : '');
+      } else if (sp.id === 'drain') {
+        e.drain = 3;
+        ev.text = 'Life Drain takes hold: for 3 turns you drain ' + e.name + ' and heal' + (h.hp < h.max * 0.5 ? ', faster while you’re low.' : '.');
+      } else {
+        strikeEnemy(st, hit(h.atk * (1.4 + lvl * 0.035) * mult), ev, true);
+        const tier = Math.min(D.RAID_LOOT.length - 1, st.world.tier || 0), s = WB.state;
+        const id = D.RAID_LOOT[tier][Math.floor(Math.random() * D.RAID_LOOT[tier].length)], p = D.POTIONS.find((x) => x.id === id);
+        if ((s.potions[id] || 0) < D.POTION_MAX) { s.potions[id] = (s.potions[id] || 0) + 1; ev.loot = id; ev.text = 'Scavenger’s Raid hits for ' + ev.dmg + ' and snatches a ' + p.name + '! Use it from Items.'; }
+        else { const c = 15 + 10 * tier; s.coins += c; ev.lootCoins = c; ev.text = 'Scavenger’s Raid hits for ' + ev.dmg + '. Your bag is full of ' + p.name + ', so you pocket ' + c + ' coins instead.'; }
+      }
       events.push(ev);
     } else if (move === 'defend') {
       h.defend = true;
@@ -161,6 +188,12 @@
     // ---- end of round
     for (const [k, frac, label] of [['poison', 0.08, 'Poison deals '], ['burn', 0.07, 'The burn deals '], ['bleed', 0.06, 'Bleeding deals ']]) {
       if (e.hp > 0 && e[k] > 0) { const d = Math.max(2, Math.round(e.max * frac)); e.hp = Math.max(0, e.hp - d); e[k]--; events.push({ who: 'enemy', type: 'dot', dot: k, dmg: d, text: label + d + '.' }); }
+    }
+    if (e.hp > 0 && e.drain > 0) {   // Life Drain: takes HP from the creature and gives it to you
+      const d = Math.min(e.hp, Math.max(2, Math.round(h.atk * (0.55 + h.lvl * 0.03)))), low = h.hp < h.max * 0.5;
+      e.hp = Math.max(0, e.hp - d); e.drain--;
+      const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(d * (low ? 1.5 : 1)));
+      events.push({ who: 'hero', type: 'drain', dmg: d, heal: h.hp - b0, left: e.drain, text: 'Life Drain takes ' + d + (h.hp - b0 ? ' and heals you ' + (h.hp - b0) : '') + '.' + (e.drain ? ' ' + e.drain + ' more turn' + (e.drain > 1 ? 's' : '') + '.' : '') });
     }
     if (e.weaken > 0) e.weaken--;
     if (e.sunder > 0) e.sunder--;

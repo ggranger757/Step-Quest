@@ -21,8 +21,11 @@
   };
   const blocked = () => WB.BUILD === 'artifact'; // the claude.ai preview can't embed other sites
 
+  // the player's own music is on: game sounds and game music step aside (WB.Sfx.muted, WB.Bgm)
+  M.active = () => { const mu = WB.state && WB.state.music; return !!(mu && mu.url && M.parse(mu.url) && !blocked()); };
   M.render = () => {
     const el = $('#music'), mu = S().music, p = mu.url && M.parse(mu.url);
+    if (WB.Bgm) WB.Bgm.sync();
     if (!p) { el.hidden = true; el.innerHTML = ''; el._embed = null; return; }
     el.hidden = false;
     const prov = PROVIDERS[p.provider], open = mu.open !== false;
