@@ -13,14 +13,14 @@
     if (!S().onboarded) intro();
     else startApp(welcome);
     WB.Cloud.init();
-    // once a minute (and whenever the app comes back): new day, HP refilling over time, mission deadlines
+    // every 15 seconds (and whenever the app comes back): new day, HP refilling over time, mission deadlines
     const tick = () => {
       const d = S().today.day, hp = S().hp, act = S().missions.active.length;
-      G.rollDay(); G.regen(); G.checkMissions();
+      G.rollDay(); G.regen(); G.checkMissions(); WB.Custom.check();
       if (d !== S().today.day || hp !== S().hp || act !== S().missions.active.length) { WB.Save.queue(); UI.updateHud(); UI.soon(); }
     };
     tick();
-    setInterval(tick, 60000);
+    setInterval(tick, 15000);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tick(); });
     const save = () => { if (S().onboarded) G.markSeen(); WB.Save.now(); };
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
@@ -47,7 +47,11 @@
     WB.view.start();
     if (welcome && welcome.length) showWelcome(welcome);
     // installed app: sync steps from Apple Health / Health Connect (offer it once if not connected yet)
-    WB.Health.init().then(() => { if (WB.Health.status === 'off' && !S().hints.health && S().onboarded) UI.healthSheet(); });
+    const offerHealth = () => { if (WB.Health.status === 'off' && !S().hints.health && S().onboarded) UI.healthSheet(); };
+    const health = WB.Health.init();
+    // first launch (and players who haven't seen it yet): the guided tour, then the health-sync offer
+    if (S().onboarded && !S().hints.tour) setTimeout(() => WB.Tour.start(() => health.then(offerHealth)), 700);
+    else health.then(offerHealth);
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
     G.markSeen();

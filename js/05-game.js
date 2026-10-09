@@ -29,12 +29,12 @@
     if (v < before) WB.bus.emit('hpLoss', { who: 'pet', id, amount: before - v });
   };
   G.healPets = (n) => { for (const id of Object.keys(S().petHp)) G.setPetHp(id, G.petHp(id) + n); };
-  // HP does not come back from walking: it refills slowly over time (empty to full in D.HEAL_HOURS),
+  // HP does not come back from walking: it refills slowly over time (empty to full in D.HEAL_MINUTES),
   // even while the app is closed, or instantly with potions. Pets recover the same way. Never mid-battle.
   G.regen = (now = Date.now()) => {
     const s = S(), last = s.hpAt || now; s.hpAt = now;
     if (WB.Battle && WB.Battle.active) return;
-    const part = Math.max(0, now - last) / (D.HEAL_HOURS * 3600000);   // fraction of max HP earned
+    const part = Math.max(0, now - last) / (D.HEAL_MINUTES * 60000);   // fraction of max HP earned
     if (!part) return;
     s.frac.hp = (s.frac.hp || 0) + part * G.maxHp();
     const n = Math.floor(s.frac.hp); s.frac.hp -= n;
@@ -48,7 +48,7 @@
     }
   };
   // minutes until full health (for the UI)
-  G.minsToFull = () => { const s = S(), miss = G.maxHp() - s.hp; return miss <= 0 ? 0 : Math.ceil(((miss - (s.frac.hp || 0)) / G.maxHp()) * D.HEAL_HOURS * 60); };
+  G.minsToFull = () => { const s = S(), miss = G.maxHp() - s.hp; return miss <= 0 ? 0 : Math.ceil(((miss - (s.frac.hp || 0)) / G.maxHp()) * D.HEAL_MINUTES); };
   // ---------- weapons: three slots ----------
   G.slotKey = (slot) => (slot === 'ranged' ? 'weapon' : slot);             // equip.weapon is the ranged slot (saves from v1/v2)
   G.equipped = (slot) => D.weaponById[S().equip[G.slotKey(slot)]] || null;

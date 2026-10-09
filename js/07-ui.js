@@ -159,7 +159,7 @@
           <span class="of">of ${WB.fmt(goal)} steps \u00b7 ${WB.fmtKm(td.meters)}</span>
         </div>
         <div class="bar seg ok" role="progressbar" aria-label="Daily goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct}%"></i></div>
-        <div class="earnrate"><span>${WB.icon('coin', 2)}1 coin / 10 steps</span><span>${WB.icon('xp', 2)}1 XP / 5 steps</span><span>${WB.icon('heart', 2)}HP refills over ${D.HEAL_HOURS}h</span></div>
+        <div class="earnrate"><span>${WB.icon('coin', 2)}1 coin / 10 steps</span><span>${WB.icon('xp', 2)}1 XP / 5 steps</span></div>
         <button class="hpline" type="button" data-act="heal-info" aria-label="Health ${WB.fmt(s.hp)} of ${WB.fmt(G.maxHp())}. Open potions.">
           <span class="lbl">HP</span><span class="bar hp ${s.hp / G.maxHp() < 0.3 ? 'low' : ''}"><i style="width:${(s.hp / G.maxHp()) * 100}%"></i></span><span class="num">${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())}</span>
         </button>
@@ -357,6 +357,7 @@
         <div class="cal">${cal}</div>
         ${canDaily ? `<button class="btn gold block" type="button" data-act="daily">Claim day ${(ci % 7) + 1} reward</button>` : ''}
       </div>
+      ${UI.customSection ? UI.customSection() : ''}
       ${UI.missionsSection ? UI.missionsSection() : ''}
       <div class="sect"><h3>Daily missions <span class="aside">New missions in ${hh}h ${mm}m</span></h3>
         <div class="list">${s.tasks.daily.map((d) => taskRow(G.dailyDef(d.id), 'daily', d.claimed)).join('')}</div>
@@ -477,7 +478,7 @@
         ${GROUPS[slot].map(([type, label]) => { const list = D.WEAPONS.filter((w) => w.slot === slot && w.type === type); return list.length ? `<div class="sect"><h3>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h3><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('')}`;
     } else if (tab === 'potions') {
       const hp = s.hp, max = G.maxHp();
-      body = `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">${hp >= max ? 'Full health.' : 'Full in about ' + UI.dur(G.minsToFull()) + '.'} Walking does not heal: HP refills slowly on its own (empty to full in ${D.HEAL_HOURS} hours), or drink a potion to heal now.</p></div>
+      body = `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">${hp >= max ? 'Full health.' : 'Full in about ' + UI.dur(G.minsToFull()) + '.'} Walking does not heal: HP refills on its own (empty to full in ${D.HEAL_MINUTES} minutes), or drink a potion to heal now.</p></div>
         ${(() => {
           const card = (p) => {
             const have = s.potions[p.id] || 0, st = G.reqStatus(p.req), locked = !st.met && !st.buy, short = p.cost - s.coins, full = have >= D.POTION_MAX;
@@ -598,12 +599,13 @@
         <div class="setting pbox"><div><label for="set-stride">Stride length</label><div class="sd">Used to turn steps into distance.</div></div><select id="set-stride">${opt([0.6, 0.65, 0.7, 0.76, 0.8, 0.85, 0.9], s.settings.stride, (v) => v.toFixed(2) + ' m')}</select></div>
         <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Game sounds mix with your music instead of pausing it.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
         <div class="setting pbox"><div><div id="lbl-rm">Reduce motion</div><div class="sd">Fewer particles and animations.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-rm" aria-checked="${!!WB.reducedMotion()}" data-toggle="reducedMotion"></button></div>
+        <div class="setting pbox"><div><div>Tutorial</div><div class="sd">A guided tour of every page and feature.</div></div><div class="acts"><button class="btn ghost sm" type="button" data-act="tour">Replay tutorial</button></div></div>
         <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : 'Saved on this device. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
       </div>
       <div class="about pbox card"><span class="lbl">About</span>
         <div>Stepquest turns real steps into an adventure. Steps are counted by your phone’s motion sensor while the app is open, or logged from your Health app.</div>
         <div>Pixel art, creatures, characters and battle effects by <a href="https://craftpix.net" target="_blank" rel="noopener">CraftPix.net</a> (free license). Fonts: Jersey 10, Pixelify Sans and Silkscreen (SIL Open Font License).</div>
-        <button class="linkbtn ver" type="button" id="ver">Version ${WB.esc(WB.VERSION || '2.5.0')}</button>
+        <button class="linkbtn ver" type="button" id="ver">Version ${WB.esc(WB.VERSION || '2.6.0')}</button>
       </div>
     </div>`;
     UI.animate($('#pf-av'), 'av', s.avatar, 'idle', s.skin);

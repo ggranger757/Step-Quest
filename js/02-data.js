@@ -5,7 +5,7 @@
   D.PX_PER_STEP = 18;          // native pixels of ground scroll per real step
   D.COINS_PER_STEP = 0.1;      // 1 Walk Coin per 10 steps
   D.XP_PER_STEP = 0.2;         // 1 XP per 5 steps
-  D.HEAL_HOURS = 6;            // HP refills on its own over time (empty to full in 6 hours); walking does not heal
+  D.HEAL_MINUTES = 15;         // HP refills on its own over time (empty to full in 15 minutes); walking does not heal
   D.DEFAULT_STRIDE_M = 0.76;
 
   // parallax for the 576x324 packs: layer 1 is sky, the last layer is the ground you walk on

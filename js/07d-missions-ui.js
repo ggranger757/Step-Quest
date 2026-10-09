@@ -98,11 +98,11 @@
   };
   async function showPhoto(id) {
     const r = (await J.all()).find((x) => x.id === id); if (!r) return;
-    UI.sheet(`<h2>${WB.esc(r.title)}</h2><img class="jr-big" src="${r.src}" alt="${WB.esc(r.title)}"><p class="fine">Mission #${r.n} · ${new Date(r.at).toLocaleDateString()}</p>`);
+    UI.sheet(`<h3 id="sheet-title">${WB.esc(r.title)}</h3><img class="jr-big" src="${r.src}" alt="${WB.esc(r.title)}"><p class="fine">Mission #${r.n} · ${new Date(r.at).toLocaleDateString()}</p>`);
   }
   function stateSheet() {
     const cur = S().settings.homeState;
-    UI.sheet(`<h2>Home state</h2><p>Used for your state bird and state flower missions.</p>
+    UI.sheet(`<h3 id="sheet-title">Home state</h3><p>Used for your state bird and state flower missions.</p>
       <div class="setting pbox"><div><label for="set-state">State</label></div><select id="set-state"><option value="">Outside the US / not set</option>${D.STATES.map((x) => `<option value="${x.id}" ${x.id === cur ? 'selected' : ''}>${WB.esc(x.name)}</option>`).join('')}</select></div>
       <div class="m-state" id="m-state"></div>`, (b) => {
       const show = () => { const st = G.homeState(); $('#m-state', b).innerHTML = st ? `<p class="fine">State bird: <b>${WB.esc(st.bird)}</b><br>State flower: <b>${WB.esc(st.flower)}</b></p>` : ''; };

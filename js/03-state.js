@@ -24,6 +24,7 @@
       enc: { next: 120, seq: 0, pending: [], count: 0, fights: 0, battles: 0, losses: 0, chests: 0, cards: {}, finds: {} },
       tasks: { day: '', daily: [], advDone: [], quests: [] },
       missions: { active: [], done: [], skip: [] },
+      custom: { list: [], history: [], day: '', paid: 0, done: 0 },
       streak: { count: 0, best: 0, lastDay: '', rest: 0, claimed: [] },
       daily: { idx: 0, lastClaim: '' },
       ach: {}, purchases: 0,
@@ -36,7 +37,7 @@
     const f = fresh();
     // shallow-merge defaults so new fields appear for old saves
     for (const k of Object.keys(f)) if (s[k] === undefined) s[k] = f[k];
-    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'streak', 'daily', 'settings', 'seen', 'music', 'health'])
+    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'streak', 'daily', 'settings', 'seen', 'music', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];
     // v2: dyes and auras were retired. Refund what was bought, drop the rest.
     if (s.v < 2) {

@@ -79,7 +79,7 @@ Some creatures are aggressive. When one blocks the path you can fight or avoid i
 - **Pets** fight with you: your pet soaks 20–60% of every hit until its own HP runs out, then it's knocked out until its HP refills over time. Every HP change floats over whoever took it as "-N HP" / "+N HP".
 - **Items** drinks a potion. **Run away** may fail.
 - Losing costs some coins (about 5–10% of what you carry, capped by the world) and drops your HP to 25%.
-- **Walking does not heal.** HP refills slowly on its own, from empty to full in 6 hours (`D.HEAL_HOURS`), even while the app is closed, or instantly with a healing potion. Pets recover the same way. A level-up raises your max HP but only tops you up if you were unhurt.
+- **Walking does not heal.** HP refills on its own, from empty to full in 15 minutes (`D.HEAL_MINUTES`), even while the app is closed, or instantly with a healing potion. Pets recover the same way. A level-up raises your max HP but only tops you up if you were unhurt.
 - Exploring a world to 100% wakes its **guardian**. Challenge it from the world map. Defeating guardians unlocks the legendary weapons.
 
 Weapons, potions, pets, artifacts and achievements live on the **Supplies** tab. Avatars and trails are in the **Shop**.
@@ -97,6 +97,16 @@ The **Missions** tab has the daily reward, daily missions, the adventure chain, 
 - **Distance runs (60):** cover a distance (it uses your stride setting).
 
 The board offers the next four in order. You can run three at a time, and you can skip or drop missions (they go to the back of the line). They get longer as you go, from about 650 steps to roughly 12,000, and every 25th pays a potion too. Set your **home state** (link on the Missions tab) to see your official state bird and flower. Missions live in `js/02c-missions.js`: edit the content lists there to change subjects, items or pacing.
+
+### My missions
+
+Players can turn real-life goals into missions. **New mission** offers 15 templates (daily workout, book outline, reading, study session, clean & tidy, meal prep, language or instrument practice, meditate & stretch, budget check-in, journal, job application, creative or coding project, call someone) or **Create your own**. Every mission has a name, optional notes, an optional checklist, a **due date and time** (with Tonight / Tomorrow / In 3 days / Next week shortcuts), a **difficulty** and a **priority**.
+
+Completing one pays coins and XP: the difficulty sets the base (Easy 30 coins / 40 XP, Medium 60 / 80, Hard 110 / 150, Epic 200 / 280), the priority multiplies it (Low ×1, Medium ×1.15, High ×1.3, Urgent ×1.5), and the timing adjusts it: finishing early earns up to +25% (more the earlier you finish), on time pays in full, and late pays half. The form previews the reward. To stop farming, a mission can be completed once it's 15 minutes old, and up to 6 created missions pay out per day (more can be completed without a reward). Overdue missions get a one-time reminder; there is no penalty beyond the halved reward. Templates and numbers live in `js/05d-custom.js`.
+
+## Tutorial and tips
+
+New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, the Shop, every Supplies section, battles and the Profile. It can be skipped and replayed from Profile → Settings → Tutorial. The first time a player's HP drops to 35% or below, a one-time tip explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal).
 
 ## Worlds and levels
 
@@ -138,11 +148,14 @@ js/04b-health.js         automatic step sync (Apple Health / Health Connect) in 
 js/05-game.js            game rules: rewards, leveling, streaks, missions, encounters, shop, HP
 js/05b-battle.js         battle rules (pure logic: moves, weapons, status effects, guardians)
 js/05c-missions.js       field mission rules (progress, board, photo proof)
+js/05d-custom.js         your own missions: templates, due dates, difficulty, priority, rewards
 js/06-engine.js          canvas renderer: parallax worlds, avatar, pets, particles
 js/07-ui.js              screens, HUD, sheets, toasts
 js/07b-battle-ui.js      battle screen
 js/07c-music.js          Spotify / Apple Music player
 js/07d-missions-ui.js    field missions on the Missions tab, camera flow, photo journal
+js/07e-custom-ui.js      "My missions": create, edit, check off and complete your own missions
+js/07f-tour.js           the guided tutorial and the one-time low-health tip
 js/08-main.js            startup, onboarding, developer panel
 assets/bg/               world layers (each scene at most 300 px tall)
 assets/av/               avatar sprite atlases (one row per animation)

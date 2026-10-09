@@ -363,7 +363,7 @@
       body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}</div>`;
     } else if (res.result === 'lose') {
       title = 'Knocked down';
-      body = `<p>${res.lostCoins ? 'You dropped ' + WB.fmt(res.lostCoins) + ' coins as you fell. ' : ''}Walking won’t heal you: your HP refills slowly over time (full in about ${WB.UI.dur(WB.Game.minsToFull())}), or drink a potion.${enc.boss ? ' The guardian waits on the world map.' : ''}${petNote}</p>${res.lostCoins ? `<div class="outcome"><span class="reward-pill lost">${WB.icon('coin', 2)}-${WB.fmt(res.lostCoins)}</span></div>` : ''}`;
+      body = `<p>${res.lostCoins ? 'You dropped ' + WB.fmt(res.lostCoins) + ' coins as you fell. ' : ''}Walking won’t heal you: your HP refills on its own (full in about ${WB.UI.dur(WB.Game.minsToFull())}), or drink a potion.${enc.boss ? ' The guardian waits on the world map.' : ''}${petNote}</p>${res.lostCoins ? `<div class="outcome"><span class="reward-pill lost">${WB.icon('coin', 2)}-${WB.fmt(res.lostCoins)}</span></div>` : ''}`;
       if (res.lostCoins) floater('-' + WB.fmt(res.lostCoins) + ' coins', 'hero', 'coinloss');
     } else {
       title = 'You got away';
