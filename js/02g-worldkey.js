@@ -61,7 +61,7 @@
 
   // ---------- the eighteen Worldkeys (assets/wk/keyNN.png) ----------
   // Every key has its own personality. Key 18, the Rookie, is the one every walker starts with; the rest are
-  // earned: reach the level, then buy it (Shop → Bag → Worldkey → Worldkeys).
+  // earned: reach the level, then buy it (Inventory → Worldkey → Worldkeys).
   // each key's screen color (sampled from its art): tuning symbols light up in it
   const HUES = ["#77ff26", "#ff3230", "#31cdff", "#ff8520", "#ff8520", "#a0ff24", "#ff6fb1", "#ff3230", "#37e0dc", "#77ff26", "#77ff26", "#ff3230", "#ff8520", "#8be528", "#ff6fb1", "#31cdff", "#ffef29", "#a0ff24"];
   D.WK_LOOKS = [
@@ -89,7 +89,7 @@
       tuneOk: ['Frequency locked. You have the memory of a goldfish with ambition.', 'Resonance stable. I will pretend that was easy.'],
       tuneFail: ['That was not the frequency. That was noise. Again.', 'Close. Also completely wrong. Try again.'],
       craft: ['{dm}, freshly contained. Please stop shaking it.', 'You made {dm}. And you only lost some health. Bargain.'],
-      needFuel: ['We are short on dimensional fuel. The Forge, under Shop → Artifacts, is your next stop.', 'No charge, no portal. The Forge is that way.'],
+      needFuel: ['We are short on dimensional fuel. Next stop: the Forge, in Inventory → Artifacts.', 'No charge, no portal. The Forge is that way.'],
       notTuned: ['Power is adequate. Frequency alignment, however, is a disaster.', 'I have the energy. I do not have the tune. That part is you.'],
       milestone: ['{pct}% of {world} explored. Not bad for someone who walks into walls.', '{pct}% done. I would clap if I had hands.'],
       nearDone: ['Almost through {world}. I can hear the next world humming.', 'Only a little farther. The next frequency is getting loud.'],
@@ -169,7 +169,7 @@
       tuneOk: ['We matched the world’s song! Together!', 'I felt that click. We’re tuned!'],
       tuneFail: ['Hmm, that wasn’t it. Let’s try again. I believe in us.', 'Almost! Watch my screen one more time.'],
       craft: ['{dm}! It hums like I do.', 'You made {dm}. Are you okay? That looked like it hurt.'],
-      needFuel: ['I need Darkmatter to open the next door. The Forge is under Shop → Artifacts.', 'No fuel yet. The Forge can make some.'],
+      needFuel: ['I need Darkmatter to open the next door. The Forge is in Inventory → Artifacts.', 'No fuel yet. The Forge can make some.'],
       notTuned: ['I have the energy, but I don’t know {world}’s song yet.', 'Ready to go, once we learn the tune.'],
       milestone: ['{pct}% of {world}! We’re really doing this.', '{pct}% explored. I’m keeping notes.'],
       nearDone: ['We’re almost through {world}. I can hear something new out there.', 'So close to the edge of {world}!'],

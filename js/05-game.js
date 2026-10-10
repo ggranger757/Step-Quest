@@ -422,7 +422,7 @@
       e.nemesis = true; s.enc.nemesisAt = Date.now();
       const c = D.CREATURES[e.creature], b = D.BOSSES[e.creature];
       e.text = 'The air goes cold. ' + c.name + ' ' + c.verb + '! “' + WB.pick(b.lines.intro) + '”';
-      e.choices = [{ id: 'battle', label: 'Battle', hint: 'Boss · Lv ' + D.bossStats(e.creature, s.level).lvl }, { id: 'avoid', label: 'Try to slip away', hint: '50% to escape · losing one costs ' + D.BOSS_LEVEL_LOSS + ' levels' }];
+      e.choices = [{ id: 'battle', label: 'Battle', hint: 'Boss · Lv ' + D.bossStats(e.creature, s.level).lvl }, { id: 'avoid', label: 'Try to slip away', hint: '50% chance to escape · a loss costs ' + D.BOSS_LEVEL_LOSS + ' levels' }];
     } else if (type === 'creature') {
       const hostile = w.pool.filter((c) => D.CREATURES[c].aggressive);
       // half the time a fighting creature (they start battles), half the time a harmless one; always a fighter for
@@ -564,7 +564,7 @@
         break;
       }
       case 'druid:quiz': out.quiz = e.quiz = e.quiz || G.druidQuestion(); return out;   // the UI asks it; G.answerDruid settles it
-      case 'druid:avoid': out.text = 'The druid shrugs and melts back into the trees.'; out.anim = 'leave'; break;
+      case 'druid:avoid': out.text = 'The Druid shrugs and melts back into the trees.'; out.anim = 'leave'; break;
       case 'merlin:trade': {
         const r = G.tradeEggs(e.trade, true); out.anim = 'talk';
         if (r) { out.reward = r.reward; out.eggTrade = r.trade.id; out.text = '“Splendid eggs! Here’s your ' + r.trade.name + '.”'; }
@@ -692,7 +692,7 @@
   };
   G.buySupply = (id) => {
     const s = S(), it = D.SUPPLIES.find((x) => x.id === id);
-    if (id === 'rest' && s.streak.rest >= D.SHIELD_MAX) return { ok: false, msg: 'You already hold ' + D.SHIELD_MAX + ' Streak Shields, the most you can carry.' };
+    if (id === 'rest' && s.streak.rest >= D.SHIELD_MAX) return { ok: false, msg: 'You already carry the maximum of ' + D.SHIELD_MAX + ' Streak Shields.' };
     if (s.coins < it.cost) return { ok: false, msg: 'You need ' + WB.fmt(it.cost - s.coins) + ' more coins.' };
     s.coins -= it.cost; s.purchases++;
     if (id === 'rest') s.streak.rest++;

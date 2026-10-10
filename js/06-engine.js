@@ -106,38 +106,105 @@
     return out;
   }
   WB.hasSkin = (avatarId) => !!D.SKIN_MAP[avatarId];
+  WB.hasOutfit = (avatarId) => !!D.OUTFIT_MAP[avatarId];
+  // the player's outfit dyes for a walker: { o, t } dye ids (missing = the walker's own colors)
+  WB.outfitOf = (avatarId) => (WB.state && WB.state.outfit && WB.state.outfit[avatarId]) || {};
+
+  // ---- outfit dyes: move a group of colors onto a dye's hue, keeping the art's own light and dark steps ----
+  const rgb2hsl = (n) => {
+    const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    if (!d) return [0, 0, l];
+    const s = d / (1 - Math.abs(2 * l - 1));
+    const h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [h * 60, s, l];
+  };
+  const hsl2rgb = (h, s, l) => {
+    const c = (1 - Math.abs(2 * l - 1)) * s, hp = h / 60, x = c * (1 - Math.abs((hp % 2) - 1)), m = l - c / 2;
+    const [r, g, b] = hp < 1 ? [c, x, 0] : hp < 2 ? [x, c, 0] : hp < 3 ? [0, c, x] : hp < 4 ? [0, x, c] : hp < 5 ? [x, 0, c] : [c, 0, x];
+    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+  };
+  /* counts: Map color -> pixels in the sheet. The group's average lightness lands near the dye's own
+     (nudged a little toward the original, so a dark coat stays a touch darker than a light shirt), and every
+     shade keeps its distance from that average, so folds, highlights and shadows survive the swap. */
+  function dyeTable(colors, counts, dye) {
+    const [hT, sT, lT] = rgb2hsl(hex2int(dye.hex));
+    let sum = 0, n = 0;
+    colors.forEach((c) => { const k = counts.get(c) || 0; sum += rgb2hsl(c)[2] * k; n += k; });
+    if (!n) return new Map();
+    const mean = sum / n, target = lT + (mean - lT) * 0.25;
+    const out = new Map();
+    colors.forEach((c) => {
+      const l = Math.min(0.94, Math.max(0.05, target + (rgb2hsl(c)[2] - mean) * 1.15));
+      const s = sT * (1 - 0.45 * Math.max(0, Math.abs(l - 0.5) * 2 - 0.3));   // a little less color at the very dark and very light ends
+      out.set(c, hsl2rgb(hT, s, l));
+    });
+    return out;
+  }
+
+  // keep only the most recent recolored sheets (big sheets are a few MB each)
+  const cacheKeys = [];
+  const remember = (key, c) => {
+    tintCache[key] = c; cacheKeys.push(key);
+    while (cacheKeys.length > 24) delete tintCache[cacheKeys.shift()];
+    return c;
+  };
   WB.recolor = (img, path, skinId) => {
     const avatarId = (path.match(/^av\/([a-z0-9]+)\.png$/) || [])[1];
-    const map = avatarId && D.SKIN_MAP[avatarId];
+    if (!avatarId) return img;
+    const map = D.SKIN_MAP[avatarId];
     const tone = skinId && map && D.SKIN_TONES.find((t) => t.id === skinId);
-    if (!tone) return img;
-    const key = path + '|' + tone.id;
+    const om = D.OUTFIT_MAP[avatarId], worn = WB.outfitOf(avatarId);
+    const dyes = om ? ['o', 't'].filter((k) => om[k] && D.dyeById[worn[k]]) : [];
+    if (!tone && !dyes.length) return img;
+    const key = path + '|' + (tone ? tone.id : '') + '|' + dyes.map((k) => k + worn[k]).join(',');
     if (tintCache[key]) return tintCache[key];
     const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
     const x = c.getContext('2d'); x.drawImage(img, 0, 0);
     try {
       const fs = WB.ASSETS.avatars[avatarId].fs, W = c.width, H = c.height, data = x.getImageData(0, 0, W, H), p = data.data;
-      const all = new Set((map.all || []).map(hex2int)), head = new Set((map.head || []).map(hex2int)), feet = new Set((map.feet || []).map(hex2int));
-      const table = skinTable([...(map.all || []), ...(map.head || []), ...(map.feet || [])].filter((v, i, a) => a.indexOf(v) === i), tone.ramp);
-      const headPx = map.headPx || 22, cols = Math.ceil(W / fs), rows = Math.round(H / fs);
+      const cols = Math.ceil(W / fs), rows = Math.round(H / fs);
+      // skin
+      const all = new Set(tone ? (map.all || []).map(hex2int) : []), head = new Set(tone ? (map.head || []).map(hex2int) : []), feet = new Set(tone ? (map.feet || []).map(hex2int) : []);
+      const table = tone ? skinTable([...(map.all || []), ...(map.head || []), ...(map.feet || [])].filter((v, i, a) => a.indexOf(v) === i), tone.ramp) : new Map();
+      const headPx = (map && map.headPx) || 22;
+      // outfit: color -> [rgb, below-head-only]
+      const dyeMap = new Map();
+      if (dyes.length) {
+        const counts = new Map(), wanted = new Set();
+        dyes.forEach((k) => om[k].forEach((h) => wanted.add(hex2int(h.replace('^', '')))));
+        for (let i = 0; i < p.length; i += 4) if (p[i + 3]) { const col = (p[i] << 16) | (p[i + 1] << 8) | p[i + 2]; if (wanted.has(col)) counts.set(col, (counts.get(col) || 0) + 1); }
+        dyes.forEach((k) => {
+          const list = om[k].map((h) => [hex2int(h.replace('^', '')), h[0] === '^']);
+          const t = dyeTable(list.map((e) => e[0]), counts, D.dyeById[worn[k]]);
+          list.forEach(([col, body]) => { if (t.has(col)) dyeMap.set(col, [t.get(col), body]); });
+        });
+      }
+      let bodyOnly = false; dyeMap.forEach((v) => { if (v[1]) bodyOnly = true; });
       for (let r = 0; r < rows; r++) for (let f = 0; f < cols; f++) {
-        const x0 = f * fs, y0 = r * fs;
-        let top = -1;
-        if (head.size) {
-          for (let yy = y0; yy < y0 + fs && top < 0; yy++) for (let xx = x0; xx < Math.min(W, x0 + fs); xx++) if (p[(yy * W + xx) * 4 + 3] > 0) { top = yy; break; }
+        const x0 = f * fs, y0 = r * fs, x1 = Math.min(W, x0 + fs);
+        // the figure's top and bottom in this frame (for the head band)
+        let top = -1, bot = -1;
+        if (head.size || bodyOnly) {
+          for (let yy = y0; yy < y0 + fs && top < 0; yy++) for (let xx = x0; xx < x1; xx++) if (p[(yy * W + xx) * 4 + 3] > 0) { top = yy; break; }
+          for (let yy = y0 + fs - 1; yy >= y0 && bot < 0; yy--) for (let xx = x0; xx < x1; xx++) if (p[(yy * W + xx) * 4 + 3] > 0) { bot = yy; break; }
         }
-        for (let yy = y0; yy < y0 + fs; yy++) for (let xx = x0; xx < Math.min(W, x0 + fs); xx++) {
+        const neck = top >= 0 ? top + Math.max(4, Math.round((bot - top) * 0.22)) : y0;
+        for (let yy = y0; yy < y0 + fs; yy++) for (let xx = x0; xx < x1; xx++) {
           const i = (yy * W + xx) * 4;
           if (p[i + 3] === 0) continue;
           const col = (p[i] << 16) | (p[i + 1] << 8) | p[i + 2];
-          const isSkin = all.has(col) || (head.has(col) && top >= 0 && yy < top + headPx) || (feet.has(col) && yy >= y0 + fs - 14);
-          if (!isSkin) continue;
-          const t = table.get(col); if (t) { p[i] = t[0]; p[i + 1] = t[1]; p[i + 2] = t[2]; }
+          if (tone && (all.has(col) || (head.has(col) && top >= 0 && yy < top + headPx) || (feet.has(col) && yy >= y0 + fs - 14))) {
+            const t = table.get(col); if (t) { p[i] = t[0]; p[i + 1] = t[1]; p[i + 2] = t[2]; }
+            continue;
+          }
+          const d = dyeMap.get(col);
+          if (d && (!d[1] || yy >= neck)) { p[i] = d[0][0]; p[i + 1] = d[0][1]; p[i + 2] = d[0][2]; }
         }
       }
       x.putImageData(data, 0, 0);
     } catch (e) { return img; } // a tainted canvas (sandboxed viewers) keeps the original colors
-    return (tintCache[key] = c);
+    return remember(key, c);
   };
 
   // bounding box of a sheet's first frame (for portraits / thumbnails); falls back to the whole frame

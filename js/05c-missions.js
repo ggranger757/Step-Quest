@@ -31,7 +31,7 @@
   const missionDesc = (m) => {
     switch (m.kind) {
       case 'photo': return 'Walk ' + fmt(m.steps) + ' steps, then snap a photo' + (m.merlin ? ' of ' + m.subject : '') + '. ' + (D.MISSION_CAT_HINT[m.cat] || '') + (m.cat === 'state' && !G.homeState() ? ' Set your home state in Profile to see which one.' : '');
-      case 'gather': return 'Walk ' + fmt(m.steps) + ' steps. ' + m.item + ' turn up along the way as you walk.';
+      case 'gather': return 'Walk ' + fmt(m.steps) + ' steps. ' + m.item + ' turn up along the way.';
       case 'time': return 'Walk ' + fmt(m.steps) + ' steps ' + D.MISSION_WINDOWS[m.win].when + '.';
       case 'walks': return 'Take ' + m.walks + ' separate walks of at least ' + fmt(m.per) + ' steps each. A ' + D.MISSION_WALK_GAP_MIN + '-minute break starts a new walk.';
       default: return 'Cover ' + km(m.meters) + ' on foot (about ' + fmt(m.steps) + ' steps).';

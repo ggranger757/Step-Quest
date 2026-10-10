@@ -72,12 +72,12 @@ App icons: the Step Quest logo is already in `native/assets/` (`icon.png` 1024×
 
 Every walker carries a **Worldkey**, a semi-sentient device that opens the way between worlds. A world still opens the usual way (its level, plus the world before it explored to 75%), but now that only **discovers** it: to enter, the Worldkey needs three things.
 
-- **Destination:** the world is discovered. The world map lists what each locked world needs, one line each with a ✓ when done ("Reach level 17", "Explore 75% of Teal Tundra"), how far along you are and roughly how many steps are left. A popup offers it once ("New world discovered"); after that it waits on the World screen, the world map and Shop → Bag → Worldkey.
+- **Destination:** the world is discovered. The world map lists what each locked world needs, one line each with a ✓ when done ("Reach level 17", "Explore 75% of Teal Tundra"), how far along you are and roughly how many steps are left. A popup offers it once ("New world discovered"); after that it waits on the World screen, the world map and Inventory → Worldkey.
 - **Resonance:** repeat the world's symbol pattern once (a Simon-style memory game with six original pixel glyphs, each with its own shape, color and tone). The game grows with your walker: 4 symbols at the start, one more every 8 levels (up to 9 at level 41+), and the symbols play a little faster each level (760 ms apart at level 1, 380 ms at the fastest). Each world's pattern is fixed (seeded by its id) and a wrong tap costs nothing: just try again. A tuning holds for **3 days**, then the key drifts out of tune and needs tuning again (the screens show "Tuned · 2 days left" or "Out of tune"). You can also "tune ahead" to the next world before it's discovered.
 - **Energy:** opening a world costs 25% (worlds up to level 15), 60% (up to level 40) or 110% (beyond). Energy is only spent when the world actually opens. Worlds you've already opened stay free to travel to.
 - **Fading:** being out in the world messes with Worldkey tech. It loses about 6% energy a day plus 1% per 1,000 steps walked (never below 0), and every 1,000 steps also use up 2 hours of a tuning (so a 7,000-step walker retunes about every 2 days). The Worldkey page says so under the energy bar, and a "?" tooltip next to "Out of tune" explains it; the intro and the tutorial mention it too. A new walker's Worldkey wakes up at **10%**, out of tune, with one Void Darkmatter to get started.
 
-**Darkmatter Forge** (Shop → Artifacts → Forge). Darkmatter charges the Worldkey and is crafted from **artifact copies**, at a cost in HP (stabilizing it strains you):
+**Darkmatter Forge** (Inventory → Artifacts → Forge). Darkmatter charges the Worldkey and is crafted from **artifact copies**, at a cost in HP (stabilizing it strains you):
 
 | Darkmatter | Charge | Artifacts used up | HP |
 |---|---|---|---|
@@ -87,9 +87,9 @@ Every walker carries a **Worldkey**, a semi-sentient device that opens the way b
 
 Each Forge card lists what it uses up (artifacts and HP, each with how many you have) with a ✓ or ✕, one plain sentence saying what's missing, and a single button to fix it (Craft 1, See your artifacts, or Heal). The copies you hold the most of are used first, and the toast names them. Crafting is blocked when you're holding 9 of a kind, and a double tap can't craft twice.
 
-**Artifacts are collected again and again.** The collection log keeps every artifact you've discovered (6 per world). Each find also adds a **copy** to your hand, and once a world's six are all discovered, walking it again keeps turning up new copies (instead of "just old coins"). Shop → Artifacts → Collection shows each one with ×N in hand. Older saves get one copy of every artifact they had found.
+**Artifacts are collected again and again.** The collection log keeps every artifact you've discovered (6 per world). Each find also adds a **copy** to your hand, and once a world's six are all discovered, walking it again keeps turning up new copies (instead of "just old coins"). Inventory → Artifacts → Collection shows each one with ×N in hand. Older saves get one copy of every artifact they had found.
 
-**Worldkeys (18).** Every walker starts with the **Rookie**, a freshly awakened key. The other 17 are earned: reach the level, then buy them in Shop → Bag → Worldkey → Worldkeys (from Classic at level 3 for 800 coins to Regalia at level 52 for 15,000). Locked keys show as dark purple silhouettes; buying never switches keys automatically. Each key has its **own personality** (it can't be chosen separately): the Rookie, Logic Engine, Sarcastic Navigator, Ancient Oracle, Chaotic Companion, Wounded Relic, Glitch, the Poet, Sergeant Volt, Still Water, Professor Fern, Inspector Dusk, Fret, Captain Brine, Sparkle, Jeeves Mk. II, Old Ember and Lord Clarion, each with its own lines for discoveries, arrivals, returns, low energy, charging, tuning, crafting, low HP, long walks and idle moments. The screen loops its charging animation and pulses magenta below 25% energy. Opening a world plays a blue portal, then the new world loads and the Worldkey greets you. New players meet their Worldkey (and the lore of the broken road) on the first launch, and the tutorial covers it too.
+**Worldkeys (18).** Every walker starts with the **Rookie**, a freshly awakened key. The other 17 are earned: reach the level, then buy them in Inventory → Worldkey → Worldkeys (from Classic at level 3 for 800 coins to Regalia at level 52 for 15,000). Locked keys show as dark purple silhouettes; buying never switches keys automatically. Each key has its **own personality** (it can't be chosen separately): the Rookie, Logic Engine, Sarcastic Navigator, Ancient Oracle, Chaotic Companion, Wounded Relic, Glitch, the Poet, Sergeant Volt, Still Water, Professor Fern, Inspector Dusk, Fret, Captain Brine, Sparkle, Jeeves Mk. II, Old Ember and Lord Clarion, each with its own lines for discoveries, arrivals, returns, low energy, charging, tuning, crafting, low HP, long walks and idle moments. The screen loops its charging animation and pulses magenta below 25% energy. Opening a world plays a blue portal, then the new world loads and the Worldkey greets you. New players meet their Worldkey (and the lore of the broken road) on the first launch, and the tutorial covers it too.
 
 **Tuning symbols** are square-pixel formations like the ones on the Worldkey screens (four corners, diamond, twin bars, plus, zigzag, diagonal), lit in the current key's color. On the device they fly in wide and settle into shape; every formation has its own shape and tone.
 
@@ -110,10 +110,10 @@ Battles unlock at **level 12** (`D.BATTLE_LEVEL`). Before that no creatures appe
 
 Some creatures are aggressive. When one blocks the path you can fight or avoid it; fighting opens a 1v1 turn-based battle:
 
-- **Strike** uses your **melee** weapon (swords, daggers, axes, maces, spears, staves). Your walker holds it in hand during the attack. Daggers stab twice, axes sunder (+25% damage taken), maces stun, spears pierce guards and hit harder on the first turn, staves heal or curse, some blades steal life.
+- **Strike** uses your **melee** weapon (swords, daggers, axes, maces, spears, staves). As your walker swings, the equipped melee weapon pops up above their head (like Defend's "Guard up"); it isn't drawn in the hand, because many walkers already hold a weapon of their own in the art. Daggers stab twice, axes sunder (+25% damage taken), maces stun, spears pierce guards and hit harder on the first turn, staves heal or curse, some blades steal life.
 - **Throw / Shoot / Cast** uses your **ranged** weapon: throwing weapons arc, knives spin, arrows and the 12 spells (orb, wave and javelin in sun, frost, void and fire) fly straight at the creature. It hits hardest, may poison, burn, bleed, freeze, weaken, drain or volley, then recharges.
 - **Defend** has a **guard gauge**: each Defend uses 35% of it and every turn you don't defend restores 15% (`D.DEFEND_COST`, `D.DEFEND_REGEN`), so you can't hide behind your shield forever. The Shop calls the shield slot **Defense**.
-- **Defend** uses your **shield**: it blocks 60–85%, and some shields reverse part of the hit back, counter with spikes or heal. Every shield also blocks a little of every hit (armor). Guardians glow red and "charge up" before a heavy attack: defend then.
+- **Defend** uses your **shield**: it blocks 60–85%, and some shields reverse part of the hit back, counter with spikes or heal. Every shield also blocks a little of every hit (armor). The Defense slot also holds **48 belts** (CraftPix icons, `bt_*`): they are shields you wear at the waist, with more armor and a slightly weaker Defend block (60–74%); 3 are legendary guardian rewards. Guardians glow red and "charge up" before a heavy attack: defend then.
 - **Every creature has five moves** (`D.CREATURE_MOVES` in `js/02-data.js`):
   - **Attack:** a plain hit.
   - **Magic:** its own named spell with its own projectile and impact (Medusa's Stone Throw, the Overthinker's What-If Flame…). 40% of the time it adds an effect (20% if you defended): poison or burn (damage each turn, never below 1 HP), weaken (your hits do 30% less for 2 turns), slow (your ranged weapon takes 2 more turns to recharge) or drain (it heals from the damage).
@@ -139,20 +139,20 @@ Some creatures are aggressive. When one blocks the path you can fight or avoid i
 - Magic attacks gather energy at the caster's hand, trail sparks, and burst by element on impact (fire and sun explode, frost shatters, void pulses). Every weapon kind has its own impact sound.
 - Exploring a world to 100% wakes its **guardian**. Challenge it from the world map. Defeating guardians unlocks the legendary weapons.
 
-The **Shop** tab holds three pages, switched at the top: **Shop** (buy: Walkers, Weapons, Potions / Food, Pets and Magic), **Bag** (everything you own: Worldkey, Weapons, Magic, Potions, Pets and Avatars, where you equip, drink, refill and repair) and **Artifacts** (Collection, the Darkmatter Forge and Eggs). Achievements moved to Profile → Achievements. The bottom bar has four tabs: World, Missions, Shop and Profile. (Trails were retired; coins spent on them were refunded.)
+The bottom bar has five tabs: World, Missions, Shop, Inventory and Profile. **Shop** is for buying (Walkers, Weapons, Potions / Food, Pets and Magic). **Inventory** holds everything you own, in seven sections: Worldkey, Weapons, Magic, Potions, Pets, Avatars (where you equip, drink, refill and repair) and Artifacts (Collection, the Darkmatter Forge and Eggs). Achievements live in Profile → Achievements. (Trails were retired; coins spent on them were refunded.)
 
 **Features unlock step by step** (`js/05j-unlocks.js`), so a new walker learns one thing at a time:
-- **From the start:** walking, worlds, encounters, battles (from the battle level), missions, the Shop and Bag, artifacts and eggs.
-- **The Worldkey** wakes up when you **finish your first world** (the next world's requirements are met). Until then Shop → Bag → Worldkey shows a locked card with your progress, and it makes no road remarks. It wakes up with a full starter charge.
+- **From the start:** walking, worlds, encounters, battles (from the battle level), missions, the Shop and Inventory, artifacts and eggs.
+- **The Worldkey** wakes up when you **finish your first world** (the next world's requirements are met). Until then Inventory → Worldkey shows a locked card with your progress, and it makes no road remarks. It wakes up with a full starter charge.
 - **Darkmatter and gear care** unlock at **level 7** (`D.UPKEEP_LEVEL`): the Forge, Worldkey energy (opening worlds costs energy, and it fades with time and walking), ranged shots, battle-magic uses and melee wear. Before level 7, opening worlds costs no energy and nothing fades; Artifacts → Forge shows a locked card with your level progress. Unlocking it gives you a Void Darkmatter.
 - Each unlock shows a congratulations card, then plays its own short tutorial (4 steps each), even if the card is closed another way. The world-gate popup waits until the Worldkey tutorial is done. The first-run tour leaves out features you haven't unlocked yet.
 - Saves from before this rule unlock whatever they've already reached, without the cards.
 
 **What runs out, what wears down** (`js/05i-gear.js`), from **level 7** (before that, gear never runs out or wears down):
-- **Ranged weapons** come with **20 shots** per purchase; each Throw, Shoot or Cast uses one. At 0 the ranged button says "out of shots". Buy 20 more (at the weapon's price) in the Shop or the Bag; you can hold up to 99. **Your first refill each day is free** (shots or battle-magic uses).
+- **Ranged weapons** come with **20 shots** per purchase; each Throw, Shoot or Cast uses one. At 0 the ranged button says "out of shots". Buy 20 more (at the weapon's price) in the Shop or Inventory; you can hold up to 99. **Your first refill each day is free** (shots or battle-magic uses).
 - **Battle magic** comes with **3 uses** per purchase (hold up to 9); each use in battle spends one. Worn **charms** never run out.
 - **Potions and food** are used up when you drink, eat or use them.
-- **Melee weapons** never run out, but every Strike wears them by 1%. Damage scales from 100% at full condition down to 60% at 0%. Below 30% the battle log warns you once. **Repair** in the Bag brings a weapon back to 100% for **a quarter of its price** (at least 15 coins).
+- **Melee weapons** never run out, but every Strike wears them by 1%. Damage scales from 100% at full condition down to 60% at 0%. Below 30% the battle log warns you once. **Repair** in Inventory brings a weapon back to 100% for **a quarter of its price** (at least 15 coins).
 - **Pets don't die.** A pet knocked out in battle rests and recovers over time, like you. (Pets lost under the short-lived old rule were given back.)
 - Older saves: every ranged weapon you own gets 20 shots and every battle magic item 3 uses.
 
@@ -206,7 +206,7 @@ From level 12 (when battles unlock) a druid sometimes steps onto the road with a
 
 ## Eggs
 
-Three eggs (`js/05e-eggs.js`): **Frost** (common), **Ember** (uncommon) and **Crystal** (rare; rarer eggs get likelier in later worlds). They turn up on the road as an encounter of their own, a quarter of the creatures you beat were guarding one, and guardians always drop one. You can carry 12 of each. Trade sets to **Merlin** once you've met him on the road (trading stays locked until then); after that, trade from Shop → Artifacts → Eggs or Missions → Field at any time, or when he finds you again:
+Three eggs (`js/05e-eggs.js`): **Frost** (common), **Ember** (uncommon) and **Crystal** (rare; rarer eggs get likelier in later worlds). They turn up on the road as an encounter of their own, a quarter of the creatures you beat were guarding one, and guardians always drop one. You can carry 12 of each. Trade sets to **Merlin** once you've met him on the road (trading stays locked until then); after that, trade from Inventory → Artifacts → Eggs or Missions → Field at any time, or when he finds you again:
 
 | Trade | Eggs | Loot |
 | --- | --- | --- |
@@ -247,6 +247,8 @@ Completing one pays coins and XP: the difficulty sets the base (Easy 15 coins / 
 
 ## Sound and music
 
+**Playing with your own music:** Settings has two switches, **Game music** and **Sound effects**. With Game music on, the browser asks iOS for the `playback` audio session (older iPhones: a silent looping audio track started on the first tap), so sounds play on the speaker even with the Ring/Silent switch on silent. With Game music off, the player is listening to their own music: no game music plays and `WB.Sfx.applySession()` (`js/04-steps.js`) switches to the `ambient` session, so sound effects layer on top of their music instead of pausing it. The installed iOS app sets `AVAudioSession` to `.playback` with `.mixWithOthers` (`native/scripts/patch-native.mjs`), so there both work at once. Old saves start Game music where their Sound & music switch was.
+
 Recorded sounds live in `assets/sfx/` and music in `assets/music/`; `tools/prep_sounds.py <uploads_folder> assets` rebuilds them from the original uploads (it finds each file by its label, trims silence and compresses):
 
 | Moment | Sound |
@@ -262,16 +264,16 @@ Recorded sounds live in `assets/sfx/` and music in `assets/music/`; `tools/prep_
 | Losing a battle | `sfx/battle_loss.mp3` |
 | Level-up, achievement or a finished Merlin quest | `sfx/level_up.mp3` |
 | Weapon impacts by kind, bow and spell launches, spell impacts by element, Wind Blade, shield blocks, poison/burn/bleed/stun ticks, the three special attacks | synthesized by `tools/synth_sounds.py` (`sfx/hit_*`, `spell_*`, `status_*`, `special_*`, `bow_release`, `wind_blade`, `shield_block`) |
-| First open, from the loading screen until the tutorial ends | `music/app_song.mp3` |
+| First open (and after a reset), from the loading screen until the tutorial ends | `music/app_theme.mp3` |
 | Worldkey tuned (the symbol game locks in) | `sfx/wk_tuned.mp3` |
 | Charging the Worldkey | one per Darkmatter: `sfx/dm_void.mp3`, `sfx/dm_nebula.mp3`, `sfx/dm_eclipse.mp3` |
 | Forging Darkmatter | `sfx/dm_craft.mp3` |
 | The Worldkey's first road remark each visit | `sfx/wk_comms.mp3` (a short wrist-comms crackle and two beeps, `tools/synth_sounds.py`); later remarks use the soft chirp |
-| Battles | a random track from 11, never the same one twice in a row. The three defaults come up 3x as often: Battle Music 1 (`app_song`), the 2nd default (`battle_default_2`) and Video Game Music (`battle_default_3`). The others: `battle_2/4/6/8`, Valhalla (`battle_valhalla`), The Minstrel's Return (`battle_minstrel`), Under the Elven Star (`battle_elven`) and Unworthy (`battle_unworthy`) |
+| Battles | a random track from 12, never the same one twice in a row. The four defaults come up 3x as often: the app theme (`app_theme`), Battle Music 1 (`battle_default_1`, the previous app song), the 2nd default (`battle_default_2`) and Video Game Music (`battle_default_3`). The others: `battle_2/4/6/8`, Valhalla (`battle_valhalla`), The Minstrel's Return (`battle_minstrel`), Under the Elven Star (`battle_elven`) and Unworthy (`battle_unworthy`) |
 | Battles from level 40 (`D.EPIC_MUSIC_LEVEL`) | the same rotation plus Redemption (`battle_epic_1`) and Cold Fire (`battle_epic_2`), 2x each |
 | While Merlin is on screen | `music/merlin.mp3` |
 
-The app song is the theme: on a first open (or after a reset) it starts on the loading screen and plays until the tutorial ends or is skipped. Browsers only allow sound after a tap, so when autoplay is blocked the loading screen waits with a **Tap to start** button (the native app lets its web view autoplay; see `native/scripts/patch-native.mjs`). Music streams (it isn't part of the offline download). Profile → Settings has one **Sound & music** switch. Browsers only allow audio after a tap, so the welcome song starts on the first tap if autoplay is blocked.
+The app song is the theme: on a first open (or after a reset) it starts on the loading screen and plays until the tutorial ends or is skipped. Browsers only allow sound after a tap, so when autoplay is blocked the loading screen waits with a **Tap to start** button (the native app lets its web view autoplay; see `native/scripts/patch-native.mjs`). Music streams (it isn't part of the offline download). Profile → Settings → Appearance & sound has a **Game music** switch (and a separate **Sound effects** switch). Browsers only allow audio after a tap, so the welcome song starts on the first tap if autoplay is blocked.
 
 ## Celebrations
 
@@ -279,7 +281,7 @@ Level-ups, achievements and every completed mission (daily, adventure, delivery,
 
 ## Tutorial and tips
 
-New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, the Shop, Bag and Artifacts pages, battles and the Profile. A **Skip tutorial** button sits at the top of every step (Back on the phone ends it too), and it can be replayed from the **Tutorial** button next to the Profile title. While any sheet, battle, the tutorial or onboarding is open, the page behind it can't scroll. A discovery on the road stays on screen for 40 seconds, with a × to close it sooner. The first time a player's HP drops to 35% or below, a one-time tip explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal).
+New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, the Shop and Inventory pages, battles and the Profile. A **Skip tutorial** button sits at the top of every step (Back on the phone ends it too), and it can be replayed from the **Tutorial** button next to the Profile title. While any sheet, battle, the tutorial or onboarding is open, the page behind it can't scroll. A discovery on the road stays on screen for 40 seconds, with a × to close it sooner. The first time a player's HP drops to 35% or below, a one-time tip explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal).
 
 ## Worlds and levels
 
@@ -329,12 +331,12 @@ js/02e-quiz.js           the Druid's 945 Knowledge Challenge questions
 js/05f-druid.js          the Druid: questions, rewards, taking your eggs
 js/05i-gear.js           shots, magic uses, melee wear and repair, pet deaths, artifact copies
 js/06-engine.js          canvas renderer: parallax worlds, avatar, pets, particles
-js/07-ui.js              screens (incl. Shop · Bag · Artifacts), HUD, sheets, toasts
+js/07-ui.js              screens (incl. Shop, Inventory), HUD, sheets, toasts
 js/07b-battle-ui.js      battle screen
 js/07d-missions-ui.js    field missions on the Missions tab, camera flow, photo journal
 js/07e-custom-ui.js      "My missions": create, edit, check off and complete your own missions
 js/07f-tour.js           the guided tutorial and the one-time low-health tip
-js/07h-eggs.js           Shop → Artifacts → Eggs and the trade cards
+js/07h-eggs.js           Inventory → Artifacts → Eggs and the trade cards
 js/08-main.js            startup, onboarding, developer panel
 assets/bg/               world layers (each scene at most 300 px tall)
 assets/av/               avatar sprite atlases (one row per animation)
@@ -345,7 +347,7 @@ assets/wp/               weapon projectiles and explosions
 assets/pot/              potion icons
 assets/art/              artifact icons (r = creature relics, m = minerals, c = charms, x = shields, i = item-pack finds)
 assets/ach/              achievement badges
-assets/wi/               weapon icons (melee, ranged, shields)
+assets/wi/               weapon icons (melee, ranged, shields, belts)
 assets/mg/               magic item icons
 assets/sfx/              weapon sounds
 assets/icons/            app icons from the Step Quest logo: favicon (.ico, 16, 32), 192/512, Android maskable, apple-touch-icon, og-image (link previews)
@@ -365,6 +367,7 @@ Everything lives in `js/02-data.js`:
 - **New world:** add an entry to `D.WORLDS` with its layers (back to front, each with a parallax multiplier), ground line, length in steps and `unlock` level. Then add its finds to `D.FINDS`.
 - **New avatar, pet, trail or weapon:** add an entry with a `req`, such as `{ level: 5 }`, `{ cost: 400 }`, `{ streak: 7 }`, `{ steps: 20000 }` or `{ explored: 'rust' }`.
 - **Skin tones:** `D.SKIN_TONES` holds the swatches (each a 3-color ramp). `D.SKIN_MAP` lists the exact skin colors each sprite sheet uses; Skin tone editing covers the original walkers and the nine newest (the Shadow Archer, the Executioner and the Shadow Knight show no skin, so their tone recolors the cloak, the robe and the shadow body); the other packs keep their drawn skin.
+- **Colors (skin tone + outfit dyes):** one **Colors** slot in Profile → Loadout opens a single sheet with up to three rows: **Skin tone** (shared by every walker that shows skin), **Outfit** (main clothing or armor) and **Trim** (a second garment, cape, scarf or accents), each with Original plus the swatches. It unlocks at **level 25** (`D.COLORS_LEVEL`); before that the slot shows a lock and a tap explains when it opens, and the level-up card lists "Avatar colors" when you reach it. The skin tone picked at sign-up stays. Outfit dyes (11 in `D.DYES`) are saved per walker in `state.outfit[walkerId] = { o, t }`. `D.OUTFIT_MAP` lists the exact sheet colors each slot recolors (picked by hand per walker; a leading `^` limits a color to below the head when it is shared with hair or a skull). `WB.recolor` (`js/06-engine.js`) applies skin tone and dyes in one pass, keeping the art's shading. 52 of 53 walkers have outfit colors; the Shadow Knight shows only the Skin tone row.
 - **Creatures:** `D.CREATURES` sets HP, attack and whether each one is aggressive. Each world has a `pool` and a `boss`.
 - **Weapons and potions:** `D.WEAPONS` (power, recharge turns, effect) and `D.POTIONS`.
 - **Balance:** `COINS_PER_STEP`, `XP_PER_STEP`, `xpToNext`, `heroMaxHp`, `heroAtk`, `creatureStats`, world `length` and `unlock` level.

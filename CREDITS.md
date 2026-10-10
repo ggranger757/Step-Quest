@@ -30,10 +30,21 @@ All pixel art comes from free asset packs by **CraftPix.net** and is used under 
   - Animal sprites (dogs, cats, rats, birds): pets
 - More Assets pack: woodland animal sprites (Fox, Hare, Deer, Boar, Black Grouse) and Pet Rocks (pets), potion icons, and three icon sets used for the 108 artifacts and the 26 achievement badges.
 
+## Pets and walkers 3
+
+- **Chaos Monsters** icon pack by CraftPix.net (CraftPix free license: https://craftpix.net/file-licenses/): all 50 icons (48 plus the 2 bonus) are pets (`assets/pet/cm1..cm50.png`, built by `tools/add_pets_walkers.py`).
+- **Bandits** by Sven: Highway Bandit and Bandit Chief (mirrored to face right). See the pack's EULA.
+- **EVil Wizard 2**, **Fantasy Warrior**, **Medieval Warrior Pack** and **Wizard Pack** by LuizMelo (CC0): Hex Warlock, Blade Dancer, Man-at-Arms and Arcanist.
+- The same upload's **Martial Hero 2** was already in the game as the Ronin, so it was not added twice.
+
 ## Weapons pack 2
 
 - **Weapons.zip** (icon sheets): swords, knives, axes, maces, spears, staves, bows, throwing knives and shields. 60 icons were cut out of the sheets and are used as the melee, ranged and shield weapons (`assets/wi/`). No license file was included: confirm the terms before shipping commercially.
 - **Weapons_2.zip** (BinbunVFX magic projectiles, a Godot 3D effects pack): it contains shaders and materials but no images, so its three projectile shapes (orb, wave, javelin) were redrawn as pixel art in its four colour schemes, read from its material files (`assets/wp/spell_*`).
+
+## Belts
+
+- **Free Belt RPG Pixel Art Icons** by CraftPix.net (CraftPix free license: https://craftpix.net/file-licenses/): all 48 belt icons are Defense gear in the Shop, worn in the shield slot (`assets/wi/bt_*.png`, cropped by `tools/add_belts.py`).
 
 ## Weapons and sounds
 

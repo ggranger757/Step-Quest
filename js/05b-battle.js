@@ -164,7 +164,7 @@
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = m.name + ' passes straight through ' + e.name + '’s shadow!';
       const c0 = G.cond(m.id), c1 = G.wearDown(m.id); ev.cond = c1;   // (no wear before level 7)
-      if (c0 > D.WORN_AT && c1 <= D.WORN_AT) ev.text += ' Your ' + m.name + ' is getting worn (' + Math.round(c1) + '%). Repair it in Shop → Bag.';
+      if (c0 > D.WORN_AT && c1 <= D.WORN_AT) ev.text += ' Your ' + m.name + ' is getting worn (' + Math.round(c1) + '%). Repair it in Inventory → Weapons.';
       echo(st, ev);
       events.push(ev);
       chargeSpecial(st, 'strike');
@@ -224,7 +224,7 @@
       const sh = st.shield, b0 = h.hp;
       h.hp = Math.min(h.max, h.hp + Math.round(h.max * (sh && sh.regen ? sh.regen : 0.06)));
       const heal = h.hp - b0;
-      events.push({ who: 'hero', type: 'defend', heal, text: (sh ? 'You raise the ' + sh.name + '.' : 'You brace yourself.') + (heal ? ' +' + heal + ' HP.' : '') });
+      events.push({ who: 'hero', type: 'defend', heal, text: (sh ? (sh.belt ? 'You cinch the ' + sh.name + ' tight.' : 'You raise the ' + sh.name + '.') : 'You brace yourself.') + (heal ? ' +' + heal + ' HP.' : '') });
     } else if (move === 'potion') {
       const p = D.POTIONS.find((x) => x.id === arg), s = WB.state;
       if (!p || !(s.potions[arg] > 0)) return events;
@@ -363,7 +363,7 @@
     const ev = { who: 'enemy', type: kind, combo, name: kind === 'magic' ? e.moves.magic[0] : kind === 'special' ? e.moves.special[0] : '' };
     const lead0 = kind === 'special' ? (combo ? ev.name + ' hits again.' : e.name + ' unleashes ' + ev.name + '!') : kind === 'magic' ? e.name + ' uses ' + ev.name + '.' : e.name + ' attacks.';
     if (h.dodge > 0) { h.dodge--; ev.dmg = 0; ev.dodged = true; ev.text = lead0 + ' Lucky Clover: you dodge it!'; return ev; }
-    if (h.clone > 0) { ev.dmg = 0; ev.clone = true; ev.text = lead0 + ' It hits your copy instead, which flickers and stays standing.'; return ev; }
+    if (h.clone > 0) { ev.dmg = 0; ev.clone = true; ev.text = lead0 + ' It hits your copy instead. The copy flickers but holds.'; return ev; }
     if (e.ability === 'reaper' && h.hp < h.max * 0.35) { power *= 1.4; ev.reap = true; }
     let dmg = e.atk * power * (e.weaken > 0 ? 0.6 : 1) - h.def * 0.5;
     if (sh) dmg *= 1 - sh.armor;
@@ -392,7 +392,7 @@
       : ' You take ' + dmg + ' damage.';
     ev.text = lead + took +
       (ev.pet ? ' ' + pet.name + ' takes ' + ev.pet + (ev.petKO ? ' and is knocked out!' : '.') : '') +
-      (ev.reversed ? ' Your shield reverses ' + ev.reversed + ' back at it!' : '') + (ev.countered ? ' Spikes hit back for ' + ev.countered + '.' : '') +
+      (ev.reversed ? ' Your ' + (sh && sh.belt ? 'belt' : 'shield') + ' reverses ' + ev.reversed + ' back at it!' : '') + (ev.countered ? ' Spikes hit back for ' + ev.countered + '.' : '') +
       (ev.mirrored ? ' The mirror throws back ' + ev.mirrored + '.' : '') + (ev.reap ? ' He smells weakness: +40% damage.' : '') + (ev.soul ? ' Soul Gem: halved.' : '') + (ev.thorns ? ' Thorns hit back for ' + ev.thorns + '.' : '');
     return ev;
   }

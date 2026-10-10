@@ -1,4 +1,4 @@
-/* Step Quest — Worldkey screens: the animated device, its Bag tab, the Darkmatter Forge (Artifacts), the
+/* Step Quest — Worldkey screens: the animated device, its Inventory tab, the Darkmatter Forge (Artifacts), the
    new-world gate, tuning, charging, customizing, the portal, and short remarks on the road.
    All state changes go through 05g-worldkey.js; animations only decorate what already happened. */
 (() => {
@@ -70,7 +70,7 @@
   const left = (ms) => { const h = Math.max(1, Math.ceil(ms / 36e5)); return h >= 24 ? Math.floor(h / 24) + (h >= 48 ? ' days' : ' day') + ' left' : h + ' h left'; };
   const tuneTxt = (st) => (st.tuned ? 'Tuned · ' + left(st.tuneLeft) : 'Out of tune');
   // why a key needs tuning again (a tap-to-open tooltip next to "Out of tune")
-  const WHY = `Being out in the world messes with Worldkey tech. Time and walking both drain its energy (about ${K.DRAIN_DAY}% a day, plus ${K.WALK_DRAIN}% every 1,000 steps) and knock it out of tune: a tuning lasts up to ${K.TUNE_DAYS} days, less the more you walk.`;
+  const WHY = `Time and walking drain your Worldkey’s energy (about ${K.DRAIN_DAY}% a day, plus ${K.WALK_DRAIN}% every 1,000 steps) and knock it out of tune. A tuning lasts up to ${K.TUNE_DAYS} days, less the more you walk.`;
   let tipN = 0;
   const tip = () => { const id = 'wk-tip-' + ++tipN; return `<span class="wk-tipw"><button class="wk-tip" type="button" data-wk="tip" aria-expanded="false" aria-controls="${id}" aria-label="Why is it out of tune?">?</button><span class="wk-tipbox" id="${id}" role="tooltip" hidden>${esc(WHY)}</span></span>`; };
   const hasFuel = () => D.DARKMATTER.some((d) => G.wkChargeMax(d.id) > 0);
@@ -82,7 +82,7 @@
     return { act: 'open', label: 'Open ' + st.world.name, cls: 'gold' };
   }
 
-  // ---------- Shop → Bag → Worldkey ----------
+  // ---------- Inventory → Worldkey ----------
   UI.wkSection = () => {
     const w = G.wk(), dest = G.wkDest(), st = dest && G.wkStatus(dest), v = G.wkVoice(), key = G.wkKey(), step = st && nextStep(st);
         return `<div class="wk-dev pbox card ${w.e <= K.LOW ? 'is-low' : ''}">
@@ -123,7 +123,7 @@
       <p class="fine">Until then your Worldkey runs on its starter charge, so you don’t need Darkmatter yet. Keep collecting artifacts: the Forge turns them into Darkmatter.</p>
       <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${D.UPKEEP_LEVEL}" aria-valuenow="${S().level}"><i style="width:${Math.min(100, (S().level / D.UPKEEP_LEVEL) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${D.UPKEEP_LEVEL}</p>
     </div>`;
-  // Shop → Artifacts → Forge: Darkmatter is crafted from artifact copies
+  // Inventory → Artifacts → Forge: Darkmatter is crafted from artifact copies
   UI.forgeSection = () => `<div class="sect" id="wk-forge"><h2>Darkmatter Forge</h2>
       <p class="fine">Darkmatter charges your Worldkey. Each kind uses up artifacts and some of your HP. Walk worlds again to find more artifacts.</p>
       <div class="dm-list">${D.DARKMATTER.map(recipeCard).join('')}</div>
@@ -262,7 +262,7 @@
   // ---------- the Worldkey collection: 18 keys, each with its own personality; locked ones are silhouettes ----------
   // what each 'Messages on the road' choice means
   const CHAT_DESC = {
-    normal: 'Your Worldkey speaks up in a small bubble while you walk: a remark every few minutes at most, plus arrivals and low energy. Tap × to close one.',
+    normal: 'Your Worldkey chats in a small bubble as you walk: a remark every few minutes at most, plus arrivals and low energy. Tap × to close it.',
     quiet: 'Only what matters: arriving in a world and running low on energy. No small talk.',
     off: 'No messages on the road. You’ll still hear from it when you tune, charge or open a world.',
   };

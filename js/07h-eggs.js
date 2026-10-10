@@ -1,4 +1,4 @@
-/* Step Quest — eggs on screen: the Shop → Artifacts → Eggs tab, Merlin's egg trades (also under his quest on
+/* Step Quest — eggs on screen: the Inventory → Artifacts → Eggs tab, Merlin's egg trades (also under his quest on
    Missions → Field) and the toasts when you find or break eggs. Rules live in 05e-eggs.js. */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, S = () => WB.state;
@@ -12,7 +12,7 @@
       <button class="btn ${ready ? 'gold' : ''} sm" type="button" data-eggtrade="${t.id}" ${UI.off(!ready && (!G.merlinMet() ? 'Meet Merlin on the road first. After that you can trade any time.' : 'You need ' + miss + '.'))}>${G.merlinMet() ? 'Trade' : 'Locked'}</button>
     </div>`;
   }
-  // used by Shop → Artifacts → Eggs and by Merlin's corner of the Field tab
+  // used by Inventory → Artifacts → Eggs and by Merlin's corner of the Field tab
   UI.eggTrades = () => `<div class="list trades">${D.EGG_TRADES.map(tradeCard).join('')}</div>`;
   UI.eggSection = () => {
     const e = G.eggs();

@@ -90,8 +90,11 @@
     if (!due || isNaN(due)) return { ok: false, msg: 'Pick a due date and time.' };
     if (!existing && due < Date.now() + C.MIN_AGE_MIN * 60000) return { ok: false, msg: 'The due time has to be at least ' + C.MIN_AGE_MIN + ' minutes from now.' };
     if (!C.DIFF[f.diff] || !C.PRI[f.pri]) return { ok: false, msg: 'Pick a difficulty and a priority.' };
-    const steps = String(f.steps || '').split('\n').map((t) => clean(t, 80)).filter(Boolean).slice(0, 20);
-    return { ok: true, m: { title, notes: String(f.notes || '').trim().slice(0, 400), stepsText: steps, due, diff: f.diff, pri: f.pri } };
+    // sub-missions: an array of { t, i } from the form (i = the row's index in the saved mission, -1 for a new row),
+    // or plain text with one per line
+    const rows = (Array.isArray(f.steps) ? f.steps : String(f.steps || '').split('\n').map((t) => ({ t, i: -1 })))
+      .map((r) => ({ t: clean(r && r.t, 80), i: Number.isInteger(r && r.i) ? r.i : -1 })).filter((r) => r.t).slice(0, 20);
+    return { ok: true, m: { title, notes: String(f.notes || '').trim().slice(0, 400), stepsText: rows.map((r) => r.t), stepsSrc: rows.map((r) => r.i), due, diff: f.diff, pri: f.pri } };
   };
   C.create = (f, tplId) => {
     const c = S().custom;
@@ -105,9 +108,17 @@
   C.update = (id, f) => {
     const m = C.get(id); if (!m) return { ok: false, msg: 'That mission no longer exists.' };
     const v = C.validate(f, m); if (!v.ok) return v;
-    const old = new Map(m.steps.map((s) => [s.t, s]));
+    // each kept row carries its old index, so renaming or reordering a sub-mission keeps its check and its coin.
+    // A new row whose text matches a removed one inherits it, so deleting and re-adding can't pay the coin twice.
+    const used = new Set(), src = v.m.stepsSrc;
+    v.m.stepsText.forEach((t, k) => { if (m.steps[src[k]]) used.add(src[k]); });
+    const steps = v.m.stepsText.map((t, k) => {
+      let j = m.steps[src[k]] ? src[k] : -1;
+      if (j < 0) { j = m.steps.findIndex((o, n) => !used.has(n) && o.t === t); if (j >= 0) used.add(j); }
+      const o = m.steps[j]; return { t, done: !!(o && o.done), paid: !!(o && o.paid) };
+    });
     if (!m.lock) m.lock = { diff: m.diff, pri: m.pri, due: m.due };   // missions made before 2.7.0 lock on first edit
-    Object.assign(m, { title: v.m.title, notes: v.m.notes, due: v.m.due, steps: v.m.stepsText.map((t) => { const o = old.get(t); return { t, done: !!(o && o.done), paid: !!(o && o.paid) }; }) });   // difficulty and priority stay as created
+    Object.assign(m, { title: v.m.title, notes: v.m.notes, due: v.m.due, steps });   // difficulty and priority stay as created
     if (m.due > Date.now() && m.lock.due > Date.now()) m.warned = false;
     G.after(); return { ok: true, m };
   };
@@ -135,7 +146,7 @@
   // why a completion won't pay (or '' if it will)
   C.noPayWhy = () => {
     const l = C.leftToday();
-    if (!l.coins && !l.xp) return 'Your own missions have paid today’s maximum (' + C.DAILY_COINS + ' coins and ' + C.DAILY_XP + ' XP). You can still complete them; rewards return tomorrow.';
+    if (!l.coins && !l.xp) return 'Your own missions have paid today’s maximum (' + C.DAILY_COINS + ' coins and ' + C.DAILY_XP + ' XP). You can still complete missions. Rewards resume tomorrow.';
     return '';
   };
   // what completing it right now would actually pay, after the daily cap

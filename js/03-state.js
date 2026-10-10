@@ -8,6 +8,7 @@
     return {
       v: 2, created: Date.now(), savedAt: 0, name: 'Wanderer', onboarded: false,
       avatar: 'scavenger', skin: null,
+      outfit: {},         // per walker: { o: dye id, t: dye id } (Outfit and Trim colors on the Loadout)
       equip: { pet: null, weapon: 'star', melee: 'sw_rusty', shield: null, charms: [] },
       owned: { avatars: ['scavenger'],   // replaced by the walker picked at sign-up
                 pets: [], weapons: ['star', 'sw_rusty'], magic: [] },
@@ -30,7 +31,7 @@
       eggs: { frost: 0, ember: 0, crystal: 0 }, eggTrades: 0,
       druid: { asked: [], wins: 0, losses: 0 },
       nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, homeState: '', theme: 'night', notify: true, chartDays: 14 },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, homeState: '', theme: 'night', notify: true, chartDays: 14 },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }
@@ -39,6 +40,8 @@
     const f = fresh();
     // shallow-merge defaults so new fields appear for old saves
     for (const k of Object.keys(f)) if (s[k] === undefined) s[k] = f[k];
+    // Sound & music became two switches: Game music starts where the old switch was
+    if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
     for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'streak', 'daily', 'settings', 'seen', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];
     // v2: dyes and auras were retired. Refund what was bought, drop the rest.
@@ -72,7 +75,7 @@
     if (!Array.isArray(s.equip.charms)) s.equip.charms = [];
     if (s.equip.backpack && !s.equip.charms.includes('backpack')) s.equip.charms.push('backpack');
     delete s.equip.backpack;
-    delete s.settings.music;   // one Sound & music switch now
+    delete s.settings.music;   // an old setting from the retired in-app music player
     delete s.settings.loc;     // Location Awareness was removed
     delete s.music;            // the in-app music player was removed: players use their own music app
     if (s.enc.merlinAt && !s.enc.merlinMet) s.enc.merlinMet = true;   // players who already met Merlin
@@ -96,6 +99,14 @@
     s.owned.pets = s.owned.pets.filter((id) => ok(D.PETS, id));
     if (!ok(D.AVATARS, s.avatar)) s.avatar = 'scavenger';
     if (!D.worldById[s.world]) s.world = 'rust';
+    // outfit colors: keep only known dyes on walkers that can be dyed
+    if (!s.outfit || typeof s.outfit !== 'object' || Array.isArray(s.outfit)) s.outfit = {};
+    for (const id of Object.keys(s.outfit)) {
+      const o = s.outfit[id], map = D.OUTFIT_MAP[id];
+      if (!map || !o || typeof o !== 'object') { delete s.outfit[id]; continue; }
+      for (const k of ['o', 't']) if (o[k] != null && (!map[k] || !D.dyeById[o[k]])) delete o[k];
+      if (o.o == null && o.t == null) delete s.outfit[id];
+    }
     s.unlocked = s.unlocked.filter((id) => D.worldById[id]);
     s.hp = Math.min(s.hp, D.heroMaxHp(s.level));
     return s;

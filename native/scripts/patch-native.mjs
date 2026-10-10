@@ -50,10 +50,19 @@ const vc = join(iosApp, 'MainViewController.swift');
 if (existsSync(iosApp) && !existsSync(vc)) {
   writeFileSync(vc, `import UIKit
 import WebKit
+import AVFoundation
 import Capacitor
 
 // The theme song plays from the loading screen: allow audio without a tap.
 class MainViewController: CAPBridgeViewController {
+    // Game sounds and music play on the speaker even with the Ring/Silent switch on silent,
+    // and mix with music from other apps instead of stopping it.
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
+        try? AVAudioSession.sharedInstance().setActive(true)
+    }
+
     override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
         let config = super.webViewConfiguration(for: instanceConfiguration)
         config.mediaTypesRequiringUserActionForPlayback = []
@@ -64,6 +73,18 @@ class MainViewController: CAPBridgeViewController {
 `);
   console.log('created ios/App/App/MainViewController.swift (add it to the App target in Xcode if it is not picked up)');
 }
+// projects made before the speaker fix: add the audio session setup to the existing view controller
+edit(vc, (s) => s.includes('AVAudioSession') ? s : s
+  .replace('import WebKit\n', 'import WebKit\nimport AVFoundation\n')
+  .replace(/(class MainViewController: CAPBridgeViewController \{\n)/, `$1    // Game sounds and music play on the speaker even with the Ring/Silent switch on silent,
+    // and mix with music from other apps instead of stopping it.
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
+        try? AVAudioSession.sharedInstance().setActive(true)
+    }
+
+`));
 edit(join(iosApp, 'Base.lproj', 'Main.storyboard'), (s) => s.replace(/customClass="CAPBridgeViewController" customModule="Capacitor"/, 'customClass="MainViewController" customModule="App" customModuleProvider="target"'));
 
 console.log('Native projects are ready for step sync.');

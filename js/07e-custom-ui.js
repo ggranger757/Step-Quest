@@ -45,10 +45,72 @@
       <div class="tpl-grid">${C.TEMPLATES.map((t) => `<button type="button" class="tpl pbox" data-ctpl="${t.id}">${WB.icon(t.icon, 3)}<b>${esc(t.name)}</b><span>${t.steps.length ? t.steps.length + ' sub-missions · ' : ''}${C.DIFF[t.diff].name}</span></button>`).join('')}</div>`);
   }
   const seg = (name, obj, cur, locked) => `<div class="cm-seg" role="radiogroup" aria-label="${name}">${Object.entries(obj).map(([k, v]) => `<button type="button" role="radio" aria-checked="${k === cur}" data-${name}="${k}" ${locked ? UI.off('Difficulty and priority are locked once a mission is created. To change them, delete it and make a new one.') : ''}>${v.name}</button>`).join('')}</div>`;
+  // ---------- sub-mission rows: type in each, delete, or drag the handle (or use arrow keys on it) to reorder ----------
+  const SUB_MAX = 20;
+  const GRIP = '<svg viewBox="0 0 8 12" width="10" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h3v3H0zM5 0h3v3H5zM0 4.5h3v3H0zM5 4.5h3v3H5zM0 9h3v3H0zM5 9h3v3H5z"/></svg>';
+  const subRow = (x) => `<li class="cm-sub ${x.done ? 'done' : ''}" data-i="${x.i}">
+      <button type="button" class="cm-grip" aria-label="Move sub-mission. Drag, or press the up and down arrow keys">${GRIP}</button>
+      <input type="text" maxlength="80" value="${esc(x.t)}" placeholder="Sub-mission" aria-label="Sub-mission" enterkeyhint="next">
+      ${x.done ? `<span class="cm-sub-ok" title="Checked off">${WB.icon('check', 1)}</span>` : ''}
+      <button type="button" class="cm-sub-del" aria-label="Delete sub-mission">×</button></li>`;
+  function subEditor(list, addBtn) {
+    const rows = () => [...list.children];
+    const sync = () => {
+      const n = rows().length; addBtn.hidden = n >= SUB_MAX;
+      rows().forEach((r, k) => { r.querySelector('input').setAttribute('aria-label', 'Sub-mission ' + (k + 1) + ' of ' + n); });
+    };
+    const add = (after) => {
+      if (rows().length >= SUB_MAX) return null;
+      const tmp = document.createElement('ol'); tmp.innerHTML = subRow({ t: '', i: -1 });
+      const r = tmp.firstElementChild; UI.hydrateIcons(r);
+      if (after) after.after(r); else list.append(r);
+      sync(); r.querySelector('input').focus(); return r;
+    };
+    const del = (r) => {
+      const prev = r.previousElementSibling, next = r.nextElementSibling; r.remove(); sync();
+      const to = prev || next; if (to) to.querySelector('input').focus(); else addBtn.focus();
+    };
+    addBtn.onclick = () => add(list.lastElementChild);
+    list.addEventListener('click', (e) => { const d = e.target.closest('.cm-sub-del'); if (d) del(d.closest('.cm-sub')); });
+    list.addEventListener('keydown', (e) => {
+      const r = e.target.closest('.cm-sub'); if (!r) return;
+      if (e.target.tagName === 'INPUT') {
+        if (e.key === 'Enter') { e.preventDefault(); if (e.target.value.trim()) add(r); }   // Enter adds the next row (never submits)
+        else if (e.key === 'Backspace' && !e.target.value && rows().length > 1) { e.preventDefault(); del(r); }
+        return;
+      }
+      if (e.target.classList.contains('cm-grip') && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        if (e.key === 'ArrowUp' && r.previousElementSibling) r.previousElementSibling.before(r);
+        if (e.key === 'ArrowDown' && r.nextElementSibling) r.nextElementSibling.after(r);
+        sync(); e.target.focus();
+      }
+    });
+    // drag to reorder: the row follows your finger; it swaps with a neighbour once you pass that neighbour's middle
+    list.addEventListener('pointerdown', (e) => {
+      const g = e.target.closest('.cm-grip'); if (!g || e.button > 0) return;
+      e.preventDefault();
+      const r = g.closest('.cm-sub'); let y0 = e.clientY;
+      g.setPointerCapture(e.pointerId); r.classList.add('dragging'); list.classList.add('sorting');
+      const move = (ev) => {
+        const dy = ev.clientY - y0; r.style.transform = `translateY(${dy}px)`;
+        const prev = r.previousElementSibling, next = r.nextElementSibling;
+        if (next && dy > next.offsetHeight / 2) { const h = next.offsetHeight + 8; next.after(r); y0 += h; r.style.transform = `translateY(${ev.clientY - y0}px)`; }
+        else if (prev && dy < -prev.offsetHeight / 2) { const h = prev.offsetHeight + 8; prev.before(r); y0 -= h; r.style.transform = `translateY(${ev.clientY - y0}px)`; }
+      };
+      const end = () => {
+        r.style.transform = ''; r.classList.remove('dragging'); list.classList.remove('sorting');
+        g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', end); g.removeEventListener('pointercancel', end);
+        sync();
+      };
+      g.addEventListener('pointermove', move); g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
+    });
+    sync();
+  }
   function form(opts) {
     const m = opts.m, tpl = C.tpl(opts.tpl || (m && m.tpl));
-    const v = m ? { title: m.title, notes: m.notes, steps: m.steps.map((x) => x.t).join('\n'), due: m.due, diff: m.diff, pri: m.pri }
-      : { title: tpl.id === 'blank' ? '' : tpl.name, notes: tpl.notes, steps: tpl.steps.join('\n'), due: C.defaultDue(tpl), diff: tpl.diff, pri: tpl.pri };
+    const v = m ? { title: m.title, notes: m.notes, steps: m.steps.map((x, i) => ({ t: x.t, i, done: x.done })), due: m.due, diff: m.diff, pri: m.pri }
+      : { title: tpl.id === 'blank' ? '' : tpl.name, notes: tpl.notes, steps: tpl.steps.map((t) => ({ t, i: -1 })), due: C.defaultDue(tpl), diff: tpl.diff, pri: tpl.pri };
     const quick = [['Tonight', () => { const d = new Date(); d.setHours(21, 0, 0, 0); if (d < Date.now() + 30 * 60000) d.setDate(d.getDate() + 1); return +d; }],
       ['Tomorrow', () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(18, 0, 0, 0); return +d; }],
       ['In 3 days', () => { const d = new Date(); d.setDate(d.getDate() + 3); d.setHours(18, 0, 0, 0); return +d; }],
@@ -57,9 +119,11 @@
       <form class="cm-form" id="cm-form" novalidate>
         <label class="fl"><span>Mission name</span><input type="text" name="title" maxlength="60" required value="${esc(v.title)}" placeholder="e.g. Finish chapter 3"></label>
         <label class="fl"><span>Notes <span class="opt">· optional</span></span><textarea name="notes" rows="2" maxlength="400" placeholder="Anything to remember">${esc(v.notes)}</textarea></label>
-        <label class="fl"><span>Sub-missions <span class="opt">· one per line, +1 coin each</span></span><textarea name="steps" rows="4" placeholder="Break it into small sub-missions">${esc(v.steps)}</textarea></label>
+        <div class="fl" role="group" aria-labelledby="cm-subs-lbl"><span id="cm-subs-lbl">Sub-missions <span class="opt">· +1 coin each · drag ⠿ to reorder</span></span>
+          <ol class="cm-subs" id="cm-subs">${v.steps.map(subRow).join('')}</ol>
+          <button type="button" class="cm-sub-add" data-subadd="1">+ Add sub-mission</button></div>
         <div class="fl"><span>Due date and time</span><input type="datetime-local" name="due" required value="${toLocal(v.due)}">
-          <div class="quick">${quick.map(([l], i) => `<button type="button" class="chipbtn" data-cquick="${i}">${l}</button>`).join('')}</div></div>
+          <div class="quick">${quick.map(([l], i) => `<button type="button" class="chipbtn" aria-pressed="false" data-cquick="${i}">${l}</button>`).join('')}</div></div>
         <div class="fl"><span>Difficulty${m ? ' <span class="opt">· set at creation</span>' : ''}</span>${seg('cdiff', C.DIFF, v.diff, !!m)}</div>
         <div class="fl"><span>Priority${m ? ' <span class="opt">· set at creation</span>' : ''}</span>${seg('cpri', C.PRI, v.pri, !!m)}</div>
         ${m ? `<p class="fine">Changing the due date keeps the original reward deadline (${esc(when((m.lock || m).due))}).</p>` : ''}
@@ -68,17 +132,21 @@
         <button class="btn gold block" type="submit">${m ? 'Save changes' : 'Create mission'}</button>
       </form>`, (b) => {
       const f = $('#cm-form', b), st = { diff: v.diff, pri: v.pri };
-      const prev = () => { const r = C.preview(st.diff, st.pri), mx = C.reward({ diff: st.diff, pri: st.pri, due: 2, at: 1 }, 1); $('#cm-prev', b).innerHTML = `<span class="lbl">Reward if finished on time</span><b>+${r.coins} coins · +${r.xp} XP</b><span class="fine">Finish early for up to +${mx.coins} coins · +${mx.xp} XP. Late: half. Your own missions pay up to ${C.DAILY_COINS} coins and ${C.DAILY_XP} XP a day in total.</span>`; };
+      const pickQuick = (on) => f.querySelectorAll('[data-cquick]').forEach((x) => x.setAttribute('aria-pressed', x === on));
+      f.due.addEventListener('input', () => pickQuick(null));
+      subEditor($('#cm-subs', b), $('[data-subadd]', b));
+      const prev = () => { const r = C.preview(st.diff, st.pri), mx = C.reward({ diff: st.diff, pri: st.pri, due: 2, at: 1 }, 1); $('#cm-prev', b).innerHTML = `<span class="lbl">Reward if finished on time</span><b>+${r.coins} coins · +${r.xp} XP</b><span class="fine">Finish early for up to +${mx.coins} coins · +${mx.xp} XP. Finishing late pays half. Your own missions pay up to ${C.DAILY_COINS} coins and ${C.DAILY_XP} XP a day in total.</span>`; };
       f.addEventListener('click', (e) => {
         const t = e.target.closest('[data-cdiff], [data-cpri], [data-cquick]'); if (!t || t.getAttribute('aria-disabled') === 'true') return;
-        if (t.dataset.cquick) { f.due.value = toLocal(quick[+t.dataset.cquick][1]()); return; }
+        if (t.dataset.cquick) { f.due.value = toLocal(quick[+t.dataset.cquick][1]()); pickQuick(t); return; }
         const k = t.dataset.cdiff ? 'diff' : 'pri'; st[k] = t.dataset.cdiff || t.dataset.cpri;
         t.parentNode.querySelectorAll('[role="radio"]').forEach((x) => x.setAttribute('aria-checked', x === t));
         prev();
       });
       f.onsubmit = (e) => {
         e.preventDefault();
-        const data = { title: f.title.value, notes: f.notes.value, steps: f.steps.value, due: fromLocal(f.due.value), diff: st.diff, pri: st.pri };
+        const steps = [...b.querySelectorAll('#cm-subs .cm-sub')].map((r) => ({ t: r.querySelector('input').value, i: +r.dataset.i }));
+        const data = { title: f.title.value, notes: f.notes.value, steps, due: fromLocal(f.due.value), diff: st.diff, pri: st.pri };
         const r = m ? C.update(m.id, data) : C.create(data, tpl.id);
         if (!r.ok) { $('#cm-err', b).textContent = r.msg; WB.Sfx.play('tap'); return; }
         UI.closeSheet(); WB.Sfx.play('claim');

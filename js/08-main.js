@@ -46,7 +46,7 @@
     });
     if (G.featBoot) G.featBoot();   // saves from before step-by-step unlocks keep what they've reached
     const h = (location.hash || '').slice(1);
-    UI.go(h === 'missions' ? 'tasks' : ['tasks', 'shop', 'collection', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
+    UI.go(h === 'missions' ? 'tasks' : ['tasks', 'shop', 'inv', 'collection', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
     UI.updateHud(); UI.paintFace();
     WB.view.start();
     if (welcome && welcome.length) showWelcome(welcome);
@@ -59,7 +59,7 @@
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
     G.markSeen();
-    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'This browser is blocking storage, possibly a private window. Open Step Quest normally to keep your progress.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
+    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'This browser is blocking storage (maybe a private window). Open Step Quest normally to keep your progress.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
   }
 
   function showWelcome(lines) {
@@ -110,7 +110,7 @@
       const name = { avatar: 'New avatar', pet: 'New pet', weapon: it.legendary ? 'Legendary weapon' : 'New weapon' }[cat];
       UI.toast({ kicker: name, title: it.name, icon: { avatar: 'user', pet: 'paw', weapon: 'sword' }[cat], cls: it.legendary ? 'big' : 'cyan', action: { label: 'See it', fn: () => UI.showItem(cat, id) } });   // not equipped automatically: it opens the Shop on the new item
     });
-    WB.bus.on('equip', ({ cat }) => { if (cat === 'avatar' || cat === 'skin') UI.paintFace(); });
+    WB.bus.on('equip', ({ cat }) => { if (cat === 'avatar' || cat === 'skin' || cat === 'outfit') UI.paintFace(); });
     WB.bus.on('achievement', (a) => (WB.Sfx.play('level'), UI.toast({ kicker: 'Achievement', title: a.title, sub: WB.Celebrate.fire('achievement', a, 90), img: 'ach/' + a.id + '.png', cls: 'gold', ms: 4000 })));
     WB.bus.on('taskComplete', (c) => { const mer = c.type === 'mission' && (D.missionById[c.t.id] || {}).merlin; WB.Sfx.play(mer ? 'level' : 'quest'); UI.toast({ kicker: mer ? 'Merlin’s quest complete' : 'Mission complete', title: c.t.title, sub: WB.Celebrate.fire(mer ? 'merlin' : 'mission', c.t, mer ? 120 : 70), icon: 'check', cls: 'ok', ms: 4600, action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
     WB.bus.on('milestone', (m) => {

@@ -32,7 +32,7 @@
     f: 9.8, base: 9.8, above: false, lastPeak: 0, peakAvg: 2.2, buffer: [], walking: false,
     async start() {
       if (this.running) return true;
-      if (!this.supported()) { Steps.setStatus('unavailable', 'This device or browser has no motion sensor access.'); return false; }
+      if (!this.supported()) { Steps.setStatus('unavailable', 'This device or browser can’t read the motion sensor.'); return false; }
       Steps.setStatus('starting');
       try {
         if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -165,13 +165,49 @@
   WB.Sfx = (() => {
     let ctx = null;
     const buffers = {};
-    // let game sounds mix with music from other apps instead of pausing it (Safari 16.4+)
-    try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) {}
+    /* How game audio shares the phone with other apps.
+       Game music ON  -> "playback": sounds play on the speaker even when an iPhone's Ring/Silent switch is on silent
+                         (iOS treats Web Audio as "ambient" by default, which the silent switch mutes).
+       Game music OFF -> "ambient": the player is listening to their own music, so sound effects layer on top of it
+                         instead of pausing it.
+       iOS 17+ / Safari 16.4+ use navigator.audioSession. Older iPhones reach "playback" through a silent looping
+       <audio> element (only while game music is on: a media element would pause the player's music).
+       The installed app sets its own session natively (playback + mix with others, patch-native.mjs). */
+    const nativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+    const iOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const mixMode = () => !!(WB.state && WB.state.settings.gameMusic === false);
+    let keeper = null;
+    const silentWav = () => {   // 0.25 s of 8 kHz silence, built here instead of shipping a file
+      const n = 2000, b = new DataView(new ArrayBuffer(44 + n)), w = (o, str) => [...str].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
+      w(0, 'RIFF'); b.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+      b.setUint32(24, 8000, true); b.setUint32(28, 8000, true); b.setUint16(32, 1, true); b.setUint16(34, 8, true); w(36, 'data'); b.setUint32(40, n, true);
+      for (let i = 0; i < n; i++) b.setUint8(44 + i, 128);
+      return URL.createObjectURL(new Blob([b.buffer], { type: 'audio/wav' }));
+    };
+    const applySession = () => {
+      if (nativeApp) return;
+      const mix = mixMode();
+      try { if (navigator.audioSession) { const t = mix ? 'ambient' : 'playback'; if (navigator.audioSession.type !== t) navigator.audioSession.type = t; } } catch (e) {}
+      if (mix && keeper && !keeper.paused) keeper.pause();
+    };
+    applySession();
+    const keepAwake = () => {
+      if (nativeApp || navigator.audioSession || !iOS || mixMode() || document.visibilityState === 'hidden') return;
+      try {
+        if (!keeper) { keeper = new Audio(silentWav()); keeper.loop = true; keeper.setAttribute('playsinline', ''); keeper.setAttribute('x-webkit-airplay', 'deny'); }
+        if (keeper.paused) { const p = keeper.play(); if (p && p.catch) p.catch(() => {}); }
+      } catch (e) {}
+    };
+    document.addEventListener('visibilitychange', () => { if (keeper && document.visibilityState === 'hidden') keeper.pause(); });
     const ensure = () => {
       if (!ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; ctx = new AC(); }
       if (ctx.state === 'suspended') ctx.resume();
+      applySession(); keepAwake();
       return ctx;
     };
+    // start (or resume) audio on the first real tap, so the very first sound already plays on the speaker
+    const unlock = () => { if (!muted()) ensure(); };
+    ['pointerup', 'touchend', 'keydown'].forEach((g) => document.addEventListener(g, unlock, { capture: true, passive: true }));
     const tones = {
       coin: [[988, 0.05], [1319, 0.08]], claim: [[660, 0.06], [880, 0.06], [1175, 0.1]],
       level: [[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.18]], chest: [[392, 0.06], [523, 0.06], [784, 0.12]],
@@ -196,11 +232,12 @@
       quest: 'sfx/quest_complete.mp3',
       proj: ['sfx/projectile_1.mp3', 'sfx/projectile_2.mp3', 'sfx/projectile_5.mp3'],
     };
-    // game sounds stay quiet when the player turned Sound & music off
+    // game sounds stay quiet when the player turned Sound effects off
     let lastLevel = 0;
     const muted = () => !WB.state || !WB.state.settings.sound;
     return {
       muted,
+      applySession,   // call after the Game music switch changes
       // play a recorded sound file (weapon impacts, actions); decoded once and cached
       async file(path, vol = 0.55) {
         try {
@@ -242,15 +279,15 @@
 
   /* Background music: the app song (first launch, until the tutorial ends) and battle music.
      Streams with an <audio> element so long tracks don't have to download before playing. Off when the player
-     turns Sound & music off. Browsers only allow audio after a
+     turns Game music off. Browsers only allow audio after a
      tap, so a blocked start is retried on the next tap. */
   WB.Bgm = (() => {
     const TRACKS = {
-      app: 'music/app_song.mp3',
+      app: 'music/app_theme.mp3',
       merlin: 'music/merlin.mp3',   // only while Merlin is on screen
-      // battle music rotates at random; [file, weight]: the three defaults come up a bit more often (3x).
-      // Battle music 1 is the same recording as the app song, and 7 the same as 4, so they share a file.
-      battle: [['music/app_song.mp3', 3], ['music/battle_default_2.mp3', 3], ['music/battle_default_3.mp3', 3],
+      // battle music rotates at random; [file, weight]: the defaults come up a bit more often (3x).
+      // The app theme is also a default battle track, so it shares a file. Battle music 7 is the same as 4.
+      battle: [['music/app_theme.mp3', 3], ['music/battle_default_1.mp3', 3], ['music/battle_default_2.mp3', 3], ['music/battle_default_3.mp3', 3],
         ['music/battle_2.mp3', 1], ['music/battle_4.mp3', 1], ['music/battle_6.mp3', 1], ['music/battle_8.mp3', 1],
         ['music/battle_valhalla.mp3', 1], ['music/battle_minstrel.mp3', 1], ['music/battle_elven.mp3', 1], ['music/battle_unworthy.mp3', 1]],
       // from level 40 (D.EPIC_MUSIC_LEVEL) the bigger themes join the rotation too: Redemption and Cold Fire
@@ -265,7 +302,7 @@
       return (lastBattle = pool[pool.length - 1][0]);
     };
     let el = null, want = null, fadeT = null;
-    const allowed = () => !!(WB.state && WB.state.settings.sound);
+    const allowed = () => !!(WB.state && WB.state.settings.gameMusic !== false);   // the Game music switch
     // browsers only start audio after a real tap: on phones that is touchend / pointerup / click (not pointerdown)
     const GESTURES = ['pointerup', 'touchend', 'click', 'keydown'];
     const retry = () => { GESTURES.forEach((g) => document.removeEventListener(g, retry, true)); B.sync(); };

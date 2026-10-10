@@ -104,7 +104,7 @@
     plates();
     const c = D.CREATURES[e.creature];
     log((e.nemesis ? (e.cutOff ? `You try to slip away, but ${c.name} cuts you off! ` : '') + `Boss battle: ${c.name}. ${D.BOSSES[e.creature].abilityName}: ${D.BOSSES[e.creature].abilityDesc}` : e.boss ? `${c.name}, guardian of ${w.name}, blocks the way!` : e.creature === 'druid' ? 'Wrong answer! The Druid raises his blade. Beat him or he takes all your eggs.' : `${c.name} wants a fight!`) +
-      (S().hints.battle ? '' : ` Tip: Strike uses your ${st.melee.name}. Your ${st.weapon.name} hits harder, then recharges. Defend when it’s charging.`));
+      (S().hints.battle ? '' : ` Tip: Strike uses your ${st.melee.name}. Your ${st.weapon.name} hits harder but needs to recharge. Defend while it does.`));
     actions();
     last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
     // the classic battle wipe: the screen flashes, bars sweep across, then the fight fades in
@@ -233,7 +233,7 @@
         view.petTop = topOf(psh, dy, k);
       }
     }
-    // hero, with the melee weapon in hand while attacking
+    // hero (on a Strike the equipped melee weapon pops up over the head instead of being drawn in the hand)
     const hs = sprites.hero, hsh = WB.sheet('av', s.avatar, hs.anim === 'down' ? 'hurt' : hs.anim), himg = WB.Assets.ok(hsh.path);
     if (himg) {
       step(hs, hsh, dt, hs.anim === 'idle' ? 7 : 12);
@@ -245,8 +245,7 @@
       }
       ctx.globalAlpha = hs.anim === 'down' ? 0.6 : 1;
       WB.drawFrame(ctx, WB.recolor(himg, hsh.path, s.skin), hsh, f, dx, dy, hsh.scale);
-      if (hs.anim === 'attack' && hs.melee && st) WB.drawHeld(ctx, s.avatar, hsh, f, dx, dy, st.melee.id, Math.min(1, hs.f / Math.max(1, hsh.n - 1)));
-      if (st && st.hero.defend && st.shield) {   // shield raised in front while defending
+      if (st && st.hero.defend && st.shield) {   // shield (or belt) raised in front while defending
         const si = WB.Assets.ok(st.shield.icon); if (si) ctx.drawImage(si, Math.round(view.hx + 6), Math.round(g - sz * 0.42 - si.height / 2));
       }
       ctx.globalAlpha = 1;
@@ -423,14 +422,14 @@
 
   // "-12 HP" / "+8 HP" / status words that float up from above a fighter's head
   const lane = { hero: 0, enemy: 0, pet: 0 };
-  function floater(text, who, cls) {
-    const x = who === 'hero' ? view.hx : who === 'pet' ? view.px : view.ex;
+  function floater(text, who, cls, html, dx = 0) {   // dx: follow a fighter that has stepped forward
+    const x = (who === 'hero' ? view.hx : who === 'pet' ? view.px : view.ex) + dx;
     const top = (who === 'hero' ? view.heroTop : who === 'pet' ? view.petTop : view.enemyTop) || view.world.ground - 52;
     const n = lane[who]++; setTimeout(() => { lane[who] = Math.max(0, lane[who] - 1); }, 700);
     const p = toCss(x, top - 4);
     const el = document.createElement('div');
-    el.className = 'floater b ' + (cls || ''); el.textContent = text;
-    el.style.left = p.x + (n % 2 ? 14 : -6) + 'px'; el.style.top = p.y - n * 18 + 'px';
+    el.className = 'floater b ' + (cls || ''); if (html) { el.innerHTML = html; el.setAttribute('aria-hidden', 'true'); } else el.textContent = text;
+    el.style.left = p.x + (dx ? 0 : n % 2 ? 14 : -6) + 'px'; el.style.top = p.y - n * 18 + 'px';
     $('#b-fx').appendChild(el); setTimeout(() => el.remove(), 1400);
   }
   // a boss's speech bubble over its head
@@ -503,6 +502,7 @@
     if (ev.who === 'hero') {
       if (ev.type === 'strike') {
         hs.anim = 'attack'; hs.once = true; hs.f = 0; hs.melee = true; WB.Sfx.play('strike');
+        { const mw = D.weaponById[ev.weapon] || st.melee; if (mw && mw.icon) { const im = WB.Assets.ok(mw.icon), k = 2; floater(mw.name, 'hero', 'weapon', im ? `<img class="px-img" src="${WB.Assets.url(mw.icon)}" width="${im.width * k}" height="${im.height * k}" alt="" draggable="false">` : `<img class="px-img" src="${WB.Assets.url(mw.icon)}" height="28" alt="" draggable="false">`, Math.round(hs.adv)); } }   // the equipped melee weapon, over the head
         await sleep(300);
         if (ev.braced) floater('Braced', 'enemy', 'tag');
         if (ev.pierced) floater('Pierced!', 'enemy', 'tag');

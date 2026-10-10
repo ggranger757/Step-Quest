@@ -40,10 +40,10 @@
     if (fromPop !== true) { ignorePop++; try { history.back(); } catch (e) { ignorePop--; } }
   };
   UI.go = (tab, opt = {}) => {
-    if (tab === 'supplies' || tab === 'collection') {   // the old Supplies / Inventory pages now live in the Shop tab (Bag and Artifacts)
+    if (tab === 'supplies' || tab === 'collection' || tab === 'bag') {   // older routes: everything you own lives on the Inventory tab
       const st = UI.supTab;
       if (st === 'ach') { UI.pfTab = 'ach'; tab = 'profile'; }
-      else { tab = 'shop'; if (st === 'finds' || st === 'eggs') { UI.hub = 'art'; UI.artTab = st; } else { UI.hub = 'bag'; if (st) UI.bagTab = st; } }
+      else { tab = 'inv'; if (st === 'finds' || st === 'eggs') { UI.invHub = 'art'; UI.artTab = st; } else { UI.invHub = 'bag'; if (st) UI.bagTab = st; } }
       UI.supTab = null;
     }
     const prev = UI.tab;
@@ -77,7 +77,7 @@
   UI.render = (tab = UI.tab) => {
     if (tab === 'world') UI.renderJourney();
     else if (tab === 'tasks') UI.renderTasks();
-    else if (tab === 'shop') UI.renderShop();
+    else if (tab === 'shop' || tab === 'inv') UI.renderShop();
     else if (tab === 'collection') UI.renderCollection();
     else if (tab === 'profile') UI.renderProfile();
     else if (tab === 'map') UI.renderMap();
@@ -219,6 +219,7 @@
     // everything this level opens: thumbnails are painted after the card mounts
     const items = [
       ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures, guardians and the Druid now roam the road', icon: 'sword' }] : []),
+      ...(inRange(D.COLORS_LEVEL) ? [{ n: 'Avatar colors', sub: 'Change your skin tone and outfit colors in the Loadout', icon: 'user' }] : []),
       ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · open it with your Worldkey' : 'New world · explore ' + D.WORLD_GATE_PCT + '% of ' + D.worldById[w.unlock.after].name + ' to open it', icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
       ...D.AVATARS.filter((a) => a.req.level && inRange(a.req.level)).map((a) => ({ n: a.name, sub: 'Walker · ' + price(a.req), thumb: { kind: 'av', id: a.id, head: true, face: 'right' }, cat: 'avatar', id: a.id })),
@@ -567,7 +568,6 @@
       </div>
       <div class="sect"><h2>Walking streak</h2>
         ${UI.streakCard()}
-        <div class="streak-track">${D.STREAK_MILESTONES.map((m) => `<div class="ms ${s.streak.claimed.includes(m.days) ? 'got' : ''}"><b>${m.days}</b><span>days</span><span class="ms-c">+${m.coins}</span></div>`).join('')}</div>
       </div>`;
     else if (mt === 'mine') body = UI.customSection ? UI.customSection() : '';
     else if (mt === 'field') body = UI.missionsSection ? UI.missionsSection() : '';
@@ -576,7 +576,7 @@
         <p class="fine">Long-term goals that grow as you play: reach new worlds${G.battlesOpen() ? ', win battles' : ''} and find artifacts. Two are active at a time. Finish one to reveal the next.</p>
         <div class="list">${G.activeAdventure().map((t) => taskRow(t, 'adv', false)).join('') || '<p class="empty">Every adventure is complete.</p>'}</div>
       </div>
-      ${s.tasks.quests.length ? `<div class="sect"><h2>Deliveries <span class="aside">From travelers</span></h2><div class="list">${s.tasks.quests.map((q) => taskRow(q, 'quest', false)).join('')}</div></div>` : '<p class="fine">Travelers on the road may ask you to deliver a message. Deliveries appear here.</p>'}`;
+      ${s.tasks.quests.length ? `<div class="sect"><h2>Deliveries <span class="aside">From travelers</span></h2><div class="list">${s.tasks.quests.map((q) => taskRow(q, 'quest', false)).join('')}</div></div>` : '<p class="fine">Travelers you meet may ask you to carry a message. Deliveries show up here.</p>'}`;
     const changed = UI.set($('#scr-tasks'), `<div class="scr-wrap">
       <div class="scr-head"><h1>Missions</h1>${n > 1 ? `<button class="btn gold sm" type="button" data-act="claim-all">Claim all (${n})</button>` : ''}</div>
       <div class="seg four" role="tablist" aria-label="Mission types">${MT.map(([id, l, ic]) => `<button type="button" role="tab" data-mtab="${id}" aria-selected="${id === mt}" aria-pressed="${id === mt}">${WB.icon(ic, 2)}<span>${l}</span>${cnt[id] ? `<span class="cnt ready">${cnt[id]} ready</span>` : ''}</button>`).join('')}</div>
@@ -588,69 +588,74 @@
   };
 
   // ---------- walking streak (Missions → Today) ----------
-  // One clear status line, today's progress, the next reward, and Streak Shields (which save a streak when you miss a day).
+  // One card: the count, today's progress, the reward track, and Streak Shields. Rules hide behind "How it works".
   UI.streakCard = () => {
     const s = S(), sv = G.streakView(), st = s.streak, min = s.settings.streakMin, have = Math.min(s.today.steps, min), max = D.SHIELD_MAX, f = WB.fmt;
-    const next = D.STREAK_MILESTONES.find((m) => !st.claimed.includes(m.days)), cur = sv.alive ? sv.count : 0;
-    const status = sv.today ? `Today counts. Come back tomorrow to make it ${cur + 1} days.`
-      : sv.rest ? `You missed ${sv.missed === 1 ? 'yesterday' : sv.missed + ' days'}. Walk ${f(min)} steps today and ${sv.missed === 1 ? 'a Streak Shield' : sv.missed + ' Streak Shields'} will save your ${cur}-day streak.`
-      : cur ? `Walk ${f(min)} steps today to make it ${cur + 1} days.`
-      : sv.lost ? `Your ${sv.lost}-day streak ended. Walk ${f(min)} steps today to start a new one.`
+    const cur = sv.alive ? sv.count : 0, next = D.STREAK_MILESTONES.find((m) => !st.claimed.includes(m.days));
+    const left = Math.max(0, min - s.today.steps), day = (n) => n + (n === 1 ? ' day' : ' days');
+    // one short line, only what matters right now
+    const status = sv.today ? `Done for today. Come back tomorrow for day ${cur + 1}.`
+      : sv.rest ? `You missed ${sv.missed === 1 ? 'yesterday' : day(sv.missed)}. Walk today and ${sv.missed === 1 ? 'a shield saves' : sv.missed + ' shields save'} your streak.`
+      : cur ? (left ? `${f(left)} more steps for day ${cur + 1}.` : `Goal reached. Day ${cur + 1} is yours.`)
+      : sv.lost ? `Your ${sv.lost}-day streak ended. Walk ${f(min)} steps to start again.`
       : `Walk ${f(min)} steps today to start a streak.`;
     const full = st.rest >= max, cost = D.SUPPLIES[0].cost, short = cost - s.coins;
     return `<div class="pbox card streak-card ${sv.today ? 'done' : sv.rest ? 'saved' : ''}">
-      <div class="streak-head"><span class="sh-main">${WB.icon(sv.today ? 'flame' : 'flameoff', 3)}<span class="sh-t"><b>${cur}-day streak</b><span class="lbl">Best ${st.best} days</span></span></span></div>
-      <p class="sk-status">${sv.today ? WB.icon('check', 2) : ''}${status}</p>
-      ${sv.today ? '' : `<div class="sk-today"><div class="bar seg cyan" role="progressbar" aria-label="Steps toward today’s streak day" aria-valuemin="0" aria-valuemax="${min}" aria-valuenow="${have}"><i style="width:${(have / min) * 100}%"></i></div><span class="lbl">${f(have)} / ${f(min)} steps today</span></div>`}
-      <p class="sk-next">${next ? `Next reward: day ${next.days}, +${f(next.coins)} coins${next.days > cur ? ` (${next.days - cur} ${next.days - cur === 1 ? 'day' : 'days'} to go)` : ''}.` : 'Every streak reward is yours.'}</p>
-      <div class="shields">
-        <div class="sh-icons" aria-hidden="true">${Array.from({ length: max }, (_, i) => `<span class="shd ${i < st.rest ? 'on' : ''}">${WB.icon('sshield', 3)}</span>`).join('')}</div>
-        <div class="sh-txt"><b>Streak Shields: ${st.rest} / ${max}</b><span>If you miss a day, a shield is used up automatically and your streak is saved. You get a free one every ${D.SHIELD_EVERY} streak days.</span></div>
-        <button class="btn ${full ? 'ghost' : 'gold'} sm" type="button" data-supply="rest" ${off(full ? 'You already hold ' + max + ' Streak Shields, the most you can carry.' : short > 0 ? 'A Streak Shield costs ' + f(cost) + ' coins. You need ' + f(short) + ' more.' : '')}>${full ? 'Full' : 'Buy one · ' + f(cost)}</button>
+      <div class="sk-top">
+        <span class="sk-count">${WB.icon(sv.today ? 'flame' : 'flameoff', 3)}<b>${cur}</b><span class="lbl">${cur === 1 ? 'day' : 'days'}</span></span>
+        <span class="lbl sk-best">Best ${st.best}</span>
       </div>
-      <details class="sk-how"><summary><span class="lbl">How streaks work</span><span class="chev" aria-hidden="true">›</span></summary>
+      ${sv.today ? '' : `<div class="bar seg cyan" role="progressbar" aria-label="Steps toward today’s streak day" aria-valuemin="0" aria-valuemax="${min}" aria-valuenow="${have}"><i style="width:${(have / min) * 100}%"></i></div>`}
+      <p class="sk-status">${sv.today ? WB.icon('check', 2) : ''}${status}</p>
+      <div class="streak-track" aria-label="Streak rewards">${D.STREAK_MILESTONES.map((m) => `<div class="ms ${st.claimed.includes(m.days) ? 'got' : next && m.days === next.days ? 'next' : ''}"><b>${m.days}</b><span class="ms-c">${st.claimed.includes(m.days) ? WB.icon('check', 1) : '+' + f(m.coins)}</span></div>`).join('')}</div>
+      <div class="shields">
+        <div class="sh-icons" aria-hidden="true">${Array.from({ length: max }, (_, i) => `<span class="shd ${i < st.rest ? 'on' : ''}">${WB.icon('sshield', 2)}</span>`).join('')}</div>
+        <div class="sh-txt"><b>Shields ${st.rest}/${max}</b><span>Saves your streak on a missed day</span></div>
+        <button class="btn ${full ? 'ghost' : 'gold'} sm" type="button" data-supply="rest" ${off(full ? 'You’re carrying the most shields you can (' + max + ').' : short > 0 ? 'You need ' + f(short) + ' more coins.' : '')}>${full ? 'Full' : f(cost)}</button>
+      </div>
+      <details class="sk-how"><summary><span class="lbl">How it works</span><span class="chev" aria-hidden="true"></span></summary>
         <ul class="streak-rules">
-          <li>Walk at least ${f(min)} steps in a day to add a day. Change the minimum in Profile → Settings.</li>
-          <li>Miss a day and your streak starts over, unless you have a Streak Shield.</li>
-          <li>Each missed day uses one shield, automatically. Two shields cover two missed days in a row.</li>
-          <li>Streaks pay coins at ${D.STREAK_MILESTONES.map((m) => m.days).join(', ').replace(/, (\d+)$/, ' and $1')} days.</li>
+          <li>Walk ${f(min)} steps to add a day. Change the goal in Profile → Settings.</li>
+          <li>Miss a day and a shield saves your streak. With no shield, it resets.</li>
+          <li>You earn a free shield every ${D.SHIELD_EVERY} days.</li>
         </ul>
       </details>
     </div>`;
   };
 
   // ---------- SHOP · BAG · ARTIFACTS (one tab) ----------
-  // Shop: buy things. Bag: everything you own (equip, repair, refill, drink) plus the Worldkey.
+  // Shop: buy things. Inventory: everything you own (equip, repair, refill, drink), the Worldkey and artifacts.
   // Artifacts: the collection log, the Darkmatter Forge (crafted from artifact copies) and eggs.
-  UI.hub = 'shop'; UI.bagTab = 'worldkey'; UI.artTab = 'finds';
-  const HUBS = [['shop', 'Shop', 'shop'], ['bag', 'Bag', 'img:pot/tonic.png'], ['art', 'Artifacts', 'img:art/m30.png']];
+  // Shop and Inventory are separate tabs. Inventory = the Bag sections plus Artifacts (Collection, Forge, Eggs).
+  UI.hub = 'shop'; UI.invHub = 'bag'; UI.bagTab = 'worldkey'; UI.artTab = 'finds';
   const SHOP_TABS = [
-    ['avatar', 'Avatars', 'user', 'Characters you walk as. Buy them here; switch between yours in the Bag.'],
-    ['weapons', 'Weapons', 'sword', () => G.upkeep() ? 'Melee weapons wear down as you strike: repair them in the Bag. Ranged weapons come with ' + D.AMMO_PACK + ' shots: buy more here when they run out.' : 'Melee powers Strike, ranged powers Throw, Shoot or Cast, defense powers Defend. Gear never runs out or wears down until level ' + D.UPKEEP_LEVEL + '.'],
-    ['potions', 'Potions / Food', 'img:pot/tonic.png', 'Used up when you drink or eat them. Carry up to ' + D.POTION_MAX + ' of each.'],
-    ['pets', 'Pets', 'paw', 'Companions that take part of every hit in battle. A knocked-out pet rests and recovers over time.'],
-    ['magic', 'Magic', 'img:mg/book.png', () => 'Charms are worn for passive perks and never run out.' + (G.upkeep() ? ' Battle magic comes with ' + D.MAGIC_USES + ' uses: buy more when they run out.' : ' Battle magic works once per battle.')],
+    ['avatar', 'Avatars', 'user', 'Characters you walk as. Buy them here, then switch in Inventory.'],
+    ['weapons', 'Weapons', 'sword', () => G.upkeep() ? 'Melee weapons wear down as you strike. Repair them in Inventory. Ranged weapons come with ' + D.AMMO_PACK + ' shots. Buy more here when they run out.' : 'Melee weapons power Strike, ranged weapons power Throw, Shoot or Cast, and defense powers Defend. Nothing wears down or runs out until level ' + D.UPKEEP_LEVEL + '.'],
+    ['potions', 'Potions / Food', 'img:pot/tonic.png', 'Each one works once. Carry up to ' + D.POTION_MAX + ' of each.'],
+    ['pets', 'Pets', 'paw', 'Pets take part of every hit aimed at you in battle. A knocked-out pet recovers over time.'],
+    ['magic', 'Magic', 'img:mg/book.png', () => 'Charms give passive perks and never run out.' + (G.upkeep() ? ' Battle magic comes with ' + D.MAGIC_USES + ' uses. Buy more when they run out.' : ' Battle magic works once per battle.')],
   ];
   const BAG_TABS = [
     ['worldkey', 'Worldkey', 'img:wk/dm_nebula.png', () => !G.featOn('wk') ? 'Your guide between worlds.' : G.upkeep() ? 'Your guide between worlds. Charge it with Darkmatter, tune it to a world, then open the way.' : 'Your guide between worlds. Tune it to a world, then open the way.'],
-    ['weapons', 'Weapons', 'sword', () => G.upkeep() ? 'Equip, repair and refill. Melee weapons hit softer as they wear; a repair costs a quarter of the price.' : 'Equip the weapons you own.'],
-    ['magic', 'Magic', 'img:mg/book.png', 'Wear up to ' + D.CHARM_SLOTS + ' charms. Battle magic is used from the Magic button in battle, once per battle each.'],
-    ['potions', 'Potions', 'img:pot/tonic.png', 'Drink healing potions here or use any of them in battle from Items.'],
+    ['weapons', 'Weapons', 'sword', () => G.upkeep() ? 'Equip, repair and refill. Worn melee weapons hit softer. A repair costs a quarter of the price.' : 'Equip the weapons you own.'],
+    ['magic', 'Magic', 'img:mg/book.png', 'Wear up to ' + D.CHARM_SLOTS + ' charms. Cast battle magic from the Magic button, once per battle each.'],
+    ['potions', 'Potions', 'img:pot/tonic.png', 'Drink healing potions here, or use any potion in battle from Items.'],
     ['pets', 'Pets', 'paw', 'Pets heal over time, like you. A knocked-out pet rests until it recovers.'],
     ['avatar', 'Avatars', 'user', 'Pick who you walk as.'],
   ];
   const ART_TABS = [
-    ['finds', 'Collection', 'img:art/m30.png', 'Artifacts hide along the road in every world. Each find adds a copy; walk a world again to find more copies.'],
+    ['finds', 'Collection', 'img:art/m30.png', 'Artifacts hide along the road in every world. Walk a world again to find more copies.'],
     ['forge', 'Forge', 'img:wk/dm_void.png', ''],   // (locked until level 7: see UI.forgeLocked)
     ['eggs', 'Eggs', 'img:egg1', 'Find eggs on the road or win them in battle. Trade sets to Merlin for loot.'],
   ];
   const GEAR = ['weapons', 'potions', 'pets'];
   // open a hub (and one of its sections) from anywhere
-  UI.goHub = (hub, sub) => {
-    UI.hub = hub;
+  UI.goHub = (hub, sub, opt) => {
+    UI.hub = hub; if (hub !== 'shop') UI.invHub = hub;
     if (sub) { if (hub === 'shop') UI.shopTab = sub; else if (hub === 'bag') UI.bagTab = sub; else UI.artTab = sub; }
-    UI.go('shop'); UI.renderShop();
+    UI.go(hub === 'shop' ? 'shop' : 'inv', opt);
   };
+  UI.hubRoot = () => $(UI.tab === 'inv' ? '#scr-inv' : '#scr-shop');
   const tabIcon = (ic) => (ic === 'img:egg1' ? WB.eggImg('ember', 20, 'still') : ic.startsWith('img:') ? WB.pxImg(ic.slice(4), 20) : WB.icon(ic, 2));
   // Shop order: easiest to get first. Starters, then by unlock level and price; items earned another way (streaks,
   // steps, exploring, guardians, the daily reward) come last.
@@ -682,7 +687,7 @@
       tag = countTag(G.uses(it.id), 'uses'); foot = refillBtn('uses', it, true);
     } else if (own) {
       tag = '<span class="tag">Owned</span>';
-      foot = `<button class="btn ghost sm block" type="button" data-hubgo="bag:${bagSub(cat, it)}">In your Bag</button>`;
+      foot = `<button class="btn ghost sm block" type="button" data-hubgo="bag:${bagSub(cat, it)}">In inventory</button>`;
     } else if (backCost) {
       tag = '<span class="tag out">Died</span>';
       foot = priceTag(backCost) + `<button class="btn gold sm block" type="button" data-petback="${it.id}" ${off(shortWhy(backCost, it.name))}>Buy back</button>`;
@@ -705,7 +710,7 @@
     const canOff = cat === 'pet' || (cat === 'weapon' && it.slot === 'shield') || cat === 'magic';
     const btns = [];
     const up = G.upkeep();
-    if (battleMagic) { if (up) btns.push(refillBtn('uses', it)); else btns.push(`<button class="btn ghost sm" type="button" ${off(it.name + ' is used from the Magic button in battle.')}>In your bag</button>`); }
+    if (battleMagic) { if (up) btns.push(refillBtn('uses', it)); else btns.push(`<button class="btn ghost sm" type="button" ${off(it.name + ' is cast from the Magic button in battle.')}>Owned</button>`); }
     else if (eq) btns.push(canOff ? `<button class="btn ghost sm" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat === 'magic' ? 'magic:' + it.id : cat}">${cat === 'magic' ? 'Take off' : 'Unequip'}</button>` : `<button class="btn ghost sm" type="button" ${off('Already equipped.')}>Equipped</button>`);
     else btns.push(`<button class="btn cyan sm" type="button" data-equip="${cat}:${it.id}">${cat === 'magic' ? 'Wear' : cat === 'avatar' ? 'Use' : 'Equip'}</button>`);
     if (melee && up) { const cost = G.repairCost(it.id), whole = G.cond(it.id) >= 100; btns.push(`<button class="btn ${whole ? 'ghost' : 'gold'} sm" type="button" data-repair="${it.id}" ${off(whole ? it.name + ' is in top shape.' : shortWhy(cost, 'the repair'))}>Repair · ${WB.fmt(cost)}</button>`); }
@@ -734,7 +739,7 @@
     if (cat === 'weapons') {
       const slot = UI.wpnSlot || 'melee';
       const all = (k) => D.WEAPONS.filter((w) => w.slot === k).length, own = (k) => D.WEAPONS.filter((w) => w.slot === k && G.owns('weapon', w.id)).length;
-      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike. Wears down as you use it.' : slot === 'ranged' ? 'Used by Throw, Shoot or Cast. ' + D.AMMO_PACK + ' shots per purchase.' : 'Blocks part of every hit and powers Defend.'} ${own(slot)} of ${all(slot)} owned.</p>
+      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike. Wears down as you use it.' : slot === 'ranged' ? 'Used by Throw, Shoot or Cast. ' + D.AMMO_PACK + ' shots per purchase.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'} ${own(slot)} of ${all(slot)} owned.</p>
         ${WGROUPS[slot].map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('')}`;
     }
     if (cat === 'potions') {
@@ -753,7 +758,7 @@
         <div class="sect"><h2>Discovered <span class="aside">${found.length} / ${found.length + hidden.length}</span></h2>${found.length ? `<div class="grid">${found.map(card).join('')}</div>` : '<p class="fine">Rare potions hide in newer worlds as artifacts. Find one to add it to the Shop.</p>'}</div>
         ${hidden.length ? `<div class="sect"><h2>Still out there <span class="aside">${hidden.length}</span></h2><div class="grid">${hidden.map(card).join('')}</div></div>` : ''}
         <div class="sect"><h2>Streak</h2><div class="grid">${D.SUPPLIES.map((it) => { const full = s.streak.rest >= D.SHIELD_MAX; return `<div class="item pbox"><div class="prev"><canvas width="120" height="120" data-icon-canvas="sshield"></canvas><span class="tag">Have ${s.streak.rest}/${D.SHIELD_MAX}</span></div><h3>${it.name}</h3><div class="req"><span>${it.desc}</span></div>
-          <div class="foot">${priceTag(it.cost)}<button class="btn gold sm block" type="button" data-supply="${it.id}" ${off(full ? 'You already hold ' + D.SHIELD_MAX + ' Streak Shields, the most you can carry.' : shortWhy(it.cost, it.name))}>${full ? 'Full' : 'Buy'}</button></div></div>`; }).join('')}</div></div>`;
+          <div class="foot">${priceTag(it.cost)}<button class="btn gold sm block" type="button" data-supply="${it.id}" ${off(full ? 'You already carry the maximum of ' + D.SHIELD_MAX + ' Streak Shields.' : shortWhy(it.cost, it.name))}>${full ? 'Full' : 'Buy'}</button></div></div>`; }).join('')}</div></div>`;
     }
     if (cat === 'pets') return `<div class="grid">${byUnlock(D.PETS).map((p) => itemCard('pet', p, { desc: p.atk ? p.kind + '. ' + p.atkVerb + ' the creature after each of your moves.' : p.kind, stat: 'HP ' + G.petMax(p.id) + ' · Guards ' + Math.round(p.share * 100) + '% of hits' })).join('')}</div>`;
     if (cat === 'magic') {
@@ -768,8 +773,8 @@
     if (tab === 'worldkey') return G.featOn('wk') ? UI.wkSection() : UI.wkLocked();
     if (tab === 'weapons') {
       const slot = UI.wpnSlot || 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
-      return `${loadout(slot)}<p class="fine wnote">${!G.upkeep() && slot !== 'shield' ? 'Your gear never runs out or wears down until level ' + D.UPKEEP_LEVEL + '.' : slot === 'melee' ? 'Every Strike wears your weapon a little. Below ' + D.WORN_AT + '% it hits noticeably softer. Repairs cost a quarter of the price.' : slot === 'ranged' ? 'Each Throw, Shoot or Cast uses one shot. Your first refill each day is free.' : 'Blocks part of every hit and powers Defend.'}</p>
-        ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
+      return `${loadout(slot)}<p class="fine wnote">${!G.upkeep() && slot !== 'shield' ? 'Your gear never runs out or wears down until level ' + D.UPKEEP_LEVEL + '.' : slot === 'melee' ? 'Every Strike wears your weapon a little. Below ' + D.WORN_AT + '% it hits noticeably softer. Repairs cost a quarter of the price.' : slot === 'ranged' ? 'Each Throw, Shoot or Cast uses one shot. Your first refill each day is free.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
+        ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields or belts' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
     }
     if (tab === 'magic') {
       const charms = byUnlock(D.MAGIC.filter((m) => m.kind === 'charm' && G.owns('magic', m.id))), bm = byUnlock(D.MAGIC.filter((m) => m.kind === 'battle' && G.owns('magic', m.id)));
@@ -805,25 +810,30 @@
   }
 
   UI.renderShop = () => {
-    const s = S();
-    if (!HUBS.some((h) => h[0] === UI.hub)) UI.hub = 'shop';
-    const hub = UI.hub, TABS = hub === 'shop' ? SHOP_TABS : hub === 'bag' ? BAG_TABS : ART_TABS;
+    const s = S(), inv = UI.tab === 'inv' || (UI.tab !== 'shop' && UI.hub !== 'shop');
+    const hub = inv ? (UI.invHub === 'art' ? 'art' : 'bag') : 'shop'; UI.hub = hub;
+    const TABS = hub === 'shop' ? SHOP_TABS : hub === 'bag' ? BAG_TABS : ART_TABS;
     const key = hub === 'shop' ? 'shopTab' : hub === 'bag' ? 'bagTab' : 'artTab';
     if (!TABS.some((t) => t[0] === UI[key])) UI[key] = TABS[0][0];
     const cur = UI[key], def = TABS.find((t) => t[0] === cur);
     const body = hub === 'shop' ? shopBody(cur) : hub === 'bag' ? bagBody(cur) : artBody(cur);
-    const cnt = hub === 'shop' ? {} : hub === 'bag'
-      ? { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: s.owned.weapons.length, magic: (s.owned.magic || []).length, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length }
-      : { finds: G.artTotal(), forge: G.upkeep() ? D.DARKMATTER.reduce((n, d) => n + G.wk().dm[d.id], 0) : 'Lv ' + D.UPKEEP_LEVEL, eggs: G.eggTotal() };
-    const changed = UI.set($('#scr-shop'), `<div class="scr-wrap">
-      <div class="scr-head"><h1>${HUBS.find((h) => h[0] === hub)[1]}</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
-      <div class="hub-seg" role="tablist" aria-label="Shop, Bag and Artifacts">${HUBS.map(([id, l, ic]) => `<button type="button" role="tab" data-hub="${id}" aria-selected="${id === hub}" aria-pressed="${id === hub}">${tabIcon(ic)}<span>${l}</span></button>`).join('')}</div>
-      <div class="seg ${TABS.length === 6 ? 'five six' : TABS.length === 5 ? 'five' : 'three'} sub-seg" role="tablist" aria-label="${HUBS.find((h) => h[0] === hub)[1]} sections">${TABS.map(([id, l, ic]) => `<button type="button" role="tab" ${hub === 'shop' ? 'data-shoptab' : 'data-sub'}="${id}" aria-selected="${id === cur}" aria-pressed="${id === cur}">${tabIcon(ic)}<span>${l}</span>${cnt[id] != null ? `<span class="cnt">${cnt[id]}</span>` : ''}</button>`).join('')}</div>
+    const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: s.owned.weapons.length, magic: (s.owned.magic || []).length, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
+    const artCnt = { finds: G.artTotal(), forge: G.upkeep() ? D.DARKMATTER.reduce((n, d) => n + G.wk().dm[d.id], 0) : 'Lv ' + D.UPKEEP_LEVEL, eggs: G.eggTotal() };
+    const segBtn = (attr, id, l, ic, on, n) => `<button type="button" role="tab" data-${attr}="${id}" aria-selected="${on}" aria-pressed="${on}">${tabIcon(ic)}<span>${l}</span>${n != null ? `<span class="cnt">${n}</span>` : ''}</button>`;
+    const INV_TABS = [...BAG_TABS, ['art', 'Artifacts', 'img:art/m30.png']], invCur = hub === 'art' ? 'art' : cur;
+    const nav = !inv
+      ? `<div class="seg five sub-seg" role="tablist" aria-label="Shop sections">${SHOP_TABS.map(([id, l, ic]) => segBtn('shoptab', id, l, ic, id === cur)).join('')}</div>`
+      : `<div class="seg seven sub-seg" role="tablist" aria-label="Inventory sections">${INV_TABS.map(([id, l, ic]) => segBtn('invtab', id, l, ic, id === invCur, bagCnt[id])).join('')}</div>
+        ${hub === 'art' ? `<div class="hub-seg" role="tablist" aria-label="Artifacts sections">${ART_TABS.map(([id, l, ic]) => segBtn('sub', id, l, ic, id === cur, artCnt[id])).join('')}</div>` : ''}`;
+    const root = $(inv ? '#scr-inv' : '#scr-shop');
+    const changed = UI.set(root, `<div class="scr-wrap">
+      <div class="scr-head"><h1>${inv ? 'Inventory' : 'Shop'}</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
+      ${nav}
       ${def[3] ? `<p class="scr-note">${typeof def[3] === 'function' ? def[3]() : def[3]}</p>` : ''}
       ${body}
     </div>`);
-    if (changed) paintAll($('#scr-shop'));
-    if (hub === 'bag' && cur === 'worldkey' && G.featOn('wk')) WB.WK.mountSection($('#scr-shop'));
+    if (changed) paintAll(root);
+    if (hub === 'bag' && cur === 'worldkey' && G.featOn('wk')) WB.WK.mountSection(root);
   };
   UI.renderCollection = UI.renderSupplies = () => UI.renderShop();   // older call sites
   function paintAll(root) {
@@ -905,8 +915,11 @@
     const mx = Math.max(s.settings.streakMin * 1.2, ...days.map((d) => d[1]));
     const own = (c) => s.owned[G.CATS[c][0]].length + '/' + G.CATS[c][1].length;
     const slot = (cat, label, id, icon, sub) => `<button class="wslot pbox" type="button" data-wslot="${cat}" ${sub ? `data-wsub="${sub}"` : ''}>${cat === 'weapon' && id ? `<canvas width="36" height="36" data-prev="weapon:${id}"></canvas>` : WB.icon(icon, 3)}<span class="ws-t"><span class="lbl">${label}</span><span class="ws-v">${id ? WB.esc(G.item(cat, id).name) : '<span class="none">None</span>'}</span></span></button>`;
-    const tone = s.skin && D.SKIN_TONES.find((t) => t.id === s.skin);
-    const skinSlot = `<button class="wslot pbox" type="button" data-act="skin"><span class="sw-dot" style="--a:${tone ? tone.ramp[2] : UI.originalSkin(s.avatar)};--b:${tone ? tone.ramp[1] : UI.originalSkin(s.avatar, 1)}"></span><span class="ws-t"><span class="lbl">Skin tone</span><span class="ws-v">${tone ? tone.name : 'Original'}</span></span></button>`;
+    // Colors (skin tone + outfit dyes): one slot, locked until level D.COLORS_LEVEL
+    const tone = s.skin && D.SKIN_TONES.find((t) => t.id === s.skin), om = D.OUTFIT_MAP[s.avatar] || {};
+    const skinCol = tone ? tone.ramp[2] : UI.originalSkin(s.avatar), dyeCol = UI.dyeColors(s.avatar, om.o ? 'o' : 't', WB.outfitOf(s.avatar)[om.o ? 'o' : 't'])[0];
+    const colorsOn = UI.colorsOpen(), hasColors = WB.hasSkin(s.avatar) || WB.hasOutfit(s.avatar);
+    const colorsSlot = `<button class="wslot pbox${colorsOn ? '' : ' locked'}" type="button" data-act="colors">${colorsOn ? `<span class="sw-dot dye-dot" style="--a:${WB.hasSkin(s.avatar) ? skinCol : dyeCol};--b:${WB.hasOutfit(s.avatar) ? dyeCol : skinCol}"></span>` : WB.icon('lock', 3)}<span class="ws-t"><span class="lbl">Colors</span><span class="ws-v">${colorsOn ? WB.esc(UI.colorsLabel(s.avatar)) : '<span class="none">Level ' + D.COLORS_LEVEL + '</span>'}</span></span></button>`;
     const opt = (arr, v, f) => arr.map((a) => `<option value="${a}" ${a === v ? 'selected' : ''}>${f(a)}</option>`).join('');
     const st = WB.Steps.status;
     const pf = $('#scr-profile'); pf._html = null; pf.innerHTML = `<div class="scr-wrap">
@@ -928,12 +941,13 @@
         ${[['Total steps', WB.fmt(s.totalSteps)], ['Distance', WB.fmtKm(s.meters)], ['Walk Coins', WB.fmt(s.coins)], ['Streak', sv.count + ' <small>best ' + s.streak.best + '</small>'], ['Battles won', WB.fmt(s.enc.battles)], ['Missions completed', WB.fmt(G.missionsDone() - (G.merlinDone ? G.merlinDone() : 0) + ((s.custom || {}).done || 0)), 'Field missions and your own missions.'], ['World creatures beaten', G.bossCount() + '/' + D.WORLDS.length, 'Every world has a guardian. It appears when the world is 100% explored; challenge it from the world map.'], ['Bosses beaten', Object.values((s.nemesis || {}).beaten || {}).reduce((a, b) => a + b, 0), 'Rare roaming bosses (from level ' + D.BOSS_LEVEL + ').'], ['Merlin’s quests done', G.merlinDone ? G.merlinDone() : 0], ['Knowledge Challenges', ((s.druid || {}).wins || 0) + ' <small>right of ' + ((s.druid || {}).taken || 0) + '</small>', 'Trivia questions from the Druid on the road.'], ['Worlds', s.unlocked.length + '/' + D.WORLDS.length], ['Avatars', own('avatar')], ['Pets', s.owned.pets.length + '/' + D.PETS.length], ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL], ['Best day', WB.fmt(s.bestDay)]].map(([l, v, why]) => `<div class="stat pbox" ${why ? `data-info="${WB.esc(why)}" data-info-k="${WB.esc(l)}" role="button" tabindex="0"` : ''}><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}
       </div>
       <div class="sect"><div class="chart-h"><h2>Last ${span} days</h2><div class="cm-seg chart-span" role="radiogroup" aria-label="Chart range">${[7, 14, 30].map((d) => `<button type="button" role="radio" aria-checked="${d === span}" data-span="${d}">${d} days</button>`).join('')}</div></div><div class="chart pbox card span-${span}">
-        <div class="bars">${days.map(([k, v], i) => `<div class="${i === span - 1 ? 'today' : v >= s.settings.streakMin ? 'goal' : ''}" style="height:${Math.max(2, (v / mx) * 100)}%" title="${k}: ${WB.fmt(v)} steps"></div>`).join('')}</div>
-        <div class="axis">${days.map(([k], i) => `<span>${(span - 1 - i) % (span === 30 ? 5 : span === 14 ? 2 : 1) ? '' : WB.parseDay(k).getDate()}</span>`).join('')}</div>
+        ${(span === 30 ? [days.slice(0, 10), days.slice(10, 20), days.slice(20)] : [days]).map((row, r, rows) => `<div class="chart-row">
+        <div class="bars">${row.map(([k, v], i) => `<div class="${r === rows.length - 1 && i === row.length - 1 ? 'today' : v >= s.settings.streakMin ? 'goal' : ''}" style="height:${Math.max(2, (v / mx) * 100)}%" title="${k}: ${WB.fmt(v)} steps"></div>`).join('')}</div>
+        <div class="axis">${row.map(([k]) => `<span>${WB.parseDay(k).getDate()}</span>`).join('')}</div></div>`).join('')}
         <div class="legend"><span><i class="k-ok"></i>Streak day (${WB.fmt(s.settings.streakMin)}+)</span><span><i class="k-under"></i>Under</span><span><i class="k-today"></i>Today</span></div>
       </div></div>
       <div class="sect"><h2>Loadout <span class="aside">tap to change</span></h2><div class="wardrobe">
-        ${slot('avatar', 'Avatar', s.avatar, 'user')}${WB.hasSkin(s.avatar) ? skinSlot : ''}${slot('weapon', 'Melee', s.equip.melee, 'sword', 'melee')}${slot('weapon', 'Ranged', s.equip.weapon, 'sword', 'ranged')}${slot('weapon', 'Defense', s.equip.shield, 'shield', 'shield')}${slot('pet', 'Pet', s.equip.pet, 'paw')}
+        ${slot('avatar', 'Avatar', s.avatar, 'user')}${hasColors ? colorsSlot : ''}${slot('weapon', 'Melee', s.equip.melee, 'sword', 'melee')}${slot('weapon', 'Ranged', s.equip.weapon, 'sword', 'ranged')}${slot('weapon', 'Defense', s.equip.shield, 'shield', 'shield')}${slot('pet', 'Pet', s.equip.pet, 'paw')}
       </div></div>
       ` : `
       <div class="sect"><h2>Steps &amp; goals</h2>
@@ -951,7 +965,8 @@
       <div class="sect"><h2>Appearance &amp; sound</h2>
         <div class="setting pbox theme-set"><div><div id="lbl-theme">Theme</div><div class="sd">Colors for the whole app. Every theme meets WCAG AA contrast.</div></div>
           <div class="theme-pick" role="radiogroup" aria-labelledby="lbl-theme">${UI.THEMES.map(([id, name, sub, sw]) => `<button type="button" role="radio" aria-checked="${(s.settings.theme || 'night') === id}" data-theme-pick="${id}"><span class="th-sw" aria-hidden="true">${sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span><span class="tn">${name}</span><span class="ts">${sub}</span></button>`).join('')}</div></div>
-        <div class="setting pbox"><div><div id="lbl-sound">Sound &amp; music</div><div class="sd">Game sounds and music.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
+        <div class="setting pbox"><div><div id="lbl-music">Game music</div><div class="sd">Theme and battle music. Turn it off to play your own music: game sounds then play along with it instead of pausing it.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-music" aria-checked="${s.settings.gameMusic !== false}" data-toggle="gameMusic"></button></div>
+        <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Hits, coins, fanfares and other game sounds.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
         <div class="setting pbox"><div><div id="lbl-rm">Reduce motion</div><div class="sd">Fewer particles and animations.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-rm" aria-checked="${!!WB.reducedMotion()}" data-toggle="reducedMotion"></button></div>
       </div>
       <div class="sect"><h2>Privacy &amp; data</h2>
@@ -1004,29 +1019,83 @@
     UI.paintFace();
     WB.bus.emit('equip', { cat: 'skin', id });
   };
-  UI.skinSheet = () => {
-    const s = S();
-    const masked = !WB.hasSkin(s.avatar);
-    UI.sheet(`<h3 id="sheet-title">Skin tone</h3>
+  // ---------- OUTFIT COLORS ----------
+  // Main (o) and Trim (t) dyes, saved per walker: each walker keeps its own colors.
+  UI.DYE_SLOTS = [['o', 'Main'], ['t', 'Trim']];
+  const shade = (hex, dl) => {   // the same color, lighter (+) or darker (−) by dl (0..1)
+    const n = parseInt(hex.slice(1), 16), f = (v) => Math.max(0, Math.min(255, Math.round(v + dl * 255)));
+    return '#' + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, '0')).join('');
+  };
+  // two colors for a swatch: the dye (or the walker's own main color when "Original") and a darker step
+  UI.dyeColors = (avatarId, k, dyeId) => {
+    const d = dyeId && D.dyeById[dyeId];
+    if (d) return [d.hex, shade(d.hex, -0.16)];
+    const g = (D.OUTFIT_MAP[avatarId] || {})[k] || ['#8a84b5'];
+    const c = g[0].replace('^', ''); return [c, shade(c, -0.12)];
+  };
+  UI.dyeName = (id) => (id && D.dyeById[id] ? D.dyeById[id].name : 'Original');
+  UI.outfitLabel = (avatarId) => {
+    const o = WB.outfitOf(avatarId), m = D.OUTFIT_MAP[avatarId] || {};
+    const parts = UI.DYE_SLOTS.filter(([k]) => m[k] && o[k]).map(([k]) => UI.dyeName(o[k]));
+    return parts.length ? parts.join(' · ') : 'Original';
+  };
+  UI.setDye = (avatarId, k, id) => {
+    const s = S(), cur = { ...(s.outfit[avatarId] || {}) };
+    if (id && D.dyeById[id]) cur[k] = id; else delete cur[k];
+    if (cur.o || cur.t) s.outfit[avatarId] = cur; else delete s.outfit[avatarId];
+    WB.Save.queue();
+    UI.paintFace();
+    WB.bus.emit('equip', { cat: 'outfit', id: avatarId });
+  };
+  UI.dyeSwatches = (avatarId, k, label) => {
+    const cur = WB.outfitOf(avatarId)[k] || null;
+    const one = (id, name) => { const [a, b] = UI.dyeColors(avatarId, k, id); return `<button type="button" class="sw" role="radio" aria-checked="${cur === id}" aria-label="${label}: ${name}" title="${name}" data-dye="${k}:${id || ''}" style="--a:${a};--b:${b}"></button>`; };
+    return `<div class="swatches" role="radiogroup" aria-labelledby="dy-l-${k}">${one(null, 'Original')}${D.DYES.map((d) => one(d.id, d.name)).join('')}</div>`;
+  };
+  // ---------- COLORS (skin tone + outfit dyes, one sheet; opens at level D.COLORS_LEVEL) ----------
+  UI.colorsOpen = () => S().level >= D.COLORS_LEVEL;
+  UI.colorsLocked = () => UI.toast({ kicker: 'Avatar colors', title: 'Change your skin tone and outfit colors from level ' + D.COLORS_LEVEL + '.', icon: 'lock', cls: 'msg', ms: 4000 });
+  UI.colorsLabel = (avatarId) => {
+    const s = S(), parts = [];
+    if (WB.hasSkin(avatarId) && s.skin) parts.push(UI.skinName(s.skin));
+    if (WB.hasOutfit(avatarId) && UI.outfitLabel(avatarId) !== 'Original') parts.push(UI.outfitLabel(avatarId));
+    return parts.length ? parts.join(' · ') : 'Original';
+  };
+  UI.colorsSheet = () => {
+    if (!UI.colorsOpen()) return UI.colorsLocked();
+    const s = S(), id = s.avatar, m = D.OUTFIT_MAP[id] || {}, skinOn = WB.hasSkin(id);
+    const slots = UI.DYE_SLOTS.filter(([k]) => m[k]);
+    if (!skinOn && !slots.length) return;
+    UI.sheet(`<h3 id="sheet-title">Colors</h3>
       <div class="skin-edit">
-        <canvas width="144" height="144" id="sk-prev" aria-label="Preview"></canvas>
+        <canvas width="144" height="144" id="dy-prev" aria-label="Preview"></canvas>
         <div class="skin-side">
-          <div class="lbl">Selected</div>
-          <div class="skin-name" id="sk-name">${UI.skinName(s.skin)}</div>
-          <p class="skin-note">${masked ? WB.esc(G.item('avatar', s.avatar).name) + ' keeps the original art. Skin tone shows on the classic walkers.' : 'Applies to every classic walker you play.'}</p>
+          <div class="lbl">${WB.esc(G.item('avatar', id).name)}</div>
+          <div class="skin-name" id="dy-name">${WB.esc(UI.colorsLabel(id))}</div>
+          <p class="skin-note">${skinOn ? 'Skin tone applies to every walker that shows skin. ' : ''}${slots.length ? 'Outfit colors are saved for each walker.' : ''}</p>
         </div>
       </div>
-      ${UI.swatches(s.skin, s.avatar)}
-      <button class="btn block" type="button" data-close>Done</button>`, (root) => {
-      const prev = () => { UI.stopAnims(); UI.animate($('#sk-prev'), 'av', s.avatar, 'idle', s.skin); };
-      prev();
-      WB.$$('[data-skin]', root).forEach((b) => b.onclick = () => {
-        UI.setSkin(b.dataset.skin || null);
-        WB.$$('[data-skin]', root).forEach((x) => x.setAttribute('aria-checked', x === b));
-        $('#sk-name').textContent = UI.skinName(S().skin);
-        WB.Sfx.play('tap');
+      ${skinOn ? `<div class="dye-row"><span class="lbl" id="dy-l-skin">Skin tone · <span id="dy-n-skin">${UI.skinName(s.skin)}</span></span>${UI.swatches(s.skin, id).replace('aria-label="Skin tone"', 'aria-labelledby="dy-l-skin"')}</div>` : ''}
+      ${slots.map(([k, l]) => `<div class="dye-row"><span class="lbl" id="dy-l-${k}">${l === 'Main' ? 'Outfit' : 'Trim'} · <span id="dy-n-${k}">${UI.dyeName(WB.outfitOf(id)[k])}</span></span>${UI.dyeSwatches(id, k, l === 'Main' ? 'Outfit' : 'Trim')}</div>`).join('')}
+      <div class="dye-acts${slots.length ? '' : ' one'}">${slots.length ? '<button class="btn ghost" type="button" id="dy-reset">Reset outfit</button>' : ''}<button class="btn" type="button" data-close>Done</button></div>`, (root) => {
+      const prev = () => { UI.stopAnims(); UI.animate($('#dy-prev'), 'av', id, 'idle', S().skin); };
+      const sync = () => {
+        const o = WB.outfitOf(id);
+        WB.$$('[data-dye]', root).forEach((x) => { const [k, v] = x.dataset.dye.split(':'); x.setAttribute('aria-checked', (o[k] || '') === v); });
+        WB.$$('[data-skin]', root).forEach((x) => x.setAttribute('aria-checked', (S().skin || '') === x.dataset.skin));
+        slots.forEach(([k]) => { $('#dy-n-' + k).textContent = UI.dyeName(o[k]); });
+        if (skinOn) $('#dy-n-skin').textContent = UI.skinName(S().skin);
+        $('#dy-name').textContent = UI.colorsLabel(id);
+        if ($('#dy-reset')) $('#dy-reset').disabled = !(o.o || o.t);
         prev();
+      };
+      WB.$$('[data-skin]', root).forEach((b) => b.onclick = () => { UI.setSkin(b.dataset.skin || null); WB.Sfx.play('tap'); sync(); });
+      WB.$$('[data-dye]', root).forEach((b) => b.onclick = () => {
+        const [k, v] = b.dataset.dye.split(':');
+        UI.setDye(id, k, v || null); WB.Sfx.play('tap'); sync();
       });
+      if ($('#dy-reset')) $('#dy-reset').onclick = () => { slots.forEach(([k]) => UI.setDye(id, k, null)); WB.Sfx.play('tap'); sync(); };
+      sync();
     });
   };
   // arrow-key movement inside any swatch radiogroup
@@ -1075,9 +1144,10 @@
     if (d.close !== undefined) return UI.closeSheet();
     if (d.tab) { WB.Sfx.play('tap'); return UI.go(d.tab); }
     if (d.shoptab) { UI.hub = 'shop'; UI.shopTab = d.shoptab; return UI.renderShop(); }
-    if (d.hub) { UI.hub = d.hub; WB.Sfx.play('tap'); UI.renderShop(); $('#scr-shop').scrollTop = 0; return; }
+    if (d.invtab) { WB.Sfx.play('tap'); if (d.invtab === 'art') UI.invHub = 'art'; else { UI.invHub = 'bag'; UI.bagTab = d.invtab; } UI.renderShop(); return; }
+    if (d.hub) { WB.Sfx.play('tap'); UI.goHub(d.hub); return; }
     if (d.sub) { UI[UI.hub === 'shop' ? 'shopTab' : UI.hub === 'bag' ? 'bagTab' : 'artTab'] = d.sub; WB.Sfx.play('tap'); return UI.renderShop(); }
-    if (d.hubgo) { const [h, sub] = d.hubgo.split(':'); WB.Sfx.play('tap'); UI.goHub(h, sub); $('#scr-shop').scrollTop = 0; return; }
+    if (d.hubgo) { const [h, sub] = d.hubgo.split(':'); WB.Sfx.play('tap'); UI.goHub(h, sub); UI.hubRoot().scrollTop = 0; return; }
     if (d.ammo) { const r = G.buyAmmo(d.ammo); UI.toast(r.ok ? { kicker: r.free ? 'Free daily refill' : 'Purchased', title: D.AMMO_PACK + ' shots · ' + D.weaponById[d.ammo].name, icon: 'shop', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.uses) { const r = G.buyUses(d.uses); UI.toast(r.ok ? { kicker: r.free ? 'Free daily refill' : 'Purchased', title: D.MAGIC_USES + ' uses · ' + D.magicById[d.uses].name, img: 'mg/' + d.uses + '.png', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.repair) { const r = G.repair(d.repair); UI.toast(r.ok ? { kicker: 'Repaired · ' + WB.fmt(r.cost) + ' coins', title: D.weaponById[d.repair].name + ' is back to 100%', icon: 'sword', cls: 'gold' } : { kicker: 'Not now', title: r.msg }); return UI.render(); }
@@ -1098,7 +1168,7 @@
       if (d.wsub) UI.wpnSlot = d.wsub;
       return UI.goHub('bag', d.wslot === 'avatar' ? 'avatar' : d.wslot === 'weapon' ? 'weapons' : 'pets');
     }
-    if (d.toggle) { const s = S(); s.settings[d.toggle] = !(d.toggle === 'reducedMotion' ? WB.reducedMotion() : s.settings[d.toggle]); document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Bgm.sync(); return UI.renderProfile(); }
+    if (d.toggle) { const s = S(); s.settings[d.toggle] = !(d.toggle === 'reducedMotion' ? WB.reducedMotion() : s.settings[d.toggle]); document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Sfx.applySession(); WB.Bgm.sync(); return UI.renderProfile(); }
     switch (d.act) {
       case 'sensor-start': WB.Steps.motion.start().then(() => UI.render()); UI.render(); break;
       case 'sensor-stop': WB.Steps.motion.stop(); UI.render(); break;
@@ -1106,7 +1176,7 @@
       case 'health-sync': WB.Health.sync(true).then((n) => { if (!n) UI.toast({ kicker: WB.Health.name(), title: 'Up to date', icon: 'check', cls: 'ok' }); UI.render(); }); break;
       case 'health-off': WB.Health.disconnect(); UI.render(); break;
       case 'log': UI.logSheet(); break;
-      case 'skin': UI.skinSheet(); break;
+      case 'colors': UI.colorsSheet(); break;
       case 'lv-shop': UI.closeSheet(); UI.goHub('shop'); break;
       case 'heal-info': UI.goHub('bag', 'potions'); break;
       case 'tasks': if (d.mt) UI.missionTab = d.mt; UI.go('tasks'); break;

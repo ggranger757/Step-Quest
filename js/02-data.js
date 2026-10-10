@@ -354,7 +354,7 @@
   };
   D.ELEM_COLOR = { fire: '#ff8a3d', frost: '#9fe8ff', void: '#b07cff', nature: '#7ee06a', earth: '#d9a066', shock: '#ffe066' };
 
-  // ---------- Avatars (47) ----------
+  // ---------- Avatars (53) ----------
   D.AVATARS = [
     // starters: you pick ONE at sign-up. The two you don't pick are locked like any other walker: reach level 5, then buy them.
     { id: 'scavenger', name: 'Scavenger', role: 'Reads the ruins like a map.', req: { starter: true, level: 5, cost: 1500 } },
@@ -393,9 +393,9 @@
     { id: 'c9', name: 'Neon Kid', role: 'Three weeks of glow.', req: { streak: 21 } },
     { id: 'lancer', name: 'Bone Lancer', role: 'Guardian of the Carnival.', req: { explored: 'carnival' } },
     { id: 'c2', name: 'Hooded Nomad', role: 'Found wandering Dust Gulch.', req: { explored: 'gulch' } },
-    { id: 'monk', name: 'Wandering Monk', role: 'Twenty-five thousand steps of quiet.', req: { steps: 60000 } },
-    { id: 'outrider', name: 'Outrider', role: 'Fifty thousand steps from home.', req: { steps: 150000 } },
-    { id: 'c6', name: 'Sprinter', role: 'Seventy-five thousand and still warm.', req: { steps: 250000 } },
+    { id: 'monk', name: 'Wandering Monk', role: 'Sixty thousand steps of quiet.', req: { steps: 60000 } },
+    { id: 'outrider', name: 'Outrider', role: 'A hundred and fifty thousand steps from home.', req: { steps: 150000 } },
+    { id: 'c6', name: 'Sprinter', role: 'A quarter million steps and still warm.', req: { steps: 250000 } },
     { id: 'satyr', name: 'Satyr Bard', role: 'Sings the songs of every world.', req: { steps: 400000 } },
     // 2026-10: monsters and knights (tools/prep_avatars2.py)
     { id: 'adventurer', name: 'Adventurer', role: 'Sword in hand, always mid-stride.', req: { cost: 1800, level: 4 } },
@@ -405,9 +405,16 @@
     { id: 'flyeye', name: 'Watcher', role: 'Technically flies. Counts the steps anyway.', req: { cost: 6500, level: 21 } },
     { id: 'tank1', name: 'Iron Knight', role: 'Heavy armor, steady pace, never late.', req: { cost: 8500, level: 27 } },
     { id: 'tank2', name: 'Steel Knight', role: 'Polished for a month of marching.', req: { streak: 30 } },
+    // 2026-10: bandits, blades and wizards (tools/add_pets_walkers.py)
+    { id: 'bandit', name: 'Highway Bandit', role: 'Robs the road of its boredom.', req: { cost: 2200, level: 7 } },
+    { id: 'banditchief', name: 'Bandit Chief', role: 'Masked, armored and never lost.', req: { cost: 4000, level: 13 } },
+    { id: 'manatarms', name: 'Man-at-Arms', role: 'Plain steel, honest miles.', req: { cost: 5200, level: 19 } },
+    { id: 'arcanist', name: 'Arcanist', role: 'Reads while walking. Never trips.', req: { cost: 6800, level: 25 } },
+    { id: 'bladedancer', name: 'Blade Dancer', role: 'Curved sword, silent cloak, light steps.', req: { cost: 8800, level: 31 } },
+    { id: 'warlock', name: 'Hex Warlock', role: 'His staff burns with a cold violet fire.', req: { cost: 11000, level: 40 } },
   ];
 
-  // ---------- Pets (27) ----------
+  // ---------- Pets (77) ----------
   // src 'pet' = animal sheets (face right), 'cr' = creature sheets (face left)
   D.PETS = [
     { id: 'dog', name: 'Rex', kind: 'Doberman', src: 'pet', req: { cost: 1200, level: 6 } },
@@ -439,6 +446,57 @@
     { id: 'rock_marble', name: 'Marble', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 2500, level: 13 } },
     { id: 'rock_frost', name: 'Frosty', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 3000, level: 18 } },
     { id: 'rock_magma', name: 'Magma', kind: 'Pet rock', src: 'pet', hop: true, req: { bosses: 3 } },
+    // Chaos Monsters: little fiends that hop (or hover) along behind you
+    { id: 'cm1', name: 'Glimmer', kind: 'Lantern mite', src: 'pet', hop: true, req: { cost: 450, level: 2 } },
+    { id: 'cm2', name: 'Skitter', kind: 'Bone spider', src: 'pet', hop: true, req: { cost: 550, level: 3 } },
+    { id: 'cm3', name: 'Haze', kind: 'Smoke wraith', src: 'pet', hop: true, req: { cost: 650, level: 4 } },
+    { id: 'cm4', name: 'Grub', kind: 'Bog beetle', src: 'pet', hop: true, req: { cost: 700, level: 4 } },
+    { id: 'cm5', name: 'Inky', kind: 'Ink crawler', src: 'pet', hop: true, req: { cost: 800, level: 5 } },
+    { id: 'cm6', name: 'Frostfang', kind: 'Frost beast', src: 'pet', hop: true, req: { cost: 4200, level: 22 } },
+    { id: 'cm7', name: 'Bristle', kind: 'Spine hound', src: 'pet', hop: true, req: { cost: 2400, level: 13 } },
+    { id: 'cm8', name: 'Murk', kind: 'Shade crab', src: 'pet', hop: true, req: { cost: 1100, level: 7 } },
+    { id: 'cm9', name: 'Ooze', kind: 'Magma slime', src: 'pet', hop: true, req: { cost: 1300, level: 8 } },
+    { id: 'cm10', name: 'Scamp', kind: 'Red imp', src: 'pet', hop: true, req: { cost: 900, level: 6 } },
+    { id: 'cm11', name: 'Pip', kind: 'Horned imp', src: 'pet', hop: true, req: { cost: 1400, level: 9 } },
+    { id: 'cm12', name: 'Snik', kind: 'Goblin squire', src: 'pet', hop: true, req: { cost: 2000, level: 12 } },
+    { id: 'cm13', name: 'Goldie', kind: 'Gold serpent', src: 'pet', hop: true, req: { cost: 2600, level: 14 } },
+    { id: 'cm14', name: 'Morwen', kind: 'Moth witch', src: 'pet', hop: true, req: { cost: 5200, level: 26 } },
+    { id: 'cm15', name: 'Peeper', kind: 'Eye cluster', src: 'pet', hop: true, req: { cost: 1600, level: 10 } },
+    { id: 'cm16', name: 'Wick', kind: 'Flame skull', src: 'pet', fly: true, req: { cost: 3400, level: 18 } },
+    { id: 'cm17', name: 'Crookbeak', kind: 'Plague vulture', src: 'pet', hop: true, req: { cost: 2800, level: 15 } },
+    { id: 'cm18', name: 'Mumble', kind: 'Skull rat', src: 'pet', hop: true, req: { cost: 1000, level: 6 } },
+    { id: 'cm19', name: 'Grumble', kind: 'Pit demon', src: 'pet', hop: true, req: { cost: 5800, level: 28 } },
+    { id: 'cm20', name: 'Bogmaw', kind: 'Swamp horror', src: 'pet', hop: true, req: { cost: 4600, level: 24 } },
+    { id: 'cm21', name: 'Argus', kind: 'Eye mound', src: 'pet', hop: true, req: { steps: 200000 } },
+    { id: 'cm22', name: 'Flit', kind: 'Winged imp', src: 'pet', fly: true, req: { cost: 3000, level: 16 } },
+    { id: 'cm23', name: 'Sprout', kind: 'Thorn toad', src: 'pet', hop: true, req: { cost: 1200, level: 8 } },
+    { id: 'cm24', name: 'Gaunt', kind: 'Horned ghoul', src: 'pet', hop: true, req: { cost: 3600, level: 19 } },
+    { id: 'cm25', name: 'Creep', kind: 'Tick spider', src: 'pet', hop: true, req: { cost: 1500, level: 10 } },
+    { id: 'cm26', name: 'Jitter', kind: 'Mad monkey', src: 'pet', hop: true, req: { cost: 1800, level: 11 } },
+    { id: 'cm27', name: 'Dusk', kind: 'Shadow hound', src: 'pet', hop: true, req: { streak: 21 } },
+    { id: 'cm28', name: 'Scorch', kind: 'Fire salamander', src: 'pet', hop: true, req: { cost: 3800, level: 20 } },
+    { id: 'cm29', name: 'Grasp', kind: 'Hand crawler', src: 'pet', hop: true, req: { cost: 2200, level: 12 } },
+    { id: 'cm30', name: 'Bramble', kind: 'Antlered beast', src: 'pet', hop: true, req: { cost: 6400, level: 30 } },
+    { id: 'cm31', name: 'Webby', kind: 'Void spider', src: 'pet', hop: true, req: { cost: 3200, level: 17 } },
+    { id: 'cm32', name: 'Fang', kind: 'Maw totem', src: 'pet', hop: true, req: { cost: 4400, level: 23 } },
+    { id: 'cm33', name: 'Snort', kind: 'Tusk crawler', src: 'pet', hop: true, req: { cost: 2500, level: 13 } },
+    { id: 'cm34', name: 'Willow', kind: 'Wild spirit', src: 'pet', hop: true, req: { explored: 'gulch' } },
+    { id: 'cm35', name: 'Smolder', kind: 'Ember golem', src: 'pet', hop: true, req: { cost: 5000, level: 25 } },
+    { id: 'cm36', name: 'Tumble', kind: 'Rock troll', src: 'pet', hop: true, req: { cost: 6000, level: 29 } },
+    { id: 'cm37', name: 'Crimson', kind: 'Lesser demon', src: 'pet', hop: true, req: { bosses: 5 } },
+    { id: 'cm38', name: 'Horace', kind: 'Ram fiend', src: 'pet', hop: true, req: { cost: 7200, level: 33 } },
+    { id: 'cm39', name: 'Bellows', kind: 'Toad demon', src: 'pet', hop: true, req: { cost: 6800, level: 32 } },
+    { id: 'cm40', name: 'Lumpy', kind: 'Lava shell', src: 'pet', hop: true, req: { cost: 4000, level: 21 } },
+    { id: 'cm41', name: 'Stalker', kind: 'Bog stalker', src: 'pet', hop: true, req: { cost: 7600, level: 35 } },
+    { id: 'cm42', name: 'Blink', kind: 'Eye bat', src: 'pet', fly: true, req: { cost: 2000, level: 11 } },
+    { id: 'cm43', name: 'Hush', kind: 'Gloom beast', src: 'pet', hop: true, req: { cost: 5400, level: 27 } },
+    { id: 'cm44', name: 'Mystic', kind: 'Shell oracle', src: 'pet', hop: true, req: { cost: 8000, level: 37 } },
+    { id: 'cm45', name: 'Siren', kind: 'Tide witch', src: 'pet', hop: true, req: { cost: 8500, level: 40 } },
+    { id: 'cm46', name: 'Orbit', kind: 'Eye spider', src: 'pet', hop: true, req: { cost: 2900, level: 15 } },
+    { id: 'cm47', name: 'Kindle', kind: 'Fire sprite', src: 'pet', hop: true, req: { daily: true } },
+    { id: 'cm48', name: 'Pinch', kind: 'Bog scorpion', src: 'pet', hop: true, req: { cost: 3500, level: 18 } },
+    { id: 'cm49', name: 'Plume', kind: 'Owl spirit', src: 'pet', hop: true, req: { streak: 45 } },
+    { id: 'cm50', name: 'Ruckus', kind: 'Horned brute', src: 'pet', hop: true, req: { steps: 500000 } },
   ];
   // Pets have their own health and take part of every hit aimed at you in battle (share = 20% to 60%).
   // Bigger and tougher companions take more. A pet at 0 HP is knocked out until it heals: pets refill
@@ -446,10 +504,12 @@
   const PET_STATS = { dog: [55, 0.4], dog2: [50, 0.35], cat: [40, 0.3], cat2: [42, 0.3], rat: [28, 0.2], rat2: [30, 0.2], crow: [30, 0.2], pigeon: [28, 0.2],
     hyena: [55, 0.4], scorpio: [50, 0.35], snake: [40, 0.25], vulture: [45, 0.3], mummy: [70, 0.5], deceased: [75, 0.55],
     hare: [35, 0.25], fox: [50, 0.35], boar: [85, 0.55], grouse: [32, 0.2], deer: [70, 0.45],
-    rock_lime: [60, 0.45], rock_sand: [60, 0.45], rock_moss: [70, 0.5], rock_rust: [75, 0.5], rock_cobble: [85, 0.55], rock_marble: [90, 0.55], rock_frost: [95, 0.6], rock_magma: [110, 0.6] };
+    rock_lime: [60, 0.45], rock_sand: [60, 0.45], rock_moss: [70, 0.5], rock_rust: [75, 0.5], rock_cobble: [85, 0.55], rock_marble: [90, 0.55], rock_frost: [95, 0.6], rock_magma: [110, 0.6],
+    cm1: [28, 0.2], cm2: [32, 0.2], cm3: [34, 0.25], cm4: [38, 0.25], cm5: [38, 0.25], cm6: [70, 0.45], cm7: [55, 0.4], cm8: [44, 0.3], cm9: [50, 0.35], cm10: [36, 0.25], cm11: [40, 0.3], cm12: [52, 0.35], cm13: [55, 0.35], cm14: [68, 0.45], cm15: [60, 0.4], cm16: [45, 0.3], cm17: [52, 0.35], cm18: [36, 0.25], cm19: [90, 0.55], cm20: [82, 0.5], cm21: [95, 0.6], cm22: [46, 0.3], cm23: [48, 0.35], cm24: [62, 0.4], cm25: [42, 0.3], cm26: [44, 0.3], cm27: [66, 0.45], cm28: [60, 0.4], cm29: [50, 0.35], cm30: [98, 0.6], cm31: [54, 0.35], cm32: [80, 0.5], cm33: [56, 0.4], cm34: [64, 0.4], cm35: [92, 0.55], cm36: [100, 0.6], cm37: [84, 0.5], cm38: [105, 0.6], cm39: [100, 0.6], cm40: [88, 0.55], cm41: [102, 0.6], cm42: [40, 0.25], cm43: [86, 0.55], cm44: [78, 0.5], cm45: [82, 0.5], cm46: [54, 0.35], cm47: [50, 0.35], cm48: [58, 0.4], cm49: [90, 0.55], cm50: [115, 0.6] };
   D.PETS.forEach((p) => { const [hp, share] = PET_STATS[p.id] || [40, 0.3]; p.hp = hp; p.share = share; });
-  // five pets also attack: after each of your moves they hit the creature for a share of your attack (it varies a little)
-  const PET_ATTACK = { dog: [0.12, 'Bites'], fox: [0.2, 'Nips'], hyena: [0.25, 'Mauls'], scorpio: [0.3, 'Stings'], boar: [0.38, 'Gores'] };
+  // some pets also attack: after each of your moves they hit the creature for a share of your attack (it varies a little)
+  const PET_ATTACK = { dog: [0.12, 'Bites'], fox: [0.2, 'Nips'], hyena: [0.25, 'Mauls'], scorpio: [0.3, 'Stings'], boar: [0.38, 'Gores'],
+    cm6: [0.28, 'Bites'], cm16: [0.2, 'Scorches'], cm19: [0.32, 'Claws'], cm28: [0.25, 'Burns'], cm37: [0.35, 'Rends'], cm41: [0.34, 'Mauls'], cm47: [0.2, 'Singes'], cm48: [0.3, 'Stings'] };
   D.PETS.forEach((p) => { if (PET_ATTACK[p.id]) { p.atk = PET_ATTACK[p.id][0]; p.atkVerb = PET_ATTACK[p.id][1]; } });
   D.petMaxHp = (p, lvl) => Math.round(p.hp + p.hp * 0.04 * (lvl - 1));
 
@@ -465,6 +525,7 @@
     { id: 'ebony', name: 'Ebony', ramp: ['#24140f', '#3c241a', '#573627'] },
     { id: 'moss', name: 'Moss', ramp: ['#2f4a2a', '#4f7a3e', '#77a85a'], fantasy: true },
     { id: 'frost', name: 'Frost', ramp: ['#3a4f7a', '#5f7fb0', '#92b4dc'], fantasy: true },
+    { id: 'amethyst', name: 'Amethyst', ramp: ['#4a2a6e', '#7547a3', '#a77fd2'], fantasy: true },
   ];
   // Skin tone editing covers the walkers listed here; the others keep their drawn skin.
   // Exact skin colors per sheet. "all": anywhere. "head"/"feet": only in the top/bottom band of each frame
@@ -493,11 +554,89 @@
     shade: { all: ['#2b3838', '#202325', '#3f524d'] },   // a living shadow: the tone recolors its body
   };
 
+  // ---------- Outfit dyes ----------
+  // Palette swaps for clothing and armor, set per walker on the Loadout. Each dye recolors a group of the
+  // sheet's exact colors, keeping the art's own shading (light and dark tones move with the dye).
+  D.DYES = [
+    { id: 'crimson', name: 'Crimson', hex: '#b8283a' },
+    { id: 'ember', name: 'Ember', hex: '#d9772b' },
+    { id: 'gold', name: 'Gold', hex: '#d6b03c' },
+    { id: 'forest', name: 'Forest', hex: '#3f8a3c' },
+    { id: 'teal', name: 'Teal', hex: '#2a9c95' },
+    { id: 'azure', name: 'Azure', hex: '#3a74cf' },
+    { id: 'royal', name: 'Royal', hex: '#4a3fb0' },
+    { id: 'violet', name: 'Violet', hex: '#8a4cc9' },
+    { id: 'rose', name: 'Rose', hex: '#d0569a' },
+    { id: 'snow', name: 'Snow', hex: '#dcdde4' },
+    { id: 'onyx', name: 'Onyx', hex: '#34343c' },
+  ];
+  /* Which colors each slot dyes, per walker: o = Outfit (main clothing or armor), t = Trim (second garment,
+     scarf, cape or accents). A leading ^ limits that color to below the head (it is shared with hair or a skull).
+     Picked by hand from each sheet, plus their near-identical anti-aliasing shades; skin tone colors are never listed.
+     The Shadow Knight has none: its body is its skin tone and its reds are the hurt flash. */
+  D.OUTFIT_MAP = {
+    scavenger: { o: ['#5b3138', '#422433', '#3b1725', '#71413b'], t: ['#b4202a', '#73172d'] },
+    wanderer: { o: ['#271f1b', '#171819', '#14121d', '#181c19', '#29201b', '#281f1b', '#28211f', '#2e2723', '#2c2523', '#2a231f', '#1f2022', '#1b1d21', '#2e2623', '#202422', '#2d2623', '#28201d', '#1b1c1d', '#191a1d', '#1a1b1d', '#1d1f21', '#181b19', '#2a2423', '#161421', '#181725', '#16161b'], t: ['#333941', '#242234', '#282c3c', '#363c44', '#343941', '#2c2a3b', '#3a4048', '#333a42', '#282637', '#242233', '#343b44', '#282c3b'] },
+    kunoichi: { o: ['#52333f', '#291d2b', '#3d2936', '#3b2027', '#21181b', '#8f4d57'], t: ['#ad2f45', '#781d4f', '#4f1d4c'] },
+    c3: { o: ['#3368dc', '#3dabea'], t: ['#800c53'] },
+    c10: { o: ['#c9ec85', '#839740'], t: ['#800c53', '#ab1f65', '#38002c'] },
+    c1: { o: ['#8b72de', '#663b93'], t: ['#158968', '#2c5b6d'] },
+    farmer: { o: ['#ffae70', '#ffee83', '#ab5130', '#d87644', '#7d3833'], t: ['#21181b', '#1b1f21', '#1a1a22'] },
+    c4: { o: ['^#663b93', '^#38002c', '#8b72de'], t: ['#ffda45', '#f4b03c'] },
+    c12: { o: ['#f4b03c', '#ffda45'], t: ['#37446e', '#566a89', '#8babbf'] },
+    fixer: { o: ['#612721', '#2d1b1e', '#673931', '#221c1a', '#171819', '#14121d'], t: ['#73172d', '#b4202a'] },
+    courier: { o: ['#cbc6c1', '#464762'], t: ['#14121d', '#242234'] },
+    marauder: { o: ['^#141013', '^#322b28'], t: ['#73172d', '#3b1725'] },
+    biker: { o: ['#e6336a', '#ab1f65', '^#663b93'], t: ['#222a5c', '#158968', '#2c5b6d'] },
+    ranger: { o: ['#78ff3c', '#50c828'], t: ['#f5f5f5', '#ffffff'] },
+    punk: { o: ['#566a89', '#37446e'], t: ['#800c53', '#ab1f65'] },
+    ember: { o: ['#71413b', '#422433', '#5b3138'], t: ['#4a5462', '#242234'] },
+    boss: { o: ['#4f342f', '#2d1b1e', '#0e0c0c', '#060608'], t: ['#73172d', '#3b1725'] },
+    paladin: { o: ['#2b488d', '#042656'], t: ['#9c0000', '#69001a'] },
+    warrior: { o: ['#560b28', '#320632'], t: ['#7e8e93', '#3f4b4e', '#c3cbdb'] },
+    hooded: { o: ['#586335', '#333c24', '#2c3b39'], t: ['#452a1b', '#573523'] },
+    ronin: { o: ['#232774', '#333892', '#1f0d60', '#000334'], t: ['#a11324', '#881422', '#cd2c3f'] },
+    leafranger: { o: ['#044c4c', '#04303e'], t: ['#1a7546'] },
+    reaper: { o: ['#922b2b', '#561d1d', '#962f30', '#5c2324', '#8c2626'], t: ['#595757', '#807b7a', '#323232'] },
+    blaze: { o: ['#2f5b86', '#253266', '#376b9c', '#58a6d6', '#4cb3cc'], t: ['#fe5ff6', '#a14bfb'] },
+    huntress: { o: ['#595818', '#554d20', '#716f17', '#7e7d4b', '#625b3e', '#52523a'], t: ['#18161d', '#26241c'] },
+    duelist: { o: ['#ce1d39', '#8d0a37'], t: ['#784046', '#481e26', '#491613'] },
+    c5: { o: ['#8babbf', '#566a89'], t: ['#222a5c', '#1f1faa', '#3368dc', '#3dabea'] },
+    storm: { o: ['#71413b', '#3b2027', '#422433', '#6f403a'], t: ['#73172d', '#460414', '#ad2f45', '#ab2f45', '#a92f45', '#72172d'] },
+    cyborg: { o: ['#8babbf', '#566a89'], t: ['#222a5c', '#38002c'] },
+    satyress: { o: ['#eae0dd', '#d4b8b8'], t: ['#3b1725', '#14121d'] },
+    archer: { o: ['#333c24', '#61683a', '#939446'], t: ['#8c5b3e', '#612721'] },
+    knight: { o: ['#322f35', '#33272a', '#171819'], t: ['#323232', '#171516'] },
+    c9: { o: ['#ffda45', '#f4b03c'], t: ['#3dabea', '#5becf1', '#3368dc'] },
+    lancer: { o: ['#b05b2c', '#612721', '#e88a36', '#724b2c'], t: ['#282c3c', '#485262', '#88a3bc'] },
+    c2: { o: ['#a36d3e', '#683c34'], t: ['#222a5c', '#37446e'] },
+    monk: { o: ['#0e0f13', '#1e1f24', '#1a1a22', '#09070a'], t: ['#ab5130', '#7d3833', '#cf752b', '#f0b541'] },
+    outrider: { o: ['#221c1a', '#333941'], t: ['#8e5252', '#422433'] },
+    c6: { o: ['#cce2e1', '#ffffff'], t: ['#ff8142', '#f4b03c', '#ffda45'] },
+    satyr: { o: ['#73172d', '#3b1725', '#422433'], t: ['#d6a851'] },
+    adventurer: { o: ['^#804d36', '^#8f563b', '^#9e6451', '^#8f5e47'], t: ['#8f3232', '#ab4343', '#d95763', '#ad3b3b'] },
+    goblin: { o: ['#884931', '#6a331e', '#3f1c0e'], t: ['#41424a', '#28292d'] },
+    mushroom: { o: ['#612128', '#341014'] },
+    skeleton: { o: ['#633b13', '#41280f', '#583b1e', '#4f3112'], t: ['^#6a6a67'] },
+    flyeye: { o: ['#46301e', '#734f31'] },
+    tank1: { o: ['#3a3836', '#868273', '#c7c7b0', '#e6e6d4'], t: ['#833c22', '#481a13'] },
+    tank2: { o: ['#4b495e', '#88919d', '#cad5d7', '#e5f0f1'], t: ['#934325', '#77291c'] },
+    bandit: { o: ['#e0e4cc', '#cdd6b0', '#e5e8cf'], t: ['#82553a', '#9f663d', '#724b36', '#94603c'] },
+    banditchief: { o: ['#45576c', '#384c67', '#506882', '#2d4362'], t: ['#82553a', '#724b36', '#9f663d'] },
+    manatarms: { o: ['#232428', '#1b1c20'], t: ['#652207', '#531a03'] },
+    arcanist: { o: ['#6e49cd', '#251e53', '#472899', '#976eff', '#3f367a', '#3b3377'], t: ['#99369e', '#6f1f73'] },
+    bladedancer: { o: ['#34374c', '#334f6c'], t: ['#242f21', '#1b392b'] },
+    warlock: { o: ['#312841', '#3f3a57', '#5a4772'], t: ['#cd7a26', '#ba5d22', '#d1a22a'] },
+  };
+  D.dyeById = Object.fromEntries(D.DYES.map((d) => [d.id, d]));
+
+
   // ---------- Battle gear ----------
   // power: damage multiplier on your attack. cd: turns before it can be thrown again.
   // ---------- Special attacks: one per starter class, chosen at sign-up; unlock at level 10 ----------
   // The gauge fills as you attack (Strike +25, Throw / Cast +30); when it's full the Special button lights up.
   D.SPECIAL_LEVEL = 10;
+  D.COLORS_LEVEL = 25;   // skin tone and outfit colors can be changed from here (the skin tone picked at sign-up stays)
   D.SPECIAL_CHARGE = { strike: 25, throw: 30 };
   D.SPECIALS = {
     nova: { id: 'nova', name: 'Arcane Nova', cls: 'Wandering Mage', fx: 'sa_nova', sfx: 'special_nova',
@@ -554,10 +693,10 @@
     B('dragonheart', 'Dragon Heart', 60, 20000, { type: 'dragon', amount: 0.4, turns: 3, mult: 1.4 }, '+40% HP, +40% damage', 'Restores 40% HP and your attacks do 40% more for 3 turns.'),
     // ---- charms (worn)
     C('horseshoe', 'Lucky Horseshoe', 5, 900, 'crit', '+8% crit chance', 'Your strikes and throws have an extra 8% chance to land a critical hit.'),
-    C('backpack', 'Explorer’s Backpack', 6, 900, 'loot', 'More loot', 'Battle wins pay 50% more coins, potions drop twice as often and eggs more often.'),
+    C('backpack', 'Explorer’s Backpack', 6, 900, 'loot', 'More loot', 'Battle wins pay 50% more coins, potions drop twice as often, and eggs drop more often.'),
     C('lantern', 'Wayfinder’s Lantern', 7, 1400, 'finds', 'More artifacts', 'Hidden artifacts turn up 50% more often on the road.'),
     C('purse', 'Merchant’s Purse', 8, 1600, 'coins', '+20% battle coins', 'Battle wins pay 20% more coins.'),
-    C('fleetboots', 'Fleet Boots', 9, 1800, 'flee', 'Always escape', 'Run away always works against creatures (and more often against guardians and bosses).'),
+    C('fleetboots', 'Fleet Boots', 9, 1800, 'flee', 'Always escape', 'Run away always works against creatures, and works more often against guardians and bosses.'),
     C('vitality', 'Amulet of Vitality', 10, 2500, 'hp', '+10% max HP', 'Raises your max HP by 10%.'),
     C('nestpearl', 'Nest Pearl', 11, 2000, 'eggs', 'More eggs', 'Creatures you beat drop an egg 10% more often.'),
     C('might', 'Ring of Might', 12, 3000, 'dmg', '+8% damage', 'All your attacks do 8% more damage.'),
@@ -701,6 +840,68 @@
     SH('sh_gilded', 'Gilded Kite', 0.15, 0.8, { reflect: 0.35, counter: 0.4 }, 'Blocks 80%, reverses 35% and hits back.', { cost: 4200, level: 38 }),
     SH('sh_gold', 'Aegis of Kings', 0.2, 0.85, { reflect: 0.5, regen: 0.1, legendary: true }, 'Legendary. 20% armor, blocks 85%, reverses half and heals.', { bosses: 16 }),
   );
+  // ---- belts (CraftPix belt icons): shields you wear at the waist. They are ordinary shields in the Defense
+  // slot (you wear one at a time), but trade block for armor: a belt shaves a bit more off EVERY hit, and
+  // blocks a bit less than a shield when you Defend. 45 are bought one per level (1-45); 3 are legendary.
+  const pc = (v) => Math.round(v * 100) + '%';
+  const beltDesc = (flavor, x) => [flavor, x.reflect && 'Reverses ' + pc(x.reflect) + ' of a blocked hit back at the attacker.',
+    x.counter && 'Hits back for ' + pc(x.counter) + ' of your attack whenever you defend against a hit.', x.regen && 'Defending restores ' + pc(x.regen) + ' HP instead of 6%.'].filter(Boolean).join(' ');
+  const BELT = (id, name, armor, block, extra, flavor, req) => ({ id, name, slot: 'shield', type: 'shield', belt: true, armor, block, ...extra, desc: beltDesc(flavor, extra), req, icon: 'wi/' + id + '.png' });
+  [
+    ['bt_leather', 'Leather Belt', 'Plain cowhide with a brass buckle.'],
+    ['bt_moss', 'Mossweave Belt', 'Woven from damp forest fibre.'],
+    ['bt_rope', 'Rope Sash', 'Knotted hemp. Better than nothing.'],
+    ['bt_wrap', 'Bandage Wrap', 'Strips of cloth wound tight around the waist.'],
+    ['bt_studded', 'Studded Strap', 'Red leather with a row of rivets.'],
+    ['bt_trav', 'Traveler’s Belt', 'Broken in over a thousand miles.'],
+    ['bt_hide', 'Emberhide Belt', 'Scorched hide that never quite cools.'],
+    ['bt_utility', 'Scout’s Utility Belt', 'Pouches for everything but potions.'],
+    ['bt_pouch', 'Ranger’s Pouch Belt', 'A steel clasp over a pair of lucky pouches.'],
+    ['bt_iron', 'Iron Link Belt', 'Riveted steel plates on dark leather.'],
+    ['bt_brass', 'Brass Buckle Belt', 'A buckle polished bright enough to see your face in.'],
+    ['bt_stud', 'Emberstud Belt', 'Hot orange studs that sting when struck.', { counter: 0.3 }],
+    ['bt_hermit', 'Hermit’s Cord', 'A frayed cord with a long, swaying tail.'],
+    ['bt_tassel', 'Tasseled Sash', 'Silk tassels hide the steel underneath.'],
+    ['bt_sunfire', 'Sunfire Sash', 'Golden silk that glows warm at the knot.', { regen: 0.09 }],
+    ['bt_bandolier', 'Crimson Bandolier', 'Rows of brass-capped loops on red leather.'],
+    ['bt_verdant', 'Verdant Girdle', 'Green hide trimmed with a golden charm.'],
+    ['bt_fringe', 'Gilded Fringe Sash', 'Gold fringe over a woven belt.'],
+    ['bt_jade', 'Jadetail Sash', 'A jade-green tail trails behind you.'],
+    ['bt_amethyst', 'Amethyst Sash', 'Violet gems on blood-red leather.'],
+    ['bt_bluestone', 'Bluestone Belt', 'Steel plates set with pale blue stones.'],
+    ['bt_wing', 'Wingguard Belt', 'Silver wings spread across a golden clasp.', { reflect: 0.25 }],
+    ['bt_shadow', 'Shadowlink Belt', 'Black links that swallow the light.'],
+    ['bt_ruby', 'Ruby Clasp Belt', 'A single ruby set in red leather.'],
+    ['bt_amber', 'Amber Crest Belt', 'A golden crest on a dark band.'],
+    ['bt_warlord', 'Warlord’s Girdle', 'Heavy red plates with a gold fastening.', { counter: 0.4 }],
+    ['bt_jadewing', 'Jadewing Belt', 'Green plates curve around a glowing gem.', { regen: 0.1 }],
+    ['bt_thorn', 'Thornvine Belt', 'Living vines that bristle when you are hit.', { counter: 0.45 }],
+    ['bt_emerald', 'Emerald Chain Belt', 'A chain of old gold holding one emerald.'],
+    ['bt_tidal', 'Tidal Belt', 'Deep blue plates with a pearl-white centre.'],
+    ['bt_sapphire', 'Sapphire Girdle', 'A large sapphire between silver wings.'],
+    ['bt_storm', 'Stormplate Belt', 'Steel and blue plates that crackle faintly.', { reflect: 0.3 }],
+    ['bt_cinder', 'Cinderwing Belt', 'Red barbs flare out either side of a steel gem.'],
+    ['bt_rubywing', 'Ruby Wing Girdle', 'Silver wings frame a blood-red crest.'],
+    ['bt_bloodstone', 'Bloodstone Girdle', 'A great red stone in a gold setting.', { regen: 0.12 }],
+    ['bt_aurum', 'Aurum Pendant Belt', 'A gold pendant swings from a dark band.'],
+    ['bt_azure', 'Royal Azure Belt', 'Blue enamel with gold filigree.'],
+    ['bt_violet', 'Violet Link Belt', 'Steel links joined by glowing violet thread.', { reflect: 0.35 }],
+    ['bt_cross', 'Gilded Cross Belt', 'Silver bands cross over a golden jewel.'],
+    ['bt_barbed', 'Barbed Crimson Belt', 'Red spikes that bite back.', { counter: 0.5 }],
+    ['bt_sentinel', 'Sentinel Belt', 'Gold trim on black steel. Always on watch.'],
+    ['bt_weave', 'Twilight Weave Belt', 'Purple cords braided around gold.'],
+    ['bt_orchid', 'Orchid Girdle', 'Magenta enamel and pink crystal.', { reflect: 0.4 }],
+    ['bt_nightwing', 'Nightwing Girdle', 'Bat wings of black silk that drink in damage.', { reflect: 0.3, regen: 0.12 }],
+    ['bt_starlit', 'Starlit Girdle', 'A sapphire with golden strands hanging below.', { reflect: 0.4, regen: 0.1 }],
+  ].forEach(([id, name, flavor, extra], i, all) => {
+    const t = i / (all.length - 1), lvl = 1 + i;
+    D.WEAPONS.push(BELT(id, name, +(0.05 + 0.13 * t).toFixed(2), +(0.6 + 0.14 * t).toFixed(2), extra || {}, flavor, { cost: Math.round(95 * lvl / 50) * 50, level: lvl }));
+  });
+  D.WEAPONS.push(   // legendary belts: earned by defeating world guardians, like the other legendary gear
+    BELT('bt_phoenix', 'Phoenix Girdle', 0.16, 0.72, { counter: 0.5, regen: 0.14, legendary: true }, 'Legendary. Woven from flame that always comes back.', { bosses: 6 }),
+    BELT('bt_frostwing', 'Frostwing Girdle', 0.18, 0.76, { reflect: 0.5, regen: 0.1, legendary: true }, 'Legendary. Icy wings fold around your waist.', { bosses: 12 }),
+    BELT('bt_sovereign', 'Sovereign Girdle', 0.22, 0.8, { reflect: 0.5, counter: 0.5, regen: 0.12, legendary: true }, 'Legendary. Worn by those who beat every guardian.', { bosses: 18 }),
+  );
   D.WEAPON_SLOTS = { melee: 'Melee', ranged: 'Ranged', shield: 'Defense' };
   D.weaponById = Object.fromEntries(D.WEAPONS.map((w) => [w.id, w]));
   // potions are consumables; kind 'heal' can also be drunk outside battle
@@ -743,7 +944,7 @@
   }));
   D.POTION_MAX = 9;
   D.SUPPLIES = [
-    { id: 'rest', name: 'Streak Shield', desc: 'Saves your streak when you miss a day. Used up automatically, one per missed day. Hold up to 2.', cost: 300 },
+    { id: 'rest', name: 'Streak Shield', desc: 'Saves your streak when you miss a day. One is used per missed day. Hold up to 2.', cost: 300 },
   ];
   D.SHIELD_MAX = 2; D.SHIELD_EVERY = 7;   // Streak Shields: hold up to 2; a free one every 7 streak days
 
@@ -775,7 +976,7 @@
 
   // ---------- Daily reward calendar (claim after walking 300 steps today) ----------
   D.DAILY_CAL = [{ coins: 50 }, { coins: 75, potion: 'tonic' }, { coins: 100 }, { coins: 125, potion: 'iron' }, { coins: 150 }, { coins: 200, potion: 'elixir' }, { rare: true }];
-  D.DAILY_RARES = [{ pet: 'crow' }];
+  D.DAILY_RARES = [{ pet: 'crow' }, { pet: 'cm47' }];
   D.DAILY_MIN_STEPS = 300;
 
   // ---------- Daily tasks (3 per day, seeded by date) ----------
@@ -883,7 +1084,7 @@
     { id: 'battles50', title: 'Cutlass', desc: 'Win 50 battles.', stat: 'battles', target: 50, reward: { coins: 500 } },
     { id: 'battles250', title: 'Sabre Master', desc: 'Win 250 battles.', stat: 'battles', target: 250, reward: { coins: 2500 } },
     { id: 'chainshot', title: 'Chain Shot', desc: 'Win 5 battles in one day.', stat: 'todayBattles', target: 5, reward: { coins: 300 } },
-    { id: 'kinds25', title: 'Duelist', desc: 'Defeat 25 different kinds of creature.', stat: 'kinds', target: 25, reward: { coins: 1000 } },
+    { id: 'kinds25', title: 'Duelist', desc: 'Defeat 25 different kinds of creatures.', stat: 'kinds', target: 25, reward: { coins: 1000 } },
     { id: 'bosses3', title: 'Golden Blade', desc: 'Defeat 3 world guardians.', stat: 'bosses', target: 3, reward: { coins: 500 } },
     { id: 'bosses10', title: 'Siege Breaker', desc: 'Defeat 10 world guardians.', stat: 'bosses', target: 10, reward: { coins: 1500 } },
     { id: 'nemesis1', title: 'Boss Hunter', desc: 'Defeat a roaming boss.', stat: 'nemesis', target: 1, reward: { coins: 600 } },
@@ -902,7 +1103,7 @@
   ];
 
   // ---------- Encounters ----------
-  D.DRUID_LINES = ['A hooded druid steps out of the trees. “Knowledge is the oldest path. Walk it with me.”', 'The druid blocks the path, staff raised. “Answer truly and pass. Answer wrongly and face me.”', '“Ah, a walker. Let us see what your mind carries besides your feet.”', 'Leaves swirl around a cloaked figure. “One question, walker. Only one.”'];
+  D.DRUID_LINES = ['A hooded druid steps out of the trees. “Knowledge is the oldest path. Walk it with me.”', 'The Druid blocks the path, staff raised. “Answer truly and pass. Answer wrongly and face me.”', '“Ah, a walker. Let us see what your mind carries besides your feet.”', 'Leaves swirl around a cloaked figure. “One question, walker. Only one.”'];
   D.EGG_LINES = ['Something glints in a nest beside the path.', 'An egg sits all alone in the grass, still warm.', 'Half-buried in leaves: an egg with a strange shell.', 'A bird circles overhead and drops something shiny.', 'There’s an egg wedged between two stones.'];
   D.MERLIN_LINES = [
     '“Hoo! A walker with strong legs. I am Merlin, and I have a task worthy of you.”',

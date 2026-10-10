@@ -84,7 +84,7 @@
   };
   R.desc = () => {
     if (!on()) return 'Off. Turn on to be reminded 20, 15, 10, 5 and 2 minutes before a mission is due.';
-    if (perm === 'granted') return native() ? 'On, in the app and as phone notifications, even when Step Quest is closed.' : 'On, in the app and as notifications while Step Quest is open or in the background.';
+    if (perm === 'granted') return native() ? 'On: in the app and as phone notifications, even when Step Quest is closed.' : 'On: in the app and as notifications while Step Quest is open or in the background.';
     if (perm === 'denied') return 'On in the app. Phone notifications are blocked in your settings.';
     if (perm === 'unsupported') return 'On in the app. This browser can’t show phone notifications.';
     return 'On in the app. Tap Allow to get phone notifications too.';
