@@ -160,27 +160,18 @@
   };
   T.steps = STEPS;
 
-  // ---------- one-time "how to heal" popup the first time HP runs low ----------
+  // ---------- one-time "how to heal" note the first time HP runs low ----------
+  // A small note with a Potions button, not a sheet: it never covers the screen or interrupts what the player is
+  // doing. Notes wait until a battle is over, so it lands after the fight that hurt them.
   UI.lowHpCheck = () => {
     const s = S();
-    if (!s.onboarded || s.hints.lowHp || T.active) return;
-    if (document.documentElement.classList.contains('battling') || !$('#sheet').hidden || !$('#battle').hidden) return;
+    if (!s || !s.onboarded || s.hints.lowHp || T.active) return;
     if (s.hp > G.maxHp() * 0.35) return;
     s.hints.lowHp = true; WB.Save.queue();
-    UI.sheet(`<h3 id="sheet-title">Your health is low</h3>
-      <p>You’re at ${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())} HP. Here’s how to get it back:</p>
-      <ul class="heal-list">
-        <li>${WB.icon('heart', 3)}<span><b>Wait it out.</b> HP refills on its own, from empty to full in about ${D.HEAL_MINUTES} minutes, even with the app closed.</span></li>
-        <li>${WB.pxImg('pot/tonic.png', 32)}<span><b>Drink a healing potion</b> to heal right away, from Inventory → Potions or from Items in battle. Buy more in the Shop.</span></li>
-        <li>${WB.icon('steps', 3)}<span><b>Walking doesn’t heal.</b> It still earns coins and XP, but HP only comes back with time or potions.</span></li>
-      </ul>
-      <p class="fine">Battles you lose and missions you fail cost HP. Your pets recover over time too. You’ll only see this message once.</p>
-      <div class="row"><button class="btn ghost" type="button" data-close>Got it</button><button class="btn gold" type="button" id="lh-pots">Open potions</button></div>`, (b) => {
-      $('#lh-pots', b).onclick = () => { UI.closeSheet(); UI.goHub('bag', 'potions'); };
-    });
+    UI.toast({ kicker: 'Health low', title: WB.fmt(s.hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', sub: 'Refills on its own in about ' + D.HEAL_MINUTES + ' min, or drink a potion. Walking doesn’t heal.', icon: 'heart', cls: 'warn', action: { label: 'Potions', fn: () => UI.goHub('bag', 'potions') } });
   };
   WB.bus.on('state', () => setTimeout(UI.lowHpCheck, 300));
-  setInterval(() => { if (WB.state && WB.state.onboarded) UI.lowHpCheck(); }, 2000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(UI.lowHpCheck, 1500); });   // coming back to the app
 
   document.addEventListener('click', (e) => { const t = e.target.closest('[data-act="tour"]'); if (t) { WB.Sfx.play('tap'); T.start(); } });
 

@@ -975,7 +975,6 @@
       <details class="about pbox card"><summary><span class="lbl">About</span><span class="chev" aria-hidden="true">›</span></summary>
         <div class="about-b">
           <div>Step Quest turns your real steps into an adventure. Your phone’s motion sensor counts them while the app is open, and your Health app covers the rest.</div>
-          <div>Pixel art, creatures, characters and battle effects by <a href="https://craftpix.net" target="_blank" rel="noopener">CraftPix.net</a> (free license). Fonts: Jersey 10, Pixelify Sans and Silkscreen (SIL Open Font License).</div>
           <button class="linkbtn ver" type="button" id="ver">Version ${WB.esc(WB.VERSION || '2.7.0')}</button>
         </div>
       </details>

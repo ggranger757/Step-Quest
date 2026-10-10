@@ -688,10 +688,6 @@ input:focus-visible, select:focus-visible { outline: 0; box-shadow: 0 0 0 2px va
 .tour-nav .linkbtn { color: var(--muted); }
 html.touring .dev-fab { display: none; }
 /* low health popup */
-.heal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
-.heal-list li { display: flex; gap: var(--s3); align-items: flex-start; font-size: 15px; line-height: 1.4; }
-.heal-list li > :first-child { flex: none; width: 32px; }
-.heal-list b { color: var(--gold); font-weight: 400; }
 
 /* sections scrolled into view clear the sticky page header */
 .screen .sect, .screen .loadout, .screen .hero, .screen .stats { scroll-margin-top: 84px; }
