@@ -1230,7 +1230,8 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 .journey { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .screen { overscroll-behavior: contain; }
 .hub-seg button { font-size: 12px; letter-spacing: .02em; gap: 6px; padding: 0 6px; }
-@media (max-width: 420px) { .hub-seg button .px-icon, .hub-seg button img, .hub-seg button svg, .hub-seg button canvas { display: none; } }
+/* (the icons used to be hidden under 420px; the Artifacts row stacks icon over label now, so they stay visible on small phones) */
+@media (max-width: 420px) { .hub-seg:not(.stacked) button .px-icon, .hub-seg:not(.stacked) button img, .hub-seg:not(.stacked) button svg, .hub-seg:not(.stacked) button canvas { display: none; } }
 @media (max-width: 360px) { .pf-tabs button { font-size: 10px; letter-spacing: 0; } .pf-tabs button .px-icon, .pf-tabs button svg { display: none; } }
 .item.bag { min-width: 0; }
 .item .foot.stack .btn { white-space: normal; height: auto; min-height: 40px; padding-top: 6px; padding-bottom: 6px; line-height: 1.2; text-align: center; }
@@ -1298,3 +1299,53 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 .hub-seg button > span:not(.cnt) { overflow: visible; text-overflow: clip; max-width: 100%; font-size: clamp(9px, 3vw, 12px); letter-spacing: 0; }
 .seg.seven + .hub-seg button { font-size: clamp(9px, 3vw, 12px); letter-spacing: 0; }
 .seg.seven + .hub-seg button .cnt { font-size: 10px; }
+
+/* Inventory > Artifacts row (Collection / Forge / Eggs): the icons always show, also on an iPhone mini (360-375px) */
+.seg.seven + .hub-seg button .px-icon, .seg.seven + .hub-seg button img, .seg.seven + .hub-seg button svg, .seg.seven + .hub-seg button canvas { display: block; flex: none; width: 20px; height: 20px; object-fit: contain; image-rendering: pixelated; }
+.seg.seven + .hub-seg button .egg-img { display: block; width: 20px; height: 20px; }
+.seg.seven + .hub-seg button { min-height: 58px; justify-content: center; }
+.seg.seven + .hub-seg button > span:not(.cnt) { line-height: 1.1; }
+
+/* ---------- quick missions (Missions → My missions) ---------- */
+.qk-open { flex-direction: row; gap: var(--s2); }
+.qk-open small { font: 400 11px/1 var(--label); text-transform: uppercase; letter-spacing: .04em; opacity: .75; margin-left: var(--s1); }
+@media (max-width: 360px) { .qk-open small { display: none; } }
+.qk-sum { display: grid; gap: var(--s2); padding: var(--s3); margin-bottom: var(--s3); }
+.qk-sum-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); flex-wrap: wrap; }
+.qk-sum-top b { font: 400 20px/1 var(--display); }
+.qk-sum .bar { height: 8px; }
+.qk-cats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); padding: 3px; margin: var(--s3) -3px var(--s2); }
+.qk-cats button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 64px; padding: 4px 2px; border: 0; cursor: pointer; background: var(--surface); box-shadow: 0 0 0 2px var(--line); color: var(--muted); font: 400 10px/1.1 var(--label); text-transform: uppercase; text-align: center; letter-spacing: 0; overflow-wrap: anywhere; }
+.qk-cats button small { font: 400 10px/1 var(--label); color: var(--dim); }
+.qk-cats button[aria-pressed="true"] { background: var(--surface-2); box-shadow: 0 0 0 2px var(--cyan); color: var(--text); }
+.qk-cats button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.qk-blurb { margin: 0 0 var(--s2); }
+.qk-list { display: grid; gap: var(--s2); }
+.qk { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3); }
+.qk-main { display: grid; gap: 4px; min-width: 0; }
+.qk-t { font: 400 15px/1.3 var(--body); color: var(--text); overflow-wrap: anywhere; }
+.qk .t-rew { margin: 0; }
+.qk .btn { flex: none; min-width: 72px; }
+.qk.done .qk-t { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+.qk .stamp { flex: none; display: inline-flex; align-items: center; gap: 6px; font: 400 11px/1 var(--label); text-transform: uppercase; color: var(--ok); }
+
+/* ---------- Profile: Mission mix ---------- */
+.mx-card { display: grid; gap: var(--s3); }
+.mx-card .chart-span { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mx-card .chart-span button { padding: 0 var(--s1); }
+.mx-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.mx-lbl { flex: 1; text-align: center; font: 400 13px/1.2 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--text); }
+.mx-arrow { display: grid; place-items: center; width: 44px; height: 40px; border: 0; cursor: pointer; background: var(--surface-2); box-shadow: 0 0 0 2px var(--line); }
+.mx-arrow i { width: 9px; height: 9px; border-left: 3px solid var(--text); border-bottom: 3px solid var(--text); }
+.mx-arrow.back i { transform: rotate(45deg); margin-left: 4px; }
+.mx-arrow.fwd i { transform: rotate(-135deg); margin-right: 4px; }
+.mx-arrow[disabled] { cursor: default; opacity: .35; }
+.mx-arrow:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.mx-g { margin: var(--s2) 0 0; font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.mx-row { display: grid; grid-template-columns: 24px minmax(0, 96px) minmax(0, 1fr) 32px; align-items: center; gap: var(--s2); }
+.mx-row .mx-n { font-size: 14px; line-height: 1.2; color: var(--text); overflow-wrap: anywhere; }
+.mx-row .bar { height: 8px; }
+.mx-row .mx-c { font: 400 16px/1 var(--display); text-align: right; font-variant-numeric: tabular-nums; }
+.mx-row.zero .mx-n, .mx-row.zero .mx-c { color: var(--dim); }
+.mx-row.zero .mx-ic { opacity: .4; filter: grayscale(1); }
+.mx-empty { margin: 0; }

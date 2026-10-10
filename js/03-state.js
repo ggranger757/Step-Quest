@@ -25,6 +25,8 @@
       tasks: { day: '', daily: [], advDone: [], quests: [] },
       missions: { active: [], done: [], skip: [] },
       custom: { list: [], history: [], day: '', coinsToday: 0, xpToday: 0, done: 0 },
+      quick: { day: '', done: {}, coinsToday: 0, xpToday: 0, total: 0, perDay: {} },   // quick missions (05k-quick.js)
+      mx: { days: {}, cats: {}, dawn: 0, night: 0, early: 0, ontime: 0 },             // mission log: types per day, completion times
       streak: { count: 0, best: 0, lastDay: '', rest: 0, claimed: [] },
       daily: { idx: 0, lastClaim: '' },
       ach: {}, purchases: 0,
@@ -42,7 +44,7 @@
     for (const k of Object.keys(f)) if (s[k] === undefined) s[k] = f[k];
     // Sound & music became two switches: Game music starts where the old switch was
     if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
-    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'streak', 'daily', 'settings', 'seen', 'health'])
+    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'quick', 'mx', 'streak', 'daily', 'settings', 'seen', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];
     // v2: dyes and auras were retired. Refund what was bought, drop the rest.
     if (s.v < 2) {

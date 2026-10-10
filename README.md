@@ -1,6 +1,6 @@
 # Step Quest
 
-A pixel-art walking RPG for your phone. Every real step moves your hero forward through the world. Walk to explore 49 worlds that open as you level up, earn Walk Coins, fight turn-based battles against aggressive creatures and world guardians, collect weapons, potions, food, magic items, pets and artifacts and face rare roaming bosses.
+A pixel-art walking RPG for your phone. Every real step moves your hero forward through the world. Walk to explore 50 worlds that open as you level up, earn Walk Coins, fight turn-based battles against aggressive creatures and world guardians, collect weapons, potions, food, magic items, pets and artifacts and face rare roaming bosses.
 
 It is a Progressive Web App (PWA): plain HTML, CSS and JavaScript with no build step and no server. Host it anywhere that serves static files over HTTPS, then install it from the phone's browser. The same code also builds into a real iPhone and Android app (see **Automatic step sync**) that reads steps from Apple Health and Health Connect.
 
@@ -28,6 +28,13 @@ It is a Progressive Web App (PWA): plain HTML, CSS and JavaScript with no build 
 - **Android (Chrome):** open the site → menu → **Install app** (or **Add to Home screen**).
 
 The app works offline after the first visit.
+
+## Quick missions, mission types and mission battles
+
+- **Quick missions** (Missions → My missions → *Quick missions*, right under *New mission*): 74 pre-made one-tap missions in 8 categories (Body, Mind, Learning, Home, Work & money, Creative, Social, Outdoors). Players can't add their own. Each can be done once a day; together they pay up to `D.QUICK_CAP` (80 coins, 120 XP) a day. Data: `js/02h-quick.js`, rules: `js/05k-quick.js`, UI: `js/07k-quick-ui.js`.
+- **Mission battles**: finishing one of your own missions (25%), claiming a daily mission (20%) or finishing a quick mission (12%) can bring a hostile creature (`D.MISSION_BATTLE`). It is a normal encounter, so the player can fight or walk on. Only from level `D.BATTLE_LEVEL`, never above 3 a day, never within 3 minutes of the last one, and never when HP is under 25%.
+- **Mission mix** (Profile → Overview): most, in-between and least completed mission types, for a day, week, month or all time, with arrows to step back through past periods. Quick missions, your own missions (by template, see `D.TPL_CAT`) and field missions all count. Counting starts with this version.
+- **36 mission achievements** (totals, quick missions, your own missions, time of day, days in a row, types). Badge art comes from `python3 tools/make_mission_badges.py`.
 
 ## How steps are counted
 
@@ -285,7 +292,7 @@ New players get a guided tour right after sign-up (existing players see it once 
 
 ## Worlds and levels
 
-There are 49 worlds, and they open **one at a time**: each needs a level (spread from Rust Hollow at level 1 to the Fort of Illusion at level 70, `D.LAST_WORLD_LEVEL`) **and** the world before it explored to 75% (`D.WORLD_GATE_PCT`). The world screen and the map show both requirements, ticking each one off, and roughly how many steps away the next world is. Worlds are 2.5× longer than at launch (`D.WORLD_LENGTH_MULT`) and encounters come every 600–1,000 steps. Creatures get stronger in later worlds, and every world has a guardian and a few artifacts to find.
+There are 50 worlds, and they open **one at a time**: each needs a level (spread from Rust Hollow at level 1 to the Fort of Illusion at level 70, `D.LAST_WORLD_LEVEL`) **and** the world before it explored to 75% (`D.WORLD_GATE_PCT`). The world screen and the map show both requirements, ticking each one off, and roughly how many steps away the next world is. Worlds are 2.5× longer than at launch (`D.WORLD_LENGTH_MULT`) and encounters come every 600–1,000 steps. Creatures get stronger in later worlds, and every world has a guardian and a few artifacts to find.
 
 ## Walkers and pets
 

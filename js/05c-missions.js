@@ -165,6 +165,7 @@
     ms.active = ms.active.filter((x) => x.id !== id);
     if (!ms.done.includes(id)) ms.done.push(id);
     ms.skip = ms.skip.filter((x) => x !== id);
+    WB.MStats.record('outdoor');   // field and Merlin missions count as Outdoors in the mission log
     return m.reward;
   };
 })();

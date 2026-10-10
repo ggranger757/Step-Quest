@@ -271,12 +271,23 @@
 
   // ---------- parallax drawing (shared with the battle screen) ----------
   WB.drawLayers = (ctx, world, camPx, t, W) => {
-    for (const [name, p, drift] of world.layers) {
+    for (const [name, p, drift, kind] of world.layers) {
       const im = Assets.ok(WB.layerPath(world, name));
       if (!im) continue;
       const iw = im.width;
       let off = (camPx * p + t * (drift || 0)) % iw;
       off = Math.round(off);
+      if (kind === 'lights') {   // lit windows and lamps: drawn in 20px chunks, each flickering on its own
+        const cw = 20, ih = im.height;
+        for (let px = -off; px < W; px += iw) for (let cx = 0, i = 0; cx < iw; cx += cw, i++) {
+          if (px + cx > W || px + cx + cw < 0) continue;
+          const ph = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 6.28, sp = 1.2 + (i % 5) * 0.5;
+          ctx.globalAlpha = Math.min(1, 0.78 + 0.16 * Math.sin(t * sp + ph) + 0.06 * Math.sin(t * 7.3 + ph * 3));
+          ctx.drawImage(im, cx, 0, cw, ih, px + cx, 0, cw, ih);
+        }
+        ctx.globalAlpha = 1;
+        continue;
+      }
       for (let px = -off; px < W; px += iw) ctx.drawImage(im, px, 0);
     }
   };

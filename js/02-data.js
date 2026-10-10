@@ -15,7 +15,7 @@
   const S1 = [['clouds1', 0.02, 1.5], ['clouds2', 0.05, 5], ['ground_houses_bg', 0.18], ['ground_houses2', 0.32], ['ground_houses', 0.55], ['fence', 0.82], ['road', 1]];
   const S4 = [['bg', 0.04], ['rail_wall', 0.2], ['train', 0.34], ['columns_floor', 0.6], ['wires', 0.78], ['infopost_wires', 0.92], ['floor_underfloor', 1]];
 
-  // ---------- Worlds (49) ----------
+  // ---------- Worlds (50) ----------
   // pool: the creatures that live here, picked to suit the place (aggressive ones start battles). boss: the guardian met at 100% explored.
   D.WORLDS = [
     { id: 'rust', name: 'Rust Hollow', scene: 's1', ground: 236, length: 3000, unlock: 1, ambient: 'dust', pool: ['snake', 'hyena', 'lazybat'], boss: 'turtle', merchant: 'trader1', layers: S1,
@@ -95,6 +95,10 @@
       blurb: 'Light falls through the roof onto a forest of turquoise stone.', landmarks: ['Sunshaft', 'Stalactite Hall', 'Blue Pool', 'Deep Chamber'] },
     { id: 'crypt', name: 'Crypt Grounds', scene: 'b4', ground: 232, length: 17500, unlock: 47, ambient: 'ash', pool: ['deceased', 'mummy', 'vampbat'], boss: 'bloater', merchant: 'trader3', layers: auto(8),
       blurb: 'Bones, graves and a green-lit crypt door.', landmarks: ['Bone Field', 'Hanging Cages', 'Crypt Door', 'Dead Tree'] },
+    { id: 'gothic', name: 'Dark Gothic Castle', scene: 'gothic', ground: 206, length: 18500, unlock: 48, ambient: 'fireflies', pool: ['vampbat', 'nightshade', 'deceased', 'mummy'], boss: 'dragon', merchant: 'trader2',
+      layers: [['l1', 0.04, 3], ['l2', 0.12], ['l3', 0.38], ['l4', 0.38, 0, 'lights'], ['l5', 0.62, 4], ['l6', 1], ['l7', 1, 0, 'lights']],   // 'lights' layers flicker (see WB.drawLayers)
+      thumb: 'thumb',   // map card picture: layers/thumb.png instead of squashing the wide parallax strips
+      blurb: 'A crooked village sleeps below a castle that never goes dark. Candles burn in every window.', landmarks: ['Lamplit Lane', 'Ruined Arch', 'The Black Chapel', 'Castle Gate'] },
     { id: 'fort', name: 'Fort of Illusion', scene: 'fort', ground: 262, length: 20000, unlock: 50, ambient: 'frost', pool: ['orcreaver', 'selfdoubt', 'medusa', 'orc'], boss: 'overthinker', merchant: 'trader2', layers: [['l1', 0.02, 3], ['l2', 0.15], ['l3', 1]],
       blurb: 'The last fortress, above a sea of violet waves. Only the strongest walkers get here.', landmarks: ['Outer Wall', 'Banner Hall', 'Tower Steps', 'Illusion Gate'] },
     // More_Worlds (lower levels): Vista Ten's ten scenes and the Purple Lex forest
@@ -175,6 +179,7 @@
     corridors: [['p4', 'Dark Wine'], ['k5', 'Snow Stone'], ['s32', 'Night Banner']],
     dragonhall: [['p23', 'Ember Flask'], ['p20', 'Lava Swirl'], ['s31', 'Pillar Banner']],
     crypt: [['s24', 'Weeping Mask'], ['p1', 'Blood Vial'], ['p35', 'Magma Jar']],
+    gothic: [['g1', 'Crimson Chalice'], ['g2', 'Bat Medallion'], ['g3', 'Tower Candelabra']],
     cavern: [['k3', 'Frost Geode'], ['k7', 'Cave Pearl'], ['k2', 'Rust Nugget']],
     fort: [['p48', 'Golden Flask'], ['p38', 'Flame Spike Vial'], ['k8', 'Lava Pebble']],
     // More_Worlds: three each
@@ -972,7 +977,8 @@
 
   // ---------- Streaks ----------
   D.STREAK_MILESTONES = [{ days: 3, coins: 100 }, { days: 7, coins: 200 }, { days: 14, coins: 350 }, { days: 30, coins: 600 }, { days: 60, coins: 900 }, { days: 100, coins: 1500 }];
-  D.STREAK_GOALS = [1000, 2500, 5000, 7500];
+  D.STREAK_GOALS = [1000, 2500, 5000, 7500, 10000, 12500, 15000, 20000];   // the "Streak minimum" choices in Settings
+  D.DAILY_GOALS = [2500, 5000, 7500, 10000, 12500, 15000, 20000, 25000, 30000];   // the "Daily goal" choices in Settings
 
   // ---------- Daily reward calendar (claim after walking 300 steps today) ----------
   D.DAILY_CAL = [{ coins: 50 }, { coins: 75, potion: 'tonic' }, { coins: 100 }, { coins: 125, potion: 'iron' }, { coins: 150 }, { coins: 200, potion: 'elixir' }, { rare: true }];

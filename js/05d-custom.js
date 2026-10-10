@@ -163,6 +163,10 @@
     c.history.unshift({ title: m.title, diff: m.diff, pri: m.pri, at: Date.now(), late: Date.now() > m.due, coins: r.coins, xp: r.xp });
     c.history = c.history.slice(0, 30);
     c.done = (c.done || 0) + 1;
+    {   // mission log: its type, and whether you beat the clock (the due time you chose at creation decides)
+      const L = m.lock || m, now = Date.now(), left = (L.due - now) / Math.max(1, L.due - m.at);
+      WB.MStats.record((WB.DATA.TPL_CAT || {})[m.tpl] || 'other', { ontime: now <= L.due, early: now <= L.due && left >= 0.5 });
+    }
     WB.Sfx.play('claim'); G.after();
     return { m, r, why };
   };
