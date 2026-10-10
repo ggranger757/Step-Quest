@@ -46,6 +46,10 @@ All pixel art comes from free asset packs by **CraftPix.net** and is used under 
 
 - **Free Belt RPG Pixel Art Icons** by CraftPix.net (CraftPix free license: https://craftpix.net/file-licenses/): all 48 belt icons are Defense gear in the Shop, worn in the shield slot (`assets/wi/bt_*.png`, cropped by `tools/add_belts.py`).
 
+## Magic item icons
+
+- The Ring, Spellbook, Lucky Clover and Explorer's Backpack icons (`assets/mg/ring|book|clover|backpack.png`) were redrawn by hand as 16x16 pixel art for Step Quest (`tools/redraw_magic4.py`), using the colour palette and outline of the other magic icons, so the whole set looks consistent. They replace the smooth pictures that were supplied with the project.
+
 ## Weapons and sounds
 
 Weapon projectiles, explosions and their sound effects come from the "projectiles" pack supplied with the project (Throwing Star, Poison Leaf, Fireball, Spark Bomb, Frost Lash, Prickler, Asteroid, Mirror Orb, Blue Flame, Dread Ghost, Luna, Nova, Benny). That folder had no license file: confirm its license before you ship commercially. Sounds were trimmed and converted to mono MP3.

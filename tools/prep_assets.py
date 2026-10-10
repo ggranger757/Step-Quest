@@ -731,11 +731,13 @@ if P14:
     for n, (sheet, idx) in enumerate(RELICS, 1): save(icon(sheet, idx), f'art/x{n}.png')
 
 # ------------------------------------------------------------------ magic items (pack 15)
-P15 = sys.argv[15] if len(sys.argv) > 15 else None   # ring.png, book.png, clover.png, backpack.png (about 64 px)
+# The first four magic items (ring, book, clover, backpack) arrived as smooth, anti-aliased ~64 px pictures that did
+# not match the pixel art of the rest of the set. They are now redrawn by hand as 16x16 pixel icons (3x, centred on 64 px)
+# by tools/redraw_magic4.py, so the old pictures are no longer imported here. Pack 15 is accepted but ignored.
+P15 = sys.argv[15] if len(sys.argv) > 15 else None   # (legacy) ring.png, book.png, clover.png, backpack.png
 if P15:
-    for n in ('ring', 'book', 'clover', 'backpack'):
-        im = load(os.path.join(P15, n + '.png')); sq = Image.new('RGBA', (64, 64))
-        sq.alpha_composite(im, ((64 - im.width) // 2, (64 - im.height) // 2)); save(sq, f'mg/{n}.png')
+    import runpy
+    runpy.run_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'redraw_magic4.py'), run_name='__main__')
 
 # ------------------------------------------------------------------ more items (pack 16): 40 icons, 32 px
 # Food and potions go to pot/, six become ranged weapons (wi/ww_*), the rest are artifacts (art/i<nn>).
