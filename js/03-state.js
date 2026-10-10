@@ -30,7 +30,7 @@
       eggs: { frost: 0, ember: 0, crystal: 0 }, eggTrades: 0,
       druid: { asked: [], wins: 0, losses: 0 },
       nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, homeState: '' },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, homeState: '', theme: 'night', notify: true, chartDays: 14 },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }
@@ -73,6 +73,7 @@
     if (s.equip.backpack && !s.equip.charms.includes('backpack')) s.equip.charms.push('backpack');
     delete s.equip.backpack;
     delete s.settings.music;   // one Sound & music switch now
+    delete s.settings.loc;     // Location Awareness was removed
     delete s.music;            // the in-app music player was removed: players use their own music app
     if (s.enc.merlinAt && !s.enc.merlinMet) s.enc.merlinMet = true;   // players who already met Merlin
     s.peakLevel = Math.max(s.peakLevel || 0, s.level);   // levels won back after losing to a boss don't pay level-up coins twice

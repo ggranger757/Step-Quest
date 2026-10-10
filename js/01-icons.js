@@ -8,6 +8,7 @@
   };
 
   const ICONS = {
+    sshield: ['kkkkkkkkk', 'kCccyccbk', 'kCcyrycbk', 'kCcyrycbk', 'kCyrrrybk', 'kCcyyycbk', '.kCcccbk.', '.kCcccbk.', '..kCcbk..', '...kkk...'],   // Streak Shield: a shield with the streak flame
     coin: ['..kkkkk..', '.kYyyyok.', 'kYyyyyyok', 'kYyykyyok', 'kyyykyyok', 'kyyykyyok', 'kyyyyyyok', '.koooook.', '..kkkkk..'],
     xp: ['....k....', '...kVk...', 'kkkkVvkkk', 'kVVVVvvvk', '.kVVvvvk.', '..kVvvk..', '.kVvkvvk.', '.kvk.kvk.', '.kk...kk.'],
     flame: ['....k....', '...krk...', '...krrk..', '..krRrk..', '.krRRrrk.', '.krRyRrk.', 'krRyyyRrk', 'krRyYyRrk', '.krRyRrk.', '..kkkkk..'],
@@ -77,24 +78,25 @@
       for (let i = 0; i < row.length; i++) {
         const ch = row[i]; if (ch === '.' || ch === ' ') continue;
         const col = pal[ch] || PAL[ch]; if (!col) continue;
-        x.fillStyle = silhouette ? (ch === 'k' ? '#0e0b20' : '#59e3ff') : col;   // locked: a teal silhouette
+        x.fillStyle = silhouette ? (ch === 'k' ? '#0e0b20' : silhouette) : col;   // locked: a silhouette in the theme's --cyan
         x.fillRect(i, j, 1, 1);
       }
     });
     return c;
   }
+  const silCol = () => (WB.silColor ? WB.silColor() : '#3d2b70') || '#3d2b70';
   WB.iconCanvas = (name, opts = {}) => {
-    const key = name + '|' + (opts.pal || '') + '|' + (opts.sil ? 1 : 0);
+    const key = name + '|' + (opts.pal || '') + '|' + (opts.sil ? silCol() : 0);
     if (cache[key]) return cache[key];
     let c;
-    if (ICONS[name]) c = draw(ICONS[name], opts.pal === 'gold' ? { c: PAL.y, C: PAL.Y, b: PAL.o } : {}, opts.sil);   // 'gold' tints cyan icons
-    else if (SHAPES[name]) c = draw(SHAPES[name], ITEM_PAL[opts.pal] || ITEM_PAL.ash, opts.sil);
-    else c = draw(ICONS.gem, {}, opts.sil);
+    if (ICONS[name]) c = draw(ICONS[name], opts.pal === 'gold' ? { c: PAL.y, C: PAL.Y, b: PAL.o } : {}, opts.sil && silCol());   // 'gold' tints cyan icons
+    else if (SHAPES[name]) c = draw(SHAPES[name], ITEM_PAL[opts.pal] || ITEM_PAL.ash, opts.sil && silCol());
+    else c = draw(ICONS.gem, {}, opts.sil && silCol());
     cache[key] = c; return c;
   };
   const urls = {};
   WB.iconURL = (name, opts = {}) => {
-    const key = name + '|' + (opts.pal || '') + '|' + (opts.sil ? 1 : 0);
+    const key = name + '|' + (opts.pal || '') + '|' + (opts.sil ? silCol() : 0);
     return urls[key] || (urls[key] = WB.iconCanvas(name, opts).toDataURL());
   };
   // scale: integer pixel multiplier

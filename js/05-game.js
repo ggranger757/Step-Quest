@@ -142,7 +142,17 @@
       battles: s.enc.battles, bosses: G.bossCount(), weapons: s.owned.weapons.length, pets: s.owned.pets.length,
       encounters: s.enc.count, finds: G.findCount(), kinds: Object.keys(s.enc.cards).length,
       bestStreak: s.streak.best, level: s.level, purchases: s.purchases,
+      chests: s.enc.chests || 0, coins: s.coins, km: Math.floor((s.meters || 0) / 1000), todayBattles: s.today.battles || 0,
+      nemesis: Object.keys((s.nemesis && s.nemesis.beaten) || {}).length, druidWins: (s.druid && s.druid.wins) || 0,
+      avatars: s.owned.avatars.length, worldkeys: G.wk ? G.wk().keys.length : 1,
+      artFinds: G.tally('arts'), forged: G.tally('forged'), tuned: G.tally('tuned'), portals: G.tally('portals'), shots: G.tally('shots'), repairs: G.tally('repairs'),
     };
+  };
+  // running counts for achievements (older saves start the artifact count from what they had already found)
+  G.tally = (k, add) => {
+    const s = S(); if (!s.tally || typeof s.tally !== 'object') s.tally = { arts: G.findCount() };
+    if (add) s.tally[k] = (s.tally[k] || 0) + add;
+    return s.tally[k] || 0;
   };
   G.reqStatus = (req) => {
     const s = S();
@@ -160,6 +170,7 @@
   G.checkUnlocks = () => {
     for (const cat of Object.keys(CATS)) for (const it of CATS[cat][1]) {
       if (G.owns(cat, it.id) || it.req.cost || it.req.daily) continue;
+      if (cat === 'pet' && G.petDead && G.petDead(it.id)) continue;   // a pet that died comes back only if you buy it again
       if (G.reqStatus(it.req).met) G.unlock(cat, it.id);
     }
   };
@@ -181,15 +192,13 @@
   G.gateMet = (w) => !w.unlock.after || S().unlocked.includes(w.id) || G.explorePct(w.unlock.after) >= D.WORLD_GATE_PCT;
   G.worldReq = (w) => {
     const prev = w.unlock.after && D.worldById[w.unlock.after];
-    return 'Level ' + w.unlock.level + (prev ? ' · explore ' + prev.name + ' ' + D.WORLD_GATE_PCT + '%' : '');
+    return 'Reach level ' + w.unlock.level + (prev ? ' and explore ' + D.WORLD_GATE_PCT + '% of ' + prev.name : '');
   };
   function openWorlds() {
     const s = S();
     for (const w of D.WORLDS) {
-      if (!s.unlocked.includes(w.id) && s.level >= w.unlock.level && G.gateMet(w)) {
-        s.unlocked.push(w.id); s.worldSteps[w.id] = s.worldSteps[w.id] || 0;
-        WB.bus.emit('worldUnlocked', w);
-      }
+      // requirements met: the world is DISCOVERED. Entering it takes the Worldkey (charge + resonance), see 05g-worldkey.js
+      if (!s.unlocked.includes(w.id) && s.level >= w.unlock.level && G.gateMet(w)) G.wkDiscover(w);
     }
   }
   // total XP earned so far, and the total needed to reach a level: drives the "next world" progress bar
@@ -224,7 +233,7 @@
     const gap = WB.daysBetween(st.lastDay, today);
     if (gap === 0) return { count: st.count, today: true, alive: true };
     if (gap === 1) return { count: st.count, today: false, alive: true };
-    if (gap === 2 && st.rest > 0) return { count: st.count, today: false, alive: true, rest: true };
+    if (gap - 1 <= st.rest) return { count: st.count, today: false, alive: true, rest: true, missed: gap - 1 };   // Streak Shields cover the missed days
     return { count: 0, today: false, alive: false, lost: st.count };
   };
   // day/steps default to today; health sync also passes earlier days so streaks survive days the app stayed closed
@@ -233,13 +242,13 @@
     if (steps < s.settings.streakMin || st.lastDay === today) return;
     if (st.lastDay && WB.daysBetween(st.lastDay, today) < 0) return;   // never rewrite an older day
     const gap = st.lastDay ? WB.daysBetween(st.lastDay, today) : 99;
-    let usedRest = false;
+    let usedRest = 0;
     if (gap === 1) st.count++;
-    else if (gap === 2 && st.rest > 0) { st.rest--; st.count++; usedRest = true; }
+    else if (gap - 1 <= st.rest) { usedRest = gap - 1; st.rest -= usedRest; st.count++; }   // one Streak Shield for each missed day
     else st.count = 1;
     st.lastDay = today;
     if (st.count > st.best) st.best = st.count;
-    if (st.count % 7 === 0) st.rest = Math.min(2, st.rest + 1);
+    if (st.count % D.SHIELD_EVERY === 0) st.rest = Math.min(D.SHIELD_MAX, st.rest + 1);   // a free Streak Shield every 7 streak days
     for (const m of D.STREAK_MILESTONES) {
       if (st.count >= m.days && !st.claimed.includes(m.days)) { st.claimed.push(m.days); s.coins += m.coins; WB.bus.emit('streakMilestone', m); }
     }
@@ -288,7 +297,9 @@
     }
     return 0;
   };
-  G.activeAdventure = () => D.ADVENTURE.filter((a) => !S().tasks.advDone.includes(a.id)).slice(0, 2);
+  const BATTLE_GOALS = ['total_battles', 'bosses'];
+  // battle goals stay hidden until battles unlock (level D.BATTLE_LEVEL); the others move up meanwhile
+  G.activeAdventure = () => D.ADVENTURE.filter((a) => !S().tasks.advDone.includes(a.id) && (G.battlesOpen() || !BATTLE_GOALS.includes(a.kind))).slice(0, 2);
   G.claimable = () => {
     const s = S(), out = [];
     s.tasks.daily.forEach((d) => { const t = G.dailyDef(d.id); if (t && !d.claimed && G.taskProgress(t) >= t.target) out.push({ type: 'daily', t, rec: d }); });
@@ -343,6 +354,7 @@
       WB.bus.emit('achievement', a);
     }
   }
+  G.checkAchievements = checkAchievements;
   G.findCount = () => Object.values(S().enc.finds).reduce((n, a) => n + a.length, 0);
 
   // ---------- core: steps ----------
@@ -395,6 +407,7 @@
     const eggTrade = G.setsReady && G.setsReady().length && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
     if (type === 'druid' && s.level < D.BATTLE_LEVEL && !forceType) type = 'chest';   // a wrong answer means a fight, so he waits until battles unlock
     if (type === 'boss' && !G.battlesOpen() && !forceType) type = 'chest';
+    if (type === 'creature' && !G.battlesOpen() && !opts.creature) type = WB.pick(['chest', 'find', 'egg', 'traveler']);   // no creatures at all before battles unlock
     if (type === 'nemesis' && !opts.boss && (s.level < D.BOSS_LEVEL || Date.now() - (s.enc.nemesisAt || 0) < D.BOSS_COOLDOWN_H * 3600000)) type = 'creature';
     if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest && !eggTrade) type = 'chest';
     const e = { id: 'e' + ++s.enc.seq, type, world: w.id };
@@ -417,14 +430,17 @@
       const calm = w.pool.filter((c) => !D.CREATURES[c].aggressive);
       const fight = opts.hostile || s.enc.battles < 3 || !calm.length || Math.random() < D.FIGHT_CHANCE;
       e.creature = opts.creature || (fight && hostile.length ? WB.pick(hostile) : WB.pick(calm.length ? calm : w.pool));
+      // Redhood Rival can turn up in any world once battles are open
+      if (!opts.creature && fight && G.battlesOpen() && s.enc.battles >= 3 && Math.random() < D.RIVAL_CHANCE) e.creature = 'redhood';
+      if (D.CREATURES[e.creature].rival) e.rival = true;
       const c = D.CREATURES[e.creature];
       if (c.aggressive && !G.battlesOpen()) {   // too early to fight: it can only be shooed off or snuck past
         e.text = 'A ' + c.name + ' ' + c.verb + '! You’re not ready to fight yet (battles unlock at level ' + D.BATTLE_LEVEL + ').';
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
       } else if (c.aggressive) {
         e.aggressive = true;
-        e.text = 'A ' + c.name + ' ' + c.verb + '!';
-        e.choices = [{ id: 'battle', label: 'Battle', hint: 'Lv ' + D.creatureStats(e.creature, w.tier).lvl }, { id: 'avoid', label: 'Avoid it', hint: 'Walk on' }];
+        e.text = e.rival ? c.name + ' ' + c.verb + '. “Still walking? Prove it.”' : 'A ' + c.name + ' ' + c.verb + '!';
+        e.choices = [{ id: 'battle', label: 'Battle', hint: 'Lv ' + (e.rival ? D.rivalStats(s.level) : D.creatureStats(e.creature, w.tier)).lvl }, { id: 'avoid', label: e.rival ? 'Walk away' : 'Avoid it', hint: e.rival ? 'She’ll be back' : 'Walk on' }];
       } else {
         e.text = 'A ' + c.name + ' ' + c.verb + '.';
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
@@ -445,7 +461,7 @@
     } else if (type === 'egg') {
       e.egg = G.rollEgg(w.tier);
       e.text = WB.pick(D.EGG_LINES) + ' A ' + D.eggById[e.egg].name + '!';
-      e.choices = [{ id: 'take', label: 'Pick it up', hint: D.eggById[e.egg].rarity + ' · ' + G.eggs()[e.egg] + ' / ' + D.EGG_MAX + ' carried' }];
+      e.choices = [{ id: 'take', label: 'Pick it up', hint: 'You carry ' + G.eggs()[e.egg] + ' / ' + D.EGG_MAX }];
     } else if (type === 'chest') {
       e.text = WB.pick(D.CHEST_LINES);
       e.choices = [{ id: 'open', label: 'Open crate', hint: 'Coins, maybe a potion' }];
@@ -465,7 +481,7 @@
     }
     return e;
   };
-  G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 260 + Math.floor(Math.random() * 260); };
+  G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 600 + Math.floor(Math.random() * 400); };   // an encounter every 600–1,000 steps
   G.battlesOpen = () => S().level >= D.BATTLE_LEVEL;
   G.firstEncounterType = () => {
     const s = S();
@@ -512,7 +528,7 @@
       case 'creature:sneak': out.reward = { xp: 6 }; out.text = 'You slip past unnoticed.'; out.anim = 'leave'; break;
       case 'chest:open': {
         out.anim = 'open';
-        out.reward = { coins: 25 + Math.floor(Math.random() * 36) + lvl * 3 };
+        out.reward = { coins: 10 + Math.floor(Math.random() * 16) + lvl };
         if (Math.random() < 0.3) out.reward.potion = 'tonic';
         s.enc.chests++; s.today.chests++;
         out.text = out.reward.potion ? 'Inside: Walk Coins and a Small Tonic.' : 'Inside: a stash of Walk Coins.';
@@ -520,23 +536,22 @@
       }
       case 'find:take': {
         out.anim = 'take';
-        const all = D.FINDS[e.world], got = (s.enc.finds[e.world] = s.enc.finds[e.world] || []);
-        const left = all.map((_, i) => i).filter((i) => !got.includes(i));
-        if (left.length) {
-          const i = WB.pick(left); got.push(i);
-          out.find = { world: e.world, i }; out.text = 'You found: ' + all[i][1] + '.';
-          out.reward = { xp: 25 + lvl * 2 };
-          if (G.potion(all[i][0])) { out.reward.potion = all[i][0]; out.text = 'You found a new potion: ' + all[i][1] + '. Buy more in Shop → Potions & Food.'; }
-        } else { out.text = 'Just old coins. Every artifact here is already yours.'; out.reward = { coins: 40 }; }
+        const f = G.findArtifact(e.world);
+        if (f) {
+          out.find = { world: e.world, i: f.i, first: f.first }; out.reward = { xp: f.first ? 15 + lvl : 8 + Math.floor(lvl / 2) };
+          const n = G.artHave(e.world, f.i);
+          out.text = f.first ? 'You found: ' + f.name + '. It’s in your collection, ready for the Darkmatter Forge.' : 'Another ' + f.name + '. You have ' + n + ' now.';
+          if (f.first && G.potion(f.icon)) { out.reward.potion = f.icon; out.text = 'You found a new potion: ' + f.name + '. Buy more in Shop → Potions / Food.'; }
+        } else { out.text = 'Just old coins.'; out.reward = { coins: 40 }; }
         break;
       }
       case 'merchant:buy': WB.Sfx.play('buy');
         s.coins -= e.cost; out.reward = { potion: 'tonic' }; out.text = '“Drink it when the fight turns bad.”'; out.anim = 'talk';
         break;
-      case 'merchant:chat': out.reward = { xp: 10 }; out.text = '“Aggressive ones get tougher in later worlds. Carry tonics.”'; out.anim = 'talk'; break;
+      case 'merchant:chat': out.reward = { xp: 10 }; out.text = '“' + WB.pick(D.MERCHANT_CHAT) + '”'; out.anim = 'talk'; break;
       case 'traveler:accept': {
         if (s.tasks.quests.length >= 3) { out.text = 'Your pack is full. Deliver a message first.'; out.reward = { xp: 5 }; break; }
-        const q = { id: 'q' + e.id, kind: 'quest', title: 'Deliver the message: walk ' + e.dist + ' steps', target: e.dist, base: s.totalSteps, reward: { coins: Math.round(e.dist / 4), xp: 40 } };
+        const q = { id: 'q' + e.id, kind: 'quest', title: 'Deliver the message: walk ' + e.dist + ' steps', target: e.dist, base: s.totalSteps, reward: { coins: Math.round(e.dist / 10), xp: 20 } };
         s.tasks.quests.push(q); out.quest = q; out.anim = 'talk';
         out.text = 'Message accepted. Deliver it by walking ' + e.dist + ' steps.';
         break;
@@ -558,7 +573,7 @@
       }
       case 'egg:take': {
         out.anim = 'take';
-        if (G.addEgg(e.egg)) { out.reward = { xp: 8 + lvl }; out.egg = e.egg; out.text = 'You tuck the ' + D.eggById[e.egg].name + ' into your pack. Merlin trades loot for eggs.'; }
+        if (G.addEgg(e.egg)) { out.reward = { xp: 8 + lvl }; out.egg = e.egg; out.text = 'Into your pack it goes. Trade eggs with Merlin for loot.'; }
         else { out.reward = { coins: 20 }; out.text = 'You already carry ' + D.EGG_MAX + ' ' + D.eggById[e.egg].name + 's. You leave it and find a few coins nearby.'; }
         break;
       }
@@ -653,7 +668,7 @@
     if (s.coins < it.req.cost) return { ok: false, msg: 'You need ' + WB.fmt(it.req.cost - s.coins) + ' more coins. Keep walking.' };
     s.coins -= it.req.cost; s.purchases++;
     G.unlock(cat, id, true);
-    G.equip(cat, id);
+    if (cat !== 'avatar') G.equip(cat, id);   // a new walker isn't put on automatically: tap Equip on its card
     WB.Sfx.play('buy');
     G.after();
     return { ok: true };
@@ -677,7 +692,7 @@
   };
   G.buySupply = (id) => {
     const s = S(), it = D.SUPPLIES.find((x) => x.id === id);
-    if (id === 'rest' && s.streak.rest >= 2) return { ok: false, msg: 'You already hold 2 Rest Day Tokens.' };
+    if (id === 'rest' && s.streak.rest >= D.SHIELD_MAX) return { ok: false, msg: 'You already hold ' + D.SHIELD_MAX + ' Streak Shields, the most you can carry.' };
     if (s.coins < it.cost) return { ok: false, msg: 'You need ' + WB.fmt(it.cost - s.coins) + ' more coins.' };
     s.coins -= it.cost; s.purchases++;
     if (id === 'rest') s.streak.rest++;
@@ -720,7 +735,7 @@
     const w = G.world();
     out.push('Your ' + w.name + ' exploration is ' + Math.floor(G.explorePct(w.id)) + '% complete.');
     const nw = G.nextWorld();
-    if (nw) out.push('Next world: ' + nw.name + ' (' + G.worldReq(nw).toLowerCase() + ').');
+    if (nw) { const r = G.worldReq(nw); out.push('Next world: ' + nw.name + ' (' + r[0].toLowerCase() + r.slice(1) + ').'); }   // keep world names capitalized
     const sv = G.streakView();
     if (sv.alive && sv.count > 0) out.push('Your ' + sv.count + '-day streak is active.' + (sv.today ? '' : ' Walk ' + WB.fmt(s.settings.streakMin) + ' steps today to extend it.'));
     else if (sv.lost) out.push('Fresh start: today can be day 1 of a new streak.');

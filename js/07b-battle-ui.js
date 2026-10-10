@@ -7,8 +7,18 @@
   const sprites = { hero: null, enemy: null, pet: null };
   let fx = [];          // projectiles, explosions, rings, slashes
   let shake = 0;
+  // Game Boy / Final Fantasy feel: HP numbers roll and bars drain smoothly, with a pale "damage trail"
+  // that catches up a moment later; fighters step forward to act; creatures flash before they strike.
+  let disp = null, ghost = null, ghostHold = { hero: 0, enemy: 0, pet: 0 }, hitStop = 0;
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, WB.reducedMotion() ? Math.min(ms, 160) : ms));
+  // every sound a battle can make, decoded when the battle opens so the first hit isn't late
+  const BATTLE_SFX = ['walker_attack', 'creature_attack_1', 'creature_attack_2', 'creature_attack_3', 'creature_attack_4', 'creature_attack_5', 'defend', 'shield_block', 'potion', 'battle_loss', 'bow_release', 'wind_blade', 'spell_cast',
+    'hit_arrow', 'hit_axe', 'hit_dagger', 'hit_knife', 'hit_mace', 'hit_spear', 'hit_staff', 'hit_star', 'hit_sword', 'projectile_1', 'projectile_2', 'projectile_5',
+    'spell_fire', 'spell_frost', 'spell_sun', 'spell_void', 'status_bleed', 'status_burn', 'status_poison', 'status_stun', 'special_drain', 'special_nova', 'special_raid'].map((n) => 'sfx/' + n + '.mp3');
+  // potion-use animations (assets/pot/use_*.png): a bubble that bursts, small pops, an orange flare
+  const MAGIC_HIT = 'mg/fx_magic_hit.png';   // battle magic striking the creature (assets/mg/fx_magic_hit.png)
+  const POT_FX = { bubble: 'pot/use_bubble.png', bubbleInfo: { w: 51, h: 47, n: 8 }, pop: 'pot/use_pop.png', popInfo: { w: 11, h: 11, n: 3 }, burst: 'pot/use_burst.png', burstInfo: { w: 67, h: 48, n: 5 } };
   const VERB = { throw: 'Throw', knife: 'Throw', bow: 'Shoot', gun: 'Shoot', spell: 'Cast' };
   // a creature spell's visuals (see D.CREATURE_MOVES): projectile or impact as { path, info, mode }
   function mvis(spec, part) {
@@ -21,7 +31,7 @@
     return null;
   }
   const ELEM_SFX = { fire: 'spell_fire', frost: 'spell_frost', void: 'spell_void', nature: 'status_poison', earth: 'hit_mace', shock: 'spell_sun' };
-  const FX_SFX = { stun: 'status_stun', drain: 'special_drain', quake: 'hit_mace', burn: 'status_burn', poison: 'status_poison', weaken: 'spell_void', slow: 'spell_frost', multi: 'hit_axe' };
+  const FX_SFX = { stun: 'status_stun', drain: 'special_drain', quake: 'hit_mace', burn: 'status_burn', poison: 'status_poison', venom: 'status_poison', weaken: 'spell_void', slow: 'spell_frost', multi: 'hit_axe' };
   // the creature's spell flies from it to you and bursts (also used, bigger, for its special)
   async function enemySpell(big) {
     const st = WB.Battle.st, g = view.world.ground, mg = st.enemy.moves.magic, color = D.ELEM_COLOR[mg[1]] || '#ffffff';
@@ -51,18 +61,20 @@
     const w = st.world;
     view = { world: w, sceneH: WB.scene(w).h, cam: (S().worldSteps[w.id] || 0) * D.PX_PER_STEP, heroTop: 0, enemyTop: 0, petTop: 0, px: 0 };
     shown = { hero: st.hero.hp, enemy: st.enemy.hp, pet: st.pet ? st.pet.hp : 0 };
-    sprites.hero = { anim: 'idle', f: 0, once: false, t: 0 };
-    sprites.enemy = { anim: 'idle', f: 0, once: false, fade: 1 };
+    disp = { ...shown }; ghost = { ...shown };
+    sprites.hero = { anim: 'idle', f: 0, once: false, t: 0, adv: 0, advTo: 0, enter: 1.5 };
+    sprites.enemy = { anim: 'idle', f: 0, once: false, fade: 1, adv: 0, advTo: 0, enter: 1.5, flash: 0 };
     sprites.pet = st.pet ? { anim: 'idle', f: 0, once: false, flash: 0 } : null;
     fx = []; shake = 0; busy = false;
     const el = $('#battle');
     el.innerHTML = `
       <div class="b-stage" id="b-stage">
         <canvas id="b-canvas" aria-hidden="true"></canvas>
-        <div class="b-plate enemy" id="b-pe"></div>
-        <div class="b-plate mine" id="b-ph"></div>
         <div class="b-fx" id="b-fx" aria-hidden="true"></div>
+        <div class="b-flash" id="b-flash" aria-hidden="true"></div>
       </div>
+      <div class="b-intro" id="b-intro" aria-hidden="true">${'<i></i>'.repeat(8)}</div>
+      <div class="b-plates"><div class="b-plate mine" id="b-ph"></div><div class="b-plate enemy" id="b-pe"></div></div>
       <div class="b-panel" id="b-panel">
         <div class="b-banner" id="b-banner" hidden></div>
         <p class="b-log" id="b-log" role="status" aria-live="polite"></p>
@@ -70,7 +82,9 @@
       </div>`;
     el.hidden = false;
     WB.UI.histPush('battle'); WB.UI.lockScroll('battle', true);
-    WB.Bgm.play('battle');
+    WB.Sfx.play('encounter');
+    setTimeout(() => { if (enc === e) WB.Bgm.play('battle'); }, WB.reducedMotion() ? 0 : 520);   // the music comes in as the wipe clears
+    WB.Sfx.preload(BATTLE_SFX);
     document.documentElement.classList.add('battling');
     cv = $('#b-canvas'); ctx = cv.getContext('2d', { alpha: false });
     if (WB.view) WB.view.paused = true;
@@ -81,6 +95,7 @@
     if (st.pet) WB.Assets.get(WB.sheet(G.pet(st.pet.id).src, st.pet.id, 'idle').path);
     if (st.special && st.special.unlocked) WB.Assets.get('wp/' + st.special.fx + '.png');
     st.magic.forEach((id) => WB.Assets.get('mg/' + id + '.png'));
+    [POT_FX.bubble, POT_FX.pop, POT_FX.burst, MAGIC_HIT].forEach((p) => WB.Assets.get(p));
     for (const mv of [st.enemy.moves, e.creature === 'darkfairy' && D.CREATURE_MOVES.darkfairy2].filter(Boolean)) { const mg = mv.magic; [mvis(mg[2], 'proj'), mvis(mg[3], 'boom')].forEach((v) => v && WB.Assets.get(v.path)); }   // the creature's spell
     if (st.weapon.type === 'spell' || st.weapon.id === 'freeze' || st.weapon.id === 'luna') ['wp/fx_blast.png', 'wp/fx_shatter.png'].forEach((p) => WB.Assets.get(p));   // the special's effect, ready when the gauge fills
     w.layers.forEach((L) => WB.Assets.get(WB.layerPath(w, L[0])));
@@ -89,12 +104,19 @@
     plates();
     const c = D.CREATURES[e.creature];
     log((e.nemesis ? (e.cutOff ? `You try to slip away, but ${c.name} cuts you off! ` : '') + `Boss battle: ${c.name}. ${D.BOSSES[e.creature].abilityName}: ${D.BOSSES[e.creature].abilityDesc}` : e.boss ? `${c.name}, guardian of ${w.name}, blocks the way!` : e.creature === 'druid' ? 'Wrong answer! The Druid raises his blade. Beat him or he takes all your eggs.' : `${c.name} wants a fight!`) +
-      (S().hints.battle ? '' : ` Tip: Strike uses your ${st.melee.name}; your ${st.weapon.name} hits harder, then recharges. Defend when it charges up.`));
+      (S().hints.battle ? '' : ` Tip: Strike uses your ${st.melee.name}. Your ${st.weapon.name} hits harder, then recharges. Defend when it’s charging.`));
     actions();
     last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
-    WB.Sfx.play('charge');
-    if (e.nemesis) setTimeout(() => { if (WB.Battle.st && !WB.Battle.st.over && view) bubble(WB.pick(D.BOSSES[e.creature].lines.intro)); }, 500);
-    setTimeout(() => { const b = $('#b-actions button'); if (b) b.focus({ preventScroll: true }); }, 60);
+    // the classic battle wipe: the screen flashes, bars sweep across, then the fight fades in
+    // the panel keeps the main menu's height for the whole fight, so the stage (and the fighters) never jump
+    // when Items or Magic open; longer lists scroll inside it
+    requestAnimationFrame(() => { const pn = $('#b-panel'); if (pn && innerWidth <= innerHeight) { pn.style.height = pn.offsetHeight + 'px'; pn.classList.add('fixed'); } });
+    setBusy(true);
+    const intro = $('#b-intro');
+    intro.classList.add('go');
+    setTimeout(() => { intro.remove(); if (enc === e) { setBusy(false); actions(); const b = $('#b-actions button:not([disabled])'); if (b) b.focus({ preventScroll: true }); } }, WB.reducedMotion() ? 60 : 900);
+    if (e.nemesis) setTimeout(() => { if (WB.Battle.st && !WB.Battle.st.over && view) bubble(WB.pick(D.BOSSES[e.creature].lines.intro)); }, 1300);
+    if (e.rival) setTimeout(() => { if (WB.Battle.st && !WB.Battle.st.over && view) bubble(WB.Battle.rivalLine(WB.pick(D.RIVAL.lines.intro), WB.Battle.st)); }, 1300);
   };
 
   function resize() {
@@ -120,10 +142,51 @@
   const hY = () => { const g = view.world.ground; return Math.round(((view.heroTop || g - 40) + g) / 2); };
 
   function loop(now) {
-    const dt = Math.min(0.1, (now - last) / 1000); last = now; t += dt;
+    let dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (hitStop > 0) { hitStop -= dt; dt = 0; }   // a heavy hit freezes the frame for a beat
+    t += dt;
     draw(dt);
+    rollHp(Math.min(0.1, (now - (loop.p || now)) / 1000)); loop.p = now;
     if (!$('#battle').hidden) raf = requestAnimationFrame(loop);
   }
+  // HP numbers count toward the real value; the pale trail waits, then drains after it
+  function rollHp(dt) {
+    if (!disp || !$('#b-ph')) return;
+    for (const k of ['hero', 'enemy', 'pet']) {
+      const to = shown[k], d = to - disp[k];
+      if (Math.abs(d) > 0.01) disp[k] += Math.sign(d) * Math.min(Math.abs(d), Math.max(12, Math.abs(d) * 5) * dt);
+      if (to >= ghost[k]) { ghost[k] = disp[k]; ghostHold[k] = 0.35; }
+      else if ((ghostHold[k] -= dt) <= 0) ghost[k] = Math.max(to, ghost[k] - Math.max(10, (ghost[k] - to) * 3) * dt);
+    }
+    paintBars();
+  }
+  function paintBars() {
+    const st = WB.Battle.st; if (!st) return;
+    const set = (sel, cur, g, max) => {
+      const el = document.querySelector(sel); if (!el) return;
+      const pct = (v) => Math.max(0, Math.min(100, (v / max) * 100)) + '%';
+      el.querySelector('i').style.width = pct(cur); el.querySelector('b').style.width = pct(g);
+      el.classList.toggle('low', cur / max < 0.3);
+      const n = el.parentElement.querySelector('[data-hpn]'); if (n) n.textContent = n.dataset.hpn === 'pet' ? (shown.pet <= 0 && cur < 0.5 ? 'KO' : Math.max(0, Math.round(cur))) : Math.max(0, Math.round(cur)) + ' / ' + max;
+    };
+    set('#b-pe .bar', disp.enemy, ghost.enemy, st.enemy.max);
+    set('#b-ph .pl-main .bar', disp.hero, ghost.hero, st.hero.max);
+    if (st.pet) set('#b-ph .pl-pet .bar', disp.pet, ghost.pet, st.pet.max);
+  }
+  // a sprite frame lit up white (creatures flash before they act, and when they fall)
+  const lit = document.createElement('canvas'), litX = lit.getContext('2d');
+  function drawLit(img, sh, f, dx, dy, sc, flip, a) {
+    const sz = Math.ceil(sh.fs * sc);
+    if (lit.width !== sz || lit.height !== sz) { lit.width = sz; lit.height = sz; } else litX.clearRect(0, 0, sz, sz);
+    litX.imageSmoothingEnabled = false; litX.globalCompositeOperation = 'source-over';
+    WB.drawFrame(litX, img, sh, f, 0, 0, sc, flip);
+    litX.globalCompositeOperation = 'source-atop'; litX.fillStyle = 'rgba(255,255,255,' + a + ')'; litX.fillRect(0, 0, sz, sz);
+    ctx.drawImage(lit, Math.round(dx), Math.round(dy));
+  }
+  // step a fighter forward (FF-style) and back again
+  const ease = (sp, dt) => { sp.adv += (sp.advTo - sp.adv) * Math.min(1, dt * 14); if (sp.enter > 0) sp.enter = Math.max(0, sp.enter - dt * 2.2); };
+  const stepIn = async (sp, px, ms = 160) => { sp.advTo = px; await sleep(ms); };
+  const stepBack = (sp) => { sp.advTo = 0; };
   function step(sp, sh, dt, fps) {
     sp.f += dt * fps;
     if (sp.f >= sh.n) {
@@ -160,7 +223,8 @@
         step(ps, psh, dt, 7);
         const k = pdef.scale || 1, box = psh.box || [0, 0, psh.fs, psh.fs], f = Math.min(psh.n - 1, Math.floor(ps.f));
         const ko = st.pet.hp <= 0, hop = pdef.hop && !ko ? Math.abs(Math.sin(t * 2)) * 2 : 0;
-        const dx = view.px - (box[0] + box[2] / 2) * k, dy = g - (box[1] + box[3]) * k + 1 - hop;
+        if (ps.lunge > 0) ps.lunge = Math.max(0, ps.lunge - dt * 2.4);   // an attacking pet darts at the creature and back
+        const dx = view.px - (box[0] + box[2] / 2) * k + (ps.lunge > 0 ? Math.sin((1 - ps.lunge) * Math.PI) * (view.ex - view.px - 40) : 0), dy = g - (box[1] + box[3]) * k + 1 - hop;
         ctx.fillStyle = 'rgba(5,4,15,0.3)'; ctx.beginPath(); ctx.ellipse(view.px, g, Math.max(6, box[2] * k / 2), 3, 0, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = ko ? 0.35 : ps.flash > 0 && Math.floor(t * 20) % 2 ? 0.4 : 1;
         WB.drawFrame(ctx, pimg, psh, f, dx, dy, k, psh.face !== 'right');
@@ -173,7 +237,8 @@
     const hs = sprites.hero, hsh = WB.sheet('av', s.avatar, hs.anim === 'down' ? 'hurt' : hs.anim), himg = WB.Assets.ok(hsh.path);
     if (himg) {
       step(hs, hsh, dt, hs.anim === 'idle' ? 7 : 12);
-      const sz = hsh.fs * hsh.scale, f = Math.min(hsh.n - 1, Math.floor(hs.f)), dx = view.hx - sz / 2, dy = g - sz + hsh.scale;
+      ease(hs, dt);
+      const sz = hsh.fs * hsh.scale, f = Math.min(hsh.n - 1, Math.floor(hs.f)), dx = view.hx - sz / 2 + hs.adv - Math.round(Math.pow(Math.min(1, hs.enter), 2) * view.W * 0.5), dy = g - sz + hsh.scale;
       if (st && st.hero.clone > 0) {   // the Illusion Ring's copy, a step behind and shimmering
         ctx.globalAlpha = 0.38 + 0.12 * Math.sin(t * 6);
         WB.drawFrame(ctx, WB.recolor(himg, hsh.path, s.skin), hsh, f, dx - 22, dy, hsh.scale);
@@ -194,12 +259,22 @@
       step(es, esh, dt, es.anim === 'idle' ? 7 : es.anim === 'transform' ? 9 : 11);
       const sc = (cdef.scale || 1) * (enc.boss ? 1.25 : 1), sz = esh.fs * sc, f = Math.min(esh.n - 1, Math.floor(es.f)), dy = g - sz + 1;
       if (es.run) { es.runX = (es.runX || 0) + dt * 220; es.fade = Math.max(0, 1 - es.runX / 160); }   // running off the stage
-      const ex0 = view.ex; view.ex += Math.round(es.runX || 0);
-      if (es.anim === 'death' && es.f >= esh.n - 1) es.fade = Math.max(0, es.fade - dt * 1.2);
+      ease(es, dt);
+      const ex0 = view.ex; view.ex += Math.round(es.runX || 0) - Math.round(es.adv) + Math.round(Math.pow(Math.min(1, es.enter), 2) * view.W * 0.5);
+      if (es.anim === 'death') es.fade = Math.max(0, es.fade - dt * (es.f >= esh.n - 1 ? 1.4 : 0.35));
       ctx.globalAlpha = es.fade;
       const E = st && st.enemy;
       if (E && E.charging) { ctx.save(); ctx.globalAlpha = 0.25 + 0.2 * Math.sin(t * 10); ctx.fillStyle = '#ff6b5b'; ctx.beginPath(); ctx.ellipse(view.ex, g - sz * 0.35, sz * 0.45, sz * 0.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); ctx.globalAlpha = es.fade; }
-      WB.drawFrame(ctx, eimg, esh, f, view.ex - sz / 2, dy, sc, es.anim === 'flee' ? false : es.run ? esh.face === 'left' : esh.face !== 'left');
+      const eflip = es.anim === 'flee' ? false : es.run ? esh.face === 'left' : esh.face !== 'left';
+      if (es.anim === 'death') {   // it sinks away in pixel rows, lit white, like an old handheld RPG
+        const k = 1 - es.fade, cut = Math.round(sz * k);
+        ctx.save(); ctx.beginPath(); ctx.rect(view.ex - sz, dy - 4, sz * 2, sz - cut + 4); ctx.clip();
+        drawLit(eimg, esh, f, view.ex - sz / 2, dy + cut * 0.3, sc, eflip, Math.min(0.85, 0.3 + k));
+        ctx.restore();
+        if (!reducedFx && es.fade > 0 && Math.random() < 0.8) fx.push({ type: 'spark', x: view.ex - sz * 0.3 + Math.random() * sz * 0.6, y: g - (sz - cut) * Math.random(), vx: 0, vy: -30, life: 0.5, t: 0, color: Math.random() < 0.5 ? '#ffffff' : '#c7b8ff', size: 2 });
+      } else if (es.flash > 0 && Math.floor(es.flash * 16) % 2 === 0) drawLit(eimg, esh, f, view.ex - sz / 2, dy, sc, eflip, 0.9);
+      else WB.drawFrame(ctx, eimg, esh, f, view.ex - sz / 2, dy, sc, eflip);
+      es.flash = Math.max(0, (es.flash || 0) - dt);
       if (E && E.freeze > 0) { ctx.globalAlpha = 0.35; ctx.fillStyle = '#9fe8ff'; ctx.fillRect(view.ex - sz * 0.3, g - sz * 0.75, sz * 0.6, sz * 0.75); }
       if (E && (E.ward || E.brace) && es.fade > 0) {   // its defences, visible
         ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(t * 6); ctx.strokeStyle = E.ward ? '#c58bff' : '#ff9a3d'; ctx.lineWidth = 2;
@@ -270,19 +345,32 @@
   }
 
   // ---------- UI pieces ----------
-  function bar(cur, max, cls) { return `<span class="bar ${cls} ${cur / max < 0.3 ? 'low' : ''}"><i style="width:${Math.max(0, Math.min(100, (cur / max) * 100))}%"></i></span>`; }
+  const pctw = (v, max) => Math.max(0, Math.min(100, (v / max) * 100));
+  function bar(cur, g, max, cls) { return `<span class="bar ${cls} ${cur / max < 0.3 ? 'low' : ''}"><b style="width:${pctw(g, max)}%"></b><i style="width:${pctw(cur, max)}%"></i></span>`; }
   function plates() {
     const st = WB.Battle.st, h = st.hero, e = st.enemy, p = st.pet;
     const est = [e.poison > 0 && 'Poisoned', e.burn > 0 && 'Burning', e.bleed > 0 && 'Bleeding', e.freeze > 0 && 'Frozen', e.stun > 0 && 'Stunned',
       e.drain > 0 && 'Drained', e.weaken > 0 && 'Weakened', e.sunder > 0 && 'Sundered', e.brace && 'Bracing', e.ward && 'Ward up', e.charging && 'Charging!', e.nemesis && e.halved && e.ability === 'enrage' && 'Enraged'].filter(Boolean);
-    const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, h.guardPts < D.DEFEND_COST && 'Guard worn'].filter(Boolean);
-    const plate = (name, lvl, cur, max, tags) => `<span class="pl-name">${WB.esc(name)}</span>${bar(cur, max, 'hp')}<div class="pl-bot"><span class="lbl">${lvl}</span><span class="lbl">${Math.max(0, Math.round(cur))} / ${max}</span></div>${tags.length ? `<span class="lbl tags">${tags.join(' · ')}</span>` : ''}`;
-    $('#b-pe').innerHTML = plate(e.name, `Lv ${e.lvl}${e.boss ? ' · Guardian' : e.nemesis ? ' · Boss' : ''}`, shown.enemy, e.max, est);
+    const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, h.guardPts < D.DEFEND_COST && 'Guard worn'].filter(Boolean);
+    const plate = (name, lvl, cur, g, max, tags, cls) => `<div class="pl-main"><span class="pl-name">${WB.esc(name)}</span>${bar(cur, g, max, cls)}<div class="pl-bot"><span class="lbl">${lvl}</span><span class="lbl" data-hpn="1">${Math.max(0, Math.round(cur))} / ${max}</span></div></div><span class="lbl tags">${tags.join(' · ')}</span>`;
+    $('#b-pe').innerHTML = plate(e.name, `Lv ${e.lvl}${e.boss ? ' · Guardian' : e.nemesis ? ' · Boss' : ''}`, disp.enemy, ghost.enemy, e.max, est, 'ehp');
     $('#b-pe').classList.toggle('boss', !!e.nemesis);
-    $('#b-ph').innerHTML = plate(S().name, `Lv ${h.lvl}`, shown.hero, h.max, hst) +
-      (p ? `<div class="pl-pet ${shown.pet <= 0 ? 'ko' : ''}">${WB.icon('paw', 1)}<span class="lbl">${WB.esc(p.name)}</span>${bar(shown.pet, p.max, 'hp thin')}<span class="lbl">${shown.pet <= 0 ? 'KO' : Math.round(shown.pet)}</span></div>` : '');
+    $('#b-ph').innerHTML = plate(S().name, `Lv ${h.lvl}`, disp.hero, ghost.hero, h.max, hst, 'hp') +
+      (p ? `<div class="pl-pet ${shown.pet <= 0 ? 'ko' : ''}">${WB.icon('paw', 1)}<span class="lbl">${WB.esc(p.name)}</span>${bar(disp.pet, ghost.pet, p.max, 'hp thin')}<span class="lbl" data-hpn="pet">${shown.pet <= 0 ? 'KO' : Math.round(disp.pet)}</span></div>` : '');
+    // both plates are always the same size: the shorter one grows to match the taller one
+    const pe = $('#b-pe'), ph = $('#b-ph'); pe.style.minHeight = ph.style.minHeight = '';
+    const hgt = Math.max(pe.offsetHeight, ph.offsetHeight); if (hgt) pe.style.minHeight = ph.style.minHeight = hgt + 'px';
   }
-  function log(text) { const l = $('#b-log'); if (l) l.textContent = text; }
+  // the message window types its text out, like a handheld RPG (instant with Reduce motion); tap to finish it
+  let typeT = 0;
+  function log(text) {
+    const l = $('#b-log'); if (!l) return;
+    clearInterval(typeT); l.setAttribute('aria-label', text || '');
+    if (!text || WB.reducedMotion()) { l.textContent = text || ''; return; }
+    let i = 0; l.textContent = '';
+    typeT = setInterval(() => { i = Math.min(text.length, i + 2); l.textContent = text.slice(0, i); if (i >= text.length) clearInterval(typeT); }, 16);
+    l.onclick = () => { clearInterval(typeT); l.textContent = text; };
+  }
   const potionTag = (p) => (p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
   function actions(mode = 'main') {
     const st = WB.Battle.st, el = $('#b-actions'), s = S();
@@ -294,20 +382,20 @@
         const m = D.magicById[id], used = st.mused[id];
         const why = used ? m.name + ' was already used this battle.' : turnUsed ? 'You’ve used a magic item this turn. Try again next turn.' : m.fx.type === 'special' && !st.special.unlocked ? 'Your special attack unlocks at level ' + D.SPECIAL_LEVEL + '.' : '';
         if (id === 'clover' && !used) return `<button class="btn ghost" type="button" data-b="magic:clover/twice" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: strike twice</span><small>Next 2 attacks hit twice</small></span></button><button class="btn ghost" type="button" data-b="magic:clover/dodge" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: dodge</span><small>Dodge the next 2 attacks</small></span></button>`;
-        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>${used ? 'Used' : WB.esc(m.tag)}</small></span></button>`;
+        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>${used ? 'Used' : WB.esc(m.tag) + (WB.Game.upkeep() ? ' · ' + WB.Game.uses(id) + ' left' : '')}</small></span></button>`;
       }).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
     } else if (mode === 'items') {
       el.className = 'b-actions items';
       const mine = D.POTIONS.filter((p) => s.potions[p.id] > 0);
       el.innerHTML = mine.map((p) => `<button class="btn ghost" type="button" data-b="potion:${p.id}">${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(p.name)}</span><small>${potionTag(p)} · x${s.potions[p.id]}</small></span></button>`).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
     } else {
-      const wpn = st.weapon, m = st.melee, sh = st.shield, ready = st.cooldown === 0, nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
+      const wpn = st.weapon, m = st.melee, sh = st.shield, shots = WB.Game.shotsLeft(wpn.id), ready = st.cooldown === 0, cond = WB.Game.upkeep() ? Math.round(WB.Game.cond(m.id)) : 100, nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
       el.className = 'b-actions';
       el.innerHTML = `
-        <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(m.name)}</small></span></button>
-        <button class="btn cyan" type="button" data-b="throw" ${WB.UI.off(!ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(wpn.name)} · ${ready ? 'ready' : st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
-        <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(st.hero.guardPts < D.DEFEND_COST && 'Your guard is worn down (' + st.hero.guardPts + '%). Each Defend uses ' + D.DEFEND_COST + '%; it recovers ' + D.DEFEND_REGEN + '% every turn you don’t defend.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${sh ? 'Block ' + Math.round(sh.block * 100) + '%' + (sh.reflect ? ', reverse' : '') + (sh.counter ? ', counter' : '') : 'Block 60%, heal a little'} · guard ${st.hero.guardPts}%</small></span><span class="sp-gauge df-gauge ${st.hero.guardPts < D.DEFEND_COST ? 'low' : ''}" aria-hidden="true"><i style="width:${st.hero.guardPts}%"></i></span></button>
-        <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'You have no potions or food. Buy some in Shop → Potions & Food after the fight.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
+        <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(m.name)}${cond < 100 ? ' · ' + cond + '%' : ''}</small></span></button>
+        <button class="btn cyan" type="button" data-b="throw" ${WB.UI.off(!shots ? wpn.name + ' is out of shots. Buy more in the Shop after the fight. Strike or defend meanwhile.' : !ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(wpn.name)} · ${!shots ? 'out of shots' : ready ? (shots === Infinity ? 'ready' : shots + ' shot' + (shots > 1 ? 's' : '')) : st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
+        <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(st.hero.guardPts < D.DEFEND_COST && 'Your guard is worn down (' + st.hero.guardPts + '%). Each Defend uses ' + D.DEFEND_COST + '%; it recovers ' + D.DEFEND_REGEN + '% every turn you don’t defend.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${sh ? 'Block ' + Math.round(sh.block * 100) + '%' + (sh.reflect ? ', reverse' : '') + (sh.counter ? ', counter' : '') : 'Block 60%, heal a little'}<span class="sr-only">, guard ${st.hero.guardPts}%</span></small></span><span class="sp-gauge df-gauge ${st.hero.guardPts < D.DEFEND_COST ? 'low' : ''}" aria-hidden="true"><i style="width:${st.hero.guardPts}%"></i></span></button>
+        <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'You have no potions or food. Buy some in Shop → Potions / Food after the fight.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
         ${specialBtn(st)}
         ${st.magic.length ? `<button class="btn ghost magic-btn" type="button" data-b="magicmenu" ${WB.UI.off(st.magic.every((id) => st.mused[id]) ? 'You’ve used every magic item this battle.' : st.magicTurn === st.turn && 'One magic item per turn. Attack, defend or use an item, then try again.')}>${WB.pxImg('mg/' + st.magic[st.magic.length - 1] + '.png', 28)}<span class="bt"><span>Magic</span><small>${st.magic.filter((id) => !st.mused[id]).length} ready · free</small></span></button>` : ''}
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
@@ -379,15 +467,18 @@
   const hurtEnemy = (dmg, crit, color) => {
     const es = sprites.enemy, g = view.world.ground;
     if (!dmg) { floater('Passed through', 'enemy', 'miss'); fx.push({ type: 'ring', x: view.ex, y: eY(), color: '#7a6cff', t: 0 }); return; }   // the Hollow King's Shadow Form
-    shown.enemy -= dmg; es.anim = 'hurt'; es.once = true; es.f = 0; shake = Math.max(shake, crit ? 1 : 0.5);
+    shown.enemy -= dmg; es.anim = 'hurt'; es.once = true; es.f = 0; shake = Math.max(shake, crit ? 1 : 0.5); ghostHold.enemy = 0.45;
+    if (crit) { hitStop = WB.reducedMotion() ? 0 : 0.09; flash(); }
     floater(hpText(-dmg), 'enemy', crit ? 'crit' : 'dmg');
     fx.push({ type: 'slash', x: view.ex, y: eY(), t: 0, color }); plates();
   };
   const hurtHero = (dmg, big) => {
     const hs = sprites.hero;
-    shown.hero -= dmg; hs.anim = 'hurt'; hs.once = true; hs.f = 0; shake = Math.max(shake, big ? 1.4 : 0.6);
+    shown.hero -= dmg; hs.anim = 'hurt'; hs.once = true; hs.f = 0; shake = Math.max(shake, big ? 1.4 : 0.6); ghostHold.hero = 0.45;
+    if (big) { hitStop = WB.reducedMotion() ? 0 : 0.1; flash('#ff6b5b'); }
     WB.Sfx.play('creature'); floater(hpText(-dmg), 'hero', big ? 'crit' : 'dmg'); plates();
   };
+  function flash(color) { const f = $('#b-flash'); if (!f || WB.reducedMotion()) return; f.style.background = color || '#ffffff'; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
   const healHero = (n) => { if (!n) return; shown.hero += n; floater(hpText(n), 'hero', 'heal'); plates(); };
   const bolt = (from, to, color) => fx.push({ type: 'bolt', x0: from === 'enemy' ? view.ex - 10 : view.hx + 10, x1: to === 'enemy' ? view.ex - 6 : view.hx + 6, y: view.world.ground - 34, t: 0, color });
   // effects bounced back on the attacker after a hit (ward on the creature; reverse / counter / mirror on you)
@@ -398,6 +489,17 @@
   async function play(ev) {
     const st = WB.Battle.st, g = view.world.ground, hs = sprites.hero, es = sprites.enemy, ps = sprites.pet;
     log(ev.text || '');
+    if (ev.who === 'pet') {   // an attacking pet darts in
+      if (ps) { ps.lunge = 1; }
+      WB.Sfx.play('hit_dagger'); await sleep(240);
+      if (ev.dmg) hurtEnemy(ev.dmg, false, '#ffb347'); else floater('Miss', 'enemy', 'miss');
+      await sleep(320); return;
+    }
+    const acts = ['strike', 'throw', 'defend', 'spAttack', 'drain', 'potion', 'magic'];
+    if (ev.who === 'hero' && acts.includes(ev.type)) await stepIn(hs, ev.type === 'strike' ? 26 : 12, ev.type === 'strike' ? 180 : 140);
+    try { await act(ev, st, g, hs, es, ps); } finally { if (ev.who === 'hero') stepBack(hs); else stepBack(es); }
+  }
+  async function act(ev, st, g, hs, es, ps) {
     if (ev.who === 'hero') {
       if (ev.type === 'strike') {
         hs.anim = 'attack'; hs.once = true; hs.f = 0; hs.melee = true; WB.Sfx.play('strike');
@@ -478,7 +580,15 @@
         if (ev.heal) healHero(ev.heal);
         plates(); await sleep(450);
       } else if (ev.type === 'potion') {
-        fx.push({ type: 'ring', x: view.hx, y: g - 30, color: ev.heal ? '#6ee7a0' : '#ff9a3d', t: 0 }); WB.Sfx.play('potion');
+        // over your head: a bubble swells and bursts; healing sprinkles little pops, anything else flares orange
+        const pd = D.POTIONS.find((q) => q.id === ev.potion) || {}, heals = pd.kind === 'heal' || pd.food, hx = view.hx + Math.round(hs.adv), top = (view.heroTop || g - 46) - 12;
+        WB.Sfx.play('potion');
+        fx.push({ type: 'boom', path: POT_FX.bubble, info: POT_FX.bubbleInfo, x: hx, y: top, t: 0, scale: 1, fps: 13 });
+        await sleep(380);
+        if (heals || ev.heal) for (let i = 0; i < 6; i++) fx.push({ type: 'boom', path: POT_FX.pop, info: POT_FX.popInfo, x: hx + Math.round(Math.cos(i * 1.05) * 16), y: top + 4 + Math.round(Math.sin(i * 1.05) * 12), t: -i * 0.06, scale: 1, fps: 10 });
+        else fx.push({ type: 'boom', path: POT_FX.burst, info: POT_FX.burstInfo, x: hx, y: top, t: 0, scale: 1, fps: 12 });
+        await sleep(180);
+        fx.push({ type: 'ring', x: hx, y: g - 30, color: ev.heal ? '#6ee7a0' : '#ff9a3d', t: 0 });
         healHero(ev.heal);
         if (ev.dmg) { await sleep(250); hurtEnemy(ev.dmg, true, '#c58bff'); fx.push({ type: 'ring', x: view.ex, y: eY(), color: '#c58bff', t: 0 }); }
         plates(); await sleep(650);
@@ -494,6 +604,7 @@
         floater(m.name, 'hero', 'tag');
         if (onEnemy) {
           fx.push({ type: 'ring', x: view.ex, y: eY(), color: col, t: 0 }); burst(view.ex, eY(), col, 14);
+          fx.push({ type: 'boom', path: MAGIC_HIT, info: { w: 128, h: 96, n: 8 }, x: view.ex, y: eY() - 6, t: 0, scale: 0.9, fps: 14 });   // a crackle of magic over the creature
           for (const [i, hh] of (ev.hits || []).entries()) { hurtEnemy(hh.dmg, true, col); if (i < ev.hits.length - 1) await sleep(220); }
           if (ev.status) { WB.Sfx.play(ev.status === 'freeze' ? 'spell_frost' : ev.status === 'stun' ? 'status_stun' : 'status_' + (['poison', 'burn', 'bleed'].includes(ev.status) ? ev.status : 'stun')); floater({ poison: 'Poisoned', burn: 'Burning', bleed: 'Bleeding', freeze: 'Frozen', stun: 'Stunned', weaken: 'Weakened' }[ev.status], 'enemy', 'tag'); }
           if (t === 'seer' || t === 'break') floater(t === 'seer' ? 'Stunned' : 'Guard broken', 'enemy', 'tag');
@@ -504,10 +615,12 @@
       else if (ev.type === 'regen') { healHero(ev.heal); await sleep(380); }
       else if (ev.type === 'revive') { WB.Sfx.play('level'); fx.push({ type: 'ring', x: view.hx, y: hY(), color: '#ff8a3d', t: 0 }); burst(view.hx, hY(), '#ff8a3d', 18); shown.hero = 1; floater('Ember Heart!', 'hero', 'tag'); hs.anim = 'idle'; plates(); await sleep(900); }
       else if (ev.type === 'hstun') { WB.Sfx.play('status_stun'); floater('Stunned', 'hero', 'tag'); hs.anim = 'hurt'; hs.once = true; hs.f = 0; await sleep(750); }
-      else if (ev.type === 'hdot') { WB.Sfx.play('status_' + ev.dot); shown.hero -= ev.dmg; floater(hpText(-ev.dmg), 'hero', ev.dot); plates(); await sleep(520); }
-      else if (ev.type === 'down') { hs.anim = 'down'; hs.once = true; hs.f = 0; WB.Sfx.play('lose'); await sleep(900); }
+      else if (ev.type === 'hdot') { WB.Sfx.play('status_' + (ev.dot === 'venom' ? 'poison' : ev.dot)); shown.hero -= ev.dmg; floater(hpText(-ev.dmg), 'hero', ev.dot); plates(); await sleep(520); }
+      else if (ev.type === 'down') { hs.anim = 'down'; hs.once = true; hs.f = 0; WB.Bgm.stop(500); WB.Sfx.play('lose'); await sleep(1100); }
     } else {
       if (ev.type === 'attack' || ev.type === 'special' || ev.type === 'magic') {
+        if (!ev.combo) { es.flash = 0.28; await sleep(300); }   // it flashes white: brace yourself
+        es.advTo = ev.type === 'attack' ? 22 : 10;
         es.anim = ev.type; es.once = true; es.f = 0;   // attack / magic / special rows (missing rows fall back to attack)
         if (ev.type === 'special' && !ev.combo) { floater(ev.name + '!', 'enemy', 'tag'); WB.Sfx.play(FX_SFX[st.enemy.moves.special[1]] || 'special_nova'); }
         if (ev.type === 'magic') await enemySpell(false);
@@ -552,29 +665,30 @@
         if (ev.heal) { shown.enemy += ev.heal; floater(hpText(ev.heal), 'enemy', 'heal'); }
         plates(); await sleep(700);
       }
-      else if (ev.type === 'druidRun') { es.anim = 'flee'; es.once = false; es.f = 0; es.run = true; WB.Sfx.play('wind_blade'); floater('Flees!', 'enemy', 'tag'); await sleep(1100); }
-      else if (ev.type === 'die') { es.anim = 'death'; es.once = true; es.f = 0; WB.Sfx.play('win'); await sleep(900); }
+      else if (ev.type === 'druidRun') { WB.Bgm.stop(600); es.anim = 'flee'; es.once = false; es.f = 0; es.run = true; WB.Sfx.play('wind_blade'); floater('Flees!', 'enemy', 'tag'); await sleep(1100); }
+      else if (ev.type === 'die') { es.anim = 'death'; es.once = true; es.f = 0; es.flash = 0; WB.Sfx.play('hit'); flash(); WB.Bgm.stop(350); await sleep(1100); WB.Sfx.play('victory'); await sleep(500); }
     }
   }
 
   function finish(st) {
     const res = WB.Battle.end();
     shown.hero = Math.max(0, Math.min(st.hero.hp, st.hero.max)); shown.enemy = Math.max(0, st.enemy.hp); if (st.pet) shown.pet = st.pet.hp; plates();
+    if (res.result !== 'win' && res.result !== 'lose') WB.Bgm.stop(700);
     const c = D.CREATURES[enc.creature];
     const ban = $('#b-banner');
     let title, body;
-    const petNote = st.pet && st.pet.hp <= 0 ? ` ${WB.esc(st.pet.name)} was knocked out and will recover over time.` : '';
+    const petNote = st.pet && st.pet.hp <= 0 ? ` ${WB.esc(st.pet.name)} was knocked out and is resting. It recovers over time.` : '';
     if (enc.nemesis) {
       const bd = D.BOSSES[enc.creature];
-      if (res.result === 'win') { title = 'Boss defeated!'; body = `<p>${WB.esc(c.name)} is beaten.${res.newKind ? ' First time: +250 bonus coins.' : ''}${res.egg ? ' It dropped a ' + D.eggById[res.egg].name + '!' : ''}${res.backpack ? ' Your backpack carried extra loot.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill item">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`; }
+      if (res.result === 'win') { title = 'Boss defeated!'; body = `<p>${WB.esc(c.name)} is beaten.${res.newKind ? ' First time: +250 bonus coins.' : ''}${res.egg ? ' It dropped a ' + D.eggById[res.egg].name + '!' : ''}${res.backpack ? ' Your backpack carried extra loot.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`; }
       else if (res.result === 'lose') { title = 'Defeated by a boss'; body = `<p>${WB.esc(c.name)} knocks you back ${res.levelsLost} level${res.levelsLost === 1 ? '' : 's'}: you’re level ${S().level} now (was ${res.levelFrom}). Your worlds, weapons and items are safe, and levels you win back don’t pay level-up coins twice.${res.lostEggs ? ' Eggs broke in the fall: ' + G.eggText(res.lostEggs) + '.' : ''}${petNote}</p><div class="outcome"><span class="reward-pill lost">−${res.levelsLost} levels</span>${Object.entries(res.lostEggs || {}).map(([k, n]) => `<span class="reward-pill lost">${WB.eggImg(k, 20, 'still')}-${n}</span>`).join('')}</div>`; }
       else { title = 'You got away'; body = `<p>You escaped ${WB.esc(c.name)}. ${bd ? '' : ''}It still roams the roads.${petNote}</p>`; }
     } else if (res.result === 'win') {
-      title = res.boss ? 'Guardian defeated' : enc.creature === 'druid' ? 'The Druid flees' : 'Victory';
-      body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${res.egg ? ' It was guarding a ' + D.eggById[res.egg].name + '!' : ''}${res.backpack ? ' Your backpack carried extra loot.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill item">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`;
+      title = res.boss ? 'Guardian defeated!' : enc.creature === 'druid' ? 'The Druid flees' : 'Victory!';
+      body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${res.egg ? ' It was guarding a ' + D.eggById[res.egg].name + '!' : ''}${res.backpack ? ' Your backpack carried extra loot.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`;
     } else if (res.result === 'lose') {
       title = 'Knocked down';
-      body = `<p>${res.lostCoins ? 'You dropped ' + WB.fmt(res.lostCoins) + ' coins as you fell. ' : ''}${res.lostEggs ? (enc.creature === 'druid' ? 'The Druid took all your eggs: ' : 'You lost half your eggs: ') + G.eggText(res.lostEggs) + '. ' : ''}Walking won’t heal you: your HP refills on its own (full in about ${WB.UI.dur(WB.Game.minsToFull())}), or drink a potion.${enc.boss ? ' The guardian waits on the world map.' : ''}${petNote}</p>${res.lostCoins || res.lostEggs ? `<div class="outcome">${res.lostCoins ? `<span class="reward-pill lost">${WB.icon('coin', 2)}-${WB.fmt(res.lostCoins)}</span>` : ''}${Object.entries(res.lostEggs || {}).map(([k, n]) => `<span class="reward-pill lost">${WB.eggImg(k, 20, 'still')}-${n}</span>`).join('')}</div>` : ''}`;
+      body = `<p>${res.lostCoins ? 'You dropped ' + WB.fmt(res.lostCoins) + ' coins as you fell. ' : ''}${res.lostEggs ? (enc.creature === 'druid' ? 'The Druid took all your eggs: ' : 'You lost half your eggs: ') + G.eggText(res.lostEggs) + '. ' : ''}Walking won’t heal you. HP refills on its own in about ${WB.UI.dur(WB.Game.minsToFull())}, or drink a potion.${enc.boss ? ' The guardian waits on the world map.' : ''}${petNote}</p>${res.lostCoins || res.lostEggs ? `<div class="outcome">${res.lostCoins ? `<span class="reward-pill lost">${WB.icon('coin', 2)}-${WB.fmt(res.lostCoins)}</span>` : ''}${Object.entries(res.lostEggs || {}).map(([k, n]) => `<span class="reward-pill lost">${WB.eggImg(k, 20, 'still')}-${n}</span>`).join('')}</div>` : ''}`;
       if (res.lostCoins) floater('-' + WB.fmt(res.lostCoins) + ' coins', 'hero', 'coinloss');
     } else if (res.result === 'escaped') {
       title = 'It got away';
@@ -592,7 +706,7 @@
   }
 
   function close(res) {
-    cancelAnimationFrame(raf);
+    cancelAnimationFrame(raf); clearInterval(typeT);
     if (BU.ro) BU.ro.disconnect();
     $('#battle').hidden = true; $('#battle').innerHTML = '';
     WB.UI.histDone('battle'); WB.UI.lockScroll('battle', false);

@@ -15,6 +15,7 @@ const plistKeys = {
 };
 const iosApp = join(native, 'ios', 'App', 'App');
 edit(join(iosApp, 'Info.plist'), (s) => {
+  s = s.replace(/\s*<key>NSLocationWhenInUseUsageDescription<\/key>\s*<string>[^<]*<\/string>/, '');   // Location Awareness was removed: no location prompt
   for (const [k, v] of Object.entries(plistKeys)) if (!s.includes(`<key>${k}</key>`)) s = s.replace(/<dict>/, `<dict>\n\t<key>${k}</key>\n\t<string>${v}</string>`);
   return s;
 });
@@ -25,6 +26,9 @@ if (existsSync(iosApp) && !existsSync(ent)) {
 }
 edit(join(native, 'ios', 'App', 'App.xcodeproj', 'project.pbxproj'), (s) =>
   s.includes('CODE_SIGN_ENTITLEMENTS') ? s : s.replace(/(PRODUCT_BUNDLE_IDENTIFIER = [^;]+;)/g, '$1\n\t\t\t\tCODE_SIGN_ENTITLEMENTS = App/App.entitlements;'));
+
+// ---- Android: Location Awareness was removed, so no location permission (older projects drop it here)
+edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) => s.replace(/\s*<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" \/>/, ''));
 
 // ---- Android: Health Connect needs minSdk 26
 edit(join(native, 'android', 'variables.gradle'), (s) => s.replace(/minSdkVersion\s*=\s*(\d+)/, (m, n) => (Number(n) < 26 ? 'minSdkVersion = 26' : m)));

@@ -175,13 +175,25 @@
     const tones = {
       coin: [[988, 0.05], [1319, 0.08]], claim: [[660, 0.06], [880, 0.06], [1175, 0.1]],
       level: [[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.18]], chest: [[392, 0.06], [523, 0.06], [784, 0.12]],
+      // battle start: a quick rising sweep; victory: a short original fanfare
+      encounter: [[392, 0.05], [523, 0.05], [659, 0.05], [784, 0.05], [1047, 0.05], [784, 0.05], [1047, 0.05], [1319, 0.16]],
+      victory: [[523, 0.11], [523, 0.11], [523, 0.11], [659, 0.34], [587, 0.16], [659, 0.16], [784, 0.5]],
+      // Worldkey: charging hum rising to a crystal ping; tuning right / wrong / lock; the portal; low energy; a soft chirp when it talks
+      wk_charge: [[110, 0.09], [147, 0.09], [196, 0.09], [262, 0.09], [349, 0.09], [466, 0.09], [622, 0.09], [1245, 0.22]],
+      wk_wrong: [[220, 0.09], [185, 0.16]],
+      wk_lock: [[523, 0.07], [659, 0.07], [784, 0.07], [1047, 0.07], [1319, 0.3]],
+      wk_travel: [[98, 0.08], [131, 0.08], [175, 0.08], [233, 0.08], [311, 0.08], [415, 0.08], [554, 0.08], [740, 0.08], [988, 0.08], [1319, 0.08], [1760, 0.26]],
+      wk_low: [[880, 0.08], [660, 0.14]],
+      wk_chat: [[1568, 0.04], [2093, 0.05]],
+      wk_craft: [[196, 0.07], [247, 0.07], [294, 0.07], [392, 0.18]],
       hit: [[180, 0.06], [120, 0.1]], hurt: [[140, 0.08], [90, 0.12]], win: [[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.08], [1319, 0.2]], lose: [[392, 0.12], [330, 0.12], [262, 0.25]], charge: [[220, 0.06], [330, 0.06], [440, 0.06]], buy: [[784, 0.06], [988, 0.1]], tap: [[600, 0.03]], unlock: [[523, 0.07], [784, 0.07], [1047, 0.07], [1568, 0.15]],
     };
     // recorded sounds (tools/prep_sounds.py); a list = pick one at random each time
     const FILES = {
       level: 'sfx/level_up.mp3', potion: 'sfx/potion.mp3', buy: 'sfx/buy.mp3', equip: 'sfx/equip.mp3', discovery: 'sfx/discovery.mp3',
       lose: 'sfx/battle_loss.mp3', defend: 'sfx/defend.mp3', strike: 'sfx/walker_attack.mp3',
-      creature: ['sfx/creature_attack_1.mp3', 'sfx/creature_attack_2.mp3', 'sfx/creature_attack_3.mp3'],
+      creature: ['sfx/creature_attack_1.mp3', 'sfx/creature_attack_2.mp3', 'sfx/creature_attack_3.mp3', 'sfx/creature_attack_4.mp3', 'sfx/creature_attack_5.mp3'],
+      quest: 'sfx/quest_complete.mp3',
       proj: ['sfx/projectile_1.mp3', 'sfx/projectile_2.mp3', 'sfx/projectile_5.mp3'],
     };
     // game sounds stay quiet when the player turned Sound & music off
@@ -199,6 +211,16 @@
           g.gain.value = vol; src.buffer = buf; src.connect(g).connect(ctx.destination); src.start();
         } catch (e) { delete buffers[path]; }
       },
+      // one note (the Worldkey's symbols each have their own)
+      tone(freq, dur = 0.22) {
+        try { if (muted() || !ensure()) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'square'; o.frequency.value = freq;
+          g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02); } catch (e) {}
+      },
+      // fetch and decode sound files ahead of time (battle sounds load when a battle opens)
+      preload(paths) {
+        if (muted() || !ensure()) return;
+        for (const path of paths) if (!buffers[path]) buffers[path] = fetch(WB.Assets.base + path).then((r) => r.arrayBuffer()).then((b) => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no))).catch(() => { delete buffers[path]; });
+      },
       play(name) {
         if (name === 'level') { const now = Date.now(); if (now - lastLevel < 11000) return; lastLevel = now; }   // level-up + achievement together: one fanfare, played in full
         if ((name === 'level' || name === 'discovery') && WB.Bgm && WB.Bgm.duck) WB.Bgm.duck(name === 'level' ? 11000 : 8000);   // the music steps back while it plays
@@ -211,7 +233,7 @@
             const o = ctx.createOscillator(), g = ctx.createGain();
             o.type = 'square'; o.frequency.value = f;
             g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-            o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + d + 0.02); t += d * 0.9;
+            o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + d + 0.02); t += name === 'victory' || name === 'wk_lock' ? d : d * 0.9;
           }
         } catch (e) {}
       },
@@ -226,10 +248,21 @@
     const TRACKS = {
       app: 'music/app_song.mp3',
       merlin: 'music/merlin.mp3',   // only while Merlin is on screen
-      // Battle music 1 is the same recording as the app song, and 7 the same as 4, so they share a file
-      battle: ['music/app_song.mp3', 'music/battle_2.mp3', 'music/battle_4.mp3', 'music/battle_6.mp3', 'music/battle_8.mp3'],
-      // from level 40 (D.EPIC_MUSIC_LEVEL) battles get the bigger themes: Redemption and Cold Fire
-      battleEpic: ['music/battle_epic_1.mp3', 'music/battle_epic_2.mp3'],
+      // battle music rotates at random; [file, weight]: the three defaults come up a bit more often (3x).
+      // Battle music 1 is the same recording as the app song, and 7 the same as 4, so they share a file.
+      battle: [['music/app_song.mp3', 3], ['music/battle_default_2.mp3', 3], ['music/battle_default_3.mp3', 3],
+        ['music/battle_2.mp3', 1], ['music/battle_4.mp3', 1], ['music/battle_6.mp3', 1], ['music/battle_8.mp3', 1],
+        ['music/battle_valhalla.mp3', 1], ['music/battle_minstrel.mp3', 1], ['music/battle_elven.mp3', 1], ['music/battle_unworthy.mp3', 1]],
+      // from level 40 (D.EPIC_MUSIC_LEVEL) the bigger themes join the rotation too: Redemption and Cold Fire
+      battleEpic: [['music/battle_epic_1.mp3', 2], ['music/battle_epic_2.mp3', 2]],
+    };
+    let lastBattle = null;
+    // a weighted random pick that never plays the same battle track twice in a row
+    const pickTrack = (list) => {
+      const pool = list.length > 1 ? list.filter(([f]) => f !== lastBattle) : list;
+      let r = Math.random() * pool.reduce((n, [, w]) => n + w, 0);
+      for (const [f, w] of pool) { r -= w; if (r <= 0) return (lastBattle = f); }
+      return (lastBattle = pool[pool.length - 1][0]);
     };
     let el = null, want = null, fadeT = null;
     const allowed = () => !!(WB.state && WB.state.settings.sound);
@@ -240,10 +273,10 @@
       // key: 'app' (the default theme) | 'battle' | 'merlin'; plays it on a loop until stop()
       home() { B.play('app'); },
       play(key) {
-        if (key === 'battle' && WB.state && WB.state.level >= WB.DATA.EPIC_MUSIC_LEVEL) key = 'battleEpic';
-        const t = TRACKS[key]; if (!t) return;
+        const epic = key === 'battle' && WB.state && WB.state.level >= WB.DATA.EPIC_MUSIC_LEVEL;
+        const t = epic ? TRACKS.battle.concat(TRACKS.battleEpic) : TRACKS[key]; if (!t) return;
         if (want && want.key === key && el && !el.paused) return;
-        want = { key, src: Array.isArray(t) ? t[Math.floor(Math.random() * t.length)] : t };
+        want = { key, src: Array.isArray(t) ? pickTrack(t) : t };
         B.sync();
       },
       stop(ms = 900) {
@@ -266,7 +299,9 @@
         if (!el) { el = new Audio(); el.loop = true; el.preload = 'auto'; }
         const url = WB.Assets.base + want.src;
         if (el.dataset.src !== want.src) { el.src = url; el.dataset.src = want.src; }
-        clearInterval(fadeT); el.volume = 0.45;
+        clearInterval(fadeT);
+        const fresh = el.paused; el.volume = fresh ? 0 : 0.45;
+        if (fresh) { const t0 = performance.now(); fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / 700); if (el) el.volume = 0.45 * k; if (k >= 1) clearInterval(fadeT); }, 50); }   // fade in, never a hard start
         const p = el.play(); if (p && p.catch) p.catch(() => GESTURES.forEach((g) => document.addEventListener(g, retry, true)));
       },
     };

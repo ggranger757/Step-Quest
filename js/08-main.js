@@ -8,6 +8,7 @@
     const welcome = G.welcomeLines();
     G.rollDay(); G.checkUnlocks(); G.primeAnnounced();
     document.documentElement.classList.toggle('rm', !!WB.reducedMotion());
+    UI.applyTheme();
     if (WB.BUILD === 'pwa') document.documentElement.classList.add('standalone');
     UI.hydrateIcons();
     wire();
@@ -43,6 +44,7 @@
       },
       onDefer: (enc) => { G.deferEncounter(enc); UI.encounterGone(enc); },
     });
+    if (G.featBoot) G.featBoot();   // saves from before step-by-step unlocks keep what they've reached
     const h = (location.hash || '').slice(1);
     UI.go(h === 'missions' ? 'tasks' : ['tasks', 'shop', 'collection', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
     UI.updateHud(); UI.paintFace();
@@ -57,7 +59,7 @@
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
     G.markSeen();
-    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'This browser is blocking storage (a private window?). Open Step Quest normally to keep your progress.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
+    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'This browser is blocking storage, possibly a private window. Open Step Quest normally to keep your progress.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
   }
 
   function showWelcome(lines) {
@@ -102,19 +104,22 @@
       if (WB.view && UI.tab === 'world') { const p = WB.view.avatarPos(); UI.floater('LEVEL UP', p.x, p.y - 40, 'xp big'); WB.view.burst(WB.view.avX, WB.view.world.ground - 40, ['#8b6cff', '#c7b8ff', '#ffffff'], 24); }
     });
     WB.bus.on('unlock', ({ cat, id }) => {
+      const it = G.item(cat, id);
+      if (it.req && it.req.level && UI.levelCardActive()) return;   // already on the level-up card
       WB.Sfx.play('unlock');
-      const it = G.item(cat, id), name = { avatar: 'New avatar', pet: 'New pet', weapon: it.legendary ? 'Legendary weapon' : 'New weapon' }[cat];
-      UI.toast({ kicker: name, title: it.name, icon: { avatar: 'user', pet: 'paw', weapon: 'sword' }[cat], cls: it.legendary ? 'big' : 'cyan', action: { label: 'Equip', fn: () => { G.equip(cat, id); UI.render(); } } });
+      const name = { avatar: 'New avatar', pet: 'New pet', weapon: it.legendary ? 'Legendary weapon' : 'New weapon' }[cat];
+      UI.toast({ kicker: name, title: it.name, icon: { avatar: 'user', pet: 'paw', weapon: 'sword' }[cat], cls: it.legendary ? 'big' : 'cyan', action: { label: 'See it', fn: () => UI.showItem(cat, id) } });   // not equipped automatically: it opens the Shop on the new item
     });
     WB.bus.on('equip', ({ cat }) => { if (cat === 'avatar' || cat === 'skin') UI.paintFace(); });
     WB.bus.on('achievement', (a) => (WB.Sfx.play('level'), UI.toast({ kicker: 'Achievement', title: a.title, sub: WB.Celebrate.fire('achievement', a, 90), img: 'ach/' + a.id + '.png', cls: 'gold', ms: 4000 })));
-    WB.bus.on('taskComplete', (c) => { const mer = c.type === 'mission' && (D.missionById[c.t.id] || {}).merlin; WB.Sfx.play(mer ? 'level' : 'claim'); UI.toast({ kicker: mer ? 'Merlin’s quest complete' : 'Mission complete', title: c.t.title, sub: WB.Celebrate.fire(mer ? 'merlin' : 'mission', c.t, mer ? 120 : 70), icon: 'check', cls: 'ok', ms: 4600, action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
+    WB.bus.on('taskComplete', (c) => { const mer = c.type === 'mission' && (D.missionById[c.t.id] || {}).merlin; WB.Sfx.play(mer ? 'level' : 'quest'); UI.toast({ kicker: mer ? 'Merlin’s quest complete' : 'Mission complete', title: c.t.title, sub: WB.Celebrate.fire(mer ? 'merlin' : 'mission', c.t, mer ? 120 : 70), icon: 'check', cls: 'ok', ms: 4600, action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
     WB.bus.on('milestone', (m) => {
       UI.toast({ kicker: 'New discovery · ' + m.pct + '% explored', title: m.landmark + '  +' + m.coins, icon: 'map', cls: 'cyan' });
       if (m.pct === 100) UI.toast({ kicker: m.world.name, title: 'Fully explored', icon: 'flag', cls: 'gold' });
     });
-    WB.bus.on('worldUnlocked', (w) => { WB.Sfx.play('unlock'); UI.toast({ kicker: 'New area unlocked', title: w.name, icon: 'world', cls: 'big', ms: 6000, action: { label: 'Travel', fn: () => { G.travel(w.id); UI.go('world'); } } }); });
-    WB.bus.on('streak', (e) => { if (e.count >= 2 || e.usedRest) UI.toast({ kicker: e.usedRest ? 'Rest token used' : 'Streak extended', title: e.count + '-day streak', icon: 'flame', cls: 'gold' }); });
+    // worlds open through the Worldkey now (07j-worldkey-ui.js): it travels there and says hello itself
+    WB.bus.on('loc', () => { if (UI.tab === 'profile') UI.renderProfile(); });
+    WB.bus.on('streak', (e) => { if (e.count >= 2 || e.usedRest) UI.toast({ kicker: e.usedRest ? 'Streak saved' : 'Streak extended', title: e.count + '-day streak', sub: e.usedRest ? (e.usedRest === 1 ? 'A Streak Shield covered the day you missed.' : e.usedRest + ' Streak Shields covered the days you missed.') : '', icon: e.usedRest ? 'sshield' : 'flame', cls: 'gold' }); });
     WB.bus.on('streakMilestone', (m) => UI.toast({ kicker: 'Streak milestone', title: m.days + ' days  +' + m.coins + ' coins', icon: 'flame', cls: 'big' }));
     WB.bus.on('dailyGoal', (e) => UI.toast({ kicker: 'Daily goal reached', title: '+' + e.coins + ' Walk Coins', icon: 'flag', cls: 'ok' }));
     WB.bus.on('fastTravel', (n) => UI.toast({ kicker: 'Fast travel', title: '+' + WB.fmt(n) + ' steps walked', icon: 'steps' }));
@@ -142,13 +147,26 @@
     let pick = S().avatar;
     const step1 = () => {
       panel.innerHTML = `<img class="app-logo" src="${WB.Loading.logo()}" alt="" width="96" height="96"><h1 class="logo">STEP<br>QUEST</h1><p class="tagline">Every step you take in the real world moves your hero forward.</p><button class="btn block xl" type="button" id="i-go">Start adventure</button>`;
+      $('#i-go').onclick = () => { WB.Sfx.play('tap'); stepKey(); };
+    };
+    // lore: the Worldkey that wakes up with you
+    const stepKey = () => {
+      const k = D.wkLookById[D.WK_START], v = D.wkVoiceById[k.voice];
+      panel.innerHTML = `<div class="istep"><span class="lbl">Step 1 of 3</span><h2>Meet your Worldkey</h2></div>
+        <div class="i-key"><canvas class="wk-canvas" width="256" height="399" aria-hidden="true"></canvas>
+          <div class="i-lore"><p>Long ago, every world sat on one endless road. When the road broke, the pieces drifted apart.</p>
+          <p>Walkers still travel between them, guided by <b>Worldkeys</b>: small, stubborn devices that remember the way.</p></div></div>
+        <p class="i-say">“${WB.esc(v.lines.idle[1])}”<span class="lbl">${WB.esc(k.name)} · your first Worldkey</span></p>
+        <p class="lead">It wakes up once you finish your first world. Teach it each world’s song, and it opens the door. Being out in the world wears its tech down: it loses energy and drifts out of tune as you walk. Seventeen more Worldkeys, each with its own personality, wait to be earned.</p>
+        <button class="btn block xl" type="button" id="i-go">Continue</button>`;
+      if (WB.WK) WB.WK.device(panel.querySelector('canvas'), { mode: 'idle', look: D.WK_START });
       $('#i-go').onclick = () => { WB.Sfx.play('tap'); step2(); };
     };
     const step2 = () => {
       const starters = D.AVATARS.filter((a) => a.req.starter), locked = D.AVATARS.length - 1;
-      panel.innerHTML = `<div class="istep"><span class="lbl">Step 1 of 2</span><h2>Choose your walker</h2></div>
+      panel.innerHTML = `<div class="istep"><span class="lbl">Step 2 of 3</span><h2>Choose your walker</h2></div>
         <div class="pick" role="radiogroup" aria-label="Walker">${starters.map((a) => `<button type="button" role="radio" data-pick="${a.id}" aria-checked="${a.id === pick}"><canvas width="72" height="84"></canvas><span class="pn">${a.name}</span><span class="psp">${D.SPECIALS[D.STARTER_SPECIAL[a.id]].name}</span></button>`).join('')}</div>
-        <p class="lockedrow">${WB.icon('lock', 2)}<span>Pick one to start. The other ${locked} walkers unlock as you walk, level up and explore.</span></p>
+        <p class="lockedrow">${WB.icon('lock', 2)}<span>Pick one to start. The other two unlock at level ${starters[0].req.level || 5}. ${locked - 2} more walkers unlock as you walk, level up and explore.</span></p>
         <p class="lockedrow">${WB.icon('spark', 2)}<span id="i-sp">Your pick also decides your special attack from level ${D.SPECIAL_LEVEL}: ${D.SPECIALS[D.STARTER_SPECIAL[pick] || 'raid'].desc}</span></p>
         <div class="field" id="sk-field" ${WB.hasSkin(pick) ? '' : 'hidden'}><span class="lbl" id="sk-l">Skin tone · <span id="sk-n">${UI.skinName(S().skin)}</span></span><div id="sk-wrap">${UI.swatches(S().skin, pick)}</div></div>
         <div class="field"><label class="lbl" for="i-name">Your name</label><input id="i-name" type="text" maxlength="18" autocomplete="nickname" value="${WB.esc(S().name)}"></div>
@@ -172,14 +190,14 @@
         S().name = $('#i-name').value.trim().slice(0, 18) || 'Wanderer'; step3(); };
     };
     const step3 = () => {
-      panel.innerHTML = `<div class="istep"><span class="lbl">Step 2 of 2</span><h2>How it works</h2></div>
+      panel.innerHTML = `<div class="istep"><span class="lbl">Step 3 of 3</span><h2>How it works</h2></div>
         <ul class="rules">
           <li>${WB.icon('steps', 3)}<span>Your steps move your character.</span></li>
           <li>${WB.icon('map', 3)}<span>Walk to explore.</span></li>
           <li>${WB.icon('coin', 3)}<span>Earn Walk Coins.</span></li>
-          <li>${WB.icon('world', 3)}<span>Unlock new worlds.</span></li>
+          <li>${WB.icon('world', 3)}<span>Open new worlds with your Worldkey.</span></li>
         </ul>
-        <p class="lead">Step Quest counts your steps automatically with your phone’s motion sensor whenever it’s open. Walked with the app closed? Log those steps from your Health app any time.</p>
+        <p class="lead">Step Quest counts your steps with your phone’s motion sensor while it’s open. Walked with the app closed? Log those steps from your Health app.</p>
         <button class="btn block xl" type="button" id="i-go">Begin journey</button>`;
       $('#i-go').onclick = () => {
         S().onboarded = true;

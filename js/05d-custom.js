@@ -105,13 +105,27 @@
   C.update = (id, f) => {
     const m = C.get(id); if (!m) return { ok: false, msg: 'That mission no longer exists.' };
     const v = C.validate(f, m); if (!v.ok) return v;
-    const old = new Map(m.steps.map((s) => [s.t, s.done]));
+    const old = new Map(m.steps.map((s) => [s.t, s]));
     if (!m.lock) m.lock = { diff: m.diff, pri: m.pri, due: m.due };   // missions made before 2.7.0 lock on first edit
-    Object.assign(m, { title: v.m.title, notes: v.m.notes, due: v.m.due, steps: v.m.stepsText.map((t) => ({ t, done: !!old.get(t) })) });   // difficulty and priority stay as created
+    Object.assign(m, { title: v.m.title, notes: v.m.notes, due: v.m.due, steps: v.m.stepsText.map((t) => { const o = old.get(t); return { t, done: !!(o && o.done), paid: !!(o && o.paid) }; }) });   // difficulty and priority stay as created
     if (m.due > Date.now() && m.lock.due > Date.now()) m.warned = false;
     G.after(); return { ok: true, m };
   };
-  C.toggleStep = (id, i) => { const m = C.get(id); if (m && m.steps[i]) { m.steps[i].done = !m.steps[i].done; WB.Save.queue(); } };
+  // sub-missions: checking one off pays 1 coin, once per sub-mission (unchecking and rechecking pays nothing more);
+  // the coin counts toward the same daily cap as the missions themselves
+  C.SUB_COIN = 1;
+  C.toggleStep = (id, i) => {
+    const m = C.get(id), st = m && m.steps[i]; if (!st) return null;
+    st.done = !st.done; let coin = 0;
+    if (st.done && !st.paid) {
+      st.paid = true;
+      if (C.leftToday().coins >= C.SUB_COIN) {
+        const c = S().custom; if (c.day !== WB.dayKey()) { c.day = WB.dayKey(); c.coinsToday = 0; c.xpToday = 0; }
+        c.coinsToday = (c.coinsToday || 0) + C.SUB_COIN; S().coins += C.SUB_COIN; coin = C.SUB_COIN;
+      }
+    }
+    WB.Save.queue(); return { done: st.done, coin };
+  };
   C.remove = (id) => { const c = S().custom; c.list = c.list.filter((m) => m.id !== id); G.after(); };
   // a brand-new mission can't be completed yet (stops create-and-claim farming)
   C.tooNewWhy = (m) => {

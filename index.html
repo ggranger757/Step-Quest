@@ -7,6 +7,7 @@
 <meta name="description" content="A pixel-art walking RPG. Every real step moves your hero forward.">
 <meta name="theme-color" content="#0b0a1a">
 <meta name="color-scheme" content="dark">
+<script>try{var t=localStorage.getItem('stepquest.theme');if(t==='army')t='field';if(t==='lime'||t==='field')document.documentElement.dataset.theme=t}catch(e){}</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -65,7 +66,6 @@
     <section id="scr-map" class="screen" aria-label="World map"></section>
     <section id="scr-tasks" class="screen" aria-label="Missions"></section>
     <section id="scr-shop" class="screen" aria-label="Shop"></section>
-    <section id="scr-collection" class="screen" aria-label="Inventory"></section>
     <section id="scr-profile" class="screen" aria-label="Profile"></section>
   </main>
 
@@ -73,7 +73,6 @@
     <button type="button" data-tab="world"><span class="ic" data-icon="world"></span><span>World</span></button>
     <button type="button" data-tab="tasks"><span class="ic" data-icon="tasks"></span><span>Missions</span><i class="badge" id="badge-tasks" hidden></i></button>
     <button type="button" data-tab="shop"><span class="ic" data-icon="shop"></span><span>Shop</span></button>
-    <button type="button" data-tab="collection"><span class="ic" data-icon="trophy"></span><span>Inventory</span></button>
     <button type="button" data-tab="profile"><span class="ic" data-icon="user"></span><span>Profile</span></button>
   </nav>
 </div>
@@ -101,6 +100,7 @@
 <script src="js/02c-missions.js"></script>
 <script src="js/02d-merlin.js"></script>
 <script src="js/02e-quiz.js"></script>
+<script src="js/02g-worldkey.js"></script>
 <script src="js/03-state.js"></script>
 <script src="js/04-steps.js"></script>
 <script src="js/04b-health.js"></script>
@@ -110,6 +110,10 @@
 <script src="js/05d-custom.js"></script>
 <script src="js/05e-eggs.js"></script>
 <script src="js/05f-druid.js"></script>
+<script src="js/05g-worldkey.js"></script>
+<script src="js/05h-remind.js"></script>
+<script src="js/05i-gear.js"></script>
+<script src="js/05j-unlocks.js"></script>
 <script src="js/06-engine.js"></script>
 <script src="js/07-ui.js"></script>
 <script src="js/07b-battle-ui.js"></script>
@@ -119,6 +123,7 @@
 <script src="js/07g-celebrate.js"></script>
 <script src="js/07h-eggs.js"></script>
 <script src="js/07i-loading.js"></script>
+<script src="js/07j-worldkey-ui.js"></script>
 <script src="js/08-main.js"></script>
 </body>
 </html>

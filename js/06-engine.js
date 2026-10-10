@@ -35,8 +35,8 @@
     x.drawImage(im, Math.round((W - im.width * sc) / 2), Math.round((H - im.height * sc) / 2), im.width * sc, im.height * sc);
     WB.silIfLocked(canvas);
   });
-  // locked or not-yet-found things are drawn as flat silhouettes in the app's teal (--cyan)
-  WB.silColor = () => (getComputedStyle(document.documentElement).getPropertyValue('--cyan') || '#59e3ff').trim();
+  // locked or not-yet-found things are drawn as flat dark-purple silhouettes (the same in every theme)
+  WB.silColor = () => '#3d2b70';   // one dark purple silhouette for every theme
   WB.sil = (canvas) => { const x = canvas.getContext('2d'); x.save(); x.globalCompositeOperation = 'source-in'; x.fillStyle = WB.silColor(); x.fillRect(0, 0, canvas.width, canvas.height); x.restore(); };
   WB.silIfLocked = (canvas) => { if (canvas.closest && canvas.closest('.item.locked, .sil')) WB.sil(canvas); };
 
@@ -171,7 +171,10 @@
   /* Draw a sprite's first frame into a canvas, cropped to the figure and scaled to fit.
      opts: { kind: 'av'|'cr'|'pet'|'npc', id, anim, skin, head (portrait crop), face: 'left'|'right' } */
   WB.paintThumb = (canvas, opts) => {
-    const sh = WB.sheet(opts.kind, opts.id, opts.anim || 'idle');
+    // creatures drawn from a 4-direction pack have a front-facing pose: it's their portrait
+    const front = opts.kind === 'cr' && !opts.anim && WB.ASSETS.creatures[opts.id] && WB.ASSETS.creatures[opts.id].anims.front;
+    const sh = WB.sheet(opts.kind, opts.id, front ? 'front' : opts.anim || 'idle');
+    if (front) opts = { ...opts, face: null };
     const go = (img) => {
       if (!img || !img._ok) return;
       const src = opts.kind === 'av' ? WB.recolor(img, sh.path, opts.skin) : img;

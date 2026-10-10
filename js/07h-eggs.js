@@ -1,4 +1,4 @@
-/* Step Quest — eggs on screen: the Inventory → Eggs tab, Merlin's egg trades (also under his quest on
+/* Step Quest — eggs on screen: the Shop → Artifacts → Eggs tab, Merlin's egg trades (also under his quest on
    Missions → Field) and the toasts when you find or break eggs. Rules live in 05e-eggs.js. */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, S = () => WB.state;
@@ -12,14 +12,14 @@
       <button class="btn ${ready ? 'gold' : ''} sm" type="button" data-eggtrade="${t.id}" ${UI.off(!ready && (!G.merlinMet() ? 'Meet Merlin on the road first. After that you can trade any time.' : 'You need ' + miss + '.'))}>${G.merlinMet() ? 'Trade' : 'Locked'}</button>
     </div>`;
   }
-  // used by Inventory → Eggs and by Merlin's corner of the Field tab
+  // used by Shop → Artifacts → Eggs and by Merlin's corner of the Field tab
   UI.eggTrades = () => `<div class="list trades">${D.EGG_TRADES.map(tradeCard).join('')}</div>`;
   UI.eggSection = () => {
     const e = G.eggs();
     return `<div class="eggs">${D.EGGS.map((x) => `<div class="egg pbox ${e[x.id] ? '' : 'none'}">${WB.eggImg(x.id, 64)}<div class="egg-b"><div class="t-title">${x.name} <span class="lbl">${x.rarity}</span></div><div class="m-desc">${x.desc}</div>
         <div class="obj-prog"><div class="bar seg"><i style="width:${(e[x.id] / D.EGG_MAX) * 100}%"></i></div><span class="num">${e[x.id] || 0} / ${D.EGG_MAX}</span></div></div></div>`).join('')}</div>
       <div class="sect"><h2>Trade with Merlin <span class="aside">${S().eggTrades || 0} made</span></h2>
-        <p class="fine">${G.merlinMet() ? 'Trade a full set for loot, here or when Merlin finds you on the road.' : 'Merlin the owl-mage trades loot for eggs. Meet him on the road to start trading.'} If you lose a battle, you lose half of each kind of egg you carry.</p>
+        <p class="fine">${G.merlinMet() ? 'Trade a full set for loot here, or when Merlin finds you on the road.' : 'Merlin the owl-mage trades loot for eggs. Meet him on the road to start trading.'} Lose a battle and you drop half of each kind.</p>
         ${UI.eggTrades()}</div>`;
   };
 

@@ -52,12 +52,12 @@
   function message(kind, d = {}) {
     const c = ctx(), N = c.name, stepsLine = c.steps >= 100 ? WB.fmt(c.steps) + ' steps today and counting.' : 'Every step adds up.';
     const streakLine = c.streak >= 2 ? c.streak + '-day streak, still going strong.' : 'That’s how momentum starts.';
-    if (kind === 'level') return pick([
-      `Level ${d.level}, ${N}! Every step you took got you here.`,
-      `You reached level ${d.level}. ${stepsLine}`,
-      `Level ${d.level}: stronger, steadier, still walking. Proud of you.`,
-      `What a ${c.part}, ${N}. Level ${d.level} looks good on you.`,
-      d.level % 5 === 0 ? `Level ${d.level}! A milestone worth a little victory lap.` : `Level ${d.level}. New worlds are taking notice.`,
+    if (kind === 'level') return d.regained ? pick([`Back where you belong, ${N}.`, `You earned that one twice. Onward.`]) : pick([
+      `All those steps are paying off, ${N}.`,
+      c.steps >= 100 ? `${WB.fmt(c.steps)} steps today, and it shows.` : `Every step got you here. Keep going.`,
+      `Stronger with every walk. Nice one, ${N}.`,
+      `Great ${c.part} for it, ${N}. Keep that pace.`,
+      d.level % 5 === 0 ? `A milestone level. You’ve earned a victory lap.` : `New places are starting to open up for you.`,
     ]);
     if (kind === 'achievement') return pick([
       `${d.title}: earned the honest way, one step at a time.`,

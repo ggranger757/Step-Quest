@@ -620,7 +620,9 @@ if P8:
             a = np.asarray(f).copy(); m = a[..., 3] > 20
             lab, n = ndimage.label(ndimage.binary_dilation(m, iterations=pad))
             if n > 1: a[(lab != np.bincount(lab[m]).argmax())] = 0
-            out.append(Image.fromarray(a, 'RGBA'))
+            f2 = Image.fromarray(a, 'RGBA')
+            # a frame left (almost) empty would make the creature blink out: repeat the previous one instead
+            out.append(out[-1] if out and (a[..., 3] > 20).sum() < 40 else f2)
         return out
     two = main_blob(G('2Face', '2Face Idle.gif')); melt = G('2Face', '2Face_Hurt.gif')
     enemy_atlas('twoface', {'idle': two, 'attack': two, 'hurt': melt[:3], 'death': melt}, track=('idle', 'attack', 'hurt', 'death'))

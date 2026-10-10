@@ -1,7 +1,8 @@
 /* Step Quest — turn-based battle rules (1v1, plus your pet). Pure logic: every action returns a list of
    events that the battle screen animates in order.
 
-   Your moves:  Strike (melee weapon) · Throw / Shoot / Cast (ranged weapon, recharges) · Defend (shield)
+   Your moves:  Strike (melee weapon, wears down a little with every hit) · Throw / Shoot / Cast (ranged weapon, recharges,
+                uses one shot from level 7) · Defend (shield). Battle magic spends one of its uses from level 7. A knocked-out pet rests.
                 · Items (potions) · Special (from level 10, when its gauge is full) · Run away
    Specials:    Arcane Nova (mage: big hit + 3-turn stun) · Life Drain (healer: 3 turns of draining that heal
                 you, more when you're low) · Scavenger's Raid (big hit + steals a potion you can use right away)
@@ -9,31 +10,31 @@
                 your next hit, guardians raise a reversing ward; heals a little) · flee (when badly hurt)
                 · special (charged a turn ahead, every 4th turn, every 3rd for guardians; Defend!)
                 Moves and effects per creature: D.CREATURE_MOVES (02-data.js)
-   Statuses on you: poison, burn (damage each turn, never below 1 HP) · weak (-30% damage) · stun (lose a turn)
+   Statuses on you: poison, burn, venom (damage each turn, never below 1 HP; venom is the plants' slow poison: 3% for 6 turns) · weak (-30% damage) · stun (lose a turn)
    Statuses on the creature: poison, burn, bleed (damage each turn) · freeze, stun (skips a turn)
                 · weaken (-40% attack) · sunder (+25% damage taken)
    Your pet takes part of every hit (its `share`) until its own HP runs out. */
 (() => {
-  const D = WB.DATA;
+  const D = WB.DATA, G = WB.Game;
   const rnd = (a, b) => a + Math.random() * (b - a);
   const B = (WB.Battle = { active: false, st: null });
 
   B.start = (enc) => {
     const s = WB.state, G = WB.Game, w = D.worldById[enc.world] || G.world();
-    const cs = enc.nemesis ? D.bossStats(enc.creature, s.level) : D.creatureStats(enc.creature, w.tier, !!enc.boss), bd = enc.nemesis ? D.BOSSES[enc.creature] : null;
+    const cs = enc.nemesis ? D.bossStats(enc.creature, s.level) : D.CREATURES[enc.creature].rival ? D.rivalStats(s.level) : D.creatureStats(enc.creature, w.tier, !!enc.boss), bd = enc.nemesis ? D.BOSSES[enc.creature] : null;
     const pdef = s.equip.pet && G.pet(s.equip.pet);
     B.st = {
       enc, world: w, turn: 1, over: false, result: null,
-      hero: { hp: Math.max(1, s.hp), max: G.maxHp(), atk: D.heroAtk(s.level), def: D.heroDef(s.level), lvl: s.level, guard: 0, guardF: 0.5, fury: 0, furyMult: 1.5, defend: false, reflect: false, poison: 0, burn: 0, weak: 0, stun: 0,
+      hero: { hp: Math.max(1, s.hp), max: G.maxHp(), atk: D.heroAtk(s.level), def: D.heroDef(s.level), lvl: s.level, guard: 0, guardF: 0.5, fury: 0, furyMult: 1.5, defend: false, reflect: false, poison: 0, venom: 0, burn: 0, weak: 0, stun: 0,
         clone: 0, tome: 0, twice: 0, dodge: 0, guardPts: 100, defended: false },
-      pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0) } : null,
-      enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
+      pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0), atk: pdef.atk || 0, verb: pdef.atkVerb } : null,
+      enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, rival: !!D.CREATURES[enc.creature].rival, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
         poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false, fled: 0,
         moves: D.CREATURE_MOVES[enc.creature] || D.CREATURE_MOVES.hyena },
       weapon: G.equipped('ranged') || D.WEAPONS[0], melee: G.equipped('melee') || D.weaponById.sw_rusty, shield: G.equipped('shield'),
       cooldown: 0,
       special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
-      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id)).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn
+      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.usesLeft(m.id) > 0).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn
       perks: new Set(G.charms().map((id) => D.magicById[id].perk)),   // worn charms
     };
     B.active = true;
@@ -91,6 +92,7 @@
       const [id, mode] = String(arg).split('/'), m = D.magicById[id];
       if (!m || !st.magic.includes(id) || st.mused[id] || st.magicTurn === st.turn) return events;
       if (m.fx.type === 'special' && !(st.special && st.special.unlocked)) return events;
+      if (!G.useMagic(id)) return events;   // spends one of its uses
       st.mused[id] = true; st.magicTurn = st.turn;
       const ev = { who: 'hero', type: 'magic', item: id }, fx = m.fx, nm = m.name + ': ';
       const healBy = (frac) => { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * frac)); ev.heal = (ev.heal || 0) + h.hp - b0; return h.hp - b0; };
@@ -109,7 +111,7 @@
         case 'recharge': st.cooldown = 0; ev.text = nm + 'your ' + st.weapon.name + ' is ready.'; break;
         case 'guardfill': h.guardPts = 100; ev.text = nm + 'your guard is back to 100%.'; break;
         case 'special': st.special.charge = 100; ev.text = nm + st.special.name + ' is ready!'; break;
-        case 'cleanse': h.poison = h.burn = h.weak = h.stun = 0; healBy(fx.amount); ev.text = nm + 'you’re cleansed of every ailment' + (ev.heal ? ' and recover ' + ev.heal + ' HP.' : '.'); break;
+        case 'cleanse': h.poison = h.venom = h.burn = h.weak = h.stun = 0; healBy(fx.amount); ev.text = nm + 'you’re cleansed of every ailment' + (ev.heal ? ' and recover ' + ev.heal + ' HP.' : '.'); break;
         case 'reflect': h.reflect = true; ev.text = nm + 'the next hit you take is half thrown back.'; break;
         case 'dodge': h.dodge += fx.n; ev.text = nm + 'you’ll dodge the creature’s next attack.'; break;
         case 'escape': ev.text = nm + 'you slip through a hidden door and leave the battle.'; events.push(ev); st.over = true; st.result = 'fled'; return finish(events);
@@ -139,7 +141,7 @@
       const m = st.melee, ev = { who: 'hero', type: 'strike', weapon: m.id, hits: [] };
       const lucky = h.twice > 0; if (lucky) { h.twice--; ev.lucky = true; }
       const n = (m.type === 'dagger' ? 2 : m.effect === 'triple' ? 3 : 1) * (lucky ? 2 : 1);
-      const magicMult = h.tome > 0 && m.type === 'staff' ? 1 + D.BOOK_BONUS : 1;
+      const magicMult = (h.tome > 0 && m.type === 'staff' ? 1 + D.BOOK_BONUS : 1) * G.wearMult(m.id);   // a worn weapon hits softer
       let extra = '';
       for (let i = 0; i < n && e.hp > 0; i++) {
         let base = h.atk * m.power * mult * magicMult;
@@ -161,11 +163,13 @@
       ev.text = (crits ? 'Critical! ' : '') + m.name + (ev.hits.length > 1 ? ' hits ' + ev.hits.length + ' times for ' : ' hits for ') + ev.dmg + '.' +
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = m.name + ' passes straight through ' + e.name + '’s shadow!';
+      const c0 = G.cond(m.id), c1 = G.wearDown(m.id); ev.cond = c1;   // (no wear before level 7)
+      if (c0 > D.WORN_AT && c1 <= D.WORN_AT) ev.text += ' Your ' + m.name + ' is getting worn (' + Math.round(c1) + '%). Repair it in Shop → Bag.';
       echo(st, ev);
       events.push(ev);
       chargeSpecial(st, 'strike');
     } else if (move === 'throw') {
-      if (st.cooldown > 0) return events;
+      if (st.cooldown > 0 || !G.useAmmo(st.weapon.id)) return events;   // spends one shot
       const wpn = st.weapon, ev = { who: 'hero', type: 'throw', weapon: wpn.id, hits: [] };
       const lucky = h.twice > 0; if (lucky) { h.twice--; ev.lucky = true; }
       const n = (wpn.effect === 'multi' ? 3 : wpn.hits || 1) * (lucky ? 2 : 1);
@@ -187,6 +191,8 @@
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = wpn.name + ' passes straight through ' + e.name + '’s shadow!';
       st.cooldown = P.has('cooldown') ? Math.max(1, wpn.cd) : wpn.cd + 1;   // the Circlet of Focus: one turn faster
+      const left = G.shotsLeft(wpn.id); ev.ammo = left;
+      if (left === Infinity) { /* shots only count from level 7 */ } else if (!left) ev.text += ' That was your last shot. Buy more in the Shop.'; else if (left <= 3) ev.text += ' ' + left + ' shot' + (left > 1 ? 's' : '') + ' left.';
       echo(st, ev);
       events.push(ev);
       chargeSpecial(st, 'throw');
@@ -233,14 +239,21 @@
     } else if (move === 'flee') {
       const ok = Math.random() < (P.has('flee') ? (e.nemesis ? 0.6 : e.boss ? 0.7 : 1) : (e.nemesis ? 0.35 : e.boss ? 0.45 : 0.75));
       events.push({ who: 'hero', type: 'flee', ok, text: ok ? 'You got away.' : 'You couldn’t get away!' });
-      if (ok) { st.over = true; st.result = 'fled'; if (e.nemesis) say(st, events, 'victory'); return finish(events); }
+      if (ok) { st.over = true; st.result = 'fled'; if (e.nemesis || e.rival) say(st, events, 'victory'); return finish(events); }
     } else return events;
 
+    // an attacking pet joins in after your move
+    const pet = st.pet;
+    if (pet && pet.atk && pet.hp > 0 && e.hp > 0 && ['strike', 'throw', 'special', 'defend', 'potion'].includes(move)) {
+      const ev = { who: 'pet', type: 'petAttack' }; strikeEnemy(st, hit(h.atk * pet.atk), ev, false);
+      ev.text = pet.name + ' ' + pet.verb.toLowerCase() + ' ' + e.name + (ev.dmg ? ' for ' + ev.dmg + '.' : ', but misses.');
+      events.push(ev);
+    }
     if (e.hp <= 0) return win(st, events);
     if (h.hp <= 0) return lose(st, events);       // a ward can bounce enough back to knock you down
 
     // ---- a boss reacts to being hurt (once): rage, or a second form
-    if (e.nemesis && !e.halved && e.hp < e.max * 0.5) {
+    if ((e.nemesis || e.rival) && !e.halved && e.hp < e.max * 0.5) {
       e.halved = true;
       say(st, events, 'hurt');
       if (e.ability === 'enrage') { e.atk = Math.round(e.atk * 1.35); events.push({ who: 'enemy', type: 'ability', name: 'Enraged!', color: '#ff6b3d', text: e.name + ' is enraged: his attacks now hit 35% harder!' }); }
@@ -254,7 +267,7 @@
     const mv = e.moves, every = e.boss || e.nemesis ? 3 : 4;
     if (e.stun > 0) { e.stun--; e.charging = false; events.push({ who: 'enemy', type: 'stunned', text: e.name + ' is stunned and can’t move.' }); }
     else if (e.freeze > 0) { e.freeze--; e.charging = false; events.push({ who: 'enemy', type: 'frozen', text: e.name + ' is frozen and can’t move.' }); }
-    else if (e.charging) { e.charging = false; if (e.nemesis && Math.random() < 0.7) say(st, events, 'special'); enemySpecial(st, events); }
+    else if (e.charging) { e.charging = false; if ((e.nemesis || e.rival) && Math.random() < 0.7) say(st, events, 'special'); enemySpecial(st, events); }
     else if (!e.nemesis && e.hp < e.max * (e.boss ? 0.2 : 0.25) && e.fled < 2 && WB.state.enc.battles > 0 && Math.random() < (e.boss ? 0.12 : 0.3) / (e.fled + 1)) {
       e.fled++;   // badly hurt: it tries to run (never in your very first battle)
       const ok = Math.random() < 0.6;
@@ -264,7 +277,7 @@
     else if (st.turn % every === every - 1) { e.charging = true; events.push({ who: 'enemy', type: 'charge', text: e.name + ' is gathering power for ' + mv.special[0] + '. Defend!' }); }
     else {
       const r = Math.random(), mw = mv.mw || 0.33, dch = e.ability === 'ward' ? 0.22 : 0.12;
-      if (e.nemesis && Math.random() < 0.3) say(st, events, 'taunt');
+      if ((e.nemesis && Math.random() < 0.3) || (e.rival && Math.random() < 0.5)) say(st, events, 'taunt');
       if (r < dch && !e.brace && !e.ward) {   // defend: brace (or a ward for guardians) and recover a little
         const b0 = e.hp; e.hp = Math.min(e.max, e.hp + Math.round(e.max * 0.06)); const heal = e.hp - b0;
         if (e.boss || e.nemesis) { e.ward = true; events.push({ who: 'enemy', type: 'ward', heal, text: e.name + ' raises a reversing ward' + (heal ? ' and recovers ' + heal + ' HP' : '') + '. ' + Math.round(e.wardF * 100) + '% of your next hit will bounce back at you (piercing weapons ignore it).' }); }
@@ -286,8 +299,8 @@
       const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(d * (low ? 1.5 : 1)));
       events.push({ who: 'hero', type: 'drain', dmg: d, heal: h.hp - b0, left: e.drain, text: 'Life Drain takes ' + d + (h.hp - b0 ? ' and heals you ' + (h.hp - b0) : '') + '.' + (e.drain ? ' ' + e.drain + ' more turn' + (e.drain > 1 ? 's' : '') + '.' : '') });
     }
-    for (const [k, frac, label] of [['poison', 0.05, 'Poison stings you for '], ['burn', 0.06, 'The flames burn you for ']]) {   // effects on you
-      if (h[k] > 0 && h.hp > 1) { const d = Math.min(h.hp - 1, Math.max(1, Math.round(h.max * frac))); h.hp -= d; h[k]--; events.push({ who: 'hero', type: 'hdot', dot: k, dmg: d, text: label + d + ' damage.' }); }
+    for (const [k, frac, label] of [['poison', 0.05, 'Poison stings you for '], ['venom', 0.03, 'Venom hurts you for '], ['burn', 0.06, 'The flames burn you for ']]) {   // effects on you
+      if (h[k] > 0 && h.hp > 1) { const d = Math.min(h.hp - 1, Math.max(1, Math.round(h.max * frac))); h.hp -= d; h[k]--; events.push({ who: 'hero', type: 'hdot', dot: k, dmg: d, text: label + d + ' damage.' + (k === 'venom' && h[k] ? ' ' + h[k] + ' more turn' + (h[k] > 1 ? 's' : '') + '.' : '') }); }
       else if (h[k] > 0) h[k]--;
     }
     if (h.weak > 0) h.weak--;
@@ -319,6 +332,7 @@
     const h = st.hero, e = st.enemy;
     switch (effect) {
       case 'poison': h.poison = 3; ev.status = 'Poisoned'; return ' You’re poisoned for 3 turns.';
+      case 'venom': { const re = h.venom > 0; h.venom = 6; ev.status = 'Venom'; return re ? ' More venom: it keeps hurting you for 6 turns.' : ' Venom! It will hurt you a little every turn for 6 turns.'; }
       case 'burn': h.burn = 2; ev.status = 'Burning'; return ' You catch fire for 2 turns.';
       case 'weaken': h.weak = 2; ev.status = 'Weakened'; return ' You feel weak: your hits do 30% less for 2 turns.';
       case 'slow': { const w = st.weapon; st.cooldown = Math.min((w.cd || 1) + 3, st.cooldown + 2); ev.status = 'Slowed'; return ' Your ' + w.name + ' is slowed: it needs 2 more turns to recharge.'; }
@@ -330,7 +344,8 @@
   function enemyMagic(st) {
     const mv = st.enemy.moves, ev = enemyHit(st, 1.15, 'magic');
     // its effect lands 40% of the time (20% if you defended)
-    if (mv.magic[5] && ev.dmg > 0 && st.hero.hp > 0 && Math.random() < (st.hero.defend ? 0.2 : 0.4)) ev.text += afflict(st, mv.magic[5], ev, ev.dmg);
+    const venom = mv.magic[5] === 'venom';   // plants: their venom lands more often (60%, 30% if you defended)
+    if (mv.magic[5] && ev.dmg > 0 && st.hero.hp > 0 && Math.random() < (st.hero.defend ? (venom ? 0.3 : 0.2) : (venom ? 0.6 : 0.4))) ev.text += afflict(st, mv.magic[5], ev, ev.dmg);
     return ev;
   }
   function enemySpecial(st, events) {
@@ -364,7 +379,7 @@
     if (h.reflect) { const back = Math.round(dmg / 2); dmg -= back; e.hp = Math.max(0, e.hp - back); h.reflect = false; ev.mirrored = back; }
     if (pet && pet.hp > 0 && dmg > 1) {
       const take = Math.min(pet.hp, Math.round(dmg * pet.share));
-      if (take > 0) { pet.hp -= take; dmg -= take; ev.pet = take; if (pet.hp <= 0) ev.petKO = true; }
+      if (take > 0) { pet.hp -= take; dmg -= take; ev.pet = take; if (pet.hp <= 0) { ev.petKO = true; pet.fell = true; } }
     }
     h.hp = Math.max(0, h.hp - dmg);
     ev.dmg = dmg;
@@ -384,7 +399,7 @@
   function win(st, events) {
     st.over = true; st.result = 'win';
     if (st.enemy.id === 'druid') events.push({ who: 'enemy', type: 'druidRun', text: 'The Druid is beaten! He bows, then runs off into the trees.' });   // he doesn't fall: he flees
-    else { if (st.enemy.nemesis) say(st, events, 'defeat', 1); events.push({ who: 'enemy', type: 'die', text: st.enemy.name + ' is defeated!' }); }
+    else { if (st.enemy.nemesis || st.enemy.rival) say(st, events, 'defeat', 1); events.push({ who: 'enemy', type: 'die', text: st.enemy.name + ' is defeated!' }); }
     return finish(events);
   }
   function lose(st, events) {
@@ -394,19 +409,26 @@
       return finish(events);
     }
     st.over = true; st.result = 'lose'; events.push({ who: 'hero', type: 'down', text: 'You’re knocked down.' });
-    if (st.enemy.nemesis) say(st, events, 'victory', 1);
+    if (st.enemy.nemesis || st.enemy.rival) say(st, events, 'victory', 1);
     return finish(events);
   }
   // a boss speaks (PG-13 trash talk, see D.BOSSES): never the same line twice in a row, at most once per round
   function say(st, events, kind, force) {
-    const e = st.enemy, lines = D.BOSSES[e.id] && D.BOSSES[e.id].lines[kind];
+    const e = st.enemy, talk = e.rival ? D.RIVAL : D.BOSSES[e.id], lines = talk && talk.lines[kind];
     if (!lines || !lines.length || (!force && events.some((x) => x.type === 'say'))) return;
     let line = lines[Math.floor(Math.random() * lines.length)];
     if (lines.length > 1 && line === e.lastLine) line = lines[(lines.indexOf(line) + 1) % lines.length];
     e.lastLine = line;
+    if (e.rival) line = B.rivalLine(line, st);
     events.push({ who: 'enemy', type: 'say', kind, line, text: e.name + ': “' + line + '”' });
   }
   B.say = say;
+  // fill in Redhood Rival's lines with your own numbers and somewhere she's been
+  B.rivalLine = (line, st) => {
+    const s = WB.state, here = (st && st.world) || D.worldById[s.world], far = D.WORLDS.filter((w) => w.id !== here.id);
+    return line.replace(/\{today\}/g, WB.fmt(s.today.steps)).replace(/\{total\}/g, WB.fmt(s.totalSteps)).replace(/\{streak\}/g, WB.Game.streakView().count)
+      .replace(/\{world\}/g, here.name).replace(/\{far\}/g, (WB.pick(far) || here).name);
+  };
   // what a boss's ability did to your attack, for the log
   function bossNote(st, ev) {
     const e = st.enemy;
@@ -421,7 +443,7 @@
   B.end = () => {
     const st = B.st;
     B.active = false;
-    if (st.pet) WB.Game.setPetHp(st.pet.id, st.pet.hp);
+    if (st.pet) WB.Game.setPetHp(st.pet.id, st.pet.hp);   // a knocked-out pet rests and recovers over time
     return WB.Game.battleResult(st);
   };
 })();
