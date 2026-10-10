@@ -1230,8 +1230,7 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 .journey { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .screen { overscroll-behavior: contain; }
 .hub-seg button { font-size: 12px; letter-spacing: .02em; gap: 6px; padding: 0 6px; }
-/* (the icons used to be hidden under 420px; the Artifacts row stacks icon over label now, so they stay visible on small phones) */
-@media (max-width: 420px) { .hub-seg:not(.stacked) button .px-icon, .hub-seg:not(.stacked) button img, .hub-seg:not(.stacked) button svg, .hub-seg:not(.stacked) button canvas { display: none; } }
+/* (the old rule that hid these icons under 420px is gone: Collection, Forge and Eggs all show their icons on small phones) */
 @media (max-width: 360px) { .pf-tabs button { font-size: 10px; letter-spacing: 0; } .pf-tabs button .px-icon, .pf-tabs button svg { display: none; } }
 .item.bag { min-width: 0; }
 .item .foot.stack .btn { white-space: normal; height: auto; min-height: 40px; padding-top: 6px; padding-bottom: 6px; line-height: 1.2; text-align: center; }
