@@ -91,7 +91,7 @@
           <span class="lbl">${esc(key.name)} · ${esc(v.name)}</span>
           <div class="wk-energy"><span class="lbl">Energy</span><b>${pctTxt(w.e)}</b></div>
           ${energyBar(w.e)}
-          ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: it can’t open worlds.' : 'Low energy.'}</p>` : ''}
+          ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: it can’t open worlds.' : 'Low energy.'}</p>${G.upkeep() ? `<div class="wk-lowcta"><p class="fine">Craft Darkmatter from your artifacts in the Forge, then use it to recharge.</p><button class="btn gold block" type="button" data-wk="forge">${dmImg('void', 20)}Go to the Forge</button></div>` : ''}` : ''}
           <p class="fine wk-drain">${G.upkeep() ? `Time and walking drain it: about ${K.DRAIN_DAY}% a day, plus ${K.WALK_DRAIN}% per 1,000 steps.` : `Starter charge: opening worlds costs no energy until level ${D.UPKEEP_LEVEL}.`}</p>
           ${dest ? `<dl class="wk-dl">
             <div><dt>Destination</dt><dd>${esc(dest.name)}</dd></div>
@@ -103,7 +103,7 @@
           return `<div class="wk-next">
             <div class="wk-next-h"><span class="lbl">${st.found ? 'Discovered' : 'Next world'}: ${esc(dest.name)}</span><b>${pct}%</b></div>
             <div class="bar seg cyan" role="progressbar" aria-label="Progress to ${esc(dest.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
-            <p class="fine">${st.found ? 'Ready to open once the Worldkey is charged and tuned.' : `<span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Reach level ${dest.unlock.level}</span>${wp.prev ? ` · <span class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : ''}Explore ${D.WORLD_GATE_PCT}% of ${esc(wp.prev.name)}</span>` : ''} · about ${WB.fmt(wp.stepsLeft)} steps to go`}</p>
+            <p class="fine">${st.found ? 'Ready to open once the Worldkey is charged and tuned.' : `<span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Reach level ${dest.unlock.level}</span>${wp.prev ? ` · <span class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : ''}Explore ${G.gatePct(dest)}% of ${esc(wp.prev.name)}</span>` : ''} · about ${WB.fmt(wp.stepsLeft)} steps to go`}</p>
           </div>`; })() : ''}
         <div class="wk-acts">${step ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${dest.id}">${esc(step.label)}</button>` : ''}${G.upkeep() && hasFuel() && (!step || step.act !== 'charge') ? '<button class="btn ghost" type="button" data-wk="charge">Charge</button>' : ''}<button class="btn ghost" type="button" data-wk="custom">${WB.icon('key', 2)}Worldkeys</button></div>
       </div>
@@ -111,11 +111,12 @@
   };
   // before the Worldkey wakes up: what it's waiting for
   UI.wkLocked = () => {
-    const nw = G.nextWorld(), first = D.WORLDS[0], wp = nw ? G.worldProgress(nw) : null, pct = wp ? Math.floor(wp.pct) : 100;
+    const first = G.firstWorld(), pct = Math.floor(Math.min(100, G.explorePct(first.id) / D.FIRST_WORLD_PCT * 100));
+    const left = Math.max(0, Math.ceil(first.length * D.FIRST_WORLD_PCT / 100 - (S().worldSteps[first.id] || 0)));
     return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Locked</span>
       <h3>Your Worldkey wakes up when you finish ${esc(first.name)}</h3>
-      <p class="fine">It opens the way to new worlds. Finish your first world to get it${nw ? ': ' + esc(G.worldReq(nw)).replace(/^R/, 'r') : ''}.</p>
-      ${wp ? `<div class="bar seg cyan" role="progressbar" aria-label="Progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · about ${WB.fmt(wp.stepsLeft)} steps to go</p>` : ''}
+      <p class="fine">It opens the way to new worlds. Explore ${D.FIRST_WORLD_PCT}% of ${esc(first.name)} to wake it${S().world === first.id ? '' : ' (you can travel back to it from the World map)'}.</p>
+      <div class="bar seg cyan" role="progressbar" aria-label="Progress through ${esc(first.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · about ${WB.fmt(left)} steps to go</p>
     </div>`;
   };
   UI.forgeLocked = () => `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${D.UPKEEP_LEVEL}</span>
@@ -149,6 +150,7 @@
 
   // ---------- the gate: a newly discovered world ----------
   WK.gate = (world, opts = {}) => {
+    if (!G.featOn('wk')) return UI.toast({ kicker: 'Worldkey asleep', title: 'It wakes up when you finish ' + G.firstWorld().name + '.', icon: 'lock' });
     const st = G.wkStatus(world), step = nextStep(st), w = G.wk();
     UI.sheet(`<div class="wk-gate">
       <span class="lbl wk-kick">${st.found ? 'New world discovered' : 'Next world'}</span>

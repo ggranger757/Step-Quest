@@ -138,10 +138,11 @@
   // Pacing: the listed levels set the ORDER; the real unlock levels are spread from 1 to D.LAST_WORLD_LEVEL, and
   // each world also needs the one before it explored to D.WORLD_GATE_PCT%, so worlds open one at a time.
   D.LAST_WORLD_LEVEL = 70; D.WORLD_GATE_PCT = 75;
+  D.FIRST_WORLD_PCT = 100;   // the first world (Rust Hollow) must be fully explored: finishing it wakes the Worldkey and discovers the second world
   D.WORLDS.filter((w) => w.open).forEach((w) => { w.tier = 1; w.unlock = { level: 1, after: null }; });   // always-open worlds are outside the chain
   D.WORLDS.filter((w) => !w.open).forEach((w, i, all) => {
     const lvl = i === 0 ? 1 : Math.max(2, Math.round(1 + (D.LAST_WORLD_LEVEL - 1) * Math.pow(i / (all.length - 1), 1.1)));
-    w.tier = Math.round((lvl - 1) * 0.65); w.unlock = { level: lvl, after: i ? all[i - 1].id : null };
+    w.tier = Math.round((lvl - 1) * 0.65); w.unlock = { level: lvl, after: i ? all[i - 1].id : null, pct: i === 1 ? D.FIRST_WORLD_PCT : D.WORLD_GATE_PCT };   // pct: how much of the previous world must be explored
   });
   D.worldById = Object.fromEntries(D.WORLDS.map((w) => [w.id, w]));
 

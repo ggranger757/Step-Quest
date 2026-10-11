@@ -49,13 +49,15 @@
     burst(view.hx, hY(), color, big ? 16 : 9);
   }
 
-  BU.challenge = (worldId) => {
-    if (!G.battlesOpen()) return WB.UI.toast({ kicker: 'Not yet', title: 'Battles unlock at level ' + D.BATTLE_LEVEL + '.', cls: 'msg' });
+  BU.challenge = (worldId, force) => {
+    if (!force && !G.battlesOpen()) return WB.UI.toast({ kicker: 'Not yet', title: 'Battles unlock at level ' + D.BATTLE_LEVEL + '.', cls: 'msg' });
     if (S().hp < 1) S().hp = 1;
-    BU.open(G.makeEncounter('boss', { world: worldId }));
+    BU.open(G.makeEncounter('boss', { world: worldId }), force);
   };
 
-  BU.open = (e) => {
+  // The one door into every fight. Battle mode stays shut until level D.BATTLE_LEVEL (12), whatever called it (a developer force skips this).
+  BU.open = (e, force) => {
+    if (!force && !G.battlesOpen()) { WB.UI.toast({ kicker: 'Not yet', title: 'Battles unlock at level ' + D.BATTLE_LEVEL + '.', cls: 'msg' }); return false; }
     enc = e;
     const st = WB.Battle.start(e);
     const w = st.world;

@@ -189,10 +189,11 @@
     WB.Save.queue();
   };
   // a world opens when you reach its level AND have explored the world before it to D.WORLD_GATE_PCT%
-  G.gateMet = (w) => !w.unlock.after || S().unlocked.includes(w.id) || G.explorePct(w.unlock.after) >= D.WORLD_GATE_PCT;
+  G.gatePct = (w) => (w.unlock && w.unlock.pct) || D.WORLD_GATE_PCT;   // the world after Rust Hollow needs it 100% explored, the rest D.WORLD_GATE_PCT%
+  G.gateMet = (w) => !w.unlock.after || S().unlocked.includes(w.id) || G.explorePct(w.unlock.after) >= G.gatePct(w);
   G.worldReq = (w) => {
     const prev = w.unlock.after && D.worldById[w.unlock.after];
-    return 'Reach level ' + w.unlock.level + (prev ? ' and explore ' + D.WORLD_GATE_PCT + '% of ' + prev.name : '');
+    return 'Reach level ' + w.unlock.level + (prev ? ' and explore ' + G.gatePct(w) + '% of ' + prev.name : '');
   };
   function openWorlds() {
     const s = S();
@@ -207,8 +208,8 @@
     const need = G.totalXp(w.unlock.level, 0), have = G.totalXp(), prev = w.unlock.after && D.worldById[w.unlock.after];
     const xpPct = Math.min(100, (have / Math.max(1, need)) * 100), xpSteps = Math.max(0, Math.ceil((need - have) / D.XP_PER_STEP));
     // exploring: steps still to walk in the world before it (0 once it's explored far enough)
-    const gateSteps = prev && !G.gateMet(w) ? Math.max(0, Math.ceil(prev.length * D.WORLD_GATE_PCT / 100 - (S().worldSteps[prev.id] || 0))) : 0;
-    const gatePct = prev ? Math.min(100, G.explorePct(prev.id) / D.WORLD_GATE_PCT * 100) : 100;
+    const gateSteps = prev && !G.gateMet(w) ? Math.max(0, Math.ceil(prev.length * G.gatePct(w) / 100 - (S().worldSteps[prev.id] || 0))) : 0;
+    const gatePct = prev ? Math.min(100, G.explorePct(prev.id) / G.gatePct(w) * 100) : 100;
     return { pct: Math.min(xpPct, gatePct), xpLeft: Math.max(0, need - have), stepsLeft: Math.max(xpSteps, gateSteps), levelOk: S().level >= w.unlock.level, gateOk: G.gateMet(w), prev };
   };
   function checkWorlds() {
@@ -392,6 +393,13 @@
     WB.bus.emit('steps', { n, meta });
   };
   G.after = () => {
+    // battles are shut before level D.BATTLE_LEVEL: drop any fight left waiting on the road (a save from before the rule)
+    if (!G.battlesOpen() && S().enc && Array.isArray(S().enc.pending)) {
+      const before = S().enc.pending.length;
+      S().enc.pending = S().enc.pending.filter((p) => !(p.type === 'boss' || p.type === 'nemesis' || p.type === 'druid' || p.aggressive));
+      if (S().enc.pending.length !== before) WB.bus.emit('pending');
+    }
+    if (G.featCheck) G.featCheck(false);   // the Worldkey wakes (and its card is queued) before any world is discovered
     openWorlds();
     G.checkUnlocks();
     checkAchievements();

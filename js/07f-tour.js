@@ -23,7 +23,7 @@
     { go: tab('world'), sel: '.sensor', page: 'World', title: 'Step counter', text: 'Counts steps while the app is open. Pause it here, or log a walk you took with the app closed.' },
     { go: tab('world'), sel: '.map-cta', page: 'World', title: 'World map', text: 'Opens the map of every world: travel between open worlds and see what each one holds.' },
     { go: tab('world'), sel: '.objective', page: 'World', title: 'Next objective', text: 'The mission closest to done. Tap it to jump to Missions.' },
-    { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Worlds open one at a time. To open the next one, reach the level shown and explore ' + D.WORLD_GATE_PCT + '% of the world before it. There are ' + D.WORLDS.length + ' in all.' },
+    { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Worlds open one at a time. To open the next one, reach the level shown and explore the world before it (finish Rust Hollow completely for the first one, then ' + D.WORLD_GATE_PCT + '% for the rest). There are ' + D.WORLDS.length + ' in all.' },
     // ---------- map ----------
     { go: tab('map'), sel: '#scr-map .path', page: 'World map', title: 'World map', text: 'Every world in order. Travel to open ones and see their creatures and artifacts. Once a world is 100% explored, challenge its guardian here.' },
     // ---------- missions ----------

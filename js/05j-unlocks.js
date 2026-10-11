@@ -21,11 +21,23 @@
     WB.Save.queue();
     if (!quiet) { queue.push(k); WB.bus.emit('featUnlocked', k); }
   }
+  // The first world is the first one in the chain (Rust Hollow); always-open worlds (Neon City) are outside the chain
+  // and must never count as progress, or the Worldkey would wake at the first level-up.
+  G.firstWorld = () => D.WORLDS.find((x) => !x.open);
+  // Finished = fully explored (D.FIRST_WORLD_PCT). Saves that already got further under the old rule keep what they earned:
+  // a second world discovered or opened through the Worldkey counts as finished too.
+  G.firstWorldDone = () => {
+    const s = S(), f = G.firstWorld(); if (!s || !f) return false;
+    if (G.explorePct(f.id) >= D.FIRST_WORLD_PCT) return true;
+    const w = s.wk;
+    return s.unlocked.some((id) => id !== f.id && D.worldById[id] && !D.worldById[id].open) || !!(w && Array.isArray(w.found) && w.found.length);
+  };
   // what has been reached: the first world finished, level 7
   G.featCheck = (quiet) => {
     const s = S(); if (!s || !s.onboarded) return;
-    const w = s.wk;
-    if (!feats().wk && (s.unlocked.length > 1 || (w && Array.isArray(w.found) && w.found.length))) unlock('wk', quiet);
+    const done = G.firstWorldDone();
+    if (!feats().wk && done) unlock('wk', quiet);
+    else if (feats().wk && !done) { delete feats().wk; WB.Save.queue(); }   // switched on too early by an older version: it sleeps again until the first world is finished
     if (feats().wk && !feats().dm && s.level >= D.UPKEEP_LEVEL) unlock('dm', quiet);
   };
   // older saves: unlock what they've already reached without fanfare

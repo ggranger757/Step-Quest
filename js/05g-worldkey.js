@@ -65,6 +65,7 @@
   };
   // called by the world-progress check: requirements met = discovered, not entered
   G.wkDiscover = (world) => {
+    if (G.featOn && !G.featOn('wk')) return false;   // asleep until the first world is finished
     const w = G.wk();
     if (S().unlocked.includes(world.id) || w.found.includes(world.id)) return false;
     w.found.push(world.id);
@@ -144,6 +145,7 @@
       const world = D.worldById[wid]; if (!world) return { ok: false, why: 'Unknown destination.' };
       const st = G.wkStatus(world), s = S(), w = G.wk();
       if (st.unlocked) { G.travel(wid); return { ok: true, free: true }; }
+      if (G.featOn && !G.featOn('wk')) return { ok: false, why: 'Your Worldkey wakes up when you finish ' + G.firstWorld().name + '.' };
       if (!st.found) return { ok: false, why: 'Not discovered yet: ' + G.worldReq(world) + '.' };
       if (!st.energyOk) return { ok: false, why: 'Needs ' + st.cost + '% energy. You have ' + Math.floor(w.e) + '%.' };
       if (!st.tuned) return { ok: false, why: 'Tune the Worldkey to ' + world.name + ' first.' };
