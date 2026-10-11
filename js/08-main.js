@@ -157,7 +157,7 @@
           <div class="i-lore"><p>Long ago, every world sat on one endless road. When the road broke, the pieces drifted apart.</p>
           <p>Walkers still travel between them, guided by <b>Worldkeys</b>: small, stubborn devices that remember the way.</p></div></div>
         <p class="i-say">“${WB.esc(v.lines.idle[1])}”<span class="lbl">${WB.esc(k.name)} · your first Worldkey</span></p>
-        <p class="lead">It wakes up once you finish your first world. Teach it each world’s song, and it opens the door. Being out in the world wears its tech down: it loses energy and drifts out of tune as you walk. Seventeen more Worldkeys, each with its own personality, wait to be earned.</p>
+        <p class="lead">It wakes up once you finish your first world. Tune it to each world’s frequency, and it opens the door. Being out in the world wears its tech down: it loses energy and drifts out of tune as you walk. Seventeen more Worldkeys, each with its own personality, wait to be earned.</p>
         <button class="btn block xl" type="button" id="i-go">Continue</button>`;
       if (WB.WK) WB.WK.device(panel.querySelector('canvas'), { mode: 'idle', look: D.WK_START });
       $('#i-go').onclick = () => { WB.Sfx.play('tap'); step2(); };

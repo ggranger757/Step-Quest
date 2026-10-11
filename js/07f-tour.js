@@ -43,7 +43,7 @@
     // ---------- inventory ----------
     { go: hub('bag', 'weapons'), sel: '#tabs [data-tab="inv"]', page: 'Inventory', title: 'Your inventory', text: 'Everything you own lives here: gear, potions, pets, walkers, your Worldkey and your artifacts.' },
     { go: hub('bag', 'weapons'), sel: '#scr-inv .grid .item', page: 'Inventory', title: 'Equip and switch', text: 'Equip weapons, wear charms, drink potions and switch walkers.' },
-    { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Inventory', title: 'Your Worldkey', text: 'Your Worldkey opens new worlds. It needs energy (Darkmatter) and the world’s song: repeat its symbol pattern. Time and walking drain its energy and knock it out of tune, so recharge and retune before you travel.' },
+    { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Inventory', title: 'Your Worldkey', text: 'Your Worldkey opens new worlds. It needs energy (Darkmatter) and the world’s frequency: match its symbol pattern to tune in. Time and walking drain its energy and knock it out of tune, so recharge and retune before you travel.' },
     { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Inventory', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here. Locked ones show as silhouettes.' },
     { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Inventory', title: 'Artifacts', text: 'Artifacts hide in every world. Each find adds a copy. Once you’ve found them all, walking a world again turns up more copies.' },
     { feat: 'dm', go: hub('art', 'forge'), sel: '#wk-forge', page: 'Inventory', title: 'Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and some HP). Stronger kinds need artifacts from later worlds. Darkmatter charges your Worldkey.' },
@@ -55,7 +55,7 @@
     // ---------- profile ----------
     { go: pf('overview'), sel: '#scr-profile .hero', page: 'Profile', title: 'Profile', text: 'Your walker, title, level and HP. Tap the pencil to rename yourself.' },
     { go: pf('overview'), sel: '#scr-profile .stats', page: 'Profile', title: 'Stats', text: 'Your lifetime totals. Tap a stat with a dashed border to learn what it means.' },
-    { go: pf('overview'), sel: '#scr-profile .chart', page: 'Profile', title: 'Your steps', text: 'Steps per day for the last 7, 14 or 30 days. Highlighted bars reached your streak minimum.' },
+    { go: pf('overview'), sel: '#scr-profile .chart', page: 'Profile', title: 'Your steps', text: 'Steps per day for the last 7, 14 or 30 days. Highlighted bars reached your streak minimum. Tap a bar to see that day’s steps.' },
     { go: pf('overview'), sel: '#scr-profile .wardrobe', page: 'Profile', title: 'Loadout', text: 'Change your walker, weapons, defense and pet in one place. From level 25 you can recolor your walker here too.' },
     { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Settings', text: 'Steps and goals, mission reminders, theme, sound and your save. Replay this tour from the Tutorial button at the top.' },
     { go: tab('world'), title: 'You’re ready', text: 'Start walking: every step counts. Good luck out there!' },
@@ -65,7 +65,7 @@
   const MINI = {
     wk: [
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Worldkey', title: 'Your Worldkey is awake', text: 'You finished your first world, so your Worldkey can open the next one. Find it in Inventory → Worldkey.' },
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it to a world', text: 'Each world has its own song: repeat its symbol pattern to tune the Worldkey. A tuning lasts a few days; time and walking knock it out of tune.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it to a world', text: 'Each world hums at its own frequency: match its symbol pattern to tune the Worldkey to it. A tuning lasts a few days; time and walking knock it out of tune.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-acts', page: 'Worldkey', title: 'Then open the way', text: 'Once it’s tuned, tap Open. Until level ' + D.UPKEEP_LEVEL + ' it runs on its starter charge, so opening worlds costs no energy.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Worldkey', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here.' },
     ],

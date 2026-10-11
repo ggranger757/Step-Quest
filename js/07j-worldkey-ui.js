@@ -175,7 +175,7 @@
       <span class="lbl wk-kick">Tune the Worldkey</span>
       <h3 id="sheet-title">${esc(world.name)}</h3>
       <div class="wk-tune-top"><canvas class="wk-canvas sm" width="256" height="399" aria-hidden="true"></canvas>
-        <div><p class="wk-msg" id="wk-msg" role="status" aria-live="polite">Watch the Worldkey’s screen, then tap the ${seq.length} symbols in the same order.</p>
+        <div><p class="wk-msg" id="wk-msg" role="status" aria-live="polite">Every world hums at its own frequency. Watch the Worldkey’s screen to read it, then tap the ${seq.length} symbols to match it.</p>
         <div class="wk-pips" aria-hidden="true">${seq.map(() => '<i></i>').join('')}</div></div></div>
       <div class="wk-pad" role="group" aria-label="Symbols">${D.WK_SYMBOLS.map((s, i) => `<button type="button" class="wk-sym" data-sym="${i}" aria-label="${esc(s.name)}" disabled><canvas width="36" height="36" aria-hidden="true"></canvas></button>`).join('')}</div>
       <div class="row" id="wk-tune-acts"><button class="btn gold" type="button" id="wk-start" data-autofocus>Start</button><button class="btn ghost" type="button" data-close>Not now</button></div>
@@ -187,9 +187,9 @@
       const light = (k, ok) => { dev.glyph = k; dev.glyphOk = ok; const b = pads[k]; b.classList.add('on'); WB.Sfx.tone(D.WK_SYMBOLS[k].tone, 0.2); timers.push(setTimeout(() => { b.classList.remove('on'); if (dev.glyph === k) dev.glyph = null; }, Math.min(420, spd - 120))); };
       const play = () => {
         clear(); phase = 'watch'; pos = 0; setPads(false); pips.forEach((p) => (p.className = ''));
-        msg.textContent = 'Watch…'; root.querySelector('#wk-tune-acts').hidden = true;
+        msg.textContent = 'Reading the frequency…'; root.querySelector('#wk-tune-acts').hidden = true;
         seq.forEach((k, i) => timers.push(setTimeout(() => light(k), 500 + i * spd)));
-        timers.push(setTimeout(() => { phase = 'input'; setPads(true); msg.textContent = 'Your turn: tap the symbols in order.'; pads[0].focus({ preventScroll: true }); }, 500 + seq.length * spd + 150));
+        timers.push(setTimeout(() => { phase = 'input'; setPads(true); msg.textContent = 'Your turn: match the frequency by tapping the symbols in order.'; pads[0].focus({ preventScroll: true }); }, 500 + seq.length * spd + 150));
       };
       root.querySelector('#wk-start').onclick = play;
       pads.forEach((b) => (b.onclick = () => {
@@ -201,7 +201,7 @@
             phase = 'done'; setPads(false); G.wkLearn(world);
             timers.push(setTimeout(() => {
               dev.mode = 'lock'; dev.t = 0; WB.Sfx.play('wk_tuned');   // the recorded "Worldkey tuned" sound
-              msg.textContent = 'Locked in. “' + G.wkLine('tuneOk') + '”';
+              msg.textContent = 'Frequency locked. “' + G.wkLine('tuneOk') + '”';
               const st = G.wkStatus(world), step = nextStep(st), acts = root.querySelector('#wk-tune-acts');
               acts.hidden = false;
               acts.innerHTML = (step ? `<button class="btn gold" type="button" data-wk="${step.act}" data-wid="${world.id}">${esc(step.label)}</button>` : '') + '<button class="btn ghost" type="button" data-close>Done</button>';
@@ -212,7 +212,7 @@
         } else {
           phase = 'fail'; setPads(false); light(k, false); WB.Sfx.play('wk_wrong');
           pips.forEach((p, i) => { if (i >= pos) p.className = 'bad'; });
-          msg.textContent = 'Out of tune. “' + G.wkLine('tuneFail', { n: pos + 1 }) + '”';
+          msg.textContent = 'Frequency off. “' + G.wkLine('tuneFail', { n: pos + 1 }) + '”';
           const acts = root.querySelector('#wk-tune-acts'); acts.hidden = false;
           acts.innerHTML = '<button class="btn gold" type="button" id="wk-again">Try again</button><button class="btn ghost" type="button" data-close>Not now</button>';
           acts.querySelector('#wk-again').onclick = play; acts.querySelector('#wk-again').focus({ preventScroll: true });

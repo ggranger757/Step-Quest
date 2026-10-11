@@ -912,6 +912,9 @@
     const span = [7, 14, 30].includes(s.settings.chartDays) ? s.settings.chartDays : 14;   // the chart's range: 7, 14 or 30 days
     const days = []; for (let i = span - 1; i >= 0; i--) { const k = WB.addDays(WB.dayKey(), -i); days.push([k, s.days[k] || 0]); }
     const tab = ['settings', 'ach'].includes(UI.pfTab) ? UI.pfTab : 'overview';
+    // tapping a bar shows that day's steps (defaults to today); the pick sticks while it is still inside the range
+    const selDay = days.some((d) => d[0] === UI.chartSel) ? UI.chartSel : days[days.length - 1][0];
+    const chartRead = (k, plain) => { const v = s.days[k] || 0, d = WB.parseDay(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }), t = k === WB.dayKey() ? 'Today · ' : ''; return plain ? t + d + ': ' + WB.fmt(v) + ' steps' : `<span class="cr-d">${WB.esc(t + d)}</span><b>${WB.fmt(v)} steps</b><span class="cr-s ${v >= s.settings.streakMin ? 'ok' : ''}">${v >= s.settings.streakMin ? 'Streak day' : WB.fmt(s.settings.streakMin) + '+ for a streak'}</span>`; };
     const mx = Math.max(s.settings.streakMin * 1.2, ...days.map((d) => d[1]));
     const own = (c) => s.owned[G.CATS[c][0]].length + '/' + G.CATS[c][1].length;
     const slot = (cat, label, id, icon, sub) => `<button class="wslot pbox" type="button" data-wslot="${cat}" ${sub ? `data-wsub="${sub}"` : ''}>${cat === 'weapon' && id ? `<canvas width="36" height="36" data-prev="weapon:${id}"></canvas>` : WB.icon(icon, 3)}<span class="ws-t"><span class="lbl">${label}</span><span class="ws-v">${id ? WB.esc(G.item(cat, id).name) : '<span class="none">None</span>'}</span></span></button>`;
@@ -942,8 +945,9 @@
       </div>
       ${UI.missionMix ? UI.missionMix() : ''}
       <div class="sect"><div class="chart-h"><h2>Last ${span} days</h2><div class="cm-seg chart-span" role="radiogroup" aria-label="Chart range">${[7, 14, 30].map((d) => `<button type="button" role="radio" aria-checked="${d === span}" data-span="${d}">${d} days</button>`).join('')}</div></div><div class="chart pbox card span-${span}">
+        <p class="chart-read" id="chart-read" role="status" aria-live="polite">${chartRead(selDay)}</p>
         ${(span === 30 ? [days.slice(0, 10), days.slice(10, 20), days.slice(20)] : [days]).map((row, r, rows) => `<div class="chart-row">
-        <div class="bars">${row.map(([k, v], i) => `<div class="${r === rows.length - 1 && i === row.length - 1 ? 'today' : v >= s.settings.streakMin ? 'goal' : ''}" style="height:${Math.max(2, (v / mx) * 100)}%" title="${k}: ${WB.fmt(v)} steps"></div>`).join('')}</div>
+        <div class="bars">${row.map(([k, v], i) => `<button type="button" class="bcol ${r === rows.length - 1 && i === row.length - 1 ? 'today' : v >= s.settings.streakMin ? 'goal' : ''}" data-day="${k}" aria-pressed="${k === selDay}" aria-label="${WB.esc(chartRead(k, true))}"><i style="height:${Math.max(2, (v / mx) * 100)}%"></i></button>`).join('')}</div>
         <div class="axis">${row.map(([k]) => `<span>${WB.parseDay(k).getDate()}</span>`).join('')}</div></div>`).join('')}
         <div class="legend"><span><i class="k-ok"></i>Streak day (${WB.fmt(s.settings.streakMin)}+)</span><span><i class="k-under"></i>Under</span><span><i class="k-today"></i>Today</span></div>
       </div></div>
@@ -985,6 +989,11 @@
     WB.$$('[data-prev]', pf).forEach((c) => paintPreview(c, ...c.dataset.prev.split(':')));
     const sel = (id, k, num) => { const el = $(id); if (el) el.onchange = (e) => { s.settings[k] = num(e.target.value); WB.Save.queue(); G.after(); UI.renderProfile(); }; };
     WB.$$('[data-pftab]', pf).forEach((b) => (b.onclick = () => { UI.pfTab = b.dataset.pftab; WB.Sfx.play('tap'); UI.renderProfile(); window.scrollTo(0, 0); }));
+    WB.$$('.bcol[data-day]', pf).forEach((b) => (b.onclick = () => {
+      UI.chartSel = b.dataset.day; WB.Sfx.play('tap');
+      WB.$$('.bcol[data-day]', pf).forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+      const rd = $('#chart-read'); if (rd) rd.innerHTML = chartRead(b.dataset.day);
+    }));
     WB.$$('[data-span]', pf).forEach((b) => (b.onclick = () => { s.settings.chartDays = +b.dataset.span; WB.Save.queue(); WB.Sfx.play('tap'); UI.renderProfile(); }));
     WB.$$('[data-theme-pick]', pf).forEach((b) => (b.onclick = () => { s.settings.theme = b.dataset.themePick; WB.Save.queue(); UI.applyTheme(); WB.Sfx.play('tap'); UI.renderProfile(); const nb = pf.querySelector(`[data-theme-pick="${b.dataset.themePick}"]`); if (nb) nb.focus({ preventScroll: true }); }));
     // arrow keys move between the theme choices (radio-group keyboard pattern)
