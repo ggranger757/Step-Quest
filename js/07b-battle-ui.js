@@ -389,7 +389,9 @@
     } else if (mode === 'items') {
       el.className = 'b-actions items';
       const mine = D.POTIONS.filter((p) => s.potions[p.id] > 0);
-      el.innerHTML = mine.map((p) => `<button class="btn ghost" type="button" data-b="potion:${p.id}">${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(p.name)}</span><small>${potionTag(p)} · x${s.potions[p.id]}</small></span></button>`).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
+      const pt = st.pet, petHurt = pt && pt.hp < pt.max;   // healing potions and food can also go to your pet
+      el.innerHTML = mine.map((p) => `<button class="btn ghost" type="button" data-b="potion:${p.id}">${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(p.name)}</span><small>${potionTag(p)} · x${s.potions[p.id]}</small></span></button>`
+        + (pt && p.kind === 'heal' ? `<button class="btn ghost pet-use" type="button" data-b="potion:${p.id}/pet" ${WB.UI.off(!petHurt && pt.name + ' is already at full health.')}>${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(p.name)} → ${WB.esc(pt.name)}</span><small>${pt.hp <= 0 ? 'Revives and heals ' : 'Heals '}${Math.round(p.amount * (WB.Game.perk('potions') ? 1.25 : 1) * 100)}% of its HP · x${s.potions[p.id]}</small></span></button>` : '')).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
     } else {
       const wpn = st.weapon, m = st.melee, sh = st.shield, shots = WB.Game.shotsLeft(wpn.id), ready = st.cooldown === 0, cond = Math.round(WB.Game.cond(m.id)), nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
       el.className = 'b-actions';
@@ -505,7 +507,7 @@
     if (ev.who === 'hero') {
       if (ev.type === 'strike') {
         hs.anim = 'attack'; hs.once = true; hs.f = 0; hs.melee = true; WB.Sfx.play('strike');
-        { const mw = D.weaponById[ev.weapon] || st.melee; if (mw && mw.icon) { const im = WB.Assets.ok(mw.icon), k = 2; floater(mw.name, 'hero', 'weapon', im ? `<img class="px-img" src="${WB.Assets.url(mw.icon)}" width="${im.width * k}" height="${im.height * k}" alt="" draggable="false">` : `<img class="px-img" src="${WB.Assets.url(mw.icon)}" height="28" alt="" draggable="false">`, Math.round(hs.adv)); } }   // the equipped melee weapon, over the head
+        { const mw = D.weaponById[ev.weapon] || st.melee; if (mw && mw.icon) { const im = WB.Assets.ok(mw.icon), k = im ? Math.max(3, Math.min(6, Math.round(80 / Math.max(im.width, im.height)))) : 3; floater(mw.name, 'hero', 'weapon', im ? `<img class="px-img" src="${WB.Assets.url(mw.icon)}" width="${im.width * k}" height="${im.height * k}" alt="" draggable="false">` : `<img class="px-img" src="${WB.Assets.url(mw.icon)}" height="28" alt="" draggable="false">`, Math.round(hs.adv)); } }   // the equipped melee weapon, over the head
         await sleep(300);
         if (ev.braced) floater('Braced', 'enemy', 'tag');
         if (ev.pierced) floater('Pierced!', 'enemy', 'tag');
@@ -582,6 +584,17 @@
         await sleep(560);
         if (ev.heal) healHero(ev.heal);
         plates(); await sleep(450);
+      } else if (ev.type === 'potion' && ev.petHeal != null) {
+        // on your pet: the same bubble and pops, over its head
+        const pdef = G.pet(st.pet.id), ptop = (view.petTop || g - 46) - 12, px = view.px;
+        WB.Sfx.play('potion');
+        fx.push({ type: 'boom', path: POT_FX.bubble, info: POT_FX.bubbleInfo, x: px, y: ptop, t: 0, scale: 1, fps: 13 });
+        await sleep(380);
+        for (let i = 0; i < 6; i++) fx.push({ type: 'boom', path: POT_FX.pop, info: POT_FX.popInfo, x: px + Math.round(Math.cos(i * 1.05) * 16), y: ptop + 4 + Math.round(Math.sin(i * 1.05) * 12), t: -i * 0.06, scale: 1, fps: 10 });
+        await sleep(180);
+        fx.push({ type: 'ring', x: px, y: g - 30, color: '#6ee7a0', t: 0 });
+        shown.pet = st.pet.hp; floater(hpText(ev.petHeal), 'pet', 'heal'); if (ev.revived) setTimeout(() => floater('Up!', 'pet', 'tag'), 250);
+        plates(); await sleep(650);
       } else if (ev.type === 'potion') {
         // over your head: a bubble swells and bursts; healing sprinkles little pops, anything else flares orange
         const pd = D.POTIONS.find((q) => q.id === ev.potion) || {}, heals = pd.kind === 'heal' || pd.food, hx = view.hx + Math.round(hs.adv), top = (view.heroTop || g - 46) - 12;

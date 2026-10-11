@@ -8,16 +8,24 @@
   const when = (ms) => new Date(ms).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   const rel = (ms) => { const d = ms - Date.now(), m = Math.round(Math.abs(d) / 60000), t = m >= 2880 ? Math.round(m / 1440) + ' days' : UI.dur(m); return d >= 0 ? 'in ' + t : t + ' overdue'; };
 
+  // each mission card folds down to just its title row; the choice is remembered on this device
+  const COLL_KEY = 'sq.cm.collapsed';
+  const collapsed = () => { try { return new Set(JSON.parse(localStorage.getItem(COLL_KEY) || '[]')); } catch (e) { return new Set(); } };
+  const saveColl = (set) => { try { localStorage.setItem(COLL_KEY, JSON.stringify([...set])); } catch (e) { /* storage blocked: still works for this session */ } };
+  let coll = collapsed();
   function card(m) {
     const L = m.lock || m, late = Math.min(m.due, L.due) < Date.now(), r = C.payout(m), why = C.noPayWhy(m), armed = UI.cdelArm === m.id;
     const done = m.steps.filter((x) => x.done).length, tpl = C.tpl(m.tpl);
-    return `<div class="cm pbox pri-${m.pri} ${late ? 'late' : ''}">
+    const shut = coll.has(m.id);
+    return `<div class="cm pbox pri-${m.pri} ${late ? 'late' : ''} ${shut ? 'collapsed' : ''}" data-cm="${m.id}">
       <div class="cm-top"><span class="m-ic">${WB.icon(tpl.icon, 3)}</span><div class="cm-head">
         <div class="m-kick"><span class="pri">${C.PRI[L.pri].name} priority</span> · ${C.DIFF[L.diff].name}</div>
         <div class="t-title">${esc(m.title)}</div>
         <div class="cm-due ${late ? 'late' : ''}">${WB.icon('calendar', 1)}Due ${esc(when(m.due))} · ${rel(m.due)}</div>
         ${L.due !== m.due ? `<div class="cm-due ${L.due < Date.now() ? 'late' : ''}">Reward deadline ${esc(when(L.due))} (as created)</div>` : ''}
-      </div></div>
+        ${m.steps.length ? `<div class="cm-mini">${done} / ${m.steps.length} sub-missions</div>` : ''}
+      </div><button type="button" class="cm-fold" data-cfold="${m.id}" aria-expanded="${!shut}" aria-controls="cmb-${m.id}" aria-label="${shut ? 'Expand' : 'Collapse'} ${esc(m.title)}"><svg viewBox="0 0 12 8" width="14" height="10" aria-hidden="true"><path fill="currentColor" d="M1 1h2v2h2v2h2V3h2V1h2v2h-2v2h-2v2H5V5H3V3H1z"/></svg></button></div>
+      <div class="cm-body" id="cmb-${m.id}" ${shut ? 'hidden' : ''}>
       ${m.notes ? `<p class="cm-notes">${esc(m.notes)}</p>` : ''}
       ${m.steps.length ? `<div class="cm-steps">${m.steps.map((x, i) => `<button type="button" class="cm-step ${x.done ? 'done' : ''}" role="checkbox" aria-checked="${x.done}" data-cstep="${m.id}:${i}"><span class="box">${x.done ? WB.icon('check', 2) : ''}</span><span>${esc(x.t)}</span>${x.paid ? `<span class="cm-coin" aria-label="1 coin earned">${WB.icon('coin', 1)}+1</span>` : '<span class="cm-coin todo">+1</span>'}</button>`).join('')}</div>
         <div class="obj-prog"><div class="bar seg ${done === m.steps.length ? 'gold' : 'cyan'}"><i style="width:${(done / m.steps.length) * 100}%"></i></div><span class="num">${done} / ${m.steps.length} sub-missions</span></div>` : ''}
@@ -26,6 +34,7 @@
           ? `<button class="btn danger sm" type="button" data-cdel="${m.id}" data-sure="1">Delete</button><button class="linkbtn" type="button" data-ckeep="1">Keep</button>`
           : `<button class="linkbtn" type="button" data-cedit="${m.id}">Edit</button><button class="linkbtn" type="button" data-cdel="${m.id}">Delete</button><button class="btn gold sm" type="button" data-cdone="${m.id}" ${UI.off(C.tooNewWhy(m))}>Complete</button>`}</div></div>
       ${why && !armed ? `<p class="fine cm-why">${esc(why)}</p>` : ''}
+      </div>
     </div>`;
   }
   UI.customSection = () => {
@@ -161,6 +170,14 @@
   UI.customForm = form;
   UI.customNew = pickTemplate;
 
+  document.addEventListener('click', (e) => {   // fold / unfold a mission in place (no re-render, so nothing jumps)
+    const b = e.target.closest('[data-cfold]'); if (!b) return;
+    const id = b.dataset.cfold, card = b.closest('.cm'), body = card.querySelector('.cm-body'), shut = !body.hidden;
+    body.hidden = shut; card.classList.toggle('collapsed', shut);
+    b.setAttribute('aria-expanded', String(!shut)); b.setAttribute('aria-label', (shut ? 'Expand ' : 'Collapse ') + (card.querySelector('.t-title') || {}).textContent);
+    if (shut) coll.add(id); else coll.delete(id);
+    saveColl(coll); WB.Sfx.play('tap');
+  });
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-cnew], [data-ctpl], [data-cedit], [data-cdel], [data-ckeep], [data-cdone], [data-cstep]');
     if (!t || t.getAttribute('aria-disabled') === 'true') return;

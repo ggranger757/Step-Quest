@@ -227,9 +227,16 @@
       const heal = h.hp - b0;
       events.push({ who: 'hero', type: 'defend', heal, text: (sh ? (sh.belt ? 'You cinch the ' + sh.name + ' tight.' : 'You raise the ' + sh.name + '.') : 'You brace yourself.') + (heal ? ' +' + heal + ' HP.' : '') });
     } else if (move === 'potion') {
+      const onPet = /\/pet$/.test(arg || ''); if (onPet) arg = arg.slice(0, -4);
       const p = D.POTIONS.find((x) => x.id === arg), s = WB.state;
       if (!p || !(s.potions[arg] > 0)) return events;
-      s.potions[arg]--;
+      if (onPet) {   // heal your pet instead of yourself (healing potions and food only; a knocked-out pet gets back up)
+        const pt = st.pet; if (!pt || p.kind !== 'heal' || pt.hp >= pt.max) return events;
+        s.potions[arg]--;
+        const b0 = pt.hp; pt.hp = Math.min(pt.max, pt.hp + Math.round(pt.max * p.amount * (WB.Game.perk('potions') ? 1.25 : 1)));
+        const heal = pt.hp - b0; pt.fell = false;
+        events.push({ who: 'hero', type: 'potion', potion: arg, petHeal: heal, revived: b0 <= 0, text: p.name + ' on ' + pt.name + ': +' + heal + ' HP.' + (b0 <= 0 ? ' ' + pt.name + ' is back on its feet!' : '') });
+      } else {
       const ev = { who: 'hero', type: 'potion', potion: arg };
       if (p.kind === 'heal') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * p.amount)); ev.heal = h.hp - b0; ev.text = p.name + ': +' + ev.heal + ' HP.'; }
       if (p.kind === 'guard') { h.guard = p.turns; h.guardF = p.factor || 0.5; ev.text = p.name + ': damage taken cut by ' + pct(1 - h.guardF) + ' for ' + p.turns + ' turns.'; }
@@ -237,6 +244,7 @@
       if (p.kind === 'swift') { st.cooldown = 0; const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * (p.amount || 0.1))); ev.heal = h.hp - b0; ev.text = p.name + ': your weapon is ready again' + (ev.heal ? ' (+' + ev.heal + ' HP).' : '.'); }
       if (p.kind === 'blast') { strikeEnemy(st, Math.max(1, Math.round(e.max * p.power)), ev, true); ev.text = p.name + ' explodes for ' + ev.dmg + '!'; }
       events.push(ev);
+      }
     } else if (move === 'flee') {
       const ok = Math.random() < (P.has('flee') ? (e.nemesis ? 0.6 : e.boss ? 0.7 : 1) : (e.nemesis ? 0.35 : e.boss ? 0.45 : 0.75));
       events.push({ who: 'hero', type: 'flee', ok, text: ok ? 'You got away.' : 'You couldn’t get away!' });

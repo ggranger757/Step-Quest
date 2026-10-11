@@ -226,7 +226,7 @@
     torchbearer: { name: 'Torchbearer', verb: 'raises a burning torch', hp: 72, atk: 12, aggressive: true, boss: true },
     centipede: { name: 'Swamp Centipede', verb: 'uncoils with a hiss', hp: 78, atk: 11, aggressive: true, boss: true },
     // enemies pack: everyday villains of a walker's life
-    twoface: { name: '2Face', verb: 'grins at you, then shows its other face', hp: 30, atk: 8, aggressive: true, scale: 1.6 },
+    twoface: { name: 'Mushroom Guard', verb: 'puffs a cloud of spores at you', hp: 30, atk: 8, aggressive: true, scale: 1.6 },   // id stays 'twoface' so saved bestiaries keep working
     vampbat: { name: 'Energy Vampire Bat', verb: 'swoops down, hungry for your energy', hp: 28, atk: 8, aggressive: true, scale: 1.45 },
     procrastinator: { name: 'Flying Procrastinator', verb: 'buzzes around, telling you to start tomorrow', hp: 32, atk: 7, scale: 0.7 },
     alien: { name: 'Land Alien', verb: 'scuttles out of a crater', hp: 34, atk: 8, aggressive: true },
@@ -288,7 +288,7 @@
     bloater: { magic: ['Slime Glob', 'nature', 'p:orb_blue', 'w:blueflame', 'blue_flame', 'poison'], special: ['Belch Cloud', 'poison'] },
     torchbearer: { magic: ['Firebrand', 'fire', 'w:fireball', 'w:fireball', 'fireball', 'burn'], special: ['Inferno', 'burn'], mw: 0.4 },
     centipede: { magic: ['Swamp Spit', 'nature', 'w:leaf', 'w:leaf', 'poison_leaf', 'poison'], special: ['Constrict', 'stun'] },
-    twoface: { magic: ['Two-Faced Lie', 'void', 'p:orb_violet', 'b:violet', '', 'weaken'], special: ['Switch Faces', 'drain'] },
+    twoface: { magic: ['Spore Puff', 'nature', 'w:leaf', 'w:leaf', 'poison_leaf', 'poison'], special: ['Cap Slam', 'stun'] },
     vampbat: { magic: ['Energy Leech', 'shock', 'fx:en_bolt', 'w:blueflame', 'en_zap', 'drain'], special: ['Leech Swarm', 'drain'], mw: 0.45 },
     procrastinator: { magic: ['Put It Off', 'earth', 'fx:en_clod', 'w:asteroid', 'en_alien', 'slow'], special: ['Tomorrow Spell', 'stun'], mw: 0.45 },
     alien: { magic: ['Dirt Spit', 'earth', 'fx:en_clod', 'w:asteroid', 'en_alien', 'weaken'], special: ['Burrow Strike', 'quake'] },
