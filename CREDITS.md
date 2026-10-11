@@ -75,3 +75,7 @@ Bundled in `assets/fonts/` (Latin subset, WOFF) under the SIL Open Font License 
 ## Bosses
 
 Roaming boss sprites supplied by the project owner: Demon Slime (boss_demon_slime_FREE), the ram-skulled final boss strip, Dark Fairy (full version, both phases and spirits), "Daddy" golem sheets, Bringer of Death, and Evil Wizard 3 (projectile included). Check each pack's license (several include a License.txt) before shipping commercially.
+
+## Neon City world
+
+The Neon City parallax world (`assets/bg/neoncity`, rebuilt by `tools/add_neon_city_world.py`) is built from the supplied NeonCity pixel-art skyline: the original towers, sky and rooftops, extended into a long seamless loop with generated filler buildings in the same palette. Its three artifact icons (`art/y1-y3`) are original pixel art drawn for the game.

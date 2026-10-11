@@ -20,7 +20,7 @@
       totalSteps: 0, meters: 0, bestDay: 0,
       days: {},
       today: { day: today, steps: 0, encounters: 0, fights: 0, battles: 0, chests: 0, meters: 0, goalBonus: false },
-      world: 'rust', worldSteps: { rust: 0 }, unlocked: ['rust'], milestones: {},
+      world: 'rust', worldSteps: Object.assign({ rust: 0 }, ...D.WORLDS.filter((w) => w.open).map((w) => ({ [w.id]: 0 }))), unlocked: ['rust', ...D.WORLDS.filter((w) => w.open).map((w) => w.id)], milestones: {},   // open: true worlds are open from the start
       enc: { next: 120, seq: 0, pending: [], count: 0, fights: 0, battles: 0, losses: 0, chests: 0, cards: {}, finds: {} },
       tasks: { day: '', daily: [], advDone: [], quests: [] },
       missions: { active: [], done: [], skip: [] },
@@ -110,6 +110,7 @@
       if (o.o == null && o.t == null) delete s.outfit[id];
     }
     s.unlocked = s.unlocked.filter((id) => D.worldById[id]);
+    for (const w of D.WORLDS) if (w.open) { if (!s.unlocked.includes(w.id)) s.unlocked.push(w.id); if (!s.worldSteps) s.worldSteps = {}; if (s.worldSteps[w.id] == null) s.worldSteps[w.id] = 0; }   // saves from before an always-open world was added get it too
     s.hp = Math.min(s.hp, D.heroMaxHp(s.level));
     return s;
   }

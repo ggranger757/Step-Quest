@@ -124,6 +124,11 @@
       blurb: 'Tall chimneys puff smoke over a sleepy factory town.', landmarks: ['Smokestacks', 'Rail Yard', 'Brick Row', 'Pipe Bridge'] },
     { id: 'sodium', name: 'Sodium City', scene: 'v_sodium', ground: 206, length: 6200, unlock: 9, ambient: 'fireflies', pool: ['selfdoubt', 'sentry', 'twoface'], boss: 'dragon', merchant: 'trader3', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
       blurb: 'A city skyline under orange streetlights at midnight.', landmarks: ['Night Market', 'Tower Block', 'Neon Alley', 'Rooftops'] },
+    // Neon City: always open (open: true), so it is in every walker's world map from the first step and skips the Worldkey chain below
+    { id: 'neoncity', name: 'Neon City', scene: 'neoncity', ground: 206, length: 8000, unlock: 1, open: true, ambient: 'fireflies', pool: ['twoface', 'sentry', 'procrastinator', 'vampbat'], boss: 'brute', merchant: 'trader1',
+      layers: [['l1', 0.04, 3], ['l2', 0.10], ['l3', 0.18], ['l4', 0.32], ['l5', 0.55], ['l6', 1]],
+      thumb: 'thumb',
+      blurb: 'Glass towers glow under a purple dusk. Neon hums on every rooftop and the street never sleeps.', landmarks: ['Skyline Plaza', 'Neon Rooftops', 'Glass Tower', 'Sunset Crossing'] },
   ];
   // worlds open by LEVEL. Sorted so the map reads in the order you unlock them; creature strength
   // (tier) follows the unlock level.
@@ -133,7 +138,8 @@
   // Pacing: the listed levels set the ORDER; the real unlock levels are spread from 1 to D.LAST_WORLD_LEVEL, and
   // each world also needs the one before it explored to D.WORLD_GATE_PCT%, so worlds open one at a time.
   D.LAST_WORLD_LEVEL = 70; D.WORLD_GATE_PCT = 75;
-  D.WORLDS.forEach((w, i, all) => {
+  D.WORLDS.filter((w) => w.open).forEach((w) => { w.tier = 1; w.unlock = { level: 1, after: null }; });   // always-open worlds are outside the chain
+  D.WORLDS.filter((w) => !w.open).forEach((w, i, all) => {
     const lvl = i === 0 ? 1 : Math.max(2, Math.round(1 + (D.LAST_WORLD_LEVEL - 1) * Math.pow(i / (all.length - 1), 1.1)));
     w.tier = Math.round((lvl - 1) * 0.65); w.unlock = { level: lvl, after: i ? all[i - 1].id : null };
   });
@@ -194,6 +200,8 @@
     kiln: [['i07', 'Ember Ruby'], ['i10', 'Kiln Tongs'], ['x24', 'Ember Plate']],
     flue: [['i20', 'Smith’s Hammer'], ['i14', 'Coal Chest'], ['x27', 'Smokestack Shield']],
     sodium: [['i08', 'Hidden Door'], ['i39', 'Gold Bracelet'], ['i09', 'Golden Key']],
+    // Neon City: three icons drawn for it (tools/add_neon_city_world.py has the world art)
+    neoncity: [['y1', 'Neon Tube Sign'], ['y2', 'Data Chip'], ['y3', 'Skyline Snow Globe']],
   };
   D.FIND_TOTAL = Object.values(D.FINDS).reduce((n, a) => n + a.length, 0);
 
