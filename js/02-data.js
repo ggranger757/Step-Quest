@@ -308,7 +308,7 @@
     darkfairy2: { magic: ['Spirit Swarm', 'void', '', 'fx:en_spirits', 'spell_void', 'weaken'], special: ['Summon Spirits', 'multi'], mw: 0.55 },
     golem: { magic: ['Rivet Volley', 'shock', 'p:javelin_gold', 'fx:en_ring', 'en_zap', 'slow'], special: ['Overcharge', 'quake'], mw: 0.4 },
     bringer: { magic: ['Grasp of the Grave', 'void', '', 'fx:en_hand', 'special_drain', 'drain'], special: ['Doom Bell', 'stun'], mw: 0.45 },
-    sorceress: { magic: ['Crimson Bolt', 'fire', 'fx:en_crimson', 'fx:en_crimson_boom', 'spell_fire', 'burn'], special: ['Blood Moon Barrage', 'multi'], mw: 0.55 },
+    sorceress: { magic: ['Crimson Bolt', 'fire', 'fx:en_crimson', 'fx:en_crimson_boom', 'spell_fire', 'burn'], special: ['Crimson Moon Barrage', 'multi'], mw: 0.55 },
     ogre: { magic: ['Boulder Toss', 'earth', 'w:asteroid', 'w:asteroid', 'asteroid_attack', 'slow'], special: ['Couch Slam', 'quake'], mw: 0.25 },
   };
   /* Roaming bosses: rare encounters from level BOSS_LEVEL (at most one every BOSS_COOLDOWN_H hours). Stronger
@@ -328,7 +328,7 @@
     hollowking: { ability: 'shadow', abilityName: 'Shadow Form', abilityDesc: 'A quarter of your hits pass straight through him. Piercing weapons always connect.',
       lines: { intro: ['Every road ends in my shadow.', 'Your footsteps echo in my empty halls. I’ve been listening.', 'Bow. Kings are not kept waiting.'],
         taunt: ['You strike at shadows.', 'I wear the dark like a crown.', 'Your light is so very small.', 'Run home to the daylight, walker.'],
-        hurt: ['You… dare wound a king?'], special: ['Drown in the night!', 'Let the dark take your courage!'],
+        hurt: ['You… dare strike a king?'], special: ['Drown in the night!', 'Let the dark take your courage!'],
         defeat: ['The crown… falls… but shadows always return.'], victory: ['Kneel in the dark, and remember who rules it.'] } },
     darkfairy: { ability: 'rebirth', abilityName: 'True Wings', abilityDesc: 'At half HP she sheds her disguise: she heals, grows stronger and summons spirits.',
       lines: { intro: ['Oh, a visitor! I do love visitors. They make such lovely thorns.', 'Shh. You’re stepping on my garden.', 'What a sweet little walker. Let’s play!'],
@@ -343,12 +343,12 @@
     bringer: { ability: 'reaper', abilityName: 'Reaper’s Patience', abilityDesc: 'He smells weakness: while you’re under 35% HP his hits do 40% more.',
       lines: { intro: ['I have come for your progress, walker. All of it.', 'Your journey ends where my shadow begins.', 'Every step you took led you here.'],
         taunt: ['The grave is patient. So am I.', 'Tick. Tock.', 'I have all the time in the world. Do you?', 'Keep swinging. It changes nothing.'],
-        hurt: ['You bleed time, not I.'], special: ['Hear the bell. It tolls for you.', 'Rise, and drag them under!'],
+        hurt: ['You waste time, not I.'], special: ['Hear the bell. It tolls for you.', 'Rise, and drag them under!'],
         defeat: ['Doom… delayed… not denied…'], victory: ['Your levels belong to the dark now.'] } },
     sorceress: { ability: 'ward', abilityName: 'Crimson Mirror', abilityDesc: 'She raises her mirror ward often, and it throws back 45% of a hit (piercing weapons ignore it).',
       lines: { intro: ['Mm, fresh legs. Let’s see how fast they run.', 'You’re in my spotlight, darling. Try not to blink.', 'Oh good, a volunteer.'],
         taunt: ['Was that supposed to hurt?', 'Crimson suits you. Let me add more.', 'My mirror sees every move you make.', 'Careful, darling. You’ll pull something.'],
-        hurt: ['You scratched my staff. Unforgivable.'], special: ['Blood moon, RISE!', 'Let’s make it rain, darling.'],
+        hurt: ['You scratched my staff. Unforgivable.'], special: ['Crimson moon, RISE!', 'Let’s make it rain, darling.'],
         defeat: ['This… isn’t over… darling…'], victory: ['Run along now. I’ll keep your levels warm.'] } },
   };
   D.BOSS_IDS = Object.keys(D.BOSSES);
@@ -513,8 +513,8 @@
     cm1: [28, 0.2], cm2: [32, 0.2], cm3: [34, 0.25], cm4: [38, 0.25], cm5: [38, 0.25], cm6: [70, 0.45], cm7: [55, 0.4], cm8: [44, 0.3], cm9: [50, 0.35], cm10: [36, 0.25], cm11: [40, 0.3], cm12: [52, 0.35], cm13: [55, 0.35], cm14: [68, 0.45], cm15: [60, 0.4], cm16: [45, 0.3], cm17: [52, 0.35], cm18: [36, 0.25], cm19: [90, 0.55], cm20: [82, 0.5], cm21: [95, 0.6], cm22: [46, 0.3], cm23: [48, 0.35], cm24: [62, 0.4], cm25: [42, 0.3], cm26: [44, 0.3], cm27: [66, 0.45], cm28: [60, 0.4], cm29: [50, 0.35], cm30: [98, 0.6], cm31: [54, 0.35], cm32: [80, 0.5], cm33: [56, 0.4], cm34: [64, 0.4], cm35: [92, 0.55], cm36: [100, 0.6], cm37: [84, 0.5], cm38: [105, 0.6], cm39: [100, 0.6], cm40: [88, 0.55], cm41: [102, 0.6], cm42: [40, 0.25], cm43: [86, 0.55], cm44: [78, 0.5], cm45: [82, 0.5], cm46: [54, 0.35], cm47: [50, 0.35], cm48: [58, 0.4], cm49: [90, 0.55], cm50: [115, 0.6] };
   D.PETS.forEach((p) => { const [hp, share] = PET_STATS[p.id] || [40, 0.3]; p.hp = hp; p.share = share; });
   // some pets also attack: after each of your moves they hit the creature for a share of your attack (it varies a little)
-  const PET_ATTACK = { dog: [0.12, 'Bites'], fox: [0.2, 'Nips'], hyena: [0.25, 'Mauls'], scorpio: [0.3, 'Stings'], boar: [0.38, 'Gores'],
-    cm6: [0.28, 'Bites'], cm16: [0.2, 'Scorches'], cm19: [0.32, 'Claws'], cm28: [0.25, 'Burns'], cm37: [0.35, 'Rends'], cm41: [0.34, 'Mauls'], cm47: [0.2, 'Singes'], cm48: [0.3, 'Stings'] };
+  const PET_ATTACK = { dog: [0.12, 'Bites'], fox: [0.2, 'Nips'], hyena: [0.25, 'Pounces'], scorpio: [0.3, 'Stings'], boar: [0.38, 'Charges'],
+    cm6: [0.28, 'Bites'], cm16: [0.2, 'Scorches'], cm19: [0.32, 'Claws'], cm28: [0.25, 'Burns'], cm37: [0.35, 'Rends'], cm41: [0.34, 'Pounces'], cm47: [0.2, 'Singes'], cm48: [0.3, 'Stings'] };
   D.PETS.forEach((p) => { if (PET_ATTACK[p.id]) { p.atk = PET_ATTACK[p.id][0]; p.atkVerb = PET_ATTACK[p.id][1]; } });
   D.petMaxHp = (p, lvl) => Math.round(p.hp + p.hp * 0.04 * (lvl - 1));
 
@@ -676,7 +676,7 @@
     B('frostshard', 'Frost Shard', 11, 1900, { type: 'status', effect: 'freeze', turns: 1 }, 'Freeze 1 turn', 'Freezes the creature: it loses its next turn.'),
     B('aegis', 'Aegis Shard', 12, 2200, { type: 'guard', turns: 3, factor: 0.5 }, '−50% damage, 3 turns', 'You take half damage for 3 turns.'),
     B('hexskull', 'Hex Skull', 13, 2400, { type: 'status', effect: 'weaken', turns: 3 }, 'Weaken 3 turns', 'Curses the creature: its attacks do 40% less for 3 turns.'),
-    B('bloodcrystal', 'Blood Crystal', 14, 2600, { type: 'status', effect: 'bleed', turns: 4 }, 'Bleed 4 turns', 'Makes the creature bleed for 4 turns.'),
+    B('bloodcrystal', 'Ruby Crystal', 14, 2600, { type: 'status', effect: 'bleed', turns: 4 }, 'Curse 4 turns', 'Curses the creature for 4 turns.'),
     B('genie', 'Genie Lamp', 15, 3200, { type: 'special' }, 'Special ready', 'Fills your special attack gauge (from level 10).'),
     B('breakrune', 'Rune of Breaking', 16, 3400, { type: 'break', turns: 3 }, 'Break its guard', 'Shatters the creature’s ward or stance; it takes 25% more damage for 3 turns.'),
     B('goldkey', 'Golden Key', 17, 3000, { type: 'escape' }, 'Escape, guaranteed', 'Unlocks a way out: you leave any battle, even a boss fight.'),
@@ -761,17 +761,17 @@
     M('sw_cleaver', 'War Cleaver', 'sword', 1.4, 'sunder', 0.35, '35% chance to sunder: the target takes 25% more damage for 2 turns.', { cost: 1300, level: 14 }),
     M('sw_crystal', 'Crystal Blade', 'sword', 1.35, 'freeze', 0.2, '20% chance to freeze the target for a turn.', { cost: 1700, level: 18 }),
     M('sw_banded', 'Banded Sword', 'sword', 1.5, 'crit', 0.3, '30% critical chance, and crits hit 1.8x.', { cost: 2300, level: 23 }, { critMult: 1.8 }),
-    M('sw_crimson', 'Crimson Blade', 'sword', 1.6, 'bleed', 0.5, 'Half of its hits make the target bleed for 3 turns.', { cost: 3000, level: 28 }),
+    M('sw_crimson', 'Crimson Blade', 'sword', 1.6, 'bleed', 0.5, 'Half of its hits curse the target for 3 turns.', { cost: 3000, level: 28 }),
     M('sw_verdant', 'Verdant Greatsword', 'sword', 1.9, 'lifesteal', 0.4, 'Legendary. Heals you for 40% of the damage dealt.', { bosses: 8 }, { legendary: true }),
     // daggers (two quick stabs)
-    M('dg_hunter', 'Hunting Knife', 'dagger', 0.7, 'double', 1, 'Stabs twice every turn.', { cost: 200, level: 2 }),
-    M('dg_sickle', 'Field Sickle', 'dagger', 0.75, 'bleed', 0.4, 'Stabs twice. 40% chance to cause bleeding.', { cost: 600, level: 6 }),
-    M('dg_viper', 'Viper Fang', 'dagger', 0.8, 'poison', 0.5, 'Stabs twice. 50% chance to poison.', { cost: 1100, level: 12 }),
-    M('dg_kama', 'Golden Kama', 'dagger', 0.95, 'crit', 0.3, 'Stabs twice, each with a 30% critical chance.', { cost: 2000, level: 21 }),
+    M('dg_hunter', 'Hunting Knife', 'dagger', 0.7, 'double', 1, 'Strikes twice every turn.', { cost: 200, level: 2 }),
+    M('dg_sickle', 'Field Sickle', 'dagger', 0.75, 'bleed', 0.4, 'Strikes twice. 40% chance to curse.', { cost: 600, level: 6 }),
+    M('dg_viper', 'Viper Fang', 'dagger', 0.8, 'poison', 0.5, 'Strikes twice. 50% chance to poison.', { cost: 1100, level: 12 }),
+    M('dg_kama', 'Golden Kama', 'dagger', 0.95, 'crit', 0.3, 'Strikes twice, each with a 30% critical chance.', { cost: 2000, level: 21 }),
     // axes (heavy, break armor)
     M('ax_hatchet', 'Hatchet', 'axe', 1.2, 'sunder', 0.25, 'Heavy chop. 25% chance to sunder (+25% damage taken).', { cost: 250, level: 3 }),
     M('ax_bearded', 'Bearded Axe', 'axe', 1.35, 'sunder', 0.35, 'Sunders 35% of the time.', { cost: 700, level: 8 }),
-    M('ax_woods', 'Woodsman Axe', 'axe', 1.45, 'bleed', 0.35, 'Deep cuts: 35% chance to bleed.', { cost: 1200, level: 13 }),
+    M('ax_woods', 'Woodsman Axe', 'axe', 1.45, 'bleed', 0.35, 'Heavy swings: 35% chance to curse.', { cost: 1200, level: 13 }),
     M('ax_double', 'Double Axe', 'axe', 1.6, 'sunder', 0.5, 'Sunders half the time.', { cost: 1800, level: 19 }),
     M('ax_tide', 'Tide Axe', 'axe', 1.65, 'freeze', 0.25, '25% chance to freeze solid.', { cost: 2500, level: 25 }),
     M('ax_night', 'Night Axe', 'axe', 1.75, 'weaken', 0.5, 'Half its hits cut the target’s attack by 40%.', { cost: 3200, level: 31 }),
@@ -803,20 +803,20 @@
 
     // ---- ranged: throwing knives (spin through the air)
     R('kn_kunai', 'Kunai', 'knife', 1.05, 1, 'crit', '30% critical chance. Ready every other turn.', { cost: 300, level: 3 }, { chance: 0.3 }),
-    R('kn_red', 'Red Kunai', 'knife', 1.2, 1, 'bleed', 'Makes the target bleed for 3 turns.', { cost: 900, level: 11 }),
+    R('kn_red', 'Red Kunai', 'knife', 1.2, 1, 'bleed', 'Curses the target for 3 turns.', { cost: 900, level: 11 }),
     R('kn_jade', 'Jade Kunai', 'knife', 1.25, 1, 'poison', 'Poisons the target.', { cost: 1600, level: 18 }),
     R('kn_trident', 'Trident Dart', 'knife', 0.7, 1, 'multi', 'Three darts in one throw.', { cost: 2600, level: 26 }),
     // thrown gear (spins through the air like the knives)
     R('ww_lasso', 'Lasso', 'knife', 0.8, 2, 'freeze', '50% chance to rope the target so it loses its turn.', { cost: 600, level: 5 }, { chance: 0.5 }),
     R('ww_bomb', 'Cherry Bomb', 'knife', 1.4, 2, 'burn', 'Bursts and leaves a burn for 2 turns.', { cost: 700, level: 6 }),
-    R('ww_axe', 'Throwing Axe', 'knife', 1.35, 2, 'bleed', 'Makes the target bleed for 3 turns.', { cost: 850, level: 7 }),
+    R('ww_axe', 'Throwing Axe', 'knife', 1.35, 2, 'bleed', 'Curses the target for 3 turns.', { cost: 850, level: 7 }),
     R('ww_cannon', 'Cannonball', 'knife', 1.9, 3, 'sunder', 'Heavy. Breaks the target’s guard: +25% damage taken.', { cost: 1300, level: 9 }),
     R('ww_web', 'Web Snare', 'knife', 0.6, 2, 'weaken', 'Tangles the target: its attack drops 40% for 3 turns.', { cost: 1500, level: 10 }),
     // firearms (a bullet flies straight)
     R('ww_pistol', 'Flintlock Pistol', 'gun', 1.6, 2, 'pierce', 'A shot that goes straight through guards and wards.', { cost: 1800, level: 11 }),
     // bows (arrows fly straight)
     R('bw_short', 'Short Bow', 'bow', 1.3, 2, 'pierce', 'Arrows pierce guards and wards.', { cost: 450, level: 5 }),
-    R('bw_recurve', 'Recurve Bow', 'bow', 1.45, 2, 'bleed', 'Arrows cause bleeding.', { cost: 1000, level: 12 }),
+    R('bw_recurve', 'Recurve Bow', 'bow', 1.45, 2, 'bleed', 'Arrows carry a curse.', { cost: 1000, level: 12 }),
     R('bw_hunter', 'Hunter Bow', 'bow', 0.65, 2, 'multi', 'Volley: three arrows at once.', { cost: 1700, level: 19 }),
     R('bw_bone', 'Bone Bow', 'bow', 1.6, 2, 'drain', 'Heals you for half the damage.', { cost: 2500, level: 27 }),
     R('bw_eagle', 'Eagle Bow', 'bow', 2.0, 3, 'crit', '40% chance of a critical double hit.', { cost: 3500, level: 34 }, { chance: 0.4 }),

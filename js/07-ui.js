@@ -630,14 +630,14 @@
   UI.hub = 'shop'; UI.invHub = 'bag'; UI.bagTab = 'worldkey'; UI.artTab = 'finds';
   const SHOP_TABS = [
     ['avatar', 'Avatars', 'user', 'Characters you walk as. Buy them here, then switch in Inventory.'],
-    ['weapons', 'Weapons', 'sword', () => G.upkeep() ? 'Melee weapons wear down as you strike. Repair them in Inventory. Ranged weapons come with ' + D.AMMO_PACK + ' shots. Buy more here when they run out.' : 'Melee weapons power Strike, ranged weapons power Throw, Shoot or Cast, and defense powers Defend. Nothing wears down or runs out until level ' + D.UPKEEP_LEVEL + '.'],
+    ['weapons', 'Weapons', 'sword', () => G.gearCare() ? 'Melee weapons wear down as you strike. Repair them in Inventory. Ranged weapons come with ' + D.AMMO_PACK + ' shots. Buy more here when they run out.' : 'Melee weapons power Strike, ranged weapons power Throw, Shoot or Cast, and defense powers Defend. Nothing wears down or runs out until level ' + D.UPKEEP_LEVEL + '.'],
     ['potions', 'Potions / Food', 'img:pot/tonic.png', 'Each one works once. Carry up to ' + D.POTION_MAX + ' of each.'],
     ['pets', 'Pets', 'paw', 'Pets take part of every hit aimed at you in battle. A knocked-out pet recovers over time.'],
-    ['magic', 'Magic', 'img:mg/book.png', () => 'Charms give passive perks and never run out.' + (G.upkeep() ? ' Battle magic comes with ' + D.MAGIC_USES + ' uses. Buy more when they run out.' : ' Battle magic works once per battle.')],
+    ['magic', 'Magic', 'img:mg/book.png', () => 'Charms give passive perks and never run out.' + (G.gearCare() ? ' Battle magic comes with ' + D.MAGIC_USES + ' uses. Buy more when they run out.' : ' Battle magic works once per battle.')],
   ];
   const BAG_TABS = [
     ['worldkey', 'Worldkey', 'img:wk/dm_nebula.png', () => !G.featOn('wk') ? 'Your guide between worlds.' : G.upkeep() ? 'Your guide between worlds. Charge it with Darkmatter, tune it to a world, then open the way.' : 'Your guide between worlds. Tune it to a world, then open the way.'],
-    ['weapons', 'Weapons', 'sword', () => G.upkeep() ? 'Equip, repair and refill. Worn melee weapons hit softer. A repair costs a quarter of the price.' : 'Equip the weapons you own.'],
+    ['weapons', 'Weapons', 'sword', () => G.gearCare() ? 'Equip, repair and refill. Worn melee weapons hit softer, and at 0% they break until repaired. A repair costs a quarter of the price.' : 'Equip the weapons you own.'],
     ['magic', 'Magic', 'img:mg/book.png', 'Wear up to ' + D.CHARM_SLOTS + ' charms. Cast battle magic from the Magic button, once per battle each.'],
     ['potions', 'Potions', 'img:pot/tonic.png', 'Drink healing potions here, or use any potion in battle from Items.'],
     ['pets', 'Pets', 'paw', 'Pets heal over time, like you. A knocked-out pet rests until it recovers.'],
@@ -666,7 +666,7 @@
   const priceTag = (cost) => { const short = cost - S().coins; return `<div class="price"><span class="cost">${WB.icon('coin', 2)}${WB.fmt(cost)}</span>${short > 0 ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>`; };
   const shortWhy = (cost, what) => { const short = cost - S().coins; return short > 0 ? 'You need ' + WB.fmt(short) + ' more coins for ' + what + '. Keep walking: 1 coin every ' + D.STEPS_PER_COIN + ' steps.' : ''; };
   const bagSub = (cat, it) => (cat === 'weapon' ? 'weapons' : cat === 'pet' ? 'pets' : cat === 'magic' ? 'magic' : 'avatar');
-  const condBar = (id) => { const c = Math.round(G.cond(id)); return `<div class="cond ${c <= D.WORN_AT ? 'worn' : ''}"><span class="lbl">Condition</span><span class="lbl">${c}%</span><span class="bar seg"><i style="width:${c}%"></i></span></div>`; };
+  const condBar = (id) => { const c = Math.round(G.cond(id)); return `<div class="cond ${c <= D.WORN_AT ? 'worn' : ''}"><span class="lbl">Condition</span><span class="lbl">${G.broken(id) ? 'Broken · 0%' : c + '%'}</span><span class="bar seg"><i style="width:${c}%"></i></span></div>`; };
 
   // buy more shots / magic uses (the first refill each day is free)
   const refillBtn = (kind, it, block) => {
@@ -681,9 +681,9 @@
     const ranged = cat === 'weapon' && it.slot === 'ranged', battleMagic = cat === 'magic' && it.kind === 'battle';
     const dead = cat === 'pet' && !own && G.petDead(it.id), backCost = dead && !it.req.cost ? G.petPrice(it) : 0;
     let foot = '', tag = '';
-    if (own && ranged && G.upkeep()) {
+    if (own && ranged && G.gearCare()) {
       tag = countTag(G.ammo(it.id), 'shots'); foot = refillBtn('ammo', it, true);
-    } else if (own && battleMagic && G.upkeep()) {
+    } else if (own && battleMagic && G.gearCare()) {
       tag = countTag(G.uses(it.id), 'uses'); foot = refillBtn('uses', it, true);
     } else if (own) {
       tag = '<span class="tag">Owned</span>';
@@ -709,7 +709,7 @@
     const eq = G.isEquipped(cat, it.id), ranged = cat === 'weapon' && it.slot === 'ranged', melee = cat === 'weapon' && it.slot === 'melee', battleMagic = cat === 'magic' && it.kind === 'battle';
     const canOff = cat === 'pet' || (cat === 'weapon' && it.slot === 'shield') || cat === 'magic';
     const btns = [];
-    const up = G.upkeep();
+    const up = G.gearCare();
     if (battleMagic) { if (up) btns.push(refillBtn('uses', it)); else btns.push(`<button class="btn ghost sm" type="button" ${off(it.name + ' is cast from the Magic button in battle.')}>Owned</button>`); }
     else if (eq) btns.push(canOff ? `<button class="btn ghost sm" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat === 'magic' ? 'magic:' + it.id : cat}">${cat === 'magic' ? 'Take off' : 'Unequip'}</button>` : `<button class="btn ghost sm" type="button" ${off('Already equipped.')}>Equipped</button>`);
     else btns.push(`<button class="btn sm" type="button" data-equip="${cat}:${it.id}">${cat === 'magic' ? 'Wear' : cat === 'avatar' ? 'Use' : 'Equip'}</button>`);
@@ -773,7 +773,7 @@
     if (tab === 'worldkey') return G.featOn('wk') ? UI.wkSection() : UI.wkLocked();
     if (tab === 'weapons') {
       const slot = UI.wpnSlot || 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
-      return `${loadout(slot)}<p class="fine wnote">${!G.upkeep() && slot !== 'shield' ? 'Your gear never runs out or wears down until level ' + D.UPKEEP_LEVEL + '.' : slot === 'melee' ? 'Every Strike wears your weapon a little. Below ' + D.WORN_AT + '% it hits noticeably softer. Repairs cost a quarter of the price.' : slot === 'ranged' ? 'Each Throw, Shoot or Cast uses one shot. Your first refill each day is free.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
+      return `${loadout(slot)}<p class="fine wnote">${!G.gearCare() && slot !== 'shield' ? 'Your gear never runs out or wears down until level ' + D.UPKEEP_LEVEL + '.' : slot === 'melee' ? 'Every Strike wears your weapon a little. Below ' + D.WORN_AT + '% it hits noticeably softer, and at 0% it breaks and can’t be used until you repair it. Repairs cost a quarter of the price.' : slot === 'ranged' ? 'Each Throw, Shoot or Cast uses one shot. Your first refill each day is free.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
         ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields or belts' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
     }
     if (tab === 'magic') {

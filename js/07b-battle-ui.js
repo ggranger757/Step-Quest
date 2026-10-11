@@ -348,7 +348,7 @@
   function bar(cur, g, max, cls) { return `<span class="bar ${cls} ${cur / max < 0.3 ? 'low' : ''}"><b style="width:${pctw(g, max)}%"></b><i style="width:${pctw(cur, max)}%"></i></span>`; }
   function plates() {
     const st = WB.Battle.st, h = st.hero, e = st.enemy, p = st.pet;
-    const est = [e.poison > 0 && 'Poisoned', e.burn > 0 && 'Burning', e.bleed > 0 && 'Bleeding', e.freeze > 0 && 'Frozen', e.stun > 0 && 'Stunned',
+    const est = [e.poison > 0 && 'Poisoned', e.burn > 0 && 'Burning', e.bleed > 0 && 'Cursed', e.freeze > 0 && 'Frozen', e.stun > 0 && 'Stunned',
       e.drain > 0 && 'Drained', e.weaken > 0 && 'Weakened', e.sunder > 0 && 'Sundered', e.brace && 'Bracing', e.ward && 'Ward up', e.charging && 'Charging!', e.nemesis && e.halved && e.ability === 'enrage' && 'Enraged'].filter(Boolean);
     const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, h.guardPts < D.DEFEND_COST && 'Guard worn'].filter(Boolean);
     const plate = (name, lvl, cur, g, max, tags, cls) => `<div class="pl-main"><span class="pl-name">${WB.esc(name)}</span>${bar(cur, g, max, cls)}<div class="pl-bot"><span class="lbl">${lvl}</span><span class="lbl" data-hpn="1">${Math.max(0, Math.round(cur))} / ${max}</span></div></div><span class="lbl tags">${tags.join(' · ')}</span>`;
@@ -377,26 +377,27 @@
     if (mode === 'magic') {
       el.className = 'b-actions items';
       const turnUsed = st.magicTurn === st.turn;
+      const spent = (st.magicEmpty || []).map((id) => { const m = D.magicById[id]; return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(m.name + ' is out of uses. Buy more in the Shop after the fight.')}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>Out of uses</small></span></button>`; }).join('');
       el.innerHTML = st.magic.map((id) => {
         const m = D.magicById[id], used = st.mused[id];
         const why = used ? m.name + ' was already used this battle.' : turnUsed ? 'You’ve used a magic item this turn. Try again next turn.' : m.fx.type === 'special' && !st.special.unlocked ? 'Your special attack unlocks at level ' + D.SPECIAL_LEVEL + '.' : '';
         if (id === 'clover' && !used) return `<button class="btn ghost" type="button" data-b="magic:clover/twice" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: strike twice</span><small>Next 2 attacks hit twice</small></span></button><button class="btn ghost" type="button" data-b="magic:clover/dodge" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: dodge</span><small>Dodge the next 2 attacks</small></span></button>`;
-        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>${used ? 'Used' : WB.esc(m.tag) + (WB.Game.upkeep() ? ' · ' + WB.Game.uses(id) + ' left' : '')}</small></span></button>`;
-      }).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
+        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>${used ? 'Used' : WB.esc(m.tag) + (' · ' + WB.Game.uses(id) + ' left')}</small></span></button>`;
+      }).join('') + spent + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
     } else if (mode === 'items') {
       el.className = 'b-actions items';
       const mine = D.POTIONS.filter((p) => s.potions[p.id] > 0);
       el.innerHTML = mine.map((p) => `<button class="btn ghost" type="button" data-b="potion:${p.id}">${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(p.name)}</span><small>${potionTag(p)} · x${s.potions[p.id]}</small></span></button>`).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
     } else {
-      const wpn = st.weapon, m = st.melee, sh = st.shield, shots = WB.Game.shotsLeft(wpn.id), ready = st.cooldown === 0, cond = WB.Game.upkeep() ? Math.round(WB.Game.cond(m.id)) : 100, nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
+      const wpn = st.weapon, m = st.melee, sh = st.shield, shots = WB.Game.shotsLeft(wpn.id), ready = st.cooldown === 0, cond = Math.round(WB.Game.cond(m.id)), nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
       el.className = 'b-actions';
       el.innerHTML = `
-        <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(m.name)}${cond < 100 ? ' · ' + cond + '%' : ''}</small></span></button>
+        <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(m.name)}${st.brokenMelee ? ' · ' + WB.esc(st.brokenMelee.name) + ' is broken' : cond < 100 ? ' · ' + cond + '%' : ''}</small></span></button>
         <button class="btn" type="button" data-b="throw" ${WB.UI.off(!shots ? wpn.name + ' is out of shots. Buy more in the Shop after the fight. Strike or defend meanwhile.' : !ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(wpn.name)} · ${!shots ? 'out of shots' : ready ? (shots === Infinity ? 'ready' : shots + ' shot' + (shots > 1 ? 's' : '')) : st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
         <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(st.hero.guardPts < D.DEFEND_COST && 'Your guard is worn down (' + st.hero.guardPts + '%). Each Defend uses ' + D.DEFEND_COST + '%; it recovers ' + D.DEFEND_REGEN + '% every turn you don’t defend.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${sh ? 'Block ' + Math.round(sh.block * 100) + '%' + (sh.reflect ? ', reverse' : '') + (sh.counter ? ', counter' : '') : 'Block 60%, heal a little'}<span class="sr-only">, guard ${st.hero.guardPts}%</span></small></span><span class="sp-gauge df-gauge ${st.hero.guardPts < D.DEFEND_COST ? 'low' : ''}" aria-hidden="true"><i style="width:${st.hero.guardPts}%"></i></span></button>
         <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'You have no potions or food. Buy some in Shop → Potions / Food after the fight.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
         ${specialBtn(st)}
-        ${st.magic.length ? `<button class="btn ghost magic-btn" type="button" data-b="magicmenu" ${WB.UI.off(st.magic.every((id) => st.mused[id]) ? 'You’ve used every magic item this battle.' : st.magicTurn === st.turn && 'One magic item per turn. Attack, defend or use an item, then try again.')}>${WB.pxImg('mg/' + st.magic[st.magic.length - 1] + '.png', 28)}<span class="bt"><span>Magic</span><small>${st.magic.filter((id) => !st.mused[id]).length} ready · free</small></span></button>` : ''}
+        ${st.magic.length ? `<button class="btn ghost magic-btn" type="button" data-b="magicmenu" ${WB.UI.off(st.magic.every((id) => st.mused[id]) ? 'You’ve used every magic item this battle.' : st.magicTurn === st.turn && 'One magic item per turn. Attack, defend or use an item, then try again.')}>${WB.pxImg('mg/' + st.magic[st.magic.length - 1] + '.png', 28)}<span class="bt"><span>Magic</span><small>${st.magic.filter((id) => !st.mused[id]).length} ready${' · ' + st.magic.reduce((n, id) => n + WB.Game.uses(id), 0) + ' uses'}</small></span></button>` : (st.magicEmpty || []).length ? `<button class="btn ghost magic-btn" type="button" data-b="magicmenu" ${WB.UI.off('Your battle magic is out of uses. Buy more in the Shop after the fight.')}>${WB.pxImg('mg/' + st.magicEmpty[st.magicEmpty.length - 1] + '.png', 28)}<span class="bt"><span>Magic</span><small>Out of uses</small></span></button>` : ''}
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
       const ic = el.querySelector('.wp-ic'); if (ic) WB.UI.paintWeapon(ic, wpn.id);
     }
@@ -606,7 +607,7 @@
           fx.push({ type: 'ring', x: view.ex, y: eY(), color: col, t: 0 }); burst(view.ex, eY(), col, 14);
           fx.push({ type: 'boom', path: MAGIC_HIT, info: { w: 128, h: 96, n: 8 }, x: view.ex, y: eY() - 6, t: 0, scale: 0.9, fps: 14 });   // a crackle of magic over the creature
           for (const [i, hh] of (ev.hits || []).entries()) { hurtEnemy(hh.dmg, true, col); if (i < ev.hits.length - 1) await sleep(220); }
-          if (ev.status) { WB.Sfx.play(ev.status === 'freeze' ? 'spell_frost' : ev.status === 'stun' ? 'status_stun' : 'status_' + (['poison', 'burn', 'bleed'].includes(ev.status) ? ev.status : 'stun')); floater({ poison: 'Poisoned', burn: 'Burning', bleed: 'Bleeding', freeze: 'Frozen', stun: 'Stunned', weaken: 'Weakened' }[ev.status], 'enemy', 'tag'); }
+          if (ev.status) { WB.Sfx.play(ev.status === 'freeze' ? 'spell_frost' : ev.status === 'stun' ? 'status_stun' : 'status_' + (['poison', 'burn', 'bleed'].includes(ev.status) ? ev.status : 'stun')); floater({ poison: 'Poisoned', burn: 'Burning', bleed: 'Cursed', freeze: 'Frozen', stun: 'Stunned', weaken: 'Weakened' }[ev.status], 'enemy', 'tag'); }
           if (t === 'seer' || t === 'break') floater(t === 'seer' ? 'Stunned' : 'Guard broken', 'enemy', 'tag');
         }
         if (ev.heal) healHero(ev.heal);

@@ -73,7 +73,6 @@
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-energy', page: 'Level ' + D.UPKEEP_LEVEL, title: 'Your Worldkey needs energy now', text: 'From now on, opening a world costs energy. Energy fades a little each day and as you walk, so keep an eye on this bar.' },
       { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Level ' + D.UPKEEP_LEVEL, title: 'Artifacts become fuel', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
       { go: hub('art', 'forge'), sel: '#wk-forge', page: 'Level ' + D.UPKEEP_LEVEL, title: 'The Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and a little HP), then charge your Worldkey with it. Here’s a free Void Darkmatter to start.' },
-      { go: hub('bag', 'weapons'), sel: '#scr-inv .wnote', page: 'Level ' + D.UPKEEP_LEVEL, title: 'Gear now needs care', text: 'Melee weapons wear down and hit softer until you repair them (a quarter of the price). Ranged weapons use shots, and battle magic has limited uses. Your first refill each day is free.' },
     ],
   };
   const T = (WB.Tour = { active: false, i: 0 });
@@ -178,7 +177,7 @@
   // ---------- a feature just unlocked: congratulations, then its mini tutorial ----------
   const FEAT_CARD = {
     wk: { kick: 'Unlocked', title: 'Your Worldkey is awake!', img: 'wk/dm_nebula.png', text: 'You finished your first world, so your Worldkey can open the next one. Here’s how it works.' },
-    dm: { kick: 'Level ' + D.UPKEEP_LEVEL + ' unlock', title: 'Darkmatter and gear care', img: 'wk/dm_void.png', text: 'From here on, your Worldkey runs on Darkmatter (crafted from artifacts), and your gear wears down and runs out. Here’s what changes.' },
+    dm: { kick: 'Level ' + D.UPKEEP_LEVEL + ' unlock', title: 'Darkmatter and gear care', img: 'wk/dm_void.png', text: 'From here on, your Worldkey runs on Darkmatter (crafted from artifacts), Here’s what changes.' },
   };
   setInterval(() => {
     const G = WB.Game;

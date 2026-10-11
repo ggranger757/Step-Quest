@@ -167,7 +167,7 @@ The World screen never scrolls as a whole: the top bar, the walking area and the
 
 **Potions / Food.** Nine everyday potions are sold from the start or unlock by level (Small Tonic, Iron Brew, Fury Draught, Grand Elixir, plus Storm in a Bottle, Ward Cell, Shadow Eye, Sundrop and Fire Crystal from the item pack). 44 more, one for every other flask in the potion pack, are hidden as artifacts in the newer worlds; finding one gives you a bottle and adds it to the shop. Potions heal, cut damage, boost damage, recharge your weapon instantly or explode on the enemy. **Food** is the cheap way to heal: Garden Radish (20%), Orchard Fruit (30%), Smoked Fish (45%), Hearty Steak (60%) and the Candy Jar (a sugar rush that recharges your weapon). Eat it in battle from Items or straight from the Shop. You can carry 9 of each.
 
-**Ranged gear from the item pack** sits in Weapons → Ranged: the Lasso (may rope the creature so it loses a turn), Cherry Bomb (burn), Throwing Axe (bleed), Cannonball (heavy, breaks guard) and Web Snare (weakens) spin through the air like the knives; the Flintlock Pistol is the first **Firearm** and fires a bullet straight through guards.
+**Ranged gear from the item pack** sits in Weapons → Ranged: the Lasso (may rope the creature so it loses a turn), Cherry Bomb (burn), Throwing Axe (curse), Cannonball (heavy, breaks guard) and Web Snare (weakens) spin through the air like the knives; the Flintlock Pistol is the first **Firearm** and fires a bullet straight through guards.
 
 **Magic items** (Shop → Magic): 55 of them, bought once and kept, in two kinds (`D.MAGIC`, icons in `assets/mg/`: 16 px pixel icons scaled 3×; the Ring, Spellbook, Clover and Backpack are redrawn by `tools/redraw_magic4.py`):
 - **Charms (23)** are worn: up to 3 at a time (`D.CHARM_SLOTS`), each with a passive perk. Examples: Lucky Horseshoe (+8% crit), Explorer's Backpack (more loot), Merchant's Purse (+20% battle coins), Amulet of Vitality (+10% max HP), Ring of Might (+8% damage), Ring of Warding (−8% damage taken), Bulwark Sigil (guard gauge refills faster), Arcane Hat (special charges faster), Soul Gem (first hit halved), Thornweave Necklace (hit back 10%), Scholar's Codex (+15% battle XP), Pendant of Renewal (heal 3% a turn), Void Ring (30% of hits pierce), Circlet of Focus (ranged recharges a turn faster), Hunter's Ring (+15% vs guardians and bosses), Ember Heart (survive one knockout per battle).
@@ -199,7 +199,7 @@ From level 20 (`D.BOSS_LEVEL`) six roaming bosses can turn up on the road. They'
 | Morwen the Dark Fairy | Thorn Hex (poison) / Bramble Bind (stun) | **True Wings:** at half HP she transforms, heals 25%, hits 20% harder and switches to Spirit Swarm / Summon Spirits |
 | Ironhide the Golem | Rivet Volley (slow) / Overcharge (quake) | **Iron Plating:** non-piercing hits do 30% less |
 | The Bringer of Doom | Grasp of the Grave (drain) / Doom Bell (stun) | **Reaper's Patience:** +40% damage while you're under 35% HP |
-| Vesper the Crimson Sorceress | Crimson Bolt (burn) / Blood Moon Barrage | **Crimson Mirror:** raises a ward often, reversing 45% of a hit |
+| Vesper the Crimson Sorceress | Crimson Bolt (burn) / Crimson Moon Barrage | **Crimson Mirror:** raises a ward often, reversing 45% of a hit |
 
 Bosses never flee, and running from one only works 35% of the time (slipping away from the encounter card is a 50/50; fail and it cuts you off). **Win:** XP worth 8% of a level, 150 + 12 × level coins (+250 the first time), a Sundrop or Grand Elixir and a guaranteed egg. **Lose:** you drop 2 levels (`D.BOSS_LEVEL_LOSS`) and some eggs break; worlds, gear and items stay, and levels you win back don't pay level-up coins a second time (`s.peakLevel`). Boss art is in `assets/cr/` (prep: pack 17 in `tools/prep_assets.py`; the Sorceress is mirrored to face you). The Boss_3 upload contained only tutorial videos, so it isn't used.
 
@@ -270,7 +270,7 @@ Recorded sounds live in `assets/sfx/` and music in `assets/music/`; `tools/prep_
 | Defend | `sfx/defend.mp3` |
 | Losing a battle | `sfx/battle_loss.mp3` |
 | Level-up, achievement or a finished Merlin quest | `sfx/level_up.mp3` |
-| Weapon impacts by kind, bow and spell launches, spell impacts by element, Wind Blade, shield blocks, poison/burn/bleed/stun ticks, the three special attacks | synthesized by `tools/synth_sounds.py` (`sfx/hit_*`, `spell_*`, `status_*`, `special_*`, `bow_release`, `wind_blade`, `shield_block`) |
+| Weapon impacts by kind, bow and spell launches, spell impacts by element, Wind Blade, shield blocks, poison/burn/curse/stun ticks, the three special attacks | synthesized by `tools/synth_sounds.py` (`sfx/hit_*`, `spell_*`, `status_*`, `special_*`, `bow_release`, `wind_blade`, `shield_block`) |
 | First open (and after a reset), from the loading screen until the tutorial ends | `music/app_theme.mp3` |
 | Worldkey tuned (the symbol game locks in) | `sfx/wk_tuned.mp3` |
 | Charging the Worldkey | one per Darkmatter: `sfx/dm_void.mp3`, `sfx/dm_nebula.mp3`, `sfx/dm_eclipse.mp3` |

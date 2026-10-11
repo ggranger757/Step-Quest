@@ -3,8 +3,8 @@
    Battle magic:    every purchase gives D.MAGIC_USES uses; each use in battle spends one. Worn charms never run out.
    Potions / food:  used up when you drink or eat them (as before).
    Melee weapons:   never run out, but every Strike wears them down a little. A worn weapon hits softer (down to
-                    D.WEAR_FLOOR of its power at 0%). Repairing brings it back to 100% for a quarter of its price.
-   Shots, uses and wear only count from level D.UPKEEP_LEVEL (05j-unlocks.js); before that gear never runs out.
+                    D.WEAR_FLOOR of its power) and at 0% it breaks. Repairing brings it back to 100% for a quarter of its price.
+   Shots, uses and wear always count. A melee weapon at 0% is broken until repaired; Strike falls back to the Rusty Sword.
    One refill a day is free (shots or magic uses).
    Pets:            a pet knocked out in battle rests and recovers over time (pets no longer die).
    Artifacts:       the collection log keeps every artifact you've discovered. Each find also gives you a copy, and
@@ -50,7 +50,8 @@
 
   // ---------- ranged: shots ----------
   G.ammo = (id) => Math.max(0, Math.floor(G.gear().ammo[id] || 0));
-  const counts = () => !G.upkeep || G.upkeep();   // before level 7 nothing is used up
+  const counts = () => true;   // shots, uses and wear always count (battle mode opens at level 10, well past any gate)
+  G.gearCare = () => true;
   G.useAmmo = (id) => { const g = G.gear(); if (!counts()) { G.tally('shots', 1); return true; } if (!(g.ammo[id] > 0)) return false; g.ammo[id]--; G.tally('shots', 1); WB.Save.queue(); return true; };
   G.shotsLeft = (id) => (counts() ? G.ammo(id) : Infinity);
   // one refill a day is free: shots for a ranged weapon or uses for battle magic
@@ -84,7 +85,10 @@
   // ---------- melee: condition ----------
   G.cond = (id) => { const v = G.gear().wear[id]; return v == null ? 100 : Math.max(0, Math.min(100, v)); };
   G.wearMult = (id) => D.WEAR_FLOOR + (1 - D.WEAR_FLOOR) * (G.cond(id) / 100);
-  G.wearDown = (id, n = D.WEAR_STRIKE) => { if (!counts()) return G.cond(id); const g = G.gear(), v = Math.max(0, G.cond(id) - n); if (v >= 100) delete g.wear[id]; else g.wear[id] = Math.round(v * 10) / 10; return v; };
+  G.wearDown = (id, n = D.WEAR_STRIKE) => { if (!counts() || id === 'sw_rusty') return G.cond(id);   // the Rusty Sword never breaks, so you always have a Strike
+    const g = G.gear(), v = Math.max(0, G.cond(id) - n); if (v >= 100) delete g.wear[id]; else g.wear[id] = Math.round(v * 10) / 10; return v; };
+  // a melee weapon at 0% is broken: it can't be used until repaired (the Rusty Sword is exempt)
+  G.broken = (id) => { const w = D.weaponById[id]; return !!w && w.slot === 'melee' && id !== 'sw_rusty' && G.cond(id) <= 0; };
   G.repairCost = (id) => Math.max(15, Math.round(G.price(D.weaponById[id]) * 0.25 / 5) * 5);   // a quarter of the weapon's price
   G.repair = (id) => {
     const s = S(), w = D.weaponById[id];

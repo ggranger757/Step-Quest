@@ -11,7 +11,7 @@
                 · special (charged a turn ahead, every 4th turn, every 3rd for guardians; Defend!)
                 Moves and effects per creature: D.CREATURE_MOVES (02-data.js)
    Statuses on you: poison, burn, venom (damage each turn, never below 1 HP; venom is the plants' slow poison: 3% for 6 turns) · weak (-30% damage) · stun (lose a turn)
-   Statuses on the creature: poison, burn, bleed (damage each turn) · freeze, stun (skips a turn)
+   Statuses on the creature: poison, burn, bleed — shown to the player as a curse (damage each turn) · freeze, stun (skips a turn)
                 · weaken (-40% attack) · sunder (+25% damage taken)
    Your pet takes part of every hit (its `share`) until its own HP runs out. */
 (() => {
@@ -31,10 +31,10 @@
       enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, rival: !!D.CREATURES[enc.creature].rival, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
         poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false, fled: 0,
         moves: D.CREATURE_MOVES[enc.creature] || D.CREATURE_MOVES.hyena },
-      weapon: G.equipped('ranged') || D.WEAPONS[0], melee: G.equipped('melee') || D.weaponById.sw_rusty, shield: G.equipped('shield'),
+      weapon: G.equipped('ranged') || D.WEAPONS[0], melee: (G.equipped('melee') && !G.broken(G.equipped('melee').id)) ? G.equipped('melee') : D.weaponById.sw_rusty, brokenMelee: (G.equipped('melee') && G.broken(G.equipped('melee').id)) ? G.equipped('melee') : null, shield: G.equipped('shield'),
       cooldown: 0,
       special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
-      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.usesLeft(m.id) > 0).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn
+      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.usesLeft(m.id) > 0).map((m) => m.id), magicEmpty: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.usesLeft(m.id) <= 0).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn
       perks: new Set(G.charms().map((id) => D.magicById[id].perk)),   // worn charms
     };
     B.active = true;
@@ -68,7 +68,7 @@
     switch (effect) {
       case 'poison': e.poison = 3; return ' It’s poisoned.';
       case 'burn': e.burn = 2; return ' It’s burning.';
-      case 'bleed': e.bleed = 3; return ' It’s bleeding.';
+      case 'bleed': e.bleed = 3; return ' It’s cursed.';
       case 'freeze': case 'freezeAll': e.freeze = 1; return ' Frozen solid!';
       case 'stun': e.stun = 1; return ' Stunned!';
       case 'weaken': e.weaken = 3; return ' Its attacks weaken.';
@@ -119,7 +119,7 @@
         case 'break': e.ward = false; e.brace = false; e.sunder = fx.turns; ev.text = nm + e.name + '’s guard shatters: it takes 25% more damage for ' + fx.turns + ' turns.'; break;
         case 'status': {
           const k = fx.effect === 'freeze' ? 'freeze' : fx.effect; inflict(st, fx.effect); e[k] = fx.turns;
-          ev.text = nm + ({ poison: 'poisoned', burn: 'burning', bleed: 'bleeding', freeze: 'frozen', stun: 'stunned', weaken: 'weakened' }[fx.effect]) + ' for ' + fx.turns + ' turn' + (fx.turns > 1 ? 's' : '') + '.';
+          ev.text = nm + ({ poison: 'poisoned', burn: 'burning', bleed: 'cursed', freeze: 'frozen', stun: 'stunned', weaken: 'weakened' }[fx.effect]) + ' for ' + fx.turns + ' turn' + (fx.turns > 1 ? 's' : '') + '.';
           ev.status = fx.effect; break;
         }
         case 'blast': {
@@ -163,8 +163,9 @@
       ev.text = (crits ? 'Critical! ' : '') + m.name + (ev.hits.length > 1 ? ' hits ' + ev.hits.length + ' times for ' : ' hits for ') + ev.dmg + '.' +
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = m.name + ' passes straight through ' + e.name + '’s shadow!';
-      const c0 = G.cond(m.id), c1 = G.wearDown(m.id); ev.cond = c1;   // (no wear before level 7)
+      const c0 = G.cond(m.id), c1 = G.wearDown(m.id); ev.cond = c1;
       if (c0 > D.WORN_AT && c1 <= D.WORN_AT) ev.text += ' Your ' + m.name + ' is getting worn (' + Math.round(c1) + '%). Repair it in Inventory → Weapons.';
+      if (G.broken(m.id)) { ev.text += ' Your ' + m.name + ' broke! Repair it in Inventory → Weapons. You switch to the ' + D.weaponById.sw_rusty.name + '.'; st.brokenMelee = m; st.melee = D.weaponById.sw_rusty; ev.broke = true; }
       echo(st, ev);
       events.push(ev);
       chargeSpecial(st, 'strike');
@@ -290,7 +291,7 @@
     if (e.hp <= 0) return win(st, events);     // reversed or countered to death
 
     // ---- end of round
-    for (const [k, frac, label] of [['poison', 0.08, 'Poison hurts ' + e.name + ' for '], ['burn', 0.07, 'The fire burns ' + e.name + ' for '], ['bleed', 0.06, e.name + ' bleeds for ']]) {
+    for (const [k, frac, label] of [['poison', 0.08, 'Poison hurts ' + e.name + ' for '], ['burn', 0.07, 'The fire burns ' + e.name + ' for '], ['bleed', 0.06, 'The curse hurts ' + e.name + ' for ']]) {
       if (e.hp > 0 && e[k] > 0) { const d = Math.max(2, Math.round(e.max * frac)); e.hp = Math.max(0, e.hp - d); e[k]--; events.push({ who: 'enemy', type: 'dot', dot: k, dmg: d, text: label + d + ' damage.' }); }
     }
     if (e.hp > 0 && e.drain > 0) {   // Life Drain: takes HP from the creature and gives it to you
