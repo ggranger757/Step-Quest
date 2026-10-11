@@ -82,10 +82,28 @@
     return { act: 'open', label: 'Open ' + st.world.name, cls: 'gold' };
   }
 
+  // ---------- the Worldkey story: the sign-up lore, also reachable from the "i" on the Inventory → Worldkey card ----------
+  WK.lore = () => {
+    const k = D.wkLookById[D.WK_START], v = D.wkVoiceById[k.voice];
+    return `<div class="i-key"><canvas class="wk-canvas" width="256" height="399" aria-hidden="true"></canvas>
+        <div class="i-lore"><p>In the near future, a team of scientists found a way to cross into other worlds. The trips are risky, so they hire walkers to go out, explore and bring back data. Walkers carry weapons and magic, and the pay is hard to turn down.</p>
+        <p>The <b>Worldkey</b> is the scientists’ own invention: a small device that opens a steady doorway into another world, and gets you home again.</p></div></div>
+      <p class="i-say">“${esc(v.lines.idle[1])}”<span class="lbl">${esc(k.name)} · your first Worldkey</span></p>
+      <p class="lead">It wakes up once you finish your first world. Tune it to each world’s frequency, and it opens the door. Being out in the world wears its tech down: it loses energy and drifts out of tune as you walk. Seventeen more Worldkeys, each with its own personality, wait to be earned.</p>`;
+  };
+  WK.about = () => UI.sheet(`<div class="wk-lore">
+      <span class="lbl">The Worldkey</span>
+      <h3 id="sheet-title">Meet your Worldkey</h3>
+      ${WK.lore()}
+      <button class="btn block" type="button" data-close>Close</button>
+    </div>`, (root) => WK.device(root.querySelector('canvas'), { mode: 'idle', look: D.WK_START }));
+  const aboutBtn = '<button class="wk-about" type="button" data-wk="about" aria-label="About the Worldkey" title="About the Worldkey">i</button>';
+
   // ---------- Inventory → Worldkey ----------
   UI.wkSection = () => {
     const w = G.wk(), dest = G.wkDest(), st = dest && G.wkStatus(dest), v = G.wkVoice(), key = G.wkKey(), step = st && nextStep(st);
         return `<div class="wk-dev pbox card ${w.e <= K.LOW ? 'is-low' : ''}">
+        ${aboutBtn}
         <canvas class="wk-canvas" width="256" height="399" id="wk-main" aria-hidden="true"></canvas>
         <div class="wk-info">
           <span class="lbl">${esc(key.name)} · ${esc(v.name)}</span>
@@ -113,7 +131,7 @@
   UI.wkLocked = () => {
     const first = G.firstWorld(), pct = Math.floor(Math.min(100, G.explorePct(first.id) / D.FIRST_WORLD_PCT * 100));
     const left = Math.max(0, Math.ceil(first.length * D.FIRST_WORLD_PCT / 100 - (S().worldSteps[first.id] || 0)));
-    return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Locked</span>
+    return `<div class="pbox card feat-lock">${aboutBtn}<span class="lbl">${WB.icon('lock', 1)} Locked</span>
       <h3>Your Worldkey wakes up when you finish ${esc(first.name)}</h3>
       <p class="fine">It opens the way to new worlds. Explore ${D.FIRST_WORLD_PCT}% of ${esc(first.name)} to wake it${S().world === first.id ? '' : ' (you can travel back to it from the World map)'}.</p>
       <div class="bar seg cyan" role="progressbar" aria-label="Progress through ${esc(first.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · about ${WB.fmt(left)} steps to go</p>
@@ -379,6 +397,7 @@
     if (a === 'charge') return WK.charge(world ? () => WK.gate(world, { say: G.wkLine('charge') }) : null);
     if (a === 'open' && world) return WK.open(wid);
     if (a === 'gate' && world) return WK.gate(world);
+    if (a === 'about') return WK.about();
     if (a === 'custom') return WK.custom();
     if (a === 'forge') { UI.closeSheet(); return UI.goHub('art', 'forge'); }
     if (a === 'arts') { UI.closeSheet(); return UI.goHub('art', 'finds'); }

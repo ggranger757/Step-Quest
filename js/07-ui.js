@@ -1012,16 +1012,16 @@
       .sort((a, b) => { const L = (h) => { const n = parseInt(h.slice(1), 16); return ((n >> 16) & 255) * 0.3 + ((n >> 8) & 255) * 0.59 + (n & 255) * 0.11; }; return L(b) - L(a); });
     return cols[Math.min(i, cols.length - 1)];
   };
-  UI.swatches = (current, avatarId) => {
+  UI.swatches = (current, avatarId, origName) => {
     const one = (id, name, a, b) => `<button type="button" class="sw" role="radio" aria-checked="${current === id}" aria-label="${name}" title="${name}" data-skin="${id || ''}" style="--a:${a};--b:${b}"></button>`;
     const human = D.SKIN_TONES.filter((t) => !t.fantasy), fant = D.SKIN_TONES.filter((t) => t.fantasy);
     return `<div class="swatches" role="radiogroup" aria-label="Skin tone">
-      ${one(null, 'Original', UI.originalSkin(avatarId), UI.originalSkin(avatarId, 1))}
+      ${one(null, origName || 'Original', UI.originalSkin(avatarId), UI.originalSkin(avatarId, 1))}
       ${human.map((t) => one(t.id, t.name, t.ramp[2], t.ramp[1])).join('')}
       ${fant.map((t) => one(t.id, t.name, t.ramp[2], t.ramp[1])).join('')}
     </div>`;
   };
-  UI.skinName = (id) => (id ? D.SKIN_TONES.find((t) => t.id === id).name : 'Original');
+  UI.skinName = (id, origName) => (id ? D.SKIN_TONES.find((t) => t.id === id).name : origName || 'Original');
   UI.setSkin = (id) => {
     S().skin = id || null;
     WB.Save.queue();

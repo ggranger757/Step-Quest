@@ -145,44 +145,42 @@
     const iv = new WB.WorldView($('#intro-canvas'), { demo: true });
     iv.start();
     let pick = S().avatar;
+    const skins = Object.assign({}, D.STARTER_SKIN);   // each starter's own tone (the defaults, or whatever the player picked for it)
+    if (!S().skin && skins[pick]) S().skin = skins[pick];
     const step1 = () => {
       panel.innerHTML = `<img class="app-logo" src="${WB.Loading.logo()}" alt="" width="96" height="96"><h1 class="logo"><img src="${WB.Loading.wordmark()}" alt="Step Quest" width="640" height="292"></h1><p class="tagline">Every step you take in the real world moves your hero forward.</p><button class="btn block xl" type="button" id="i-go">Start adventure</button>`;
       $('#i-go').onclick = () => { WB.Sfx.play('tap'); stepKey(); };
     };
     // lore: the Worldkey that wakes up with you
     const stepKey = () => {
-      const k = D.wkLookById[D.WK_START], v = D.wkVoiceById[k.voice];
       panel.innerHTML = `<div class="istep"><span class="lbl">Step 1 of 3</span><h2>Meet your Worldkey</h2></div>
-        <div class="i-key"><canvas class="wk-canvas" width="256" height="399" aria-hidden="true"></canvas>
-          <div class="i-lore"><p>In the near future, a team of scientists found a way to cross into other worlds. The trips are risky, so they hire walkers to go out, explore and bring back data. Walkers carry weapons and magic, and the pay is hard to turn down.</p>
-          <p>The <b>Worldkey</b> is the scientists’ own invention: a small device that opens a steady doorway into another world, and gets you home again.</p></div></div>
-        <p class="i-say">“${WB.esc(v.lines.idle[1])}”<span class="lbl">${WB.esc(k.name)} · your first Worldkey</span></p>
-        <p class="lead">It wakes up once you finish your first world. Tune it to each world’s frequency, and it opens the door. Being out in the world wears its tech down: it loses energy and drifts out of tune as you walk. Seventeen more Worldkeys, each with its own personality, wait to be earned.</p>
+        ${WB.WK.lore()}
         <button class="btn block xl" type="button" id="i-go">Continue</button>`;
       if (WB.WK) WB.WK.device(panel.querySelector('canvas'), { mode: 'idle', look: D.WK_START });
       $('#i-go').onclick = () => { WB.Sfx.play('tap'); step2(); };
     };
     const step2 = () => {
-      const starters = D.AVATARS.filter((a) => a.req.starter), locked = D.AVATARS.length - 1;
+      const starters = D.STARTER_ORDER.map((id) => D.AVATARS.find((a) => a.id === id)), locked = D.AVATARS.length - 1;
       panel.innerHTML = `<div class="istep"><span class="lbl">Step 2 of 3</span><h2>Choose your walker</h2></div>
         <div class="pick" role="radiogroup" aria-label="Walker">${starters.map((a) => `<button type="button" role="radio" data-pick="${a.id}" aria-checked="${a.id === pick}"><canvas width="72" height="84"></canvas><span class="pn">${a.name}</span><span class="psp">${D.SPECIALS[D.STARTER_SPECIAL[a.id]].name}</span></button>`).join('')}</div>
         <p class="lockedrow">${WB.icon('lock', 2)}<span>Pick one to start. The other two unlock at level ${starters[0].req.level || 5}. ${locked - 2} more walkers unlock as you walk, level up and explore.</span></p>
         <p class="lockedrow">${WB.icon('spark', 2)}<span id="i-sp">Your pick also decides your special attack from level ${D.SPECIAL_LEVEL}: ${D.SPECIALS[D.STARTER_SPECIAL[pick] || 'raid'].desc}</span></p>
-        <div class="field" id="sk-field" ${WB.hasSkin(pick) ? '' : 'hidden'}><span class="lbl" id="sk-l">Skin tone · <span id="sk-n">${UI.skinName(S().skin)}</span></span><div id="sk-wrap">${UI.swatches(S().skin, pick)}</div></div>
+        <div class="field" id="sk-field" ${WB.hasSkin(pick) ? '' : 'hidden'}><span class="lbl" id="sk-l">Skin tone · <span id="sk-n">${UI.skinName(S().skin, 'Olive')}</span></span><div id="sk-wrap">${UI.swatches(S().skin, pick, 'Olive')}</div></div>
         <div class="field"><label class="lbl" for="i-name">Your name</label><input id="i-name" type="text" maxlength="18" autocomplete="nickname" value="${WB.esc(S().name)}"></div>
         <button class="btn block xl" type="button" id="i-go">Continue</button>`;
-      const paintPicks = () => WB.$$('[data-pick]', panel).forEach((b) => WB.paintThumb(b.querySelector('canvas'), { kind: 'av', id: b.dataset.pick, skin: S().skin }));
+      const paintPicks = () => WB.$$('[data-pick]', panel).forEach((b) => WB.paintThumb(b.querySelector('canvas'), { kind: 'av', id: b.dataset.pick, skin: skins[b.dataset.pick] === undefined ? S().skin : skins[b.dataset.pick] }));
       const bindSkins = () => WB.$$('[data-skin]', panel).forEach((b) => b.onclick = () => {
-        S().skin = b.dataset.skin || null;
+        S().skin = skins[pick] = b.dataset.skin || null;
         WB.$$('[data-skin]', panel).forEach((x) => x.setAttribute('aria-checked', x === b));
-        $('#sk-n').textContent = UI.skinName(S().skin);
+        $('#sk-n').textContent = UI.skinName(S().skin, 'Olive');
         WB.Sfx.play('tap'); paintPicks();
       });
       WB.$$('[data-pick]', panel).forEach((b) => b.onclick = () => {
-        pick = b.dataset.pick; S().avatar = pick;
+        pick = b.dataset.pick; S().avatar = pick; S().skin = skins[pick] === undefined ? S().skin : skins[pick];
         const spEl = $('#i-sp'); if (spEl) spEl.textContent = 'Your pick also decides your special attack from level ' + D.SPECIAL_LEVEL + ': ' + D.SPECIALS[D.STARTER_SPECIAL[pick]].desc;
         WB.$$('[data-pick]', panel).forEach((x) => x.setAttribute('aria-checked', x === b));
-        $('#sk-wrap').innerHTML = UI.swatches(S().skin, pick); bindSkins(); $('#sk-field').hidden = !WB.hasSkin(pick);
+        $('#sk-wrap').innerHTML = UI.swatches(S().skin, pick, 'Olive'); bindSkins(); $('#sk-n').textContent = UI.skinName(S().skin, 'Olive'); $('#sk-field').hidden = !WB.hasSkin(pick);
+        paintPicks();
         WB.Sfx.play('tap');
       });
       paintPicks(); bindSkins();

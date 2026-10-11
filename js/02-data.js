@@ -661,6 +661,9 @@
       desc: 'A heavy strike that steals a potion you can use right away. Grows with your level.' },
   };
   D.STARTER_SPECIAL = { wanderer: 'nova', kunoichi: 'drain', scavenger: 'raid' };
+  // sign-up screen: the order the three starters are shown in, and the skin tone each one starts with (the player can still pick any tone)
+  D.STARTER_ORDER = ['scavenger', 'kunoichi', 'wanderer'];
+  D.STARTER_SKIN = { scavenger: 'tan', kunoichi: 'frost', wanderer: 'deep' };
   // what a Scavenger's Raid can snatch, by world tier (later worlds carry better loot)
   D.RAID_LOOT = [['tonic', 'tonic', 'iron'], ['tonic', 'iron', 'fury'], ['iron', 'fury', 'elixir'], ['fury', 'elixir', 'elixir']];
 
