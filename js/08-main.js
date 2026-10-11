@@ -146,7 +146,7 @@
     iv.start();
     let pick = S().avatar;
     const step1 = () => {
-      panel.innerHTML = `<img class="app-logo" src="${WB.Loading.logo()}" alt="" width="96" height="96"><h1 class="logo">STEP<br>QUEST</h1><p class="tagline">Every step you take in the real world moves your hero forward.</p><button class="btn block xl" type="button" id="i-go">Start adventure</button>`;
+      panel.innerHTML = `<img class="app-logo" src="${WB.Loading.logo()}" alt="" width="96" height="96"><h1 class="logo"><img src="${WB.Loading.wordmark()}" alt="Step Quest" width="640" height="292"></h1><p class="tagline">Every step you take in the real world moves your hero forward.</p><button class="btn block xl" type="button" id="i-go">Start adventure</button>`;
       $('#i-go').onclick = () => { WB.Sfx.play('tap'); stepKey(); };
     };
     // lore: the Worldkey that wakes up with you

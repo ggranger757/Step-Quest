@@ -7,6 +7,7 @@
   let hideT = 0;
   const L = (WB.Loading = {
     logo: () => { const i = $('#boot .boot-logo'); return i ? i.src : ''; },
+    wordmark: () => { const i = $('#boot .boot-wordmark'); return i ? i.src : 'assets/wordmark.png'; },
     show(text = 'Loading…') {
       const b = $('#boot'); if (!b) return;
       clearTimeout(hideT);
