@@ -968,6 +968,8 @@
   D.heroDef = (lvl) => Math.floor(lvl * 0.7);
   // Redhood Rival levels up with you: a creature from a world that opens at your level, a little tougher
   D.rivalStats = (lvl) => { const st = D.creatureStats('redhood', Math.max(0, (lvl - 1) * 0.65)); return { hp: Math.round(st.hp * 1.1), atk: Math.round(st.atk * 1.05), lvl: Math.max(1, lvl) }; };
+  // creature tier for a world: chain worlds are fixed by their position; always-open worlds (Neon City) follow the walker's level so they never go stale
+  D.worldTier = (w, lvl) => w && w.open ? Math.max(w.tier || 1, Math.round((Math.max(1, lvl) - 1) * 0.65)) : (w ? w.tier : 0);
   D.creatureStats = (cid, tier, boss) => {
     const c = D.CREATURES[cid];
     const hp = Math.round(c.hp * (1 + 0.32 * tier) * (boss ? 1.9 : 1));

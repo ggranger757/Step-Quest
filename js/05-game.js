@@ -448,7 +448,7 @@
       } else if (c.aggressive) {
         e.aggressive = true;
         e.text = e.rival ? c.name + ' ' + c.verb + '. “Still walking? Prove it.”' : 'A ' + c.name + ' ' + c.verb + '!';
-        e.choices = [{ id: 'battle', label: 'Battle', hint: 'Lv ' + (e.rival ? D.rivalStats(s.level) : D.creatureStats(e.creature, w.tier)).lvl }, { id: 'avoid', label: e.rival ? 'Walk away' : 'Avoid it', hint: e.rival ? 'She’ll be back' : 'Walk on' }];
+        e.choices = [{ id: 'battle', label: 'Battle', hint: 'Lv ' + (e.rival ? D.rivalStats(s.level) : D.creatureStats(e.creature, D.worldTier(w, s.level))).lvl }, { id: 'avoid', label: e.rival ? 'Walk away' : 'Avoid it', hint: e.rival ? 'She’ll be back' : 'Walk on' }];
       } else {
         e.text = 'A ' + c.name + ' ' + c.verb + '.';
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];

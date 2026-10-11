@@ -154,8 +154,8 @@
       const k = D.wkLookById[D.WK_START], v = D.wkVoiceById[k.voice];
       panel.innerHTML = `<div class="istep"><span class="lbl">Step 1 of 3</span><h2>Meet your Worldkey</h2></div>
         <div class="i-key"><canvas class="wk-canvas" width="256" height="399" aria-hidden="true"></canvas>
-          <div class="i-lore"><p>Long ago, every world sat on one endless road. When the road broke, the pieces drifted apart.</p>
-          <p>Walkers still travel between them, guided by <b>Worldkeys</b>: small, stubborn devices that remember the way.</p></div></div>
+          <div class="i-lore"><p>In the near future, a team of scientists found a way to cross into other worlds. The trips are risky, so they hire walkers to go out, explore and bring back data. Walkers carry weapons and magic, and the pay is hard to turn down.</p>
+          <p>The <b>Worldkey</b> is the scientists’ own invention: a small device that opens a steady doorway into another world, and gets you home again.</p></div></div>
         <p class="i-say">“${WB.esc(v.lines.idle[1])}”<span class="lbl">${WB.esc(k.name)} · your first Worldkey</span></p>
         <p class="lead">It wakes up once you finish your first world. Tune it to each world’s frequency, and it opens the door. Being out in the world wears its tech down: it loses energy and drifts out of tune as you walk. Seventeen more Worldkeys, each with its own personality, wait to be earned.</p>
         <button class="btn block xl" type="button" id="i-go">Continue</button>`;

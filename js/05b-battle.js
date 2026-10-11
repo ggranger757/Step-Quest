@@ -21,7 +21,7 @@
 
   B.start = (enc) => {
     const s = WB.state, G = WB.Game, w = D.worldById[enc.world] || G.world();
-    const cs = enc.nemesis ? D.bossStats(enc.creature, s.level) : D.CREATURES[enc.creature].rival ? D.rivalStats(s.level) : D.creatureStats(enc.creature, w.tier, !!enc.boss), bd = enc.nemesis ? D.BOSSES[enc.creature] : null;
+    const cs = enc.nemesis ? D.bossStats(enc.creature, s.level) : D.CREATURES[enc.creature].rival ? D.rivalStats(s.level) : D.creatureStats(enc.creature, D.worldTier(w, s.level), !!enc.boss), bd = enc.nemesis ? D.BOSSES[enc.creature] : null;
     const pdef = s.equip.pet && G.pet(s.equip.pet);
     B.st = {
       enc, world: w, turn: 1, over: false, result: null,
