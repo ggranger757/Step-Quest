@@ -7,7 +7,7 @@
   // ---------- the button under "New mission" ----------
   UI.quickButton = () => {
     const n = G.quickCount();
-    return `<button class="btn cyan block qk-open" type="button" data-qopen="1">${WB.icon('bolt', 2)}Quick missions<small>${n ? n + ' done today' : 'One tap each'}</small></button>`;
+    return `<button class="btn block qk-open" type="button" data-qopen="1">${WB.icon('bolt', 2)}Quick missions<small>${n ? n + ' done today' : 'One tap each'}</small></button>`;
   };
 
   // ---------- the quick missions sheet ----------

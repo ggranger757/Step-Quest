@@ -165,7 +165,7 @@
     if (act) pinned++; else tShown++;
     const el = document.createElement('div');
     el.className = 'toast ' + (o.cls || '') + (act ? ' has-act' : '');
-    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${act ? `<button class="btn sm cyan t-act" type="button">${WB.esc(o.action.label)}</button><button class="t-x" type="button" aria-label="Close">×</button>` : ''}`;
+    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${act ? `<button class="btn sm t-act" type="button">${WB.esc(o.action.label)}</button><button class="t-x" type="button" aria-label="Close">×</button>` : ''}`;
     $('#toasts').appendChild(el);
     let gone = false;
     const done = (fast) => {
@@ -292,7 +292,7 @@
       </div>
       <button class="btn glass block map-cta" data-act="map" type="button">${WB.icon('map', 2)}<span>Open world map</span><small>${s.unlocked.length} / ${D.WORLDS.length} open</small></button>
       ${sensor}
-      <div class="chips">${pend ? `<button class="chipbtn" data-act="pending" type="button">${WB.icon('flag', 2)}${pend} encounter${pend > 1 ? 's' : ''} waiting</button>` : ''}${daily ? `<button class="chipbtn cyan" data-act="daily" type="button">${WB.icon('chest', 2)}Claim daily reward</button>` : ''}</div>
+      <div class="chips">${pend ? `<button class="chipbtn" data-act="pending" type="button">${WB.icon('flag', 2)}${pend} encounter${pend > 1 ? 's' : ''} waiting</button>` : ''}${daily ? `<button class="chipbtn cta" data-act="daily" type="button">${WB.icon('chest', 2)}Claim daily reward</button>` : ''}</div>
       ${obj ? `<button class="objective pbox card" data-act="tasks" data-mt="${obj.tab || 'today'}" type="button">
         <span class="obj-head"><span class="lbl">Next objective</span><span class="obj-reward">${WB.esc(G.rewardText(obj.t.reward))}</span></span>
         <span class="obj-title">${WB.esc(WB.unitText(obj.t.title))}</span>
@@ -712,7 +712,7 @@
     const up = G.upkeep();
     if (battleMagic) { if (up) btns.push(refillBtn('uses', it)); else btns.push(`<button class="btn ghost sm" type="button" ${off(it.name + ' is cast from the Magic button in battle.')}>Owned</button>`); }
     else if (eq) btns.push(canOff ? `<button class="btn ghost sm" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat === 'magic' ? 'magic:' + it.id : cat}">${cat === 'magic' ? 'Take off' : 'Unequip'}</button>` : `<button class="btn ghost sm" type="button" ${off('Already equipped.')}>Equipped</button>`);
-    else btns.push(`<button class="btn cyan sm" type="button" data-equip="${cat}:${it.id}">${cat === 'magic' ? 'Wear' : cat === 'avatar' ? 'Use' : 'Equip'}</button>`);
+    else btns.push(`<button class="btn sm" type="button" data-equip="${cat}:${it.id}">${cat === 'magic' ? 'Wear' : cat === 'avatar' ? 'Use' : 'Equip'}</button>`);
     if (melee && up) { const cost = G.repairCost(it.id), whole = G.cond(it.id) >= 100; btns.push(`<button class="btn ${whole ? 'ghost' : 'gold'} sm" type="button" data-repair="${it.id}" ${off(whole ? it.name + ' is in top shape.' : shortWhy(cost, 'the repair'))}>Repair · ${WB.fmt(cost)}</button>`); }
     if (ranged && up) btns.push(refillBtn('ammo', it));
     const tag = eq ? `<span class="tag eq">${cat === 'magic' ? 'Worn' : cat === 'avatar' ? 'In use' : 'Equipped'}</span>`
@@ -786,7 +786,7 @@
       return `${hpCard()}${mine.length ? `<div class="grid">${mine.map((p) => `<div class="item pbox bag">
           <div class="prev"><canvas width="120" height="120" data-prev="potion:${p.id}"></canvas><span class="tag">Have ${s.potions[p.id]}</span></div>
           <h3>${WB.esc(p.name)}</h3><div class="req"><span>${p.desc}</span></div>
-          <div class="foot stack">${p.kind === 'heal' ? `<button class="btn cyan sm" type="button" data-drink="${p.id}" ${off(hp >= max ? 'You’re already at full health.' : '')}>${p.food ? 'Eat' : 'Drink'}</button>` : `<button class="btn ghost sm" type="button" ${off('Use ' + p.name + ' in battle from Items.')}>Use in battle</button>`}</div>
+          <div class="foot stack">${p.kind === 'heal' ? `<button class="btn sm" type="button" data-drink="${p.id}" ${off(hp >= max ? 'You’re already at full health.' : '')}>${p.food ? 'Eat' : 'Drink'}</button>` : `<button class="btn ghost sm" type="button" ${off('Use ' + p.name + ' in battle from Items.')}>Use in battle</button>`}</div>
         </div>`).join('')}</div>` : emptyBag('potions', 'potions')}
         <p class="fine">Streak Shields: ${s.streak.rest} / ${D.SHIELD_MAX}. Each one saves your streak for one missed day.</p>`;
     }

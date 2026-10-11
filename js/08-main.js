@@ -221,8 +221,8 @@
         <button class="btn sm gold" type="button" data-dev="coins">+500 coins</button>
         <button class="btn sm" type="button" data-dev="level">Level up</button>
         <button class="btn sm" type="button" data-dev="tasks">Complete missions</button>
-        <button class="btn sm cyan" type="button" data-dev="world">Next world</button>
-        <button class="btn sm cyan" type="button" data-dev="avatars">Unlock all avatars</button>
+        <button class="btn sm" type="button" data-dev="world">Next world</button>
+        <button class="btn sm" type="button" data-dev="avatars">Unlock all avatars</button>
         <button class="btn sm" type="button" data-dev="enc">Trigger encounter</button>
         <button class="btn sm danger" type="button" data-dev="battle">Start a battle</button>
         <button class="btn sm danger" type="button" data-dev="boss">Fight the guardian</button>
