@@ -144,8 +144,8 @@
     try {
       const world = D.worldById[wid]; if (!world) return { ok: false, why: 'Unknown destination.' };
       const st = G.wkStatus(world), s = S(), w = G.wk();
+      if (G.featOn && !G.featOn('wk') && wid !== G.firstWorld().id) return { ok: false, why: 'Your Worldkey wakes up when you finish ' + G.firstWorld().name + '.' };   // no travel before the Worldkey is awake
       if (st.unlocked) { G.travel(wid); return { ok: true, free: true }; }
-      if (G.featOn && !G.featOn('wk')) return { ok: false, why: 'Your Worldkey wakes up when you finish ' + G.firstWorld().name + '.' };
       if (!st.found) return { ok: false, why: 'Not discovered yet: ' + G.worldReq(world) + '.' };
       if (!st.energyOk) return { ok: false, why: 'Needs ' + st.cost + '% energy. You have ' + Math.floor(w.e) + '%.' };
       if (!st.tuned) return { ok: false, why: 'Tune the Worldkey to ' + world.name + ' first.' };

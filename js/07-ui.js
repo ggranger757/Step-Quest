@@ -974,6 +974,9 @@
         <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Hits, coins, fanfares and other game sounds.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
         <div class="setting pbox"><div><div id="lbl-rm">Reduce motion</div><div class="sd">Fewer particles and animations.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-rm" aria-checked="${!!WB.reducedMotion()}" data-toggle="reducedMotion"></button></div>
       </div>
+      <div class="sect"><h2>Help</h2>
+        <div class="setting pbox"><div><div>Tutorial</div><div class="sd">Watch the guided tour of Step Quest again whenever you need it.</div></div><div class="acts"><button class="btn sm" type="button" data-act="tour">${WB.icon('flag', 2)} Watch tutorial</button></div></div>
+      </div>
       <div class="sect"><h2>Privacy &amp; data</h2>
         <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : !WB.store.ok() ? '<b class="warn">Not saving:</b> this browser is blocking storage, so progress is lost when you close it.' : 'Saved on this device only. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
       </div>
@@ -1128,7 +1131,7 @@
           <canvas width="120" height="68" data-thumb="${w.id}"></canvas>
           <div class="wbody"><h3>${w.name}</h3><p class="wb">${w.blurb}</p>
           <div class="wcr"><span class="lbl">Creatures here</span><div class="crts">${w.pool.map((c) => `<span class="crt" title="${WB.esc(D.CREATURES[c].name)}"><canvas width="80" height="80" data-crthumb="${c}" aria-label="${WB.esc(D.CREATURES[c].name)}" role="img"></canvas></span>`).join('')}</div></div>
-          ${open ? `<div class="wrow"><div class="bar seg cyan"><i style="width:${pct}%"></i></div><div class="wmeta"><span class="lbl">${Math.floor(pct)}% explored · ${(s.enc.finds[w.id] || []).length}/${D.FINDS[w.id].length} artifacts</span>${cur ? '<span class="lbl here">You are here</span>' : `<button class="btn sm" type="button" data-travel="${w.id}">Travel</button>`}</div>
+          ${open ? `<div class="wrow"><div class="bar seg cyan"><i style="width:${pct}%"></i></div><div class="wmeta"><span class="lbl">${Math.floor(pct)}% explored · ${(s.enc.finds[w.id] || []).length}/${D.FINDS[w.id].length} artifacts</span>${cur ? '<span class="lbl here">You are here</span>' : G.canTravel(w.id) ? `<button class="btn sm" type="button" data-travel="${w.id}">Travel</button>` : `<span class="lbl dim">Finish ${WB.esc(G.firstWorld().name)} to wake your Worldkey</span>`}</div>
             <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${!s.bosses[w.id] && pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : !s.bosses[w.id] ? '<span class="lbl dim">Appears at 100%</span>' : ''}</div></div>`
           : G.wk().found.includes(w.id) ? `<div class="wrow"><div class="wmeta"><span class="lbl here">Discovered</span><button class="btn gold sm" type="button" data-wk="gate" data-wid="${w.id}">Use Worldkey</button></div></div>`
           : `<div class="wrow"><span class="lbl wreq-h">${WB.icon('lock', 2)} To open this world</span>
@@ -1172,7 +1175,7 @@
     if (d.supply) { const r = G.buySupply(d.supply); UI.toast(r.ok ? { kicker: 'Purchased', title: 'Streak Shield', sub: 'You hold ' + S().streak.rest + ' / ' + D.SHIELD_MAX + '.', icon: 'sshield', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.equip) { const [c, id] = d.equip.split(':'); const r = G.equip(c, id); if (r && r.full) UI.toast({ kicker: 'Charm slots full', title: 'Take one off first: you can wear ' + D.CHARM_SLOTS + '.', cls: 'msg' }); else WB.Sfx.play('equip'); return UI.render(); }
     if (d.unequip) { const [c, id] = d.unequip.split(':'); if (c === 'magic') G.unequipCharm(id); else G.equip(c, null); return UI.render(); }
-    if (d.travel) { G.travel(d.travel); const tw = D.worldById[d.travel]; Promise.resolve(WB.Loading.world(tw)).then(() => WB.WK && WB.WK.say('back', { world: tw.name }, true)); return UI.go('world'); }
+    if (d.travel) { if (!G.canTravel(d.travel)) return UI.toast({ kicker: 'Not yet', title: 'Finish ' + G.firstWorld().name + ' to wake your Worldkey. Then you can travel.', cls: 'msg' }); G.travel(d.travel); const tw = D.worldById[d.travel]; Promise.resolve(WB.Loading.world(tw)).then(() => WB.WK && WB.WK.say('back', { world: tw.name }, true)); return UI.go('world'); }
     if (d.wslot) {
       if (d.wsub) UI.wpnSlot = d.wsub;
       return UI.goHub('bag', d.wslot === 'avatar' ? 'avatar' : d.wslot === 'weapon' ? 'weapons' : 'pets');

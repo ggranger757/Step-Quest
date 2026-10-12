@@ -21,7 +21,7 @@
     WB.Save.queue();
     if (!quiet) { queue.push(k); WB.bus.emit('featUnlocked', k); }
   }
-  // The first world is the first one in the chain (Rust Hollow); always-open worlds (Neon City) are outside the chain
+  // The first world is the first one in the chain (Rust Hollow); always-open worlds (`open: true`, none right now) are outside the chain
   // and must never count as progress, or the Worldkey would wake at the first level-up.
   G.firstWorld = () => D.WORLDS.find((x) => !x.open);
   // Finished = fully explored (D.FIRST_WORLD_PCT). Saves that already got further under the old rule keep what they earned:

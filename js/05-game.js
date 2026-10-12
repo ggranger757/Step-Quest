@@ -179,9 +179,15 @@
   G.world = () => D.worldById[S().world];
   G.explorePct = (wid) => Math.min(100, ((S().worldSteps[wid] || 0) / D.worldById[wid].length) * 100);
   G.nextWorld = () => D.WORLDS.find((w) => !S().unlocked.includes(w.id));
+  // Travelling between worlds is the Worldkey's job: until it wakes (first world finished) you can only walk the first world.
+  G.canTravel = (wid) => {
+    const s = S(), f = G.firstWorld && G.firstWorld();
+    if (!s || !s.unlocked.includes(wid)) return false;
+    return (f && wid === f.id) || !!(G.featOn && G.featOn('wk'));
+  };
   G.travel = (wid) => {
     const s = S();
-    if (!s.unlocked.includes(wid) || s.world === wid) return;
+    if (!G.canTravel(wid) || s.world === wid) return;
     s.world = wid;
     s.worldSteps[wid] = s.worldSteps[wid] || 0;
     s.enc.next = s.worldSteps[wid] + 90;

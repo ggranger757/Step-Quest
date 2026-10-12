@@ -110,6 +110,11 @@
       if (o.o == null && o.t == null) delete s.outfit[id];
     }
     s.unlocked = s.unlocked.filter((id) => D.worldById[id]);
+    // Neon City used to be open from the first step; it is now a later world (~level 35). Take it back from saves that never earned it.
+    for (const id of ['neoncity']) {
+      const w = D.worldById[id], i = s.unlocked.indexOf(id);
+      if (w && !w.open && i >= 0 && Math.max(s.peakLevel || 0, s.level) < w.unlock.level && !(s.wk && s.wk.last === id)) { s.unlocked.splice(i, 1); if (s.world === id) s.world = 'rust'; }
+    }
     for (const w of D.WORLDS) if (w.open) { if (!s.unlocked.includes(w.id)) s.unlocked.push(w.id); if (!s.worldSteps) s.worldSteps = {}; if (s.worldSteps[w.id] == null) s.worldSteps[w.id] = 0; }   // saves from before an always-open world was added get it too
     s.hp = Math.min(s.hp, D.heroMaxHp(s.level));
     return s;
