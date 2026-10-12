@@ -36,6 +36,7 @@
     calendar: ['.k.....k.', 'kkkkkkkkk', 'krrrrrrrk', 'kkkkkkkkk', 'klllllllk', 'klklklklk', 'klllllllk', 'klklklklk', 'kkkkkkkkk'],
     sword: ['.......kk', '......klk', '.....klk.', '....klk..', 'kk.klk...', '.kklk....', '..kk.....', '.knkk....', 'knk......'],
     flag: ['kk.......', 'kvkkkk...', 'kvvVVvkkk', 'kvvVVvvvk', 'kvkkkvvvk', 'kk...kkkk', 'kk.......', 'kk.......', 'kk.......'],
+    bell: ['....k....', '...kYk...', '..kYyyk..', '..kYyyk..', '..kyyyk..', '.kyyyyyk.', 'kyyyyyyyk', 'kkkkkkkkk', '...kok...'],
     heart: ['.kk.kk.', 'krrkrrk', 'krRrrrk', 'krrrrrk', '.krrrk.', '..krk..', '...k...'],
     note: ['...kkkk', '...kcck', '...kkck', '...k.ck', '...k.ck', '.kkk.ck', 'kcck.ck', 'kcckkck', '.kk.kcck', '....kcck', '.....kk.'],
     spark: ['...k...', '...C...', '..kCk..', 'kCCwCCk', '..kCk..', '...C...', '...k...'],

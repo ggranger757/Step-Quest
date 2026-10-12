@@ -81,7 +81,8 @@
     delete s.settings.loc;     // Location Awareness was removed
     delete s.music;            // the in-app music player was removed: players use their own music app
     if (s.enc.merlinAt && !s.enc.merlinMet) s.enc.merlinMet = true;   // players who already met Merlin
-    s.peakLevel = Math.max(s.peakLevel || 0, s.level);   // levels won back after losing to a boss don't pay level-up coins twice
+    if (s.level > D.LEVEL_CAP) { s.level = D.LEVEL_CAP; s.xp = 0; }   // the cap came down from 100 to 80: walkers above it stay at 80
+    s.peakLevel = Math.min(D.LEVEL_CAP, Math.max(s.peakLevel || 0, s.level));   // levels won back after losing to a boss don't pay level-up coins twice
     // the walker picked at sign-up decides the special attack; older saves: the first starter owned is the one picked
     if (!s.starter) {
       const starters = ['scavenger', 'wanderer', 'kunoichi'];

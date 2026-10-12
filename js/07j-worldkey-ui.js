@@ -83,20 +83,64 @@
   }
 
   // ---------- the Worldkey story: the sign-up lore, also reachable from the "i" on the Inventory → Worldkey card ----------
+  // Three swipeable pages (scroll-snap, so a finger swipe just works; dots and the button move too):
+  // 1 the broken road (with a screenshot of a forest world, picked at random), 2 the Worldkey itself, 3 how it works.
+  WK.SHOTS = [{ id: 'pinehills', world: 'pinehills' }, { id: 'tealwood', world: 'tealwood' }, { id: 'moonwood', world: 'moonwood' }];
+  const LORE_N = 3;
   WK.lore = () => {
-    const k = D.wkLookById[D.WK_START], v = D.wkVoiceById[k.voice];
-    return `<div class="i-key"><canvas class="wk-canvas" width="256" height="399" aria-hidden="true"></canvas>
-        <div class="i-lore"><p>In the near future, a team of scientists found a way to cross into other worlds. The trips are risky, so they hire walkers to go out, explore and bring back data. Walkers carry weapons and magic, and the pay is hard to turn down.</p>
-        <p>The <b>Worldkey</b> is the scientists’ own invention: a small device that opens a steady doorway into another world, and gets you home again.</p></div></div>
-      <p class="i-say">“${esc(v.lines.idle[1])}”<span class="lbl">${esc(k.name)} · your first Worldkey</span></p>
-      <p class="lead">It wakes up once you finish your first world. Tune it to each world’s frequency, and it opens the door. Being out in the world wears its tech down: it loses energy and drifts out of tune as you walk. Seventeen more Worldkeys, each with its own personality, wait to be earned.</p>`;
+    const k = D.wkLookById[D.WK_START], v = D.wkVoiceById[k.voice], sh = WB.pick(WK.SHOTS), wn = (D.worldById[sh.world] || {}).name || 'A forest world';
+    const dots = Array.from({ length: LORE_N }, (_, i) => `<button type="button" role="tab" data-lore-dot="${i}" aria-label="Page ${i + 1} of ${LORE_N}" aria-selected="${i === 0}"></button>`).join('');
+    return `<div class="lore" data-lore>
+      <div class="lore-track" tabindex="0" aria-roledescription="carousel" aria-label="The Worldkey story, swipe for more">
+        <section class="lore-page" aria-roledescription="slide" aria-label="1 of ${LORE_N}: The broken road">
+          <figure class="lore-shot"><img src="${WB.Assets.url('shots/' + sh.id + '.png')}" alt="A walker on the road in ${esc(wn)}" width="390" height="240" decoding="async" draggable="false"><figcaption>${esc(wn)} · one of ${D.WORLDS.length} worlds</figcaption></figure>
+          <h3 class="lore-h">The broken road</h3>
+          <p>In the near future, a team of scientists found a way to cross into other worlds. The trips are risky, so they hire walkers to go out, explore and bring back data. Walkers carry weapons and magic, and the pay is hard to turn down.</p>
+        </section>
+        <section class="lore-page" aria-roledescription="slide" aria-label="2 of ${LORE_N}: Your Worldkey">
+          <div class="i-key"><canvas class="wk-canvas" width="256" height="399" aria-hidden="true"></canvas>
+            <div class="i-lore"><h3 class="lore-h">Your Worldkey</h3><p>The <b>Worldkey</b> is the scientists’ own invention: a small device that opens a steady doorway into another world, and gets you home again.</p></div></div>
+          <p class="i-say">“${esc(v.lines.idle[1])}”<span class="lbl">${esc(k.name)} · your first Worldkey</span></p>
+        </section>
+        <section class="lore-page" aria-roledescription="slide" aria-label="3 of ${LORE_N}: How it works">
+          <h3 class="lore-h">How it works</h3>
+          <ul class="lore-steps">
+            <li>${WB.icon('lock', 2)}<span>It <b>wakes up</b> once you finish your first world.</span></li>
+            <li>${WB.icon('signal', 2)}<span><b>Tune</b> it to each world’s frequency, and it opens the door.</span></li>
+            <li>${WB.icon('bolt', 2)}<span>Being out in the world <b>wears its tech down</b>: it loses energy and drifts out of tune as you walk.</span></li>
+            <li>${WB.icon('key', 2)}<span><b>Seventeen more Worldkeys</b>, each with its own personality, wait to be earned.</span></li>
+          </ul>
+        </section>
+      </div>
+      <div class="lore-dots" role="tablist" aria-label="Story pages">${dots}</div>
+    </div>`;
+  };
+  // wire up a story: dots, swipe, keys; `btn` reads Next until the last page, then `lastLabel` (and runs `done`)
+  WK.bindLore = (root, btn, lastLabel, done) => {
+    const box = root.querySelector('[data-lore]'); if (!box) return;
+    const track = box.querySelector('.lore-track'), dots = [...box.querySelectorAll('[data-lore-dot]')];
+    let cur = 0;
+    const page = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    const paint = (i) => {
+      cur = Math.max(0, Math.min(LORE_N - 1, i));
+      dots.forEach((d, k) => d.setAttribute('aria-selected', k === cur));
+      track.querySelectorAll('.lore-page').forEach((p, k) => p.setAttribute('aria-hidden', k !== cur));
+      if (btn) btn.textContent = cur === LORE_N - 1 ? lastLabel : 'Next';
+    };
+    const goTo = (i) => { const smooth = !WB.reducedMotion(); track.scrollTo({ left: i * track.clientWidth, behavior: smooth ? 'smooth' : 'auto' }); paint(i); };
+    let t = 0; track.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { const p = page(); if (p !== cur) { paint(p); WB.Sfx.play('tap'); } }, 60); }, { passive: true });
+    dots.forEach((d, k) => (d.onclick = () => { WB.Sfx.play('tap'); goTo(k); }));
+    track.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') { e.preventDefault(); goTo(cur + 1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(cur - 1); } });
+    window.addEventListener('resize', () => track.scrollTo({ left: cur * track.clientWidth }));
+    if (btn) btn.onclick = () => { WB.Sfx.play('tap'); if (cur < LORE_N - 1) goTo(cur + 1); else if (done) done(); };
+    paint(0);
   };
   WK.about = () => UI.sheet(`<div class="wk-lore">
       <span class="lbl">The Worldkey</span>
       <h3 id="sheet-title">Meet your Worldkey</h3>
       ${WK.lore()}
-      <button class="btn block" type="button" data-close>Close</button>
-    </div>`, (root) => WK.device(root.querySelector('canvas'), { mode: 'idle', look: D.WK_START }));
+      <button class="btn block" type="button" id="lore-go">Next</button>
+    </div>`, (root) => { WK.device(root.querySelector('canvas.wk-canvas'), { mode: 'idle', look: D.WK_START }); WK.bindLore(root, root.querySelector('#lore-go'), 'Close', () => UI.closeSheet()); });
   const aboutBtn = '<button class="wk-about" type="button" data-wk="about" aria-label="About the Worldkey" title="About the Worldkey">i</button>';
 
   // ---------- Inventory → Worldkey ----------
@@ -131,7 +175,7 @@
   UI.wkLocked = () => {
     const first = G.firstWorld(), pct = Math.floor(Math.min(100, G.explorePct(first.id) / D.FIRST_WORLD_PCT * 100));
     const left = Math.max(0, Math.ceil(first.length * D.FIRST_WORLD_PCT / 100 - (S().worldSteps[first.id] || 0)));
-    return `<div class="pbox card feat-lock">${aboutBtn}<span class="lbl">${WB.icon('lock', 1)} Locked</span>
+    return `<div class="pbox card feat-lock">${aboutBtn}<span class="lbl">${WB.icon('lock', 1)} Unlocks after your first world</span>
       <h3>Your Worldkey wakes up when you finish ${esc(first.name)}</h3>
       <p class="fine">It opens the way to new worlds. Explore ${D.FIRST_WORLD_PCT}% of ${esc(first.name)} to wake it${S().world === first.id ? '' : ' (you can travel back to it from the World map)'}.</p>
       <div class="bar seg cyan" role="progressbar" aria-label="Progress through ${esc(first.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · about ${WB.fmt(left)} steps to go</p>

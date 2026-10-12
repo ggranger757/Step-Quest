@@ -1,5 +1,5 @@
 /* Step Quest — field mission rules. Data is in 02c-missions.js.
-   s.missions = { active: [{ id, steps, win, walks: [steps per walk], last, photo, at }], done: [ids], skip: [ids], failed }
+   s.missions = { active: [{ id, steps, win, walks: [steps per walk], last, photo, did, at }], done: [ids], skip: [ids], failed }
    Only live steps taken after a mission is accepted count (health-synced steps from earlier days don't).
    Each mission must be finished within D.MISSION_HOURS of accepting it. Missing the deadline, or dropping
    the mission, costs coins and HP (G.missionPenalty). A finished mission never fails, even if unclaimed. */
@@ -24,6 +24,7 @@
       case 'gather': return 'Gather ' + m.count + ' ' + m.item.toLowerCase();
       case 'time': return D.MISSION_WINDOWS[m.win].name;
       case 'walks': return m.name;
+      case 'deed': return m.title;
       default: return m.name;
     }
   };
@@ -33,6 +34,7 @@
       case 'photo': return 'Walk ' + fmt(m.steps) + ' steps, then snap a photo' + (m.merlin ? ' of ' + m.subject : '') + '. ' + (D.MISSION_CAT_HINT[m.cat] || '') + (m.cat === 'state' && !G.homeState() ? ' Set your home state in Profile to see which one.' : '');
       case 'gather': return 'Walk ' + fmt(m.steps) + ' steps. ' + m.item + ' turn up along the way.';
       case 'time': return 'Walk ' + fmt(m.steps) + ' steps ' + D.MISSION_WINDOWS[m.win].when + '.';
+      case 'deed': return m.deed === 'trek' ? 'Walk ' + fmt(m.steps) + ' steps to get there and back. ' + m.how : 'Walk ' + fmt(m.steps) + ' steps, then do it. ' + m.how;
       case 'walks': return 'Take ' + m.walks + ' separate walks of at least ' + fmt(m.per) + ' steps each. A ' + D.MISSION_WALK_GAP_MIN + '-minute break starts a new walk.';
       default: return 'Cover ' + km(m.meters) + ' on foot (about ' + fmt(m.steps) + ' steps).';
     }
@@ -45,6 +47,10 @@
       case 'photo': {
         const walked = Math.min(a.steps, m.steps), ready = walked >= m.steps;
         return { cur: walked, target: m.steps, done: ready && a.photo, ready, needPhoto: ready && !a.photo, label: ready ? (a.photo ? 'Photo taken' : 'Ready for your photo') : fmt(walked) + ' / ' + fmt(m.steps) + ' steps' };
+      }
+      case 'deed': {   // walk the steps, then tap "I did it" (the honor system)
+        const walked = Math.min(a.steps, m.steps), ready = walked >= m.steps;
+        return { cur: walked, target: m.steps, done: ready && !!a.did, ready, needDeed: ready && !a.did, label: ready ? (a.did ? 'Done' : m.deed === 'trek' ? 'Made it? Tap I did it' : 'Your turn: do it, then tap I did it') : fmt(walked) + ' / ' + fmt(m.steps) + ' steps' };
       }
       case 'gather': {
         const got = Math.min(m.count, Math.floor(a.steps / (m.steps / m.count)));
@@ -119,6 +125,12 @@
     if (!a || !m || m.kind !== 'photo' || a.steps < m.steps) return false;
     a.photo = true; G.after(); return true;
   };
+  // a good deed or trek: once the steps are walked, the player says they did it
+  G.missionDeed = (id) => {
+    const a = G.missionRec(id), m = D.missionById[id];
+    if (!a || !m || m.kind !== 'deed' || a.steps < m.steps) return false;
+    a.did = true; G.after(); return true;
+  };
   const inWindow = (w, d = new Date()) => { const h = d.getHours() + d.getMinutes() / 60; return h >= w.from && h < w.to; };
   G.missionInWindow = (m) => m.kind === 'time' && inWindow(D.MISSION_WINDOWS[m.win]);
   // called by G.addSteps for live (today's) steps
@@ -127,7 +139,7 @@
     for (const a of S().missions.active) {
       const m = D.missionById[a.id]; if (!m || G.missionLeft(a) <= 0) continue;   // past the deadline: nothing counts
       const before = m.kind === 'gather' ? G.missionProgress(m, a).cur : 0;
-      const was = m.kind === 'photo' && a.steps >= m.steps;
+      const was = (m.kind === 'photo' || m.kind === 'deed') && a.steps >= m.steps;
       a.steps += n;
       if (m.kind === 'time' && inWindow(D.MISSION_WINDOWS[m.win], now)) a.win += n;
       if (m.kind === 'walks') {
@@ -137,6 +149,7 @@
       }
       if (m.kind === 'gather') { const got = G.missionProgress(m, a).cur; if (got > before) WB.bus.emit('missionFind', { m, got, n: got - before }); }
       if (m.kind === 'photo' && !was && a.steps >= m.steps) WB.bus.emit('missionPhotoReady', { m });
+      if (m.kind === 'deed' && !was && a.steps >= m.steps) WB.bus.emit('missionDeedReady', { m });
     }
   };
   // ---------- Merlin's quests (data in 02d-merlin.js): one at a time, offered on the road ----------

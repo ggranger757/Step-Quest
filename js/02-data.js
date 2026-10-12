@@ -384,7 +384,7 @@
     { id: 'courier', name: 'Courier', role: 'Every step is a delivery.', req: { cost: 3200, level: 12 } },
     { id: 'marauder', name: 'Marauder', role: 'Never takes the same road twice.', req: { level: 14 } },
     { id: 'biker', name: 'Biker', role: 'Left the bike. Kept the jacket.', req: { cost: 3800, level: 14 } },
-    { id: 'ranger', name: 'Ranger', role: 'Bow on his back, eyes on the horizon.', req: { cost: 4200, level: 15 } },
+    { id: 'ranger', name: 'Ranger', role: 'Blade low, shield up, eyes on the horizon.', req: { cost: 4200, level: 15 } },
     { id: 'punk', name: 'Punk', role: 'Loud hair, quiet footsteps.', req: { level: 17 } },
     { id: 'ember', name: 'Ember Mage', role: 'Leaves warm footprints.', req: { level: 18 } },
     { id: 'boss', name: 'Boss', role: 'Walks like he owns the wasteland.', req: { cost: 5500, level: 20 } },
@@ -602,7 +602,7 @@
     courier: { o: ['#cbc6c1', '#464762'], t: ['#14121d', '#242234'] },
     marauder: { o: ['^#141013', '^#322b28'], t: ['#73172d', '#3b1725'] },
     biker: { o: ['#e6336a', '#ab1f65', '^#663b93'], t: ['#222a5c', '#158968', '#2c5b6d'] },
-    ranger: { o: ['#78ff3c', '#50c828'], t: ['#f5f5f5', '#ffffff'] },
+    ranger: { o: ['#277b49', '#125b2a'], t: ['#dc55dc', '#ae33b2'] },   // green tunic; trim = the magenta scarf and blade
     punk: { o: ['#566a89', '#37446e'], t: ['#800c53', '#ab1f65'] },
     ember: { o: ['#71413b', '#422433', '#5b3138'], t: ['#4a5462', '#242234'] },
     boss: { o: ['#4f342f', '#2d1b1e', '#0e0c0c', '#060608'], t: ['#73172d', '#3b1725'] },
@@ -708,6 +708,8 @@
     B('crown', 'Crown of Valor', 50, 14000, { type: 'valor', turns: 4 }, '+25% dmg, −25% taken', 'For 4 turns your attacks do 25% more and you take 25% less.'),
     B('clover', 'Lucky Clover', 60, 10000, { type: 'clover' }, 'Two lucky turns', 'Choose: your next two attacks strike twice, or you dodge the creature’s next two attacks.'),
     B('dragonheart', 'Dragon Heart', 60, 20000, { type: 'dragon', amount: 0.4, turns: 3, mult: 1.4 }, '+40% HP, +40% damage', 'Restores 40% HP and your attacks do 40% more for 3 turns.'),
+    // ---- level 79: the Last Road set (see also Dawnbreaker, the Starfall Bow, the Aegis of the Last Road and Ambrosia)
+    B('worldbreaker', 'Worldbreaker Rune', 79, 26000, { type: 'blast', power: 0.18, hits: 2, stun: 1 }, '2 × 18% of its HP + stun', 'Cracks the ground twice, for 18% of the creature’s max HP each time, and stuns it for a turn. Ignores guards.'),
     // ---- charms (worn)
     C('horseshoe', 'Lucky Horseshoe', 5, 900, 'crit', '+8% crit chance', 'Your strikes and throws have an extra 8% chance to land a critical hit.'),
     C('backpack', 'Explorer’s Backpack', 6, 900, 'loot', 'More loot', 'Battle wins pay 50% more coins, potions drop twice as often, and eggs drop more often.'),
@@ -732,6 +734,7 @@
     C('hunter', 'Hunter’s Ring', 35, 9000, 'hunter', '+15% vs bosses', 'Your attacks do 15% more to guardians and bosses.'),
     C('precision', 'Ring of Precision', 38, 10000, 'critdmg', 'Crits +50%', 'Your critical hits do 50% more damage.'),
     C('emberheart', 'Ember Heart', 40, 12000, 'revive', 'Survive one KO', 'Once per battle, a knockout leaves you standing at 1 HP instead.'),
+    C('longwalk', 'Crown of the Long Walk', 79, 28000, 'apex', '+12% damage, −12% taken', 'Worn by walkers who reached the end of the road: your attacks do 12% more and every hit you take does 12% less.'),
   ];
   D.CHARM_SLOTS = 3;
   D.magicById = Object.fromEntries(D.MAGIC.map((m) => [m.id, m]));
@@ -812,6 +815,8 @@
     M('st_ancient', 'Ancient Staff', 'staff', 1.6, 'lifesteal', 0.35, 'Steals 35% of the damage as HP.', { cost: 3800, level: 36 }),
     M('st_sorcer', 'Sorcerer Staff', 'staff', 1.7, 'burn', 0.7, '70% chance to burn.', { cost: 4500, level: 41 }),
     M('st_void', 'Void Wand', 'staff', 2.0, 'weaken', 0.7, 'Legendary. Weakens the target 70% of the time.', { bosses: 18 }, { legendary: true }),
+    // the Last Road set (level 79): the strongest gear you can buy
+    M('sw_dawn', 'Dawnbreaker', 'sword', 2.3, 'crit', 0.35, 'Pierces guards. 35% critical chance, and crits hit 2x.', { cost: 30000, level: 79 }, { pierce: true, critMult: 2 }),
 
     // ---- ranged: throwing knives (spin through the air)
     R('kn_kunai', 'Kunai', 'knife', 1.05, 1, 'crit', '30% critical chance. Ready every other turn.', { cost: 300, level: 3 }, { chance: 0.3 }),
@@ -833,6 +838,7 @@
     R('bw_bone', 'Bone Bow', 'bow', 1.6, 2, 'drain', 'Heals you for half the damage.', { cost: 2500, level: 27 }),
     R('bw_eagle', 'Eagle Bow', 'bow', 2.0, 3, 'crit', '40% chance of a critical double hit.', { cost: 3500, level: 34 }, { chance: 0.4 }),
     R('bw_gold', 'Golden Bow', 'bow', 0.95, 2, 'multi', 'Legendary volley of three piercing arrows.', { bosses: 14 }, { pierce: true, legendary: true }),
+    R('bw_star', 'Starfall Bow', 'bow', 2.5, 2, 'crit', 'Arrows of starlight: pierce guards, 45% chance of a critical double hit, ready every other turn.', { cost: 32000, level: 79 }, { pierce: true, chance: 0.45 }),
   );
   // ---- ranged: the 12 magic projectiles (Weapons_2): orb / wave / javelin in four colours
   const SPELL_PAL = { gold: ['Sun', 'drain', 'Heals you for half the damage dealt.'], blue: ['Frost', 'freeze', '50% chance to freeze the target.'],
@@ -856,6 +862,7 @@
     SH('sh_ruby', 'Ruby Crest', 0.14, 0.8, {}, 'Blocks 80%. 14% armor.', { cost: 3400, level: 31 }),
     SH('sh_gilded', 'Gilded Kite', 0.15, 0.8, { reflect: 0.35, counter: 0.4 }, 'Blocks 80%, reverses 35% and hits back.', { cost: 4200, level: 38 }),
     SH('sh_gold', 'Aegis of Kings', 0.2, 0.85, { reflect: 0.5, regen: 0.1, legendary: true }, 'Legendary. 20% armor, blocks 85%, reverses half and heals.', { bosses: 16 }),
+    SH('sh_last', 'Aegis of the Last Road', 0.24, 0.88, { reflect: 0.4, counter: 0.5, regen: 0.1 }, '24% armor, blocks 88%, reverses 40%, hits back and heals when you defend.', { cost: 30000, level: 79 }),
   );
   // ---- belts (CraftPix belt icons): shields you wear at the waist. They are ordinary shields in the Defense
   // slot (you wear one at a time), but trade block for armor: a belt shaves a bit more off EVERY hit, and
@@ -933,6 +940,7 @@
     { id: 'eye', name: 'Shadow Eye', kind: 'blast', power: 0.2, cost: 230, pal: 'violet', desc: 'Bursts for 20% of the enemy’s max HP.', req: { level: 12 }, base: true },
     { id: 'sundrop', name: 'Sundrop', kind: 'heal', amount: 1, cost: 320, pal: 'brass', desc: 'Restores all of your HP.', req: { level: 15 }, base: true },
     { id: 'firecrystal', name: 'Fire Crystal', kind: 'fury', turns: 3, mult: 1.75, cost: 360, pal: 'rose', desc: '+75% damage for 3 turns.', req: { level: 18 }, base: true },
+    { id: 'ambrosia', name: 'Ambrosia', kind: 'heal', amount: 1, guardTurns: 3, guardF: 0.5, cost: 900, pal: 'cyan', desc: 'Restores all of your HP, and in battle halves the damage you take for 3 turns.', req: { level: 79 }, base: true },
     // food: cheap, everyday healing (eat it in battle from Items, or here in the Shop); the Candy Jar is a sugar rush
     { id: 'radish', name: 'Garden Radish', kind: 'heal', amount: 0.2, cost: 25, pal: 'rose', desc: 'Restores 20% of your HP.', req: {}, base: true, food: true },
     { id: 'fruit', name: 'Orchard Fruit', kind: 'heal', amount: 0.3, cost: 45, pal: 'rose', desc: 'Restores 30% of your HP.', req: { level: 2 }, base: true, food: true },
@@ -971,8 +979,12 @@
   D.heroDef = (lvl) => Math.floor(lvl * 0.7);
   // Redhood Rival levels up with you: a creature from a world that opens at your level, a little tougher
   D.rivalStats = (lvl) => { const st = D.creatureStats('redhood', Math.max(0, (lvl - 1) * 0.65)); return { hp: Math.round(st.hp * 1.1), atk: Math.round(st.atk * 1.05), lvl: Math.max(1, lvl) }; };
-  // creature tier for a world: chain worlds are fixed by their position; always-open worlds (`open: true`) follow the walker's level so they never go stale
-  D.worldTier = (w, lvl) => w && w.open ? Math.max(w.tier || 1, Math.round((Math.max(1, lvl) - 1) * 0.65)) : (w ? w.tier : 0);
+  // Creature strength follows the WALKER: a world's creatures and guardian fight at your level (the tier of a world
+  // that opens at your level), or at the world's own tier when that's higher. Old worlds never go soft and walkers past
+  // the last world (level 70) keep meeting a fair fight up to level 80. Roaming bosses and the Rival also follow your
+  // level (D.bossStats, D.rivalStats). Rewards use the same tier, so a tougher fight pays like one.
+  D.walkerTier = (lvl) => Math.round((Math.max(1, lvl) - 1) * 0.65);
+  D.worldTier = (w, lvl) => (w ? Math.max(w.open ? w.tier || 1 : w.tier || 0, D.walkerTier(lvl)) : 0);
   D.creatureStats = (cid, tier, boss) => {
     const c = D.CREATURES[cid];
     const hp = Math.round(c.hp * (1 + 0.32 * tier) * (boss ? 1.9 : 1));
@@ -984,7 +996,7 @@
   // Pacing: XP to the next level = 120 + 40 × level^1.35 (early levels aren't free: a 1-mile walk is about level 2).
   // A steady ~1,250 XP a day (walking plus battles, quests and missions): about a month to level 20, 4–5 months to 50,
   // about 9 months to the last world (level 70, which also needs each world explored in turn) and under 2 years to 100.
-  D.LEVEL_CAP = 100;
+  D.LEVEL_CAP = 80;   // walkers top out here (every world, walker and Worldkey opens by level 70)
   D.EPIC_MUSIC_LEVEL = 40;   // battles get the epic soundtrack from here
   D.xpToNext = (lvl) => Math.round(120 + 40 * Math.pow(lvl, 1.35));
   D.levelCoins = (lvl) => 10 * lvl;
@@ -1004,7 +1016,7 @@
     { id: 'walk500', kind: 'today_steps', target: 500, title: 'Walk 500 steps', reward: { coins: 25, xp: 30 }, always: true },
     { id: 'walk2k', kind: 'today_steps', target: 2000, title: 'Walk 2,000 steps', reward: { coins: 50, xp: 60 } },
     { id: 'walk4k', kind: 'today_steps', target: 4000, title: 'Walk 4,000 steps', reward: { coins: 80, xp: 100, potion: 'tonic' } },
-    { id: 'enc2', kind: 'today_encounters', target: 2, title: 'Resolve 2 encounters', reward: { coins: 30, xp: 40 } },
+    { id: 'enc2', kind: 'today_encounters', target: 2, title: 'Resolve 2 encounters', sub: 'Fights, crates, finds and travelers all count.', reward: { coins: 30, xp: 40 } },
     { id: 'battle1', kind: 'today_battles', target: 1, title: 'Win a battle', reward: { coins: 35, xp: 50 } },
     { id: 'chest1', kind: 'today_chests', target: 1, title: 'Open a supply crate', reward: { coins: 20, xp: 30 } },
     { id: 'km15', kind: 'today_meters', target: 1500, title: 'Cover 1.5 km', reward: { coins: 45, xp: 55 } },

@@ -1,4 +1,4 @@
-/* Step Quest — field missions: 600 real-world walking missions (data only; rules live in 05c-missions.js).
+/* Step Quest — field missions: 675 real-world walking missions (data only; rules live in 05c-missions.js).
    Every mission needs walking: only steps taken after you accept a mission count toward it.
    Kinds:
      photo    walk N steps, then photograph something out in the world (the photo stays on the device)
@@ -6,6 +6,7 @@
      time     walk N steps inside a time window (sunrise, lunch, golden hour…)
      walks    take W separate walks of at least N steps each (a 20-minute break starts a new walk)
      distance cover a distance
+     deed     walk N steps, then do something kind (good deeds) or reach a place (treks), and tap "I did it"
    You pick missions from the board and have 24 hours to finish each one; missing the deadline (or dropping
    a mission) costs coins and HP. The list is built from content tables below, interleaved so kinds
    alternate, and gets longer as you go. */
@@ -159,8 +160,73 @@
     if ((i + 1) % 25 === 0) m.reward.potion = POTS[Math.floor(i / 25) % POTS.length];
     out.push(m);
   }
-  D.MISSIONS = out;
-  D.missionById = Object.fromEntries(out.map((m) => [m.id, m]));
+
+  // ---------- 75 more (2.11): wildlife and vehicle photo hunts, good deeds and trail treks ----------
+  // They keep their own ids (m601-m675) so saves never mix them up with the first 600, and are woven into the
+  // board order across the first ~400 missions so they turn up early and often. Good deeds and treks are a new
+  // kind, 'deed': walk the steps, then tap "I did it" (the honor system, like photo hunts).
+  const WILD = P('wild', `a deer|a rabbit|a duck on the water|a hawk or another bird of prey|a heron or egret|a turtle sunning itself|a chipmunk|a woodpecker|a flock of geese|a frog or toad|a dragonfly|a cardinal|a blue jay|a crow or raven|a ladybug|an owl|a fox (from far away)|a bird’s nest (look, don’t touch)|animal tracks in mud or snow|a bat at dusk`);
+  const CARS = P('vehicle', `a yellow car|a red pickup truck|a green car|an orange vehicle|a purple car|a white van|a blue truck|a car older than you|a school bus|a motorcycle|a convertible|a bright pink vehicle|a delivery truck|a bicycle with a basket|a car the same color as your shirt|a tractor or farm machine|a fire truck or ambulance (parked)|a boat|a train or tram|a vintage bicycle`);
+  // [title, how-to line, steps (treks only: a fixed walk)]
+  const KIND = [
+    ['Compliment someone', 'Give a stranger, a neighbor or a friend a sincere compliment.'],
+    ['Give $5 to someone who could use it', 'Hand it over kindly, or drop it in a donation jar or a busker’s case.'],
+    ['Hold the door for someone', 'At a shop, a café or the library on your walk.'],
+    ['Pick up 5 pieces of litter', 'Bring a bag (and gloves). Leave anything sharp or gross for the pros.'],
+    ['Thank a worker by name', 'A cashier, a bus driver, a crossing guard: say thanks and use their name.'],
+    ['Leave a kind note', 'Tuck an encouraging note where someone will find it.'],
+    ['Say hello to 5 people', 'A wave, a nod and a “good morning” count.'],
+    ['Buy someone a coffee', 'Treat a friend, a coworker or the person behind you in line.'],
+    ['Return a stray shopping cart', 'Walk one back to the corral on your way past.'],
+    ['Let someone go ahead of you', 'In a line, at a crosswalk or through a door.'],
+    ['Chalk a kind message', 'On your own sidewalk or driveway, for passers-by to read.'],
+    ['Ask someone about their day', 'Then really listen to the answer.'],
+    ['Donate a book', 'Leave one in a little free library or at your public library.'],
+    ['Help a neighbor', 'Carry groceries, bring in a bin or water their plants.'],
+    ['Call someone you miss', 'Call or voice-message them while you walk.'],
+    ['Tell someone you appreciate them', 'Say exactly what you appreciate. It means more than you think.'],
+    ['Share a snack on your walk', 'Bring something to share with a friend.'],
+    ['Leave a generous tip', 'At a café, a food truck or a shop on your route.'],
+    ['Fill a bag with litter', 'Bring a reusable bag and gloves and leave the path cleaner than you found it.'],
+    ['Invite someone on a walk', 'A friend, a neighbor or family. Walk together, steps count for you.'],
+  ].map(([t, h]) => ['kind', t, h]);
+  const TREK = [
+    ['Walk to the library', 'Check out a book, or just say hi.', 4000],
+    ['Walk to a market or main street', 'A farmers market, a main street or a town square.', 4000],
+    ['Take the long way home', 'Pick a route you’ve never walked.', 5000],
+    ['Climb to the highest point nearby', 'A hilltop, a lookout or the top of a public stairway.', 5000],
+    ['Watch a sunset you walked to', 'Find a spot with a view and wait for the light.', 5000],
+    ['Visit a park you’ve never been to', 'Look one up on the map and walk there.', 6000],
+    ['Cross a bridge you’ve never crossed', 'Footbridges count. Stay on the walkway.', 6000],
+    ['Walk to a local landmark and back', 'A statue, a monument, a famous building.', 7000],
+    ['Walk a trail you’ve never been on', 'A new trail, a new loop or a new part of an old one.', 8000],
+    ['Loop a lake, pond or reservoir', 'Follow the path all the way around.', 8000],
+    ['Explore a nature preserve', 'Stay on marked paths and read the trail signs.', 8000],
+    ['Follow a creek or river', 'Walk a riverside path and see where it goes.', 9000],
+    ['Hike a nearby trail', 'Head for a local trail and log 10,000 steps out there.', 10000],
+    ['Hike a trail with a friend', 'Bring someone along: 10,000 steps, two hikers.', 10000],
+    ['Take on a big hike', 'A long trail day: pack water and snacks and go for 12,000 steps.', 12000],
+  ].map(([t, h, st]) => ['trek', t, h, st]);
+  // round-robin so the four kinds alternate: wild, deed, vehicle, trek…
+  const rr = (lists) => { const o = []; for (let k = 0; o.length < lists.reduce((n, l) => n + l.length, 0); k++) for (const l of lists) if (l[k]) o.push(l[k]); return o; };
+  const extra = rr([WILD, KIND, CARS, TREK]).map((x, k) => ({ x, k }));
+  const SPAN = 400, merged = out.slice();
+  extra.slice().reverse().forEach(({ x, k }) => {
+    const at = Math.min(merged.length, 3 + Math.round((k * (SPAN - 3)) / (extra.length - 1)));   // where it lands on the board
+    const f = at / 674, base = r50(800 + 9200 * Math.pow(f, 1.15));
+    const m = { id: 'm' + (601 + k), n: 0, extra: true };
+    if (x[1] === 'wild' || x[1] === 'vehicle') Object.assign(m, { kind: 'photo', subject: x[0], cat: x[1], steps: r50(base * 0.8), icon: 'photo', pal: 'bone' });
+    else if (x[0] === 'kind') Object.assign(m, { kind: 'deed', deed: 'kind', title: x[1], how: x[2], steps: Math.max(500, r50(base * 0.6)), icon: 'heart' });
+    else Object.assign(m, { kind: 'deed', deed: 'trek', title: x[1], how: x[2], steps: x[3], icon: 'map' });
+    m.reward = { coins: r5(40 + m.steps / 30 + at * 0.6), xp: r5((40 + m.steps / 25 + at * 0.8) * (m.deed === 'kind' ? 1.3 : 1)) };   // kindness pays extra XP
+    if (k % 10 === 9) m.reward.potion = POTS[k % POTS.length];
+    merged.splice(at, 0, m);
+  });
+  merged.forEach((m, i) => (m.n = i + 1));   // board numbers follow the board order
+  CAT_HINT.wild = 'Wildlife: keep your distance and zoom in. Never feed or follow animals.';
+  CAT_HINT.vehicle = 'Vehicle spotting: parked or passing, seen from the sidewalk. Leave plates and people out of the shot.';
+  D.MISSIONS = merged;
+  D.missionById = Object.fromEntries(merged.map((m) => [m.id, m]));
   D.MISSION_ACTIVE_MAX = 3;
   D.MISSION_HOURS = 24;          // time to finish a mission once you pick it
   D.MISSION_WALK_GAP_MIN = 20;   // a break this long between steps starts a new walk

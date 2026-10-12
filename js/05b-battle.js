@@ -86,7 +86,7 @@
     const st = B.st, events = [];
     if (!st || st.over) return events;
     const h = st.hero, e = st.enemy;
-    const P = st.perks, mult = (h.fury > 0 ? h.furyMult : 1) * (h.weak > 0 ? 0.7 : 1) * (P.has('dmg') ? 1.08 : 1) * (P.has('hunter') && (e.boss || e.nemesis) ? 1.15 : 1);
+    const P = st.perks, mult = (h.fury > 0 ? h.furyMult : 1) * (h.weak > 0 ? 0.7 : 1) * (P.has('dmg') ? 1.08 : 1) * (P.has('apex') ? 1.12 : 1) * (P.has('hunter') && (e.boss || e.nemesis) ? 1.15 : 1);
 
     if (move === 'magic') {   // a magic item: instant, it doesn't use your turn (each once per battle, one per turn)
       const [id, mode] = String(arg).split('/'), m = D.magicById[id];
@@ -238,7 +238,7 @@
         events.push({ who: 'hero', type: 'potion', potion: arg, petHeal: heal, revived: b0 <= 0, text: p.name + ' on ' + pt.name + ': +' + heal + ' HP.' + (b0 <= 0 ? ' ' + pt.name + ' is back on its feet!' : '') });
       } else {
       const ev = { who: 'hero', type: 'potion', potion: arg };
-      if (p.kind === 'heal') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * p.amount)); ev.heal = h.hp - b0; ev.text = p.name + ': +' + ev.heal + ' HP.'; }
+      if (p.kind === 'heal') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * p.amount)); ev.heal = h.hp - b0; ev.text = p.name + ': +' + ev.heal + ' HP.'; if (p.guardTurns) { h.guard = p.guardTurns; h.guardF = p.guardF || 0.5; ev.text += ' Damage taken halved for ' + p.guardTurns + ' turns.'; } }
       if (p.kind === 'guard') { h.guard = p.turns; h.guardF = p.factor || 0.5; ev.text = p.name + ': damage taken cut by ' + pct(1 - h.guardF) + ' for ' + p.turns + ' turns.'; }
       if (p.kind === 'fury') { h.fury = p.turns + 1; h.furyMult = p.mult || 1.5; ev.text = p.name + ': +' + pct(h.furyMult - 1) + ' damage for ' + p.turns + ' turns.'; }
       if (p.kind === 'swift') { st.cooldown = 0; const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * (p.amount || 0.1))); ev.heal = h.hp - b0; ev.text = p.name + ': your weapon is ready again' + (ev.heal ? ' (+' + ev.heal + ' HP).' : '.'); }
@@ -383,6 +383,7 @@
     }
     if (h.guard > 0) dmg *= h.guardF;
     if (st.perks.has('armor')) dmg *= 0.92;
+    if (st.perks.has('apex')) dmg *= 0.88;   // Crown of the Long Walk
     if (st.perks.has('firsthit') && !st.firstHit) { st.firstHit = true; dmg *= 0.5; ev.soul = true; }
     dmg = hit(Math.max(1, dmg));
     if (h.reflect) { const back = Math.round(dmg / 2); dmg -= back; e.hp = Math.max(0, e.hp - back); h.reflect = false; ev.mirrored = back; }

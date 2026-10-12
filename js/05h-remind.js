@@ -45,13 +45,75 @@
       const t = Math.min(...mark);                            // only the latest one (no burst after reopening the app)
       mark.forEach((m) => { if (!done.includes(m)) done.push(m); });
       const mins = Math.max(1, Math.round(left)), body = x.title + ' is due ' + when(mins) + '.';
-      if (WB.UI && WB.UI.toast) WB.UI.toast({ kicker: 'Mission due soon', title: x.title, sub: 'Due ' + when(mins) + '.', icon: 'calendar', cls: t <= 5 ? 'warn' : 'gold', action: { label: 'Open', fn: () => { WB.UI.missionTab = x.key[0] === 'c' ? 'mine' : 'field'; WB.UI.go('tasks'); } } });
+      R.addAlert(x, t);   // the bell in the HUD keeps it until you've dealt with it
+      if (WB.UI && WB.UI.toast) WB.UI.toast({ kicker: 'Mission due soon', title: x.title, sub: 'Due ' + when(mins) + '.', icon: 'bell', cls: t <= 5 ? 'warn' : 'gold', action: { label: 'Open', fn: () => { R.seen(x.key); openMission(x.key); } } });
       if (WB.Sfx) WB.Sfx.play('tap');
       systemNote('Step Quest · mission due soon', body, x.key + ':' + t);
       WB.Save.queue();
     }
+    R.paintBell();
     R.schedule();
   };
+
+  // ---------- the alert bell: every due-soon reminder stays here (and survives a restart) until the mission is
+  // finished or deleted, or you clear it. A badge counts the ones you haven't looked at; the bell rings until then. ----------
+  const alerts = () => { const s = S(); if (!Array.isArray(s.alerts)) s.alerts = []; return s.alerts; };
+  const parse = (key) => { const t = key[0], rest = key.slice(2), i = rest.lastIndexOf(':'); return { t, id: rest.slice(0, i), x: rest.slice(i + 1) }; };
+  const openMission = (key) => { WB.UI.missionTab = key[0] === 'c' ? 'mine' : 'field'; WB.UI.go('tasks'); };
+  // still worth showing? (an overdue mission of your own stays for a day, a field mission until it's done or fails)
+  const live = (a) => {
+    const s = S(), k = parse(a.key);
+    if (k.t === 'c') { const m = ((s.custom && s.custom.list) || []).find((c) => String(c.id) === k.id); return !!m && Date.now() - a.due < 24 * 3600000; }
+    const rec = ((s.missions && s.missions.active) || []).find((r) => r.id === k.id && String(r.at) === k.x), m = rec && WB.DATA.missionById[k.id];
+    return !!m && !WB.Game.missionProgress(m, rec).done && WB.Game.missionLeft(rec) > 0;
+  };
+  R.alerts = () => alerts().filter(live).sort((a, b) => a.due - b.due);
+  R.addAlert = (x, mins) => {
+    const list = alerts(), old = list.find((a) => a.key === x.key);
+    if (old) Object.assign(old, { title: x.title, due: x.due, at: Date.now(), seen: false, mins });
+    else list.push({ key: x.key, title: x.title, due: x.due, at: Date.now(), seen: false, mins });
+    WB.Save.queue(); R.paintBell(true);
+  };
+  R.seen = (key) => { for (const a of alerts()) if (!key || a.key === key) a.seen = true; WB.Save.queue(); R.paintBell(); };
+  R.clear = () => { S().alerts = []; WB.Save.queue(); R.paintBell(); };
+  const dueText = (a) => { const m = Math.round((a.due - Date.now()) / 60000); return m > 1 ? 'Due in ' + m + ' min' : m >= -1 ? 'Due now' : 'Overdue by ' + (WB.UI && WB.UI.dur ? WB.UI.dur(-m) : -m + ' min'); };
+  R.paintBell = (ring) => {
+    const s = S(), b = document.getElementById('hud-bell'); if (!s || !b) return;
+    const kept = alerts().filter(live); if (kept.length !== alerts().length) { s.alerts = kept; WB.Save.queue(); }   // finished or deleted missions drop off
+    const n = kept.filter((a) => !a.seen).length;
+    b.hidden = !kept.length;
+    const nEl = document.getElementById('hud-bell-n'); nEl.hidden = !n; nEl.textContent = n > 9 ? '9+' : n;
+    b.classList.toggle('ringing', n > 0);
+    if (ring && n) { b.classList.remove('ring-now'); void b.offsetWidth; b.classList.add('ring-now'); }
+    b.setAttribute('aria-label', kept.length ? 'Mission alerts: ' + kept.length + (n ? ', ' + n + ' new' : '') : 'Mission alerts');
+    b.title = kept.length ? kept.length + ' mission' + (kept.length > 1 ? 's' : '') + ' due soon' : '';
+    if (WB.UI && WB.UI.hydrateIcons) WB.UI.hydrateIcons(b);
+    const sh = document.getElementById('alerts-list'); if (sh) sh.innerHTML = rows();   // the sheet's countdowns stay current
+  };
+  const rows = () => {
+    const list = R.alerts();
+    if (!list.length) return '<p class="empty">No missions are due soon.</p>';
+    return list.map((a) => { const late = a.due < Date.now(); return `<div class="alert-row pbox ${late ? 'late' : ''}">
+      <span class="ar-ic">${WB.icon(late ? 'lock' : 'calendar', 2)}</span>
+      <div class="ar-b"><div class="t-title">${WB.esc(a.title)}</div><div class="ar-due ${late || a.due - Date.now() < 5 * 60000 ? 'urgent' : ''}">${dueText(a)} · ${a.key[0] === 'c' ? 'My missions' : 'Field'}</div></div>
+      <button class="btn sm" type="button" data-alert-open="${WB.esc(a.key)}">Open</button></div>`; }).join('');
+  };
+  R.openAlerts = () => {
+    R.seen();
+    WB.UI.sheet(`<h3 id="sheet-title">${WB.icon('bell', 2)} Mission alerts</h3>
+      <p class="fine">Reminders stay here until the mission is done or you clear them.</p>
+      <div class="list alerts-list" id="alerts-list">${rows()}</div>
+      <div class="sheet-acts"><button class="btn ghost" type="button" data-alert-clear="1">Clear all</button><button class="btn" type="button" data-close>Close</button></div>`);
+  };
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('#hud-bell, [data-alert-open], [data-alert-clear]'); if (!t) return;
+    if (WB.Sfx) WB.Sfx.play('tap');
+    if (t.id === 'hud-bell') return R.openAlerts();
+    if (t.dataset.alertClear) { R.clear(); WB.UI.closeSheet(); return; }
+    const key = t.dataset.alertOpen; WB.UI.closeSheet(); openMission(key);
+  });
+  WB.bus.on('state', () => R.paintBell());
+  setTimeout(() => R.paintBell(), 0);
 
   // installed app: hand every upcoming reminder to the system (re-done only when the missions change)
   let sig = '';

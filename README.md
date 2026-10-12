@@ -33,6 +33,7 @@ The app works offline after the first visit.
 
 - **Quick missions** (Missions → My missions → *Quick missions*, right under *New mission*): 74 pre-made one-tap missions in 8 categories (Body, Mind, Learning, Home, Work & money, Creative, Social, Outdoors). Players can't add their own. Each can be done once a day; together they pay up to `D.QUICK_CAP` (80 coins, 120 XP) a day. Data: `js/02h-quick.js`, rules: `js/05k-quick.js`, UI: `js/07k-quick-ui.js`.
 - **Mission battles**: finishing one of your own missions (25%), claiming a daily mission (20%) or finishing a quick mission (12%) can bring a hostile creature (`D.MISSION_BATTLE`). It is a normal encounter, so the player can fight or walk on. Only from level `D.BATTLE_LEVEL`, never above 3 a day, never within 3 minutes of the last one, and never when HP is under 25%.
+- **Field and Adventure open at level 6** (`D.FIELD_LEVEL`, `js/05-game.js`). Before that both tabs show a lock and "Lv 6", and the tab explains what's inside with a bar to level 6. Merlin's quests (`D.MERLIN_MIN_LEVEL`) and egg trades (`G.tradesOpen`) open at the same level, and travelers don't hand out deliveries before it. Reaching level 6 lists it on the level-up card, then a "Field missions & Adventure" card plays a 3-step mini tutorial (feature `field` in `js/05j-unlocks.js`). Saves already at level 6 or above keep everything; a save with a field mission running keeps the tab open until it's done.
 - **Mission mix** (Profile → Overview): most, in-between and least completed mission types, for a day, week, month or all time, with arrows to step back through past periods. Quick missions, your own missions (by template, see `D.TPL_CAT`) and field missions all count. Counting starts with this version.
 - **36 mission achievements** (totals, quick missions, your own missions, time of day, days in a row, types). Badge art comes from `python3 tools/make_mission_badges.py`.
 
@@ -96,7 +97,7 @@ Each Forge card lists what it uses up (artifacts and HP, each with how many you 
 
 **Artifacts are collected again and again.** The collection log keeps every artifact you've discovered (6 per world). Each find also adds a **copy** to your hand, and once a world's six are all discovered, walking it again keeps turning up new copies (instead of "just old coins"). Inventory → Artifacts → Collection shows each one with ×N in hand. Older saves get one copy of every artifact they had found.
 
-**Worldkeys (18).** Every walker starts with the **Rookie**, a freshly awakened key. The other 17 are earned: reach the level, then buy them in Inventory → Worldkey → Worldkeys (from Classic at level 3 for 800 coins to Regalia at level 52 for 15,000). Locked keys show as dark purple silhouettes; buying never switches keys automatically. Each key has its **own personality** (it can't be chosen separately): the Rookie, Logic Engine, Sarcastic Navigator, Ancient Oracle, Chaotic Companion, Wounded Relic, Glitch, the Poet, Sergeant Volt, Still Water, Professor Fern, Inspector Dusk, Fret, Captain Brine, Sparkle, Jeeves Mk. II, Old Ember and Lord Clarion, each with its own lines for discoveries, arrivals, returns, low energy, charging, tuning, crafting, low HP, long walks and idle moments. The screen loops its charging animation and pulses magenta below 25% energy. Opening a world plays a blue portal, then the new world loads and the Worldkey greets you. New players meet their Worldkey (and the lore of the broken road) on the first launch, and the tutorial covers it too.
+**Worldkeys (18).** Every walker starts with the **Rookie**, a freshly awakened key. The other 17 are earned: reach the level, then buy them in Inventory → Worldkey → Worldkeys (from Classic at level 3 for 800 coins to Regalia at level 52 for 15,000). Locked keys show as dark purple silhouettes; buying never switches keys automatically. Each key has its **own personality** (it can't be chosen separately): the Rookie, Logic Engine, Sarcastic Navigator, Ancient Oracle, Chaotic Companion, Wounded Relic, Glitch, the Poet, Sergeant Volt, Still Water, Professor Fern, Inspector Dusk, Fret, Captain Brine, Sparkle, Jeeves Mk. II, Old Ember and Lord Clarion, each with its own lines for discoveries, arrivals, returns, low energy, charging, tuning, crafting, low HP, long walks and idle moments. The screen loops its charging animation and pulses magenta below 25% energy. Opening a world plays a blue portal, then the new world loads and the Worldkey greets you. New players meet their Worldkey on the first launch in **three swipeable pages** (scroll-snap, with dots and a Next button): *The broken road* with a screenshot of a forest world (Pine Hills, Teal Wood or Moonlit Forest, picked at random; `assets/shots/`), *Your Worldkey*, and *How it works*. The same pages open from the "i" on Inventory → Worldkey, and the tutorial covers it too. Until it wakes up, the Worldkey page reads "Unlocks after your first world".
 
 **Tuning symbols** are square-pixel formations like the ones on the Worldkey screens (four corners, diamond, twin bars, plus, zigzag, diagonal), lit in the current key's color. On the device they fly in wide and settle into shape; every formation has its own shape and tone.
 
@@ -179,7 +180,7 @@ Levels and prices run from level 4 (700 coins) to level 60 (20,000 coins).
 
 ### Mission reminders
 
-**Profile → Settings → Notifications → Mission reminders** (on by default) reminds you **20, 15, 10, 5 and 2 minutes** before any mission is due: your own missions, field missions and Merlin's quests. Each reminder is an in-app notification (with a button that opens the mission) and, once you tap **Allow**, a phone notification. If the app was closed through several of those moments, only the latest one is sent, never a burst. The installed app schedules them with the system (`@capacitor/local-notifications`), so they arrive even when Step Quest is closed; the web app can only notify while it's open or in the background, since there is no push server. Code: `js/05h-remind.js`.
+**Profile → Settings → Notifications → Mission reminders** (on by default) reminds you **20, 15, 10, 5 and 2 minutes** before any mission is due: your own missions, field missions and Merlin's quests. Each reminder is an in-app notification (with a button that opens the mission) and, once you tap **Allow**, a phone notification. Every reminder also lands on the **alert bell** in the HUD: it appears with the first reminder, rings and shows a badge until you open it, and stays (also after a restart, `state.alerts`) until the mission is finished, deleted or failed, or you tap **Clear all**. Its sheet lists each mission with a live "Due in 7 min" / "Overdue" line and an Open button. If the app was closed through several of those moments, only the latest one is sent, never a burst. The installed app schedules them with the system (`@capacitor/local-notifications`), so they arrive even when Step Quest is closed; the web app can only notify while it's open or in the background, since there is no push server. Code: `js/05h-remind.js`.
 
 ## Profile
 
@@ -187,7 +188,7 @@ Profile has two tabs. **Overview**: your walker, special attack, stats, the step
 
 ## Profile stats
 
-Lifetime totals: steps, distance, coins, streak, battles won, **world guardians beaten** (each world's guardian wakes at 100% explored and is challenged from the map), **bosses beaten** (the rare roaming bosses), **Merlin's quests done**, **Knowledge Challenges** (Druid questions answered right, of those taken), worlds, avatars, artifacts and best day. Stats with a dashed border explain themselves when tapped. Distances follow **Profile → Distance units** (miles or kilometers; US English devices start on miles).
+Lifetime totals: steps, distance, coins, streak, battles won, missions completed (all kinds), **field missions**, **adventures**, **quick missions**, **my missions**, **world guardians beaten** (each world's guardian wakes at 100% explored and is challenged from the map), **bosses beaten** (the rare roaming bosses), **Merlin's quests done**, **Knowledge Challenges** (Druid questions answered right, of those taken), worlds, avatars, artifacts and best day. Every stat explains itself when tapped. Distances follow **Profile → Distance units** (miles or kilometers; US English devices start on miles).
 
 ## Bosses
 
@@ -204,9 +205,22 @@ From level 20 (`D.BOSS_LEVEL`) six roaming bosses can turn up on the road. They'
 
 Bosses never flee, and running from one only works 35% of the time (slipping away from the encounter card is a 50/50; fail and it cuts you off). **Win:** XP worth 8% of a level, 150 + 12 × level coins (+250 the first time), a Sundrop or Grand Elixir and a guaranteed egg. **Lose:** you drop 2 levels (`D.BOSS_LEVEL_LOSS`) and some eggs break; worlds, gear and items stay, and levels you win back don't pay level-up coins a second time (`s.peakLevel`). Boss art is in `assets/cr/` (prep: pack 17 in `tools/prep_assets.py`; the Sorceress is mirrored to face you). The Boss_3 upload contained only tutorial videos, so it isn't used.
 
+## The Last Road set (level 79)
+
+Six pieces open at **level 79** in the Shop, one step past the best gear before them (most of which comes from beating guardians). Their icons are a starlight recolor of the top gear in each slot (`assets/wi/sw_dawn.png`, `bw_star`, `sh_last`, `mg/worldbreaker`, `mg/longwalk`, `pot/ambrosia`).
+
+| Item | Slot | Cost | What it does |
+| --- | --- | --- | --- |
+| Dawnbreaker | Melee (sword) | 30,000 | Power 2.3×, pierces guards, 35% crits that hit 2× |
+| Starfall Bow | Ranged (bow) | 32,000 | Power 2.5×, ready every other turn, pierces, 45% chance of a critical double hit |
+| Aegis of the Last Road | Defense | 30,000 | 24% armor, blocks 88%, reverses 40%, hits back, heals when you defend |
+| Worldbreaker Rune | Battle magic | 26,000 | Two blasts of 18% of the creature's max HP and a 1-turn stun |
+| Crown of the Long Walk | Charm | 28,000 | +12% damage dealt and −12% damage taken (perk `apex`) |
+| Ambrosia | Potion | 900 | Full heal; in battle it also halves damage taken for 3 turns |
+
 ## Levels and pacing
 
-Levels cap at **100** (`D.LEVEL_CAP`). XP needed per level is `120 + 40 × level^1.35` (160 XP for level 2). Level-ups pay 10 × level coins. Walking earns 1 coin every 40 steps and 1 XP every 50 steps (`COINS_PER_STEP`, `XP_PER_STEP`), so most XP now comes from battles, quests and missions. At around 1,250 XP a day (7,000 steps plus battles and quests) that's about 2 weeks to level 20, 4 months to 50, 8 months to the last world (level 70; each world also needs the one before it explored) and about 1.5 years to the cap. Each level-up opens a celebration card listing everything the new level unlocks (worlds, walkers, weapons, pets, magic, potions) and how far the next level is.
+Levels cap at **80** (`D.LEVEL_CAP`; it was 100 until 2.11.1, and saves above 80 are set to 80). Everything that unlocks by level opens by 70, so the last 10 levels are for the challenge. XP needed per level is `120 + 40 × level^1.35` (160 XP for level 2). Level-ups pay 10 × level coins. Walking earns 1 coin every 40 steps and 1 XP every 50 steps (`COINS_PER_STEP`, `XP_PER_STEP`), so most XP now comes from battles, quests and missions. At around 1,250 XP a day (7,000 steps plus battles and quests) that's about 2 weeks to level 20, 4 months to 50, 8 months to the last world (level 70; each world also needs the one before it explored) and about 13 months to the cap. Each level-up opens a celebration card listing everything the new level unlocks (worlds, walkers, weapons, pets, magic, potions) and how far the next level is.
 
 ## The Druid
 
@@ -214,7 +228,7 @@ From level 4 (when battles unlock) a druid sometimes steps onto the road with a 
 
 ## Eggs
 
-Three eggs (`js/05e-eggs.js`): **Frost** (common), **Ember** (uncommon) and **Crystal** (rare; rarer eggs get likelier in later worlds). They turn up on the road as an encounter of their own, a quarter of the creatures you beat were guarding one, and guardians always drop one. You can carry 12 of each. Trade sets to **Merlin** once you've met him on the road (trading stays locked until then); after that, trade from Inventory → Artifacts → Eggs or Missions → Field at any time, or when he finds you again:
+Three eggs (`js/05e-eggs.js`): **Frost** (common), **Ember** (uncommon) and **Crystal** (rare; rarer eggs get likelier in later worlds). They turn up on the road as an encounter of their own, a quarter of the creatures you beat were guarding one, and guardians always drop one. You can carry 12 of each. Your egg counts sit on **Missions → Field**, right above the egg trades: three small chips with the count, rarity and a few words about each egg (tap one for its full note). Trading with **Merlin** opens at **level 6**; then trade from Missions → Field at any time, or when he finds you on the road. (The old Inventory → Artifacts → Eggs page is gone; links to it open Missions → Field.)
 
 | Trade | Eggs | Loot |
 | --- | --- | --- |
@@ -227,7 +241,7 @@ Losing a battle costs you half of each kind of egg you carry (losing to the Drui
 
 ## Missions
 
-The **Missions** tab has four sub-tabs, each showing how many rewards are ready: **Today** (daily reward, daily missions, streak), **My missions**, **Field** (the **600 field missions**) and **Adventure** (the adventure chain and deliveries). Every field mission needs real walking. You pick missions from the board, and from the moment you pick one you have **24 hours** to finish it; only steps walked after that count. If the time runs out, or you drop the mission, you lose coins (half the mission's coin reward) and 15% of your max HP (never below 1 HP), and the mission goes to the back of the board to try again later. A finished mission never fails, even before you claim it.
+The **Missions** tab has four sub-tabs, each showing how many rewards are ready: **Today** (daily reward, daily missions, streak), **My missions**, **Field** (the **675 field missions**, from level 6) and **Adventure** (the adventure chain and deliveries, from level 6). Every field mission needs real walking. You pick missions from the board, and from the moment you pick one you have **24 hours** to finish it; only steps walked after that count. If the time runs out, or you drop the mission, you lose coins (half the mission's coin reward) and 15% of your max HP (never below 1 HP), and the mission goes to the back of the board to try again later. A finished mission never fails, even before you claim it.
 
 **Walking streak** (Missions → Today). Walk at least your streak minimum (1,000 steps by default; Profile → Settings) in a day to add a day. The card shows one plain status line ("Walk 1,000 steps today to make it 6 days", "Today counts. Come back tomorrow…", "You missed yesterday. Walk 1,000 steps today and a Streak Shield will save your 5-day streak.", or "Your 5-day streak ended…"), a bar of today's steps toward the minimum, and the next reward ("Next reward: day 14, +350 coins (5 days to go)"). Rewards pay coins at 3, 7, 14, 30, 60 and 100 days.
 
@@ -240,12 +254,13 @@ The **Missions** tab has four sub-tabs, each showing how many rewards are ready:
 - **Timed walks (60):** steps only count inside a window (sunrise, before 10 am, lunch, afternoon, golden hour, evening).
 - **Multi-walk missions (60):** take 2–4 separate walks of a set length (a 20-minute break starts a new walk).
 - **Distance runs (60):** cover a distance (it uses your stride setting).
+- **New in 2.11 (75, ids `m601`–`m675`):** 20 wildlife photo hunts (a deer, a heron, animal tracks…), 20 vehicle photo hunts (a yellow car, a red pickup truck, a school bus…), 20 **good deeds** (compliment someone, give $5 to someone who could use it, pick up litter, thank a worker by name…) and 15 **trail treks** (walk to the library, loop a lake, hike a nearby trail for 10,000 steps…). Deeds and treks are a new kind, `deed`: walk the steps, then tap **I did it** (honor system). Good deeds pay 30% more XP. They are woven into the board order across the first ~400 missions, so they turn up early.
 
-The board offers the next four in order. You can run three at a time, and you can skip or drop missions (they go to the back of the line). They get longer as you go, from about 650 steps to roughly 12,000, and every 25th pays a potion too. Set your **home state** (link on the Missions tab) to see your official state bird and flower. Missions live in `js/02c-missions.js`: edit the content lists there to change subjects, items or pacing.
+The board offers the next four in order ("4 to pick from") and shows your three mission slots as boxes ("0 / 3 in use"). You can run three at a time, and you can skip or drop missions (they go to the back of the line). They get longer as you go, from about 650 steps to roughly 12,000, and every 25th pays a potion too. Set your **home state** (link on the Missions tab) to see your official state bird and flower. Missions live in `js/02c-missions.js`: edit the content lists there to change subjects, items or pacing.
 
 ### Merlin's quests
 
-Merlin, a wandering owl-mage, now and then swoops down on the road (from level 2, at most once every couple of hours) and offers one of **300 harder quests**. They use the same five kinds as field missions but ask for far more walking: photo quests after 4,500–15,000 steps (the highest lookout, a bridge you've never crossed, the oldest tree in a park…), gathering 10–26 arcane items, timed walks of 2,700–9,000 steps, 3–5 separate walks of 2,000–4,500 steps, and distance runs of 5–16 km. You get **48 hours**, and they pay **about 150–600 coins and 200–900 XP** (every 10th adds an Elixir). One Merlin quest runs at a time, at the top of Missions → Field, and it doesn't take a field-mission slot. Turning him down, handing a quest back or running out of time costs nothing; he offers it again another day. All quests stay on public sidewalks, parks and trails. Merlin's own music plays only while he is on screen. Quests live in `js/02d-merlin.js`.
+Merlin, a wandering owl-mage, now and then swoops down on the road (from level 6, at most once every couple of hours) and offers one of **300 harder quests**. They use the same five kinds as field missions but ask for far more walking: photo quests after 4,500–15,000 steps (the highest lookout, a bridge you've never crossed, the oldest tree in a park…), gathering 10–26 arcane items, timed walks of 2,700–9,000 steps, 3–5 separate walks of 2,000–4,500 steps, and distance runs of 5–16 km. You get **48 hours**, and they pay **about 150–600 coins and 200–900 XP** (every 10th adds an Elixir). One Merlin quest runs at a time, at the top of Missions → Field, and it doesn't take a field-mission slot. Turning him down, handing a quest back or running out of time costs nothing; he offers it again another day. All quests stay on public sidewalks, parks and trails. Merlin's own music plays only while he is on screen. Quests live in `js/02d-merlin.js`.
 
 ### My missions
 
@@ -256,6 +271,8 @@ Completing one pays coins and XP: the difficulty sets the base (Easy 15 coins / 
 ## Sound and music
 
 **Playing with your own music:** Settings has two switches, **Game music** and **Sound effects**. With Game music on, the browser asks iOS for the `playback` audio session (older iPhones: a silent looping audio track started on the first tap), so sounds play on the speaker even with the Ring/Silent switch on silent. With Game music off, the player is listening to their own music: no game music plays and `WB.Sfx.applySession()` (`js/04-steps.js`) switches to the `ambient` session, so sound effects layer on top of their music instead of pausing it. The installed iOS app sets `AVAudioSession` to `.playback` with `.mixWithOthers` (`native/scripts/patch-native.mjs`), so there both work at once. Old saves start Game music where their Sound & music switch was.
+
+**Sound that stays on.** Phones stop Web Audio behind the game's back (iOS "interrupted" after a call, Siri, an alarm or the lock screen; a suspended context in the background; a context that runs silently after switching speakers or headphones). Every tap now resumes any context that isn't running, one that won't come back is replaced with a fresh one, coming back to the app wakes it, and a new audio device starts a new context. The music player also picks itself back up on the next tap when the phone paused it.
 
 Recorded sounds live in `assets/sfx/` and music in `assets/music/`; `tools/prep_sounds.py <uploads_folder> assets` rebuilds them from the original uploads (it finds each file by its label, trims silence and compresses):
 
@@ -289,11 +306,11 @@ Level-ups, achievements and every completed mission (daily, adventure, delivery,
 
 ## Tutorial and tips
 
-New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, the Shop and Inventory pages, battles and the Profile. A **Skip tutorial** button sits at the top of every step (Back on the phone ends it too), and it can be replayed from the **Tutorial** button next to the Profile title. While any sheet, battle, the tutorial or onboarding is open, the page behind it can't scroll. A discovery on the road stays on screen for 40 seconds, with a × to close it sooner. The first time a player's HP drops to 35% or below, a one-time note at the top of the screen explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal), with a Potions button. It never covers the screen, and if it happens in a fight it waits until the battle is over.
+New players get a guided tour right after sign-up (existing players see it once after updating). It visits every page and highlights each feature: the HUD, the world, today's steps, health, the step counter, objectives, the map, all mission types, the Shop and Inventory pages, battles and the Profile. A **Skip tutorial** button sits at the top of every step (Back on the phone ends it too), and it can be replayed from **Profile → Settings → Help → Watch tutorial**. While any sheet, battle, the tutorial or onboarding is open, the page behind it can't scroll. A discovery on the road stays on screen for 40 seconds, with a × to close it sooner. The first time a player's HP drops to 35% or below, a one-time note at the top of the screen explains how to heal (wait about 15 minutes, or drink a potion; walking doesn't heal), with a Potions button. It never covers the screen, and if it happens in a fight it waits until the battle is over.
 
 ## Worlds and levels
 
-There are 50 worlds, and they open **one at a time**: each needs a level (spread from Rust Hollow at level 1 to the Fort of Illusion at level 70, `D.LAST_WORLD_LEVEL`) **and** the world before it explored to 75% (`D.WORLD_GATE_PCT`; the world after Rust Hollow needs Rust Hollow at 100%, `D.FIRST_WORLD_PCT`). The world screen and the map show both requirements, ticking each one off, and roughly how many steps away the next world is. Worlds are 2.5× longer than at launch (`D.WORLD_LENGTH_MULT`) and encounters come every 600–1,000 steps. Creatures get stronger in later worlds, and every world has a guardian and a few artifacts to find.
+There are 50 worlds, and they open **one at a time**: each needs a level (spread from Rust Hollow at level 1 to the Fort of Illusion at level 70, `D.LAST_WORLD_LEVEL`) **and** the world before it explored to 75% (`D.WORLD_GATE_PCT`; the world after Rust Hollow needs Rust Hollow at 100%, `D.FIRST_WORLD_PCT`). The world screen and the map show both requirements, ticking each one off, and roughly how many steps away the next world is. Worlds are 2.5× longer than at launch (`D.WORLD_LENGTH_MULT`) and encounters come every 600–1,000 steps. Creatures and guardians **fight at your level** (`D.worldTier`, `js/02-data.js`): a world's creatures use the tier of a world that opens at your level, or the world's own tier when that's higher. Going back to an old world to farm artifacts is still a real fight, and walkers past the last world (level 70) keep meeting even fights up to 80. At every level a creature takes about 2 good hits and hits for 8–11% of your HP; a guardian takes about 10 and hits for 16–20%. Battle XP and coins, and the coins a loss costs you, use the same tier. Roaming bosses and the Rival already followed your level. Every world has a guardian and a few artifacts to find.
 
 ## Walkers and pets
 
@@ -301,6 +318,8 @@ Pets cost 400–5,000 coins and unlock between levels 2 and 20 (some come from s
 
 At sign-up a player picks one of three classic walkers (Scavenger, Wandering Mage, Healer) and a skin tone. Only the one you pick is yours: the other two starters are locked until **level 5**, then cost 1,500 coins each (the sign-up screen says so). Every other walker (47 in all, including the Knight, the Ranger, Warrior, Shadow Archer, Ronin, Leaf Ranger, Executioner, Blaze, Huntress, Crimson Duelist and Shadow Knight) is unlocked later with coins, levels, streaks or exploration. The newest seven (`tools/prep_avatars2.py`): **Adventurer** (level 4, 1,800 coins; the pack only has a run cycle, so its idle is a breathing bob and its attack a lunge), **Goblin Pathfinder** (level 9, 2,600), **Spore Walker** (the mushroom, level 11, 3,400), **Skeleton Squire** (level 15, 4,600), **Watcher** (the flying eye, hovers a little off the ground; level 21, 6,500), **Iron Knight** (Tank Knight colour 1; level 27, 8,500) and **Steel Knight** (colour 2; a 30-day streak).
 
+
+The **Ranger** (level 15, 4,200 coins) uses the newer human_ranger sprites: sword and shield, green tunic and a magenta scarf (Outfit dyes the tunic, Trim the scarf and blade). It is the first walker with its own death animation, which plays when you fall in battle (other walkers still slump with their hurt frame). Rebuild it with `python3 -I tools/replace_ranger.py <human_ranger_dir>`.
 
 Anything you can't buy or equip yet tells you why when you tap it: how many more coins you need, or the level, streak or world that unlocks it.
 
@@ -325,7 +344,7 @@ js/assets.js             sprite sheet sizes and frame counts (generated)
 js/00-util.js            helpers, storage, event bus
 js/01-icons.js           hand-drawn pixel icons
 js/02-data.js            ALL game content: worlds, avatars, items, daily missions, achievements, encounters
-js/02c-missions.js       the 600 field missions, state birds and flowers
+js/02c-missions.js       the 675 field missions, state birds and flowers
 js/02d-merlin.js         Merlin's 300 harder quests
 js/03-state.js           save data and persistence
 js/04-steps.js           step tracking sources, wake lock, sound hooks
@@ -344,7 +363,7 @@ js/07b-battle-ui.js      battle screen
 js/07d-missions-ui.js    field missions on the Missions tab, camera flow, photo journal
 js/07e-custom-ui.js      "My missions": create, edit, check off and complete your own missions
 js/07f-tour.js           the guided tutorial and the one-time low-health tip
-js/07h-eggs.js           Inventory → Artifacts → Eggs and the trade cards
+js/07h-eggs.js           egg counts and Merlin's trade cards (Missions → Field)
 js/08-main.js            startup, onboarding, developer panel
 assets/bg/               world layers (each scene at most 300 px tall)
 assets/av/               avatar sprite atlases (one row per animation)

@@ -47,7 +47,7 @@
 
   // ---------- rendering ----------
   const ic = (m, scale = 3) => WB.icon(m.icon, scale, m.pal ? { pal: m.pal } : {});
-  const tag = (m) => ({ photo: 'Photo hunt', gather: 'Gather', time: 'Timed walk', walks: 'Multi-walk', distance: 'Distance' })[m.kind];
+  const tag = (m) => (m.kind === 'deed' ? (m.deed === 'trek' ? 'Trail & trek' : 'Good deed') : ({ photo: 'Photo hunt', gather: 'Gather', time: 'Timed walk', walks: 'Multi-walk', distance: 'Distance' })[m.kind]);
   const penText = (m) => { const p = G.missionPenalty(m); if (!p.coins && !p.hp) return 'no penalty'; return [p.coins ? '-' + WB.fmt(p.coins) + ' coins' : '', p.hp ? '-' + p.hp + ' HP' : ''].filter(Boolean).join(', '); };
   const left = (a) => { const ms = G.missionLeft(a); return ms <= 0 ? 'Time’s up' : UI.dur(Math.ceil(ms / 60000)) + ' left'; };
   function activeCard(m, a) {
@@ -57,6 +57,9 @@
     else if (m.kind === 'photo') act = p.ready
       ? `<label class="btn gold sm file-btn">${WB.icon('photo', 2)}Take photo<input type="file" accept="image/*" capture="environment" data-mphoto="${m.id}"></label>`
       : `<button class="btn sm" type="button" ${UI.off('Walk ' + WB.fmt(m.steps - p.cur) + ' more steps first, then the camera opens for this photo.')}>${WB.icon('photo', 2)}Take photo</button>`;
+    else if (m.kind === 'deed') act = p.ready
+      ? `<button class="btn gold sm" type="button" data-mdeed="${m.id}">${WB.icon('check', 2)}I did it</button>`
+      : `<button class="btn sm" type="button" ${UI.off('Walk ' + WB.fmt(m.steps - p.cur) + ' more steps first' + (m.deed === 'trek' ? '.' : ', then do your good deed.'))}>${WB.icon('check', 2)}I did it</button>`;
     const ms = G.missionLeft(a), urgent = !p.done && ms < 2 * 3600000;
     const clock = p.done ? '<span class="m-clock done">Finished: claim it</span>' : `<span class="m-clock ${urgent ? 'urgent' : ''}">${WB.icon('calendar', 1)}${left(a)}</span>`;
     const armed = UI.dropArm === m.id && !p.done;
@@ -84,12 +87,15 @@
     const board = G.missionBoard(), st = G.homeState(), mer = G.merlinActive(), fieldDone = ms.done.filter((id) => id[0] === 'm').length;
     const merlin = `<div class="sect merlin-sect" id="merlin-quest"><h2><canvas class="mer-face" width="40" height="40" aria-hidden="true"></canvas>Merlin’s quest <span class="aside">${G.merlinDone()} / ${D.MERLIN.length} done</span></h2>
       ${mer ? `<div class="list">${activeCard(mer[0], mer[1])}</div>` : `<p class="fine">Merlin the owl-mage appears on the road with bigger quests and bigger rewards. You get ${D.MERLIN[0].hours} hours, and saying no costs nothing.${S().level < D.MERLIN_MIN_LEVEL ? ' He shows up from level ' + D.MERLIN_MIN_LEVEL + '.' : ''}</p>`}
-      <h3 class="m-sub">Egg trades <span class="aside">${G.eggTotal()} egg${G.eggTotal() === 1 ? '' : 's'} carried</span></h3>${UI.eggTrades ? UI.eggTrades() : ''}
+      <h3 class="m-sub">Your eggs <span class="aside">${G.eggTotal()} carried</span></h3>${UI.eggStrip ? UI.eggStrip() : ''}
+      <h3 class="m-sub">Egg trades <span class="aside">${S().eggTrades || 0} made</span></h3>${UI.eggTrades ? UI.eggTrades() : ''}
     </div>`;
     return `${merlin}<div class="sect" id="field-missions"><h2>Field missions <span class="aside">${fieldDone} / ${D.MISSIONS.length} done</span></h2>
-      <p class="fine m-intro">Real-world walks with a goal: photo hunts, gathering runs and timed walks. Accept one and you have ${D.MISSION_HOURS} hours; only steps after that count. Miss the deadline or drop it and you lose coins and HP. Run up to ${D.MISSION_ACTIVE_MAX} at once.${st ? '' : ' <button class="linkbtn inl" type="button" data-act="home-state">Set your home state</button> for state bird and flower missions.'}</p>
+      <p class="fine m-intro">Real-world walks with a goal: photo hunts, good deeds, trail treks, gathering runs and timed walks. Accept one and you have ${D.MISSION_HOURS} hours; only steps after that count. Miss the deadline or drop it and you lose coins and HP. Run up to ${D.MISSION_ACTIVE_MAX} at once.${st ? '' : ' <button class="linkbtn inl" type="button" data-act="home-state">Set your home state</button> for state bird and flower missions.'}</p>
       ${act.length ? `<div class="list">${act.map(([m, a]) => activeCard(m, a)).join('')}</div>` : ''}
-      ${board.length ? `<h3 class="m-sub">Mission board <span class="aside">${act.length} / ${D.MISSION_ACTIVE_MAX} active</span></h3><div class="list">${board.map(boardCard).join('')}</div>` : '<p class="empty">Every field mission is complete. Legendary.</p>'}
+      ${board.length ? `<h3 class="m-sub">Mission board <span class="aside">${board.length} to pick from</span></h3>
+        <div class="m-slots" role="img" aria-label="${act.length} of ${D.MISSION_ACTIVE_MAX} mission slots in use"><span class="lbl">Your slots</span>${Array.from({ length: D.MISSION_ACTIVE_MAX }, (_, i) => `<i class="${i < act.length ? 'on' : ''}"></i>`).join('')}<span class="lbl">${act.length} / ${D.MISSION_ACTIVE_MAX} in use${act.length >= D.MISSION_ACTIVE_MAX ? ' · finish or drop one to accept another' : ''}</span></div>
+        <div class="list">${board.map(boardCard).join('')}</div>` : '<p class="empty">Every field mission is complete. Legendary.</p>'}
       <p class="fine">Stay on sidewalks and public paths. Keep away from wildlife, and ask before photographing people or their pets. Photos stay on your phone.</p>
       <h3 class="m-sub">Photo journal <span class="aside" id="jr-count"></span></h3><div class="journal" id="journal"><p class="empty">Photos from your photo hunts appear here.</p></div>
     </div>`;
@@ -119,7 +125,7 @@
 
   // ---------- events ----------
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-macc], [data-mdrop], [data-mkeep], [data-mskip], [data-jr], [data-act="home-state"]');
+    const t = e.target.closest('[data-macc], [data-mdrop], [data-mkeep], [data-mskip], [data-mdeed], [data-jr], [data-act="home-state"]');
     if (!t || t.getAttribute('aria-disabled') === 'true') return;
     const d = t.dataset;
     if (d.act === 'home-state') return stateSheet();
@@ -130,6 +136,7 @@
     else if (d.mdrop && !d.sure) UI.dropArm = d.mdrop;
     else if (d.mdrop) { UI.dropArm = null; G.dropMission(d.mdrop); }
     else if (d.mskip) G.skipMission(d.mskip);
+    else if (d.mdeed) { const m = D.missionById[d.mdeed]; if (G.missionDeed(d.mdeed)) { WB.Sfx.play('claim'); UI.toast({ kicker: m.deed === 'trek' ? 'Trek complete' : 'Good deed done', title: G.missionTitle(m), sub: m.deed === 'trek' ? 'Claim your reward.' : 'The world’s a little better. Claim your reward.', icon: m.deed === 'trek' ? 'map' : 'heart', cls: 'ok' }); } }
     UI.render();
   });
   document.addEventListener('change', async (e) => {
@@ -150,5 +157,6 @@
   });
   WB.bus.on('merlinGone', ({ m, why }) => UI.toast({ kicker: why === 'dropped' ? 'Quest returned to Merlin' : 'Merlin’s quest faded', title: G.missionTitle(m) + ' · no penalty, he’ll offer it again', icon: 'feather', pal: 'violet', cls: 'msg', ms: 4200 }));
   WB.bus.on('missionSoon', ({ m, a }) => UI.toast({ kicker: (m.merlin ? 'Merlin’s quest ends in ' : 'Mission ends in ') + UI.dur(Math.ceil(G.missionLeft(a) / 60000)), title: G.missionTitle(m) + (m.merlin ? ' · the reward is still waiting' : ' · finish it or lose ' + ((p) => p.coins + ' coins' + (p.hp ? ' and ' + p.hp + ' HP' : ''))(G.missionPenalty(m))), icon: 'calendar', cls: 'msg', ms: 5000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
+  WB.bus.on('missionDeedReady', ({ m }) => UI.toast({ kicker: m.deed === 'trek' ? 'Trail & trek' : 'Good deed', title: m.deed === 'trek' ? 'Steps done: ' + m.title : 'Ready: ' + m.title, icon: m.deed === 'trek' ? 'map' : 'heart', ms: 3000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
   WB.bus.on('missionPhotoReady', ({ m }) => UI.toast({ kicker: 'Photo hunt', title: 'Ready: ' + G.missionSubject(m), icon: 'photo', ms: 3000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
 })();

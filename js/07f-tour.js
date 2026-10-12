@@ -32,9 +32,10 @@
     { go: mis('today'), sel: () => sect('#scr-tasks', 'Daily missions'), page: 'Missions', title: 'Daily missions', text: 'Three quick goals that refresh every day at midnight.' },
     { go: mis('today'), sel: () => sect('#scr-tasks', 'Walking streak'), page: 'Missions', title: 'Streak', text: 'Walk your step minimum every day to grow it. A Streak Shield saves it when you miss a day.' },
     { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'My missions', text: 'Your real-life goals, turned into missions. Set a due time, difficulty and priority, then finish for coins and XP. Late pays half.' },
-    { go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' real-world walks: photo hunts, gathering runs, timed walks and more. Accept up to ' + D.MISSION_ACTIVE_MAX + '. Each gives you ' + D.MISSION_HOURS + ' hours. Miss or drop one and you lose coins and HP. Merlin’s bigger quests appear at the top, and saying no to him costs nothing.' },
-    { go: mis('field'), sel: '#journal', page: 'Missions', title: 'Photo journal', text: 'Photos from your photo hunts, kept on this phone only.' },
-    { go: mis('adventure'), sel: () => sect('#scr-tasks', 'Adventure'), page: 'Missions', title: 'Adventure', text: 'Long-term goals: reach worlds, win battles, find artifacts. Two are active at a time.' },
+    { when: () => !WB.Game.featOn('field'), go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field & Adventure', text: 'Two more mission tabs open at level ' + D.FIELD_LEVEL + ': Field (real-world walks, Merlin’s quests and egg trades) and Adventure (long-term goals and deliveries). Keep walking to reach them.' },
+    { feat: 'field', go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' real-world walks: photo hunts, gathering runs, timed walks and more. Accept up to ' + D.MISSION_ACTIVE_MAX + '. Each gives you ' + D.MISSION_HOURS + ' hours. Miss or drop one and you lose coins and HP. Merlin’s bigger quests appear at the top, and saying no to him costs nothing.' },
+    { feat: 'field', go: mis('field'), sel: '#journal', page: 'Missions', title: 'Photo journal', text: 'Photos from your photo hunts, kept on this phone only.' },
+    { feat: 'field', go: mis('adventure'), sel: () => sect('#scr-tasks', 'Adventure'), page: 'Missions', title: 'Adventure', text: 'Long-term goals: reach worlds, win battles, find artifacts. Two are active at a time.' },
     // ---------- shop ----------
     { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Buying and unlocking', text: 'Some items cost coins. Others unlock with levels, streaks or exploring. Tap a locked item to see what it needs.' },
     { go: hub('shop', 'weapons'), sel: '#scr-shop .loadout', page: 'Shop', title: 'Weapons', text: 'Melee weapons power Strike, ranged weapons power Throw, Shoot or Cast, and defense powers Defend. Tap a slot to see its weapons.' },
@@ -47,17 +48,17 @@
     { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Inventory', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here. Locked ones show as silhouettes.' },
     { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Inventory', title: 'Artifacts', text: 'Artifacts hide in every world. Each find adds a copy. Once you’ve found them all, walking a world again turns up more copies.' },
     { feat: 'dm', go: hub('art', 'forge'), sel: '#wk-forge', page: 'Inventory', title: 'Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and some HP). Stronger kinds need artifacts from later worlds. Darkmatter charges your Worldkey.' },
-    { go: hub('art', 'eggs'), sel: '#scr-inv .eggs', page: 'Inventory', title: 'Eggs', text: 'Find Frost, Ember and Crystal eggs on the road or in battle. Carry up to ' + D.EGG_MAX + ' of each and trade sets to Merlin for loot.' },
+    { go: mis('field'), sel: '#egg-strip', page: 'Missions', title: 'Eggs', text: 'Find Frost, Ember and Crystal eggs on the road or in battle. Carry up to ' + D.EGG_MAX + ' of each. Your eggs are counted on Missions → Field, right above Merlin’s egg trades (from level ' + D.FIELD_LEVEL + ').' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'The Druid', text: 'From level ' + D.BATTLE_LEVEL + ', the Druid may stop you with a trivia question. Answer right for XP and coins. Answer wrong and you must battle him. If he wins, he takes your eggs.' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'Bosses', text: 'From level ' + D.BOSS_LEVEL + ', six rare bosses roam the roads. They hit hard and have unique powers. Beat one for big rewards; lose and you drop ' + D.BOSS_LEVEL_LOSS + ' levels.' },
     // ---------- battles ----------
     { go: tab('world'), sel: '#stage', page: 'Battles', title: 'Encounters and battles', text: 'From level ' + D.BATTLE_LEVEL + ', creatures appear on the road. Fight them or walk around. In battle you can Strike, Throw, Defend, use Items or Magic, or run. When a creature is “Charging!”, Defend. From level ' + D.SPECIAL_LEVEL + ', your Special attack charges as you fight.' },
     // ---------- profile ----------
     { go: pf('overview'), sel: '#scr-profile .hero', page: 'Profile', title: 'Profile', text: 'Your walker, title, level and HP. Tap the pencil to rename yourself.' },
-    { go: pf('overview'), sel: '#scr-profile .stats', page: 'Profile', title: 'Stats', text: 'Your lifetime totals. Tap a stat with a dashed border to learn what it means.' },
+    { go: pf('overview'), sel: '#scr-profile .stats', page: 'Profile', title: 'Stats', text: 'Your lifetime totals. Tap any stat to learn what it counts.' },
     { go: pf('overview'), sel: '#scr-profile .chart', page: 'Profile', title: 'Your steps', text: 'Steps per day for the last 7, 14 or 30 days. Highlighted bars reached your streak minimum. Tap a bar to see that day’s steps.' },
     { go: pf('overview'), sel: '#scr-profile .wardrobe', page: 'Profile', title: 'Loadout', text: 'Change your walker, weapons, defense and pet in one place. From level 25 you can recolor your walker here too.' },
-    { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Settings', text: 'Steps and goals, mission reminders, theme, sound and your save. Replay this tour from the Tutorial button at the top.' },
+    { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Settings', text: 'Steps and goals, mission reminders, theme, sound and your save. Replay this tour any time from Settings → Help.' },
     { go: tab('world'), title: 'You’re ready', text: 'Start walking: every step counts. Good luck out there!' },
   ];
 
@@ -68,6 +69,11 @@
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it to a world', text: 'Each world hums at its own frequency: match its symbol pattern to tune the Worldkey to it. A tuning lasts a few days; time and walking knock it out of tune.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-acts', page: 'Worldkey', title: 'Then open the way', text: 'Once it’s tuned, tap Open. Until level ' + D.UPKEEP_LEVEL + ' it runs on its starter charge, so opening worlds costs no energy.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Worldkey', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here.' },
+    ],
+    field: [
+      { go: mis('field'), sel: '#field-missions', page: 'Level ' + D.FIELD_LEVEL, title: 'Field missions', text: 'Real-world walks with a goal: photo hunts, trail hikes, good deeds and more. Accept up to ' + D.MISSION_ACTIVE_MAX + ' at a time; each gives you ' + D.MISSION_HOURS + ' hours.' },
+      { go: mis('field'), sel: '#egg-strip', page: 'Level ' + D.FIELD_LEVEL, title: 'Eggs and Merlin’s trades', text: 'Your eggs are counted here. Trade full sets to Merlin for coins, XP, potions and even gear. Merlin also starts offering his bigger quests now.' },
+      { go: mis('adventure'), sel: () => sect('#scr-tasks', 'Adventure'), page: 'Level ' + D.FIELD_LEVEL, title: 'Adventure', text: 'Long-term goals that grow as you play, plus messages travelers ask you to deliver.' },
     ],
     dm: [
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-energy', page: 'Level ' + D.UPKEEP_LEVEL, title: 'Your Worldkey needs energy now', text: 'From now on, opening a world costs energy. Energy fades a little each day and as you walk, so keep an eye on this bar.' },
@@ -141,7 +147,7 @@
   T.start = (done, key) => {
     if (!el) build();
     onDone = done || null; mini = key || null;
-    STEPS = key ? MINI[key] : ALL_STEPS.filter((st) => !st.feat || WB.Game.featOn(st.feat));
+    STEPS = key ? MINI[key] : ALL_STEPS.filter((st) => (!st.feat || WB.Game.featOn(st.feat)) && (!st.when || st.when()));
     T.active = true; el.hidden = false; document.documentElement.classList.add('touring');
     UI.histPush('tour');   // Back ends the tour
     UI.lockScroll('tour', true);
@@ -177,6 +183,7 @@
   // ---------- a feature just unlocked: congratulations, then its mini tutorial ----------
   const FEAT_CARD = {
     wk: { kick: 'Unlocked', title: 'Your Worldkey is awake!', img: 'wk/dm_nebula.png', text: 'You finished your first world, so your Worldkey can open the next one. Here’s how it works.' },
+    field: { kick: 'Level ' + D.FIELD_LEVEL + ' unlock', title: 'Field missions & Adventure', egg: 'crystal', text: 'Two new mission tabs are open: Field (real-world walks, Merlin’s quests and egg trades) and Adventure (long-term goals and deliveries).' },
     dm: { kick: 'Level ' + D.UPKEEP_LEVEL + ' unlock', title: 'Darkmatter and gear care', img: 'wk/dm_void.png', text: 'From here on, your Worldkey runs on Darkmatter (crafted from artifacts), Here’s what changes.' },
   };
   setInterval(() => {
@@ -187,7 +194,7 @@
     WB.Sfx.play('level'); if (WB.Celebrate) WB.Celebrate.confetti(70);
     let started = false;
     const go = () => { if (started) return; started = true; setTimeout(() => T.start(null, k), 250); };
-    UI.sheet(`<div class="feat-card"><span class="lbl">${c.kick}</span>${WB.pxImg(c.img, 48)}<h3 id="sheet-title">${c.title}</h3><p>${c.text}</p>
+    UI.sheet(`<div class="feat-card"><span class="lbl">${c.kick}</span>${c.egg ? WB.eggImg(c.egg, 48) : WB.pxImg(c.img, 48)}<h3 id="sheet-title">${c.title}</h3><p>${c.text}</p>
       <button class="btn gold block" type="button" id="feat-go" data-autofocus>Show me</button></div>`, (root) => {
       root.querySelector('#feat-go').onclick = () => { UI.closeSheet(); go(); };
     });

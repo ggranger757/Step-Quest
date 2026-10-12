@@ -3,6 +3,8 @@
          Until Darkmatter unlocks it runs on its starter charge: opening worlds costs no energy and nothing fades.
    'dm'  Darkmatter and gear care, at level D.UPKEEP_LEVEL (7): the Forge, Worldkey energy (it fades with time and
          walking), (gear care — shots, uses, wear — no longer waits for this level; see G.gearCare in 05i-gear.js).
+   'field' Missions → Field (field missions, Merlin's quests, egg trades) and Missions → Adventure, at level
+         D.FIELD_LEVEL (6). Saves already past it unlock it quietly.
    Each unlock shows a short congratulations card, then plays its own mini tutorial (07f-tour.js).
    Saves from before this rule unlock whatever they have already reached, quietly. */
 (() => {
@@ -39,9 +41,14 @@
     if (!feats().wk && done) unlock('wk', quiet);
     else if (feats().wk && !done) { delete feats().wk; WB.Save.queue(); }   // switched on too early by an older version: it sleeps again until the first world is finished
     if (feats().wk && !feats().dm && s.level >= D.UPKEEP_LEVEL) unlock('dm', quiet);
+    if (!feats().field && G.lvlReached(D.FIELD_LEVEL)) unlock('field', quiet);
   };
   // older saves: unlock what they've already reached without fanfare
-  G.featBoot = () => { const s = S(); if (s && s.onboarded && !s.feats) { feats(); G.featCheck(true); } };
+  G.featBoot = () => {
+    const s = S(); if (!s || !s.onboarded) return;
+    if (!s.feats) { feats(); G.featCheck(true); }
+    else if (!s.feats.field && G.lvlReached(D.FIELD_LEVEL)) { s.feats.field = Date.now(); WB.Save.queue(); }   // saves from before the level-6 lock
+  };
   G.featNext = () => queue.shift();
   G.featPending = () => queue.length > 0;
   WB.bus.on('worldFound', () => G.featCheck(false));

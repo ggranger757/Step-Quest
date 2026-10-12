@@ -27,9 +27,9 @@
 <link rel="preload" href="assets/fonts/jersey10.woff" as="font" type="font/woff" crossorigin>
 <link rel="preload" href="assets/fonts/pixelifysans.woff" as="font" type="font/woff" crossorigin>
 <link rel="preload" href="assets/fonts/silkscreen.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=2.10.3">
+<link rel="stylesheet" href="css/style.css?v=2.11.0">
 <style>[hidden]{display:none!important}</style>
-<script>window.WB = { BUILD: 'pwa', VERSION: '2.8.0', DEV_TOOLS: false };</script>
+<script>window.WB = { BUILD: 'pwa', VERSION: '2.12.0', DEV_TOOLS: false };</script>
 </head>
 <body>
 <div id="boot" class="boot" role="status" aria-live="polite">
@@ -49,6 +49,7 @@
     </div>
     <div class="hud-chip coin" id="hud-coins" title="Walk Coins"><span class="ic" data-icon="coin"></span><b id="hud-coinnum">0</b><span class="sr">Walk Coins</span></div>
     <div class="hud-chip streak" id="hud-streak" title="Walking streak"><span class="ic" data-icon="flame" id="hud-flame"></span><b id="hud-streaknum">0</b><span class="sr">day streak</span></div>
+    <button class="hud-chip bell" id="hud-bell" type="button" hidden aria-label="Mission alerts" aria-haspopup="dialog"><span class="ic" data-icon="bell"></span><i class="bell-n" id="hud-bell-n" hidden></i></button>
   </header>
 
   <main class="screens">

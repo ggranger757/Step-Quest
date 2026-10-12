@@ -236,7 +236,7 @@
       }
     }
     // hero (on a Strike the equipped melee weapon pops up over the head instead of being drawn in the hand)
-    const hs = sprites.hero, hsh = WB.sheet('av', s.avatar, hs.anim === 'down' ? 'hurt' : hs.anim), himg = WB.Assets.ok(hsh.path);
+    const hs = sprites.hero, hsh = WB.sheet('av', s.avatar, hs.anim === 'down' ? 'death' : hs.anim), himg = WB.Assets.ok(hsh.path);
     if (himg) {
       step(hs, hsh, dt, hs.anim === 'idle' ? 7 : 12);
       ease(hs, dt);

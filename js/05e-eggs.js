@@ -5,9 +5,9 @@
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
 
   D.EGGS = [
-    { id: 'frost', name: 'Frost Egg', rarity: 'Common', w: 62, desc: 'Cool to the touch. Merlin keeps them in his ice cellar.' },
-    { id: 'ember', name: 'Ember Egg', rarity: 'Uncommon', w: 28, desc: 'Warm, and it ticks softly when you hold it.' },
-    { id: 'crystal', name: 'Crystal Egg', rarity: 'Rare', w: 10, desc: 'Glows from the inside. Merlin pays the most for these.' },
+    { id: 'frost', name: 'Frost Egg', rarity: 'Common', w: 62, short: 'Cool to the touch', desc: 'Cool to the touch. Merlin keeps them in his ice cellar.' },
+    { id: 'ember', name: 'Ember Egg', rarity: 'Uncommon', w: 28, short: 'Warm, ticks softly', desc: 'Warm, and it ticks softly when you hold it.' },
+    { id: 'crystal', name: 'Crystal Egg', rarity: 'Rare', w: 10, short: 'Glows inside', desc: 'Glows from the inside. Merlin pays the most for these.' },
   ];
   D.eggById = Object.fromEntries(D.EGGS.map((e) => [e.id, e]));
   D.EGG_MAX = 12;   // per kind
@@ -37,10 +37,11 @@
   };
   G.eggText = (m) => Object.entries(m).filter(([, n]) => n > 0).map(([k, n]) => n + ' ' + D.eggById[k].name + (n > 1 ? 's' : '')).join(', ');
 
-  // you can trade once you've met Merlin on the road (s.enc.merlinMet), and only with a full set
+  // s.enc.merlinMet is still recorded (achievements, his first visit); trading itself opens at level 6
   G.merlinMet = () => !!S().enc.merlinMet;
   G.hasSet = (t) => Object.entries(t.need).every(([k, n]) => (eggs()[k] || 0) >= n);
-  G.canTrade = (t) => G.merlinMet() && G.hasSet(t);
+  // trading opens at level 6 (D.FIELD_LEVEL), together with Missions → Field where the trades live
+  G.canTrade = (t) => G.tradesOpen() && G.hasSet(t);
   G.tradesReady = () => D.EGG_TRADES.filter(G.canTrade);
   G.setsReady = () => D.EGG_TRADES.filter(G.hasSet);
   // an item from Merlin's hoard: a weapon or pet you don't own (cheapest first, so it's never a huge jump)

@@ -155,9 +155,9 @@
     const stepKey = () => {
       panel.innerHTML = `<div class="istep"><span class="lbl">Step 1 of 3</span><h2>Meet your Worldkey</h2></div>
         ${WB.WK.lore()}
-        <button class="btn block xl" type="button" id="i-go">Continue</button>`;
-      if (WB.WK) WB.WK.device(panel.querySelector('canvas'), { mode: 'idle', look: D.WK_START });
-      $('#i-go').onclick = () => { WB.Sfx.play('tap'); step2(); };
+        <button class="btn block xl" type="button" id="i-go">Next</button>`;
+      if (WB.WK) WB.WK.device(panel.querySelector('canvas.wk-canvas'), { mode: 'idle', look: D.WK_START });
+      WB.WK.bindLore(panel, $('#i-go'), 'Continue', () => step2());   // three swipeable pages, then on to choosing a walker
     };
     const step2 = () => {
       const starters = D.STARTER_ORDER.map((id) => D.AVATARS.find((a) => a.id === id)), locked = D.AVATARS.length - 1;

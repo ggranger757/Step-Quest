@@ -282,7 +282,9 @@
   };
 
   // ---------- tasks ----------
-  G.dailyDef = (id) => D.DAILY_TASKS.find((t) => t.id === id);
+  // "Resolve 2 encounters" counts every road event (crates, finds, eggs, travelers, critters you shoo off), so before
+  // battles unlock it's worded without the fighting
+  G.dailyDef = (id) => { const t = D.DAILY_TASKS.find((x) => x.id === id); return t && t.kind === 'today_encounters' && !G.battlesOpen() ? { ...t, title: 'Check out ' + t.target + ' things on the road', sub: 'Crates, finds, eggs and travelers all count.' } : t; };
   G.taskProgress = (t) => {
     const s = S(), td = s.today;
     switch (t.kind) {
@@ -306,7 +308,7 @@
   };
   const BATTLE_GOALS = ['total_battles', 'bosses'];
   // battle goals stay hidden until battles unlock (level D.BATTLE_LEVEL); the others move up meanwhile
-  G.activeAdventure = () => D.ADVENTURE.filter((a) => !S().tasks.advDone.includes(a.id) && (G.battlesOpen() || !BATTLE_GOALS.includes(a.kind))).slice(0, 2);
+  G.activeAdventure = () => !G.lvlReached(D.FIELD_LEVEL) ? [] : D.ADVENTURE.filter((a) => !S().tasks.advDone.includes(a.id) && (G.battlesOpen() || !BATTLE_GOALS.includes(a.kind))).slice(0, 2);
   G.claimable = () => {
     const s = S(), out = [];
     s.tasks.daily.forEach((d) => { const t = G.dailyDef(d.id); if (t && !d.claimed && G.taskProgress(t) >= t.target) out.push({ type: 'daily', t, rec: d }); });
@@ -418,10 +420,11 @@
   G.makeEncounter = (forceType, opts = {}) => {
     const s = S(), w = opts.world ? D.worldById[opts.world] : G.world();
     let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS.map((x) => x.type === 'find' && G.perk('finds') ? { ...x, w: x.w * 1.5 } : x)).type;
-    const eggTrade = G.setsReady && G.setsReady().length && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
+    const eggTrade = G.tradesOpen() && G.setsReady && G.setsReady().length && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
     if (type === 'druid' && s.level < D.BATTLE_LEVEL && !forceType) type = 'chest';   // a wrong answer means a fight, so he waits until battles unlock
     if (type === 'boss' && !G.battlesOpen() && !forceType) type = 'chest';
     if (type === 'creature' && !G.battlesOpen() && !opts.creature) type = WB.pick(['chest', 'find', 'egg', 'traveler']);   // no creatures at all before battles unlock
+    if (type === 'traveler' && !G.advOpen() && !forceType) type = 'chest';   // deliveries land on Missions → Adventure, which opens at level 6
     if (type === 'nemesis' && !opts.boss && (s.level < D.BOSS_LEVEL || Date.now() - (s.enc.nemesisAt || 0) < D.BOSS_COOLDOWN_H * 3600000)) type = 'creature';
     if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest && !eggTrade) type = 'chest';
     const e = { id: 'e' + ++s.enc.seq, type, world: w.id };
@@ -460,7 +463,7 @@
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
       }
     } else if (type === 'merlin') {
-      const m = opts.quest ? D.missionById[opts.quest] : G.merlinEligible() ? G.merlinNext() : null, trades = G.setsReady();
+      const m = opts.quest ? D.missionById[opts.quest] : G.merlinEligible() ? G.merlinNext() : null, trades = G.tradesOpen() ? G.setsReady() : [];
       s.enc.merlinAt = Date.now(); s.enc.merlinMet = true;   // meeting him opens egg trading
       e.npc = 'merlin'; e.quest = m ? m.id : null;
       e.text = m ? WB.pick(D.MERLIN_LINES) + ' ' + G.missionTitle(m) + ': ' + G.missionDesc(m) + ' Finish within ' + m.hours + ' hours.' : '“Hoo! I hear you’ve been collecting eggs. Shall we trade?”';
@@ -497,6 +500,14 @@
   };
   G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 600 + Math.floor(Math.random() * 400); };   // an encounter every 600–1,000 steps
   G.battlesOpen = () => S().level >= D.BATTLE_LEVEL;
+  // Missions → Field (field missions, Merlin's quests, egg trades) and Missions → Adventure (the adventure chain,
+  // deliveries) open at level D.FIELD_LEVEL. A save that already has a field mission running keeps the tab open
+  // until it's finished, so nothing is ever stranded behind the lock.
+  D.FIELD_LEVEL = 6;
+  G.lvlReached = (lv) => Math.max(S().level, S().peakLevel || 0) >= lv;
+  G.fieldOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().missions || {}).active || []).length > 0;
+  G.advOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().tasks || {}).quests || []).length > 0;
+  G.tradesOpen = () => G.lvlReached(D.FIELD_LEVEL);
   G.firstEncounterType = () => {
     const s = S();
     if (s.enc.seq === 0) return 'chest';
@@ -608,7 +619,8 @@
     if (e.nemesis) return bossResult(b, out, w);
     if (b.result === 'win') {
       const mult = e.boss ? 4 : 1;
-      out.reward = { xp: Math.round((22 + w.tier * 9) * mult), coins: Math.round((12 + w.tier * 5) * (e.boss ? 5 : 1)) };
+      const tier = D.worldTier(w, s.level);   // the tier the creature fought at (it follows your level)
+      out.reward = { xp: Math.round((22 + tier * 9) * mult), coins: Math.round((12 + tier * 5) * (e.boss ? 5 : 1)) };
       s.enc.battles++; s.today.battles = (s.today.battles || 0) + 1; s.enc.fights++;
       const first = !s.enc.cards[e.creature];
       s.enc.cards[e.creature] = (s.enc.cards[e.creature] || 0) + 1;
@@ -626,12 +638,12 @@
       s.enc.losses++;
       s.hp = Math.round(G.maxHp() * 0.25); // you wake up bruised
       // ...and some coins fall out of your pockets: 5–10% of what you carry plus a little, capped by world tier
-      const tier = w.tier || 0, lost = Math.min(s.coins, Math.round(s.coins * (0.05 + Math.random() * 0.05)) + 5 + Math.floor(Math.random() * 11) + tier * 2, 60 + tier * 25);
+      const tier = D.worldTier(w, s.level), lost = Math.min(s.coins, Math.round(s.coins * (0.05 + Math.random() * 0.05)) + 5 + Math.floor(Math.random() * 11) + tier * 2, 60 + tier * 25);
       s.coins -= lost; out.lostCoins = lost;
       out.lostEggs = e.creature === 'druid' ? G.takeAllEggs() : G.breakEggs();   // half of each kind of egg breaks (the Druid takes them all)
       if (e.boss) s.enc.bossDue = null;
     } else if (b.result === 'escaped') {   // it ran away badly hurt: half the battle XP, no coins or loot
-      out.reward = { xp: Math.round((22 + w.tier * 9) * (e.boss ? 4 : 1) * 0.5) };
+      out.reward = { xp: Math.round((22 + D.worldTier(w, s.level) * 9) * (e.boss ? 4 : 1) * 0.5) };
       out.granted = G.grant(out.reward, true);
       s.enc.fights++; s.enc.count++; s.today.encounters++;
       if (e.boss) s.enc.bossDue = null;   // a guardian that flees waits on the world map

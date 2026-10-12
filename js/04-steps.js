@@ -199,15 +199,40 @@
       } catch (e) {}
     };
     document.addEventListener('visibilitychange', () => { if (keeper && document.visibilityState === 'hidden') keeper.pause(); });
-    const ensure = () => {
-      if (!ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; ctx = new AC(); }
-      if (ctx.state === 'suspended') ctx.resume();
+    /* Keeping sound alive. Phones stop Web Audio behind the game's back: iOS puts the context in "interrupted"
+       (a call, Siri, an alarm, another app's audio, the screen locking), browsers suspend it in the background,
+       and switching speakers or headphones can leave it "running" but silent. Any state other than "running" is
+       resumed on the next tap; a context that won't come back (closed, or still stuck after a resume) is thrown
+       away and a fresh one is made, so sound never stays off while the switch is on. */
+    let stuck = 0, born = 0;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const fresh = () => {
+      try { if (ctx && ctx.state !== 'closed') ctx.close(); } catch (e) {}
+      for (const k of Object.keys(buffers)) delete buffers[k];   // decoded again for the new context
+      ctx = null; stuck = 0;
+      try { ctx = new AC(); born = Date.now(); ctx.onstatechange = () => { if (ctx && ctx.state === 'running') stuck = 0; }; } catch (e) { ctx = null; }
+      return ctx;
+    };
+    const ensure = (gesture) => {
+      if (!AC) return null;
+      if (!ctx || ctx.state === 'closed') fresh();
+      if (!ctx) return null;
+      if (ctx.state !== 'running') {
+        // resumed on a tap but still not running: a dead context (seen on iOS after interruptions); replace it
+        if (gesture && stuck >= 2 && Date.now() - born > 1500) fresh();
+        if (ctx.state !== 'running') { if (gesture) stuck++; try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+      }
       applySession(); keepAwake();
       return ctx;
     };
-    // start (or resume) audio on the first real tap, so the very first sound already plays on the speaker
-    const unlock = () => { if (!muted()) ensure(); };
+    // start (or resume) audio on every real tap, so the very first sound already plays on the speaker
+    const unlock = () => { if (!muted()) ensure(true); };
     ['pointerup', 'touchend', 'keydown'].forEach((g) => document.addEventListener(g, unlock, { capture: true, passive: true }));
+    // coming back to the app: wake the context (and replace it if it was lost while away)
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ctx && !muted()) ensure(false); });
+    window.addEventListener('pageshow', () => { if (ctx && !muted()) ensure(false); });
+    // new speakers or headphones: an old context can keep "running" while making no sound, so start a new one
+    try { if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { if (ctx) fresh(); }); } catch (e) {}
     const tones = {
       coin: [[988, 0.05], [1319, 0.08]], claim: [[660, 0.06], [880, 0.06], [1175, 0.1]],
       level: [[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.18]], chest: [[392, 0.06], [523, 0.06], [784, 0.12]],
@@ -301,7 +326,8 @@
       for (const [f, w] of pool) { r -= w; if (r <= 0) return (lastBattle = f); }
       return (lastBattle = pool[pool.length - 1][0]);
     };
-    let el = null, want = null, fadeT = null;
+    let el = null, want = null, fadeT = null, oursAt = 0;
+    const pause = () => { if (!el) return; oursAt = Date.now(); el.pause(); };   // our own pauses (the 'pause' event arrives later, so it's timed)
     const allowed = () => !!(WB.state && WB.state.settings.gameMusic !== false);   // the Game music switch
     // browsers only start audio after a real tap: on phones that is touchend / pointerup / click (not pointerdown)
     const GESTURES = ['pointerup', 'touchend', 'click', 'keydown'];
@@ -319,7 +345,7 @@
       stop(ms = 900) {
         want = null; if (!el) return;
         const a = el, v0 = a.volume, t0 = performance.now(); clearInterval(fadeT);
-        fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = v0 * (1 - k); if (k >= 1) { clearInterval(fadeT); a.pause(); } }, 50);
+        fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = v0 * (1 - k); if (k >= 1) { clearInterval(fadeT); oursAt = Date.now(); a.pause(); } }, 50);
       },
       // lower the music while a fanfare plays, then bring it back
       duck(ms) {
@@ -332,8 +358,13 @@
       stopIf(key, ms) { if (want && want.key === key) B.stop(ms); },
       // start, stop or resume to match what's wanted and what's allowed right now
       sync() {
-        if (!want || !allowed()) { if (el && !el.paused) { clearInterval(fadeT); el.pause(); } return; }
-        if (!el) { el = new Audio(); el.loop = true; el.preload = 'auto'; }
+        if (!want || !allowed()) { if (el && !el.paused) { clearInterval(fadeT); pause(); } return; }
+        if (!el) {
+          el = new Audio(); el.loop = true; el.preload = 'auto'; el.setAttribute('playsinline', '');
+          // the phone paused it (a call, Siri, another app): pick it back up on the next tap, if it's still wanted
+          el.addEventListener('pause', () => { if (Date.now() - oursAt > 800 && want && allowed() && document.visibilityState === 'visible') GESTURES.forEach((g) => document.addEventListener(g, retry, true)); });
+          el.addEventListener('error', () => { if (want) { el.removeAttribute('src'); el.dataset.src = ''; GESTURES.forEach((g) => document.addEventListener(g, retry, true)); } });
+        }
         const url = WB.Assets.base + want.src;
         if (el.dataset.src !== want.src) { el.src = url; el.dataset.src = want.src; }
         clearInterval(fadeT);
@@ -342,7 +373,7 @@
         const p = el.play(); if (p && p.catch) p.catch(() => GESTURES.forEach((g) => document.addEventListener(g, retry, true)));
       },
     };
-    document.addEventListener('visibilitychange', () => { if (!el) return; if (document.visibilityState === 'hidden') el.pause(); else B.sync(); });
+    document.addEventListener('visibilitychange', () => { if (!el) return; if (document.visibilityState === 'hidden') pause(); else B.sync(); });
     return B;
   })();
 })();

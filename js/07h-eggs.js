@@ -1,5 +1,5 @@
-/* Step Quest — eggs on screen: the Inventory → Artifacts → Eggs tab, Merlin's egg trades (also under his quest on
-   Missions → Field) and the toasts when you find or break eggs. Rules live in 05e-eggs.js. */
+/* Step Quest — eggs on screen: the egg counts and Merlin's egg trades on Missions → Field (under his quest), and the
+   toasts when you find or break eggs. Rules live in 05e-eggs.js. */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, S = () => WB.state;
 
@@ -9,18 +9,17 @@
     return `<div class="trade pbox ${ready ? 'ready' : ''}">
       <div class="tr-main"><div class="t-title">${WB.esc(t.name)}</div><div class="tr-need">${needText(t)}</div>
         <div class="t-rew">${WB.esc(G.rewardText(t.reward))}${t.item ? ' + a weapon or pet from his hoard' : ''}</div></div>
-      <button class="btn ${ready ? 'gold' : ''} sm" type="button" data-eggtrade="${t.id}" ${UI.off(!ready && (!G.merlinMet() ? 'Meet Merlin on the road first. After that you can trade any time.' : 'You need ' + miss + '.'))}>${G.merlinMet() ? 'Trade' : 'Locked'}</button>
+      <button class="btn ${ready ? 'gold' : ''} sm" type="button" data-eggtrade="${t.id}" ${UI.off(!ready && (!G.tradesOpen() ? 'Egg trades open at level ' + D.FIELD_LEVEL + '.' : 'You need ' + miss + '.'))}>${G.tradesOpen() ? 'Trade' : 'Locked'}</button>
     </div>`;
   }
-  // used by Inventory → Artifacts → Eggs and by Merlin's corner of the Field tab
+  // Merlin's corner of Missions → Field
   UI.eggTrades = () => `<div class="list trades">${D.EGG_TRADES.map(tradeCard).join('')}</div>`;
-  UI.eggSection = () => {
+  // the egg counts, small: one chip per kind (count, rarity and a few words about it; tap for the full note)
+  UI.eggStrip = () => {
     const e = G.eggs();
-    return `<div class="eggs">${D.EGGS.map((x) => `<div class="egg pbox ${e[x.id] ? '' : 'none'}">${WB.eggImg(x.id, 64)}<div class="egg-b"><div class="t-title">${x.name} <span class="lbl">${x.rarity}</span></div><div class="m-desc">${x.desc}</div>
-        <div class="obj-prog"><div class="bar seg"><i style="width:${(e[x.id] / D.EGG_MAX) * 100}%"></i></div><span class="num">${e[x.id] || 0} / ${D.EGG_MAX}</span></div></div></div>`).join('')}</div>
-      <div class="sect"><h2>Trade with Merlin <span class="aside">${S().eggTrades || 0} made</span></h2>
-        <p class="fine">${G.merlinMet() ? 'Trade a full set for loot here, or when Merlin finds you on the road.' : 'Merlin the owl-mage trades loot for eggs. Meet him on the road to start trading.'} Lose a battle and you drop half of each kind.</p>
-        ${UI.eggTrades()}</div>`;
+    return `<div class="egg-strip" id="egg-strip">${D.EGGS.map((x) => { const n = e[x.id] || 0; return `<button class="egg-chip pbox ${n ? '' : 'none'} ${n >= D.EGG_MAX ? 'full' : ''}" type="button" data-info="${WB.esc(x.desc + ' You can carry ' + D.EGG_MAX + '.')}" data-info-k="${WB.esc(x.name + ' · ' + x.rarity)}" aria-label="${WB.esc(x.name)}: ${n} of ${D.EGG_MAX}. ${WB.esc(x.short)}.">
+        <span class="ec-top">${WB.eggImg(x.id, 24, 'still')}<span class="ec-n"><b>${n}</b><small>/${D.EGG_MAX}</small></span></span><span class="ec-t">${x.name.replace(' Egg', '')} <i>${x.rarity}</i></span><span class="ec-d">${WB.esc(x.short)}</span></button>`; }).join('')}</div>
+      <p class="fine egg-note">Found on the road and guarded by creatures. Losing a battle breaks half of each kind, so trade before a risky fight.</p>`;
   };
 
   document.addEventListener('click', (ev) => {

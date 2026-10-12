@@ -63,7 +63,7 @@
       `${d.title}: earned the honest way, one step at a time.`,
       `You did it, ${N}. “${d.title}” is yours to keep.`,
       `${d.title}! Small steps, big story.`,
-      `A ${c.part} to remember: ${d.title}.`,
+      `${/^[aeiou]/i.test(c.part) ? "An" : "A"} ${c.part} to remember: ${d.title}.`,
     ]);
     if (kind === 'merlin') return pick([
       `“Hoo! I knew you had it in you, ${N}.” Merlin is impressed.`,
