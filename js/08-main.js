@@ -31,7 +31,7 @@
     window.addEventListener('pagehide', save);
     $('#dev-fab').hidden = !WB.isDev();
     $('#dev-fab').onclick = devPanel;
-    if (WB.BUILD === 'pwa' && 'serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) navigator.serviceWorker.register('sw.js').catch(() => {});
+    if (WB.BUILD === 'pwa' && 'serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) WB.Updates.register();
   }
 
   function startApp(welcome) {
@@ -132,6 +132,28 @@
     });
     window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'dev' && WB.isDev()) { $('#dev-fab').hidden = false; } });
   }
+
+  // ---------- updates ----------
+  // A new deploy installs a new service worker in the background. When it takes over, the page reloads once to run
+  // the new code, but only at a safe moment (never mid-battle, in a sheet, the tutorial or sign-up): right away if
+  // the player is just on a screen, otherwise the next time the app comes back to the foreground. After the reload a
+  // toast says which version is now running. The app also checks for an update each time it's reopened.
+  WB.Updates = (() => {
+    let pending = false, had = false, reg = null;
+    const busy = () => document.documentElement.classList.contains('battling') || !$('#sheet').hidden || !$('#intro').hidden || (WB.Tour && WB.Tour.active) || !$('#encounter').hidden;
+    const go = () => { if (!pending) return; if (document.visibilityState === 'visible' && busy()) return; pending = false; try { WB.Save.now(); } catch (e) {} location.reload(); };
+    return {
+      register() {
+        had = !!navigator.serviceWorker.controller;
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => { reg = r; }).catch(() => {});
+        navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } pending = true; go(); });
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { if (pending) go(); else if (reg) reg.update().catch(() => {}); } else if (pending) go(); });
+        setInterval(() => { if (pending) go(); }, 5000);
+        // say so once after an update
+        try { const was = localStorage.getItem('stepquest.ver'); localStorage.setItem('stepquest.ver', WB.VERSION); if (was && was !== WB.VERSION) setTimeout(() => UI.toast({ kicker: 'Updated', title: 'Step Quest ' + WB.VERSION, sub: 'The latest version is running.', icon: 'spark', cls: 'ok', ms: 3500 }), 2500); } catch (e) {}
+      },
+    };
+  })();
 
   // ---------- first-time experience ----------
   function intro() {

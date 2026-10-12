@@ -401,7 +401,15 @@ Everything lives in `js/02-data.js`:
 
 ## Shipping updates
 
-The service worker caches every file. When you change anything, edit the `CACHE` name at the top of `sw.js` (for example `stepquest-2.3.1`) so installed phones pick up the new version on their next launch.
+Before every deploy, stamp a new version:
+
+```bash
+python3 -I tools/stamp_version.py 2.12.2
+```
+
+It writes the version into `index.html` (`WB.VERSION`, and `?v=` on the stylesheet and every script) and into `sw.js` (the `CACHE` name and the matching precache URLs). Versioned URLs mean a phone can never run old cached scripts with a new page. The page itself is revalidated with the server on every launch, the app checks for a new version each time it's reopened, and when one has installed it reloads once at a safe moment (never mid-battle, in a sheet, the tutorial or sign-up) and shows an "Updated · Step Quest 2.12.2" note. The running version is at the bottom of Profile → Settings.
+
+**The installed iPhone/Android app** (built from `native/`) carries its own copy of the web files: after changing the game, run `npm run sync` in `native/` and rebuild it in Xcode or Android Studio (or re-run the Android workflow). Deploying to GitHub Pages doesn't update it.
 
 Saves from earlier versions upgrade automatically. Auras and dyes were retired in 2.0; players who bought them get their coins back. Since 2.2 worlds open by level; worlds a player already unlocked stay open.
 
