@@ -12,7 +12,7 @@
                     Copies are what the Darkmatter Forge uses up. */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
-  Object.assign(D, { AMMO_PACK: 20, AMMO_MAX: 99, MAGIC_USES: 3, MAGIC_MAX: 9, WEAR_STRIKE: 1, WEAR_FLOOR: 0.6, WORN_AT: 30 });
+  Object.assign(D, { AMMO_PACK: 20, AMMO_MAX: 100, MAGIC_USES: 3, MAGIC_MAX: 9, WEAR_STRIKE: 1, WEAR_FLOOR: 0.6, WORN_AT: 30 });
 
   // what an item costs (items earned another way still get a fair price for refills, repairs and buying back)
   G.price = (it) => { const r = (it && it.req) || {}; return r.cost || (r.bosses ? r.bosses * 400 : r.streak ? r.streak * 100 : r.steps ? Math.round(r.steps / 100) : r.daily ? 1500 : 60); };

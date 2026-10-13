@@ -695,8 +695,10 @@
   const refillBtn = (kind, it, block) => {
     const free = G.freeRefill(), cost = free ? 0 : G.price(it), am = kind === 'ammo', n = am ? G.ammo(it.id) : G.uses(it.id);
     const pack = am ? D.AMMO_PACK : D.MAGIC_USES, max = am ? D.AMMO_MAX : D.MAGIC_MAX, unit = am ? 'shots' : 'uses', full = n + pack > max;
-    return `<button class="btn gold sm ${block ? 'block' : ''}" type="button" data-${am ? 'ammo' : 'uses'}="${it.id}" ${off(full ? 'You can carry ' + max + ' ' + unit + '.' : free ? '' : shortWhy(cost, pack + ' more ' + unit))}>${free ? 'Free refill: +' + pack + ' ' + unit : 'Buy ' + pack + ' ' + unit + ' · ' + WB.fmt(cost)}</button>`;
+    return `<button class="btn gold sm ${block ? 'block' : ''}" type="button" data-${am ? 'ammo' : 'uses'}="${it.id}" ${off(full ? 'You can carry ' + max + ' ' + unit + '.' : free ? '' : shortWhy(cost, pack + ' more ' + unit))}>${free ? 'Free refill: +' + pack + ' ' + unit : 'Buy ' + pack + ' ' + unit + ' - ' + WB.fmt(cost)}</button>`;
   };
+  // a count badge that stays on the item's container even while it is equipped: x80 shots, x3 uses
+  const countBadge = (n, unit) => `<span class="count ${n ? '' : 'out'}" aria-label="${n} ${unit} left"><b>×${WB.fmt(n)}</b><small>${n === 1 ? unit.slice(0, -1) : unit}</small></span>`;
   const countTag = (n, unit) => `<span class="tag ${n ? '' : 'out'}">${n ? n + ' ' + (n === 1 ? unit.slice(0, -1) : unit) : unit === 'shots' ? 'Out of shots' : 'Used up'}</span>`;
   // a Shop card: buy it, or buy more of what runs out (shots, magic uses)
   function itemCard(cat, it, opts = {}) {
@@ -740,8 +742,9 @@
     if (ranged && up) btns.push(refillBtn('ammo', it));
     const tag = eq ? `<span class="tag eq">${cat === 'magic' ? 'Worn' : cat === 'avatar' ? 'In use' : 'Equipped'}</span>`
       : ranged && up ? countTag(G.ammo(it.id), 'shots') : battleMagic && up ? countTag(G.uses(it.id), 'uses') : '';
+    const badge = up && ranged ? countBadge(G.ammo(it.id), 'shots') : up && battleMagic ? countBadge(G.uses(it.id), 'uses') : '';
     return `<div class="item pbox bag">
-      <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
+      <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${badge}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
       <h3>${WB.esc(it.name)}</h3>
       <div class="req">${opts.stat ? `<span class="stat">${opts.stat}</span>` : ''}${opts.desc ? `<span>${WB.esc(opts.desc)}</span>` : ''}</div>
       ${melee && up ? condBar(it.id) : ''}
@@ -752,8 +755,9 @@
   const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Block ${Math.round(w.block * 100)}%` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
   const WGROUPS = { melee: [['sword', 'Swords'], ['dagger', 'Daggers'], ['axe', 'Axes'], ['mace', 'Maces'], ['spear', 'Spears'], ['staff', 'Staves']],
     ranged: [['throw', 'Throwing weapons'], ['knife', 'Throwing knives & gear'], ['bow', 'Bows'], ['gun', 'Firearms'], ['spell', 'Spells']], shield: [['shield', 'Shields']] };
+  const slotBadge = (k, w) => { if (!w || !G.gearCare()) return ''; if (k === 'ranged') return countBadge(G.ammo(w.id), 'shots'); if (k === 'melee') { const c = Math.round(G.cond(w.id)); return `<span class="count ${G.broken(w.id) ? 'out' : c <= D.WORN_AT ? 'worn' : ''}"><b>${G.broken(w.id) ? 'Broken' : c + '%'}</b></span>`; } return ''; };
   const loadout = (slot) => `<div class="loadout">${['melee', 'ranged', 'shield'].map((k) => { const w = G.equipped(k); return `<button type="button" class="lslot pbox ${slot === k ? 'on' : ''}" data-wpnslot="${k}" aria-pressed="${slot === k}">
-      <canvas width="64" height="64" ${w ? `data-prev="weapon:${w.id}"` : ''}></canvas><span class="ws-t"><span class="lbl">${D.WEAPON_SLOTS[k]}</span><span class="ws-v">${w ? WB.esc(w.name) : '<span class="none">None</span>'}</span></span></button>`; }).join('')}</div>`;
+      ${slotBadge(k, w)}<canvas width="64" height="64" ${w ? `data-prev="weapon:${w.id}"` : ''}></canvas><span class="ws-t"><span class="lbl">${D.WEAPON_SLOTS[k]}</span><span class="ws-v">${w ? WB.esc(w.name) : '<span class="none">None</span>'}</span></span></button>`; }).join('')}</div>`;
   const hpCard = () => { const s = S(), hp = s.hp, max = G.maxHp(); return `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">${hp >= max ? 'Full health.' : 'Full in about ' + UI.dur(G.minsToFull()) + '.'} Walking doesn’t heal. HP refills on its own in ${D.HEAL_MINUTES} minutes, or drink a potion to heal now.</p></div>`; };
 
   // ----- Shop sections -----
