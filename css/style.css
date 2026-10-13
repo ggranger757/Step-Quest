@@ -846,6 +846,17 @@ html.rm .say-bubble { animation: none; }
 .btn.gold, .b-actions .btn[data-b="strike"], .b-actions .btn.special.ready, .badge, .cm-seg button[aria-checked="true"], .item .prev .tag.leg { --t: #000; color: #000; }
 .btn.gold *, .b-actions .btn[data-b="strike"] *, .b-actions .btn.special.ready *, .item .prev .tag.leg * { color: #000 !important; }
 .btn.gold small, .b-actions .btn[data-b="strike"] small, .b-actions .btn.special.ready small { opacity: 1; }
+/* Battle: Strike (and a charged special) drop to the dark button color while they can't be pressed, so their
+   black text must change with them (black on --surface-2 was 1.2:1). The color says why:
+   teal   = [disabled]: your turn is playing out (your hit, then the creature's). It comes back by itself.
+   orange = [aria-disabled]: blocked for a reason; tapping it says why. Wins over teal when both are set.
+   Every theme: teal and orange on --surface-2 are 7.7:1 or more (WCAG 2.1 AA, Section 508). */
+.b-actions .btn[data-b="strike"][disabled], .b-actions .btn.special.ready[disabled] { --b: var(--surface-2); --t: var(--cyan); color: var(--cyan); animation: none; }
+.b-actions .btn[data-b="strike"][disabled] *, .b-actions .btn.special.ready[disabled] * { color: var(--cyan) !important; }
+.b-actions .btn[data-b="strike"][aria-disabled="true"], .b-actions .btn.special.ready[aria-disabled="true"] { --b: var(--surface-2); --t: var(--gold); color: var(--gold); animation: none; }
+.b-actions .btn[data-b="strike"][aria-disabled="true"] *, .b-actions .btn.special.ready[aria-disabled="true"] * { color: var(--gold) !important; }
+/* gray sub-labels on any battle button that can't be pressed: full strength, not faded on top of gray (was 3.6:1) */
+.b-actions .btn[disabled] small, .b-actions .btn[aria-disabled="true"] small { opacity: 1; }
 /* an orange button you can't use yet looks the same: black text, never faded (tapping it says why) */
 .btn.gold[aria-disabled="true"], .btn.gold[disabled] { --b: var(--gold); --t: #000; color: #000; opacity: 1; }
 /* locked or undiscovered things: a teal silhouette (the app's accent) */
