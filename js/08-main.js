@@ -29,6 +29,7 @@
     const save = () => { if (S().onboarded) G.markSeen(); WB.Save.now(); };
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
     window.addEventListener('pagehide', save);
+    document.addEventListener('freeze', save);   // Chrome on Android can freeze a background tab without hiding it first
     $('#dev-fab').hidden = !WB.isDev();
     $('#dev-fab').onclick = devPanel;
     if (WB.BUILD === 'pwa' && 'serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) WB.Updates.register();

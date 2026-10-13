@@ -128,10 +128,18 @@
       WB.state = s && s.v ? migrate(s) : fresh();
       return WB.state;
     },
-    _t: null,
-    queue() { clearTimeout(this._t); this._t = setTimeout(() => this.now(), 1200); },
-    now() {
+    _t: null, _since: 0,
+    /* Changes are batched (one write 1.2 s after the last change), but never for longer than 5 s: while you walk,
+       every step is a change, and the batch used to keep waiting, so nothing was saved until the app went to the
+       background. If the phone closed the app first, the steps, streak and rewards since then were lost. */
+    queue() {
+      const t = Date.now();
+      if (!this._since) this._since = t;
       clearTimeout(this._t);
+      this._t = setTimeout(() => this.now(), Math.max(0, Math.min(1200, this._since + 5000 - t)));
+    },
+    now() {
+      clearTimeout(this._t); this._since = 0;
       WB.state.savedAt = Date.now();
       WB.store.set(KEY, WB.state);
       WB.Cloud.push();

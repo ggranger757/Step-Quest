@@ -30,33 +30,50 @@
     running: false, lastEvent: 0,
     // detector state
     f: 9.8, base: 9.8, above: false, lastPeak: 0, peakAvg: 2.2, buffer: [], walking: false,
-    async start() {
+    async start(opts = {}) {
       if (this.running) return true;
       if (!this.supported()) { Steps.setStatus('unavailable', 'This device or browser can’t read the motion sensor.'); return false; }
       Steps.setStatus('starting');
-      try {
+      if (!opts.noPrompt) try {
         if (typeof DeviceMotionEvent.requestPermission === 'function') {
           const r = await DeviceMotionEvent.requestPermission();
           if (r !== 'granted') { Steps.setStatus('denied', 'Motion access was declined. You can allow it in your browser settings.'); return false; }
         }
       } catch (e) { Steps.setStatus('denied', 'Motion access is blocked here.'); return false; }
-      this.handler = (ev) => this.onMotion(ev);
-      window.addEventListener('devicemotion', this.handler);
-      this.running = true; this.lastEvent = 0;
-      const t0 = Date.now();
-      clearTimeout(this.check);
-      this.check = setTimeout(() => {
-        if (this.running && this.lastEvent < t0) {
-          this.stop(true);
-          Steps.setStatus('nodata', 'No step sensor on this device. Open Step Quest on your phone, or log steps from your Health app.');
-        }
-      }, 2500);
+      this.listen();
+      this.running = true;
+      this.watchForData(Date.now());
       Steps.setStatus('on');
       WB.wakeLock(true);
       try { WB.store.set('walkbound.sensor', true); } catch (e) {}
       return true;
     },
+    listen() {
+      if (this.handler) window.removeEventListener('devicemotion', this.handler);
+      this.handler = (ev) => this.onMotion(ev);
+      window.addEventListener('devicemotion', this.handler);
+    },
+    /* "No step sensor" is only decided after 2.5 s of the app being on screen with no motion data at all.
+       Phones stop sending motion data while the app is in the background or the screen is locked, so time
+       spent hidden never counts against the sensor (it used to: hiding the app right after counting started
+       switched counting off for good). A device that has ever sent motion data is never called sensor-less. */
+    watchForData(t0) {
+      clearTimeout(this.check);
+      let shown = 0, last = performance.now();
+      const look = () => {
+        if (!this.running) return;
+        const now = performance.now();
+        if (document.visibilityState === 'visible') shown += now - last;
+        last = now;
+        if (this.lastEvent >= t0 || Motion.seen()) return;
+        if (shown < 2500) { this.check = setTimeout(look, 500); return; }
+        this.stop(true);
+        Steps.setStatus('nodata', 'No step sensor on this device. Open Step Quest on your phone, or log steps from your Health app.');
+      };
+      this.check = setTimeout(look, 500);
+    },
     stop(silent) {
+      clearTimeout(this.check);
       if (this.handler) window.removeEventListener('devicemotion', this.handler);
       this.running = false; this.walking = false; this.buffer = [];
       WB.wakeLock(false);
@@ -68,6 +85,7 @@
       if (!a || a.x == null) return;
       const now = performance.now();
       this.lastEvent = Date.now();
+      if (!this.seenSaved) { this.seenSaved = true; try { WB.store.set('walkbound.motionSeen', true); } catch (e) {} }
       const m = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
       this.f = this.f * 0.75 + m * 0.25;          // low-pass
       this.base = this.base * 0.985 + this.f * 0.015; // slow baseline (gravity + posture)
@@ -93,11 +111,23 @@
    * Android / desktop: starts right away. iPhone: Safari only allows motion access from a tap, so the
    * first touch anywhere in the app starts it (the permission prompt only appears the first time). */
   Motion.paused = () => { try { return WB.store.get('walkbound.sensor') === false; } catch (e) { return false; } };
+  Motion.seen = () => { try { return WB.store.get('walkbound.motionSeen') === true; } catch (e) { return false; } };
   Motion.auto = function () {
     if (this.running || this.armed || this.paused() || !this.supported()) return;
     if (WB.state && WB.state.health && WB.state.health.on) return;            // health sync counts instead
-    if (!['off', 'armed'].includes(Steps.status)) return;                     // denied / no sensor: wait for "Try again"
+    // denied: wait for "Try again". No data: only a device that has never sent motion data stays off
+    if (!['off', 'armed'].includes(Steps.status) && !(Steps.status === 'nodata' && this.seen())) return;
     if (typeof DeviceMotionEvent.requestPermission !== 'function') { this.start(); return; }
+    /* iPhone: motion access already granted (Safari keeps it for a while) means data flows without a tap. Listen
+       quietly for a moment first; only if nothing arrives does Step Quest ask for a tap. */
+    if (this.probing) return;
+    this.probing = true;
+    const probe = () => { window.removeEventListener('devicemotion', probe); clearTimeout(this.probeT); this.probing = false; if (!this.running && !this.paused()) this.start({ noPrompt: true }); };
+    window.addEventListener('devicemotion', probe);
+    this.probeT = setTimeout(() => { window.removeEventListener('devicemotion', probe); this.probing = false; this.arm(); }, 900);
+  };
+  Motion.arm = function () {
+    if (this.running || this.armed || this.paused()) return;
     this.armed = true;
     Steps.setStatus('armed', 'Tap anywhere to start counting your steps.');
     const go = () => {
@@ -109,7 +139,14 @@
     };
     document.addEventListener('touchend', go, true); document.addEventListener('click', go, true);
   };
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && WB.state && WB.state.onboarded) Motion.auto(); });
+  /* Back on screen: phones pause motion data in the background and some (iOS Safari) don't always restart it
+     for an old listener, so the listener is attached again. Anything that stopped counting starts again. */
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !WB.state || !WB.state.onboarded) return;
+    if (Motion.running) { Motion.walking = false; Motion.buffer = []; Motion.listen(); }
+    else Motion.auto();
+  });
+  window.addEventListener('pageshow', (e) => { if (e.persisted && WB.state && WB.state.onboarded && !Motion.running) Motion.auto(); });   // restored from the back/forward cache
   Steps.register(Motion);
   Steps.motion = Motion;
 
