@@ -84,11 +84,11 @@
 
   // ---------- the Worldkey story: the sign-up lore, also reachable from the "i" on the Inventory → Worldkey card ----------
   // Three swipeable pages (scroll-snap, so a finger swipe just works; dots and the button move too):
-  // 1 the broken road (with a screenshot of a forest world, picked at random), 2 the Worldkey itself, 3 how it works.
-  WK.SHOTS = [{ id: 'pinehills', world: 'pinehills' }, { id: 'tealwood', world: 'tealwood' }, { id: 'moonwood', world: 'moonwood' }];
+  // 1 the broken road (always the Moonlit Forest screenshot, so the story looks the same every time it opens), 2 the Worldkey itself, 3 how it works.
+  WK.SHOT = { id: 'moonwood', world: 'moonwood' };
   const LORE_N = 3;
   WK.lore = () => {
-    const k = D.wkLookById[D.WK_START], v = D.wkVoiceById[k.voice], sh = WB.pick(WK.SHOTS), wn = (D.worldById[sh.world] || {}).name || 'A forest world';
+    const k = D.wkLookById[D.WK_START], v = D.wkVoiceById[k.voice], sh = WK.SHOT, wn = (D.worldById[sh.world] || {}).name || 'A forest world';
     const dots = Array.from({ length: LORE_N }, (_, i) => `<button type="button" role="tab" data-lore-dot="${i}" aria-label="Page ${i + 1} of ${LORE_N}" aria-selected="${i === 0}"></button>`).join('');
     return `<div class="lore" data-lore>
       <div class="lore-track" tabindex="0" aria-roledescription="carousel" aria-label="The Worldkey story, swipe for more">

@@ -20,6 +20,9 @@
   --dim: #8a84c0;   /* 4.8:1 on surface-2, 5.7:1 on bg (WCAG AA) */
   --violet: #8f72ff;
   --violet-hi: #b3a0ff;
+  --xp: var(--violet);      /* XP gauge fill — its own token so it can never match the HP gauge */
+  --xp-hi: var(--violet-hi); /* XP text (floaters, reward pills) */
+  --primary: var(--violet); /* filled primary button (.btn with no variant) */
   --cyan: #59e3ff;
   --gold: #ff9a3d;   /* the warm highlight: orange (CTAs, rewards, "ready" states) */
   --gold-glow: color-mix(in srgb, var(--gold) 35%, transparent);
@@ -37,23 +40,30 @@
 }
 /* ---------- color themes (Profile → Theme). Lime and Field (orange) use yellow as their secondary accent; their non-primary buttons are glass. Every pair used for text meets WCAG 2.1 AA (4.5:1),
    and borders / focus meet 3:1 (WCAG 1.4.11, Section 508). Token roles stay the same in every theme:
-   --gold = primary call-to-action (black text), --violet = XP / selected, --cyan = links / focus. ---------- */
+   --gold = main call-to-action (black text), --primary = filled primary button, --violet = selected, --xp = XP gauge, --cyan = links / focus. ---------- */
 :root[data-theme="lime"] {   /* black with lime; yellow is the secondary accent */
   --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #8aa31c;
   --text: #f4f8e8; --muted: #bdbdaa; --dim: #a3a38f;
   --violet: #9dff3a; --violet-hi: #e3ff8a; --cyan: #ecff3a; --gold: #c6ff00; --ok: #9dff3a; --danger: #ff6b6b; --ehp: #ff5a4f;
+  --primary: #ffe03a;   /* warm yellow: filled, yet clearly not the lime CTA */
+  --xp: #38c8ff; --xp-hi: #8fdcff;   /* sky blue: never confused with the lime HP gauge */
   --shadow: #000000; --ink: #000000;
 }
 :root[data-theme="field"] {   /* black with orange; yellow is the secondary accent */
   --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #b8651f;
   --text: #f7f2ec; --muted: #c4bbb2; --dim: #aaa197;
   --violet: #ff9a3d; --violet-hi: #ffc68f; --cyan: #ffd84a; --gold: #ff8a1f; --ok: #ffd166; --danger: #ff6b6b; --ehp: #ff4a3d;
+  --primary: #ffd84a;   /* yellow: filled, yet clearly not the orange CTA */
+  --xp: #4cc4ff; --xp-hi: #9ad9ff;   /* sky blue: never confused with the yellow HP gauge */
   --shadow: #000000; --ink: #000000;
 }
-/* Lime and Orange: the main button (gold) is solid, and every other button is glass: a see-through tint with a border in the
-   theme's main color and yellow text, so two buttons side by side never look alike. */
-:root[data-theme="lime"] .btn:not(.gold):not(.ok):not(.danger):not([disabled]):not([aria-disabled="true"]),
-:root[data-theme="field"] .btn:not(.gold):not(.ok):not(.danger):not([disabled]):not([aria-disabled="true"]) {
+/* Lime and Orange: the main call-to-action (gold) and the primary button (plain .btn, yellow) are both solid; the secondary
+   (ghost) buttons are glass: a see-through tint with a border in the theme's main color and yellow text.
+   In battle, Strike and a charged special are the solid moves; the other battle buttons stay glass. */
+:root[data-theme="lime"] .btn.ghost:not([disabled]):not([aria-disabled="true"]),
+:root[data-theme="field"] .btn.ghost:not([disabled]):not([aria-disabled="true"]),
+:root[data-theme="lime"] .b-actions .btn:not([data-b="strike"]):not(.ready):not([disabled]):not([aria-disabled="true"]),
+:root[data-theme="field"] .b-actions .btn:not([data-b="strike"]):not(.ready):not([disabled]):not([aria-disabled="true"]) {
   background: color-mix(in srgb, var(--gold) 12%, transparent); color: var(--cyan);
   -webkit-backdrop-filter: blur(8px) saturate(1.4); backdrop-filter: blur(8px) saturate(1.4);
   box-shadow: 0 -3px 0 0 var(--gold), 0 3px 0 0 var(--gold), -3px 0 0 0 var(--gold), 3px 0 0 0 var(--gold), inset 0 1px 0 0 rgba(255,255,255,.18);
@@ -81,7 +91,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .card { padding: var(--s4); display: grid; gap: var(--s3); }
 
 /* ---------- buttons ---------- */
-.btn { --b: var(--violet); --t: #000; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-height: 48px; padding: 0 var(--s4); border: 0; cursor: pointer; white-space: nowrap;
+.btn { --b: var(--primary); --t: #000; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-height: 48px; padding: 0 var(--s4); border: 0; cursor: pointer; white-space: nowrap;
   background: var(--b); color: var(--t); font: 400 13px/1 var(--label); letter-spacing: .05em; text-transform: uppercase;
   box-shadow: 0 -3px 0 0 var(--shadow), 0 3px 0 0 var(--shadow), -3px 0 0 0 var(--shadow), 3px 0 0 0 var(--shadow), inset 0 -4px 0 0 rgba(0,0,0,.28), inset 0 3px 0 0 rgba(255,255,255,.25);
   transition: transform .06s; }
@@ -105,6 +115,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .bar.gold > i { background: var(--gold); }
 .bar.cyan > i { background: var(--cyan); }
 .bar.ok > i { background: var(--ok); }
+.bar.xp > i { background: var(--xp); }
 /* fixed-size segments, so every gauge looks the same whatever its width or fill */
 .bar.seg > i { -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); }
 
@@ -151,7 +162,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .world-chip .bar { width: 56px; height: 6px; flex: none; }
 .fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .floater { position: absolute; transform: translate(-50%, 0); font: 400 20px/1 var(--display); color: var(--gold); text-shadow: 2px 2px 0 var(--shadow), -2px 2px 0 var(--shadow), 2px -2px 0 var(--shadow), -2px -2px 0 var(--shadow); white-space: nowrap; animation: floatUp 1.3s steps(14) forwards; display: flex; align-items: center; gap: var(--s1); }
-.floater.xp { color: var(--violet-hi); }
+.floater.xp { color: var(--xp-hi); }
 .floater.big { font-size: 26px; }
 @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 8px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -46px); } }
 .first-steps { position: absolute; left: var(--s4); right: var(--s4); top: 34%; display: flex; justify-content: center; pointer-events: none; }
@@ -175,7 +186,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .encounter .choices .btn small { font: 400 11px/1 var(--label); opacity: .8; text-transform: none; letter-spacing: 0; }
 .encounter .outcome { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
 .reward-pill { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 var(--s2); background: var(--surface-2); box-shadow: 0 0 0 2px var(--line); font: 400 18px/1 var(--display); }
-.reward-pill.coins { color: var(--gold); } .reward-pill.xp { color: var(--violet-hi); } .reward-pill.thing { color: var(--cyan); font: 400 11px/1.2 var(--label); text-transform: uppercase; }
+.reward-pill.coins { color: var(--gold); } .reward-pill.xp { color: var(--xp-hi); } .reward-pill.thing { color: var(--cyan); font: 400 11px/1.2 var(--label); text-transform: uppercase; }
 
 /* ---------- journey panel ---------- */
 .journey { padding: var(--s4) var(--gutter) var(--s5); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); overflow-y: auto; flex: 1; min-height: 0; align-content: start; }
