@@ -43,7 +43,7 @@
     return `<div class="sect" id="my-missions"><h2>My missions <span class="aside">${list.length} open · ${c.done || 0} completed</span></h2>
       <p class="fine">Turn real-life goals into missions. Finish early to earn more; late pays half. Up to ${C.DAILY_COINS} coins a day (${C.leftToday().coins} left today).</p>
       <button class="btn gold block" type="button" data-cnew="1">${WB.icon('pencil', 2)}New mission</button>
-      ${UI.quickButton ? UI.quickButton() : ''}
+      ${UI.quickSection ? UI.quickSection() : ''}
       ${list.length ? `<div class="list">${list.map(card).join('')}</div>` : ''}
       ${hist.length ? `<h3 class="m-sub">Recently completed <span class="aside">${C.earnedToday().coins} / ${C.DAILY_COINS} coins today</span></h3><div class="cm-hist">${hist.map((h) => `<div class="cm-h"><span>${WB.icon('check', 2)}${esc(h.title)}</span><span class="t-rew">${h.coins ? '+' + h.coins + ' coins · +' + h.xp + ' XP' : 'No reward'}${h.late ? ' · late' : ''}</span></div>`).join('')}</div>` : ''}
     </div>`;

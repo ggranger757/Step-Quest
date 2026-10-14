@@ -1333,33 +1333,39 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 .seg.seven + .hub-seg button { min-height: 58px; justify-content: center; }
 .seg.seven + .hub-seg button > span:not(.cnt) { line-height: 1.1; }
 
-/* ---------- quick missions (Missions → My missions) ---------- */
-.qk-open { flex-direction: row; gap: var(--s2); }
-.qk-open small { font: 400 11px/1 var(--label); text-transform: uppercase; letter-spacing: .04em; opacity: .75; margin-left: var(--s1); }
-@media (max-width: 360px) { .qk-open small { display: none; } }
-.qk-sum { display: grid; gap: var(--s2); padding: var(--s3); margin-bottom: var(--s3); }
-.qk-sum-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); flex-wrap: wrap; }
-.qk-sum-top b { font: 400 20px/1 var(--display); }
-.qk-sum .bar { height: 8px; }
-.qk-cats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); padding: 3px; margin: var(--s3) -3px var(--s2); }
-.qk-cats button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 64px; padding: 4px 2px; border: 0; cursor: pointer; background: var(--surface); box-shadow: 0 0 0 2px var(--line); color: var(--muted); font: 400 10px/1.1 var(--label); text-transform: uppercase; text-align: center; letter-spacing: 0; overflow-wrap: anywhere; }
-.qk-cats button small { font: 400 10px/1 var(--label); color: var(--dim); }
-.qk-cats button[aria-pressed="true"] { background: var(--surface-2); box-shadow: 0 0 0 2px var(--cyan); color: var(--text); }
-.qk-cats button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
-.qk-blurb { margin: 0 0 var(--s2); }
-.qk-list { display: grid; gap: var(--s2); }
-.qk { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3); }
-.qk-main { display: grid; gap: 4px; min-width: 0; }
-.qk-t { font: 400 15px/1.3 var(--body); color: var(--text); overflow-wrap: anywhere; }
-.qk .t-rew { margin: 0; }
-.qk .btn { flex: none; min-width: 72px; }
-.qk.picked { box-shadow: 0 -3px 0 0 var(--cyan), 0 3px 0 0 var(--cyan), -3px 0 0 0 var(--cyan), 3px 0 0 0 var(--cyan); background: var(--surface-2); }
-.qk-sel { margin-bottom: var(--s3); }
-.qk-sel .mx-g { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); flex-wrap: wrap; margin: 0 0 var(--s2); }
-.qk-tap { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: inherit; }
-.qk-tap:focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
+/* ---------- quick missions (Missions → My missions): inline card + picker sheet ---------- */
+.qk-card { display: grid; gap: var(--s3); margin-top: var(--s2); }
+.qk-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.qk-head h3 { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; min-width: 0; font: 400 12px/1.2 var(--label); text-transform: uppercase; letter-spacing: .08em; color: var(--text); }
+.qk-head h3 .aside { color: var(--dim); font-size: 11px; letter-spacing: .04em; }
+.qk-head .btn { flex: none; }
+.qk-empty { margin: 0; }
+.qk-list { display: grid; gap: var(--s3); }
+.qk { display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s2) var(--s2) var(--s3); min-height: 60px; }
+.qk-ic { flex: none; width: 32px; height: 32px; display: grid; place-items: center; background: var(--surface-2); color: var(--cyan); }
+.qk-main { flex: 1; display: grid; gap: 3px; min-width: 0; }
+.qk-t { font: 400 15px/1.3 var(--body); color: var(--text); overflow-wrap: anywhere; text-align: left; }
+.qk-c { font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.qk-pill { flex: none; padding: 4px 6px; background: var(--surface-2); box-shadow: 0 0 0 2px var(--line); font: 400 11px/1 var(--label); text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+.qk-acts { flex: none; display: flex; align-items: center; gap: var(--s2); }
+.qk-act { width: 44px; height: 44px; display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; background: var(--surface-2); color: var(--muted); box-shadow: 0 0 0 2px var(--line); font: 400 24px/1 var(--display); }
+.qk-act:hover { color: var(--text); }
+.qk-act.ok { background: var(--ok); color: #000; box-shadow: 0 0 0 2px var(--shadow); }
+.qk-act.ok * { color: #000; }
+.qk-act:active { transform: translateY(2px); }
+.qk-act:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.qk.done { opacity: .7; }
+.qk.done .qk-ic { color: var(--ok); }
 .qk.done .qk-t { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
-.qk .stamp { flex: none; display: inline-flex; align-items: center; gap: 6px; font: 400 11px/1 var(--label); text-transform: uppercase; color: var(--ok); }
+.qk.armed { opacity: 1; box-shadow: 0 -3px 0 0 var(--danger), 0 3px 0 0 var(--danger), -3px 0 0 0 var(--danger), 3px 0 0 0 var(--danger); }
+.qk.armed .qk-c { color: var(--danger); }
+@media (max-width: 380px) { .qk { gap: var(--s2); } .qk-pill { display: none; } }
+/* picker */
+.qk-pick { display: grid; gap: var(--s3); }
+.qk-g { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); font: 400 12px/1.2 var(--label); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.qk-opt { width: 100%; border: 0; cursor: pointer; color: inherit; justify-content: space-between; padding: var(--s3); min-height: 52px; }
+.qk-opt:hover, .qk-opt:focus-visible { box-shadow: 0 -3px 0 0 var(--cyan), 0 3px 0 0 var(--cyan), -3px 0 0 0 var(--cyan), 3px 0 0 0 var(--cyan); outline: none; }
+.qk-opt .qk-t { flex: 1; min-width: 0; }
 
 /* ---------- Profile: Mission mix ---------- */
 .mx-card { display: grid; gap: var(--s3); }
