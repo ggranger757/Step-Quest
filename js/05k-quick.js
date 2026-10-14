@@ -1,9 +1,9 @@
 /* Step Quest — quick missions (rules), the mission log behind the Profile "Mission mix" card and the mission
    achievements, and battles that can break out when you complete a mission. Data: 02h-quick.js.
 
-   s.quick = { day, done: { [quickId]: true } (today only), coinsToday, xpToday, total, perDay: { 'YYYY-MM-DD': n } }
+   s.quick = { day, picked: { [quickId]: true } (selected today, not done yet), done: { [quickId]: true } (today only), coinsToday, xpToday, total, perDay: { 'YYYY-MM-DD': n } }
    s.mx    = { days: { 'YYYY-MM-DD': { [typeId]: n } }, cats: { [typeId]: n }, dawn, night, early, ontime }
-   Quick missions: one tap, once per task per day. They pay a little, up to D.QUICK_CAP a day in total (past the cap
+   Quick missions: select it, then tap it when done; once per task per day. They pay a little, up to D.QUICK_CAP a day in total (past the cap
    they still complete and count, they just pay what is left). */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
@@ -56,19 +56,24 @@
   // ---------- quick missions ----------
   const Q = () => {
     const s = S(), q = s.quick, today = WB.dayKey();
-    if (q.day !== today) { q.day = today; q.done = {}; q.coinsToday = 0; q.xpToday = 0; }
+    if (q.day !== today) { q.day = today; q.done = {}; q.picked = {}; q.coinsToday = 0; q.xpToday = 0; }
+    if (!q.picked || typeof q.picked !== 'object') q.picked = {};   // saves from before quick missions were selected first
     return q;
   };
   G.quickState = Q;
   G.quickDoneToday = (id) => !!Q().done[id];
+  // pick a quick mission for today (tap again to put it back), then tap it when it's done
+  G.quickPicked = (id) => !!Q().picked[id] && !Q().done[id];
+  G.quickPickedList = () => D.QUICK.filter((t) => G.quickPicked(t.id));
+  G.quickPick = (id) => { const q = Q(); if (!D.quickById[id] || q.done[id]) return null; if (q.picked[id]) delete q.picked[id]; else q.picked[id] = true; WB.Save.queue(); return { picked: !!q.picked[id] }; };
   G.quickCount = () => Object.keys(Q().done).length;
   G.quickLeft = () => { const q = Q(); return { coins: Math.max(0, D.QUICK_CAP.coins - q.coinsToday), xp: Math.max(0, D.QUICK_CAP.xp - q.xpToday) }; };
   G.quickPayout = (def) => { const l = G.quickLeft(); return { coins: Math.min(def.reward.coins, l.coins), xp: Math.min(def.reward.xp, l.xp) }; };
   // one tap: returns { def, pay, capped } or null (unknown task, or already done today)
   G.quickComplete = (id) => {
-    const def = D.quickById[id], q = Q(); if (!def || q.done[id]) return null;
+    const def = D.quickById[id], q = Q(); if (!def || q.done[id] || !q.picked[id]) return null;   // it has to be selected first
     const pay = G.quickPayout(def), capped = pay.coins < def.reward.coins || pay.xp < def.reward.xp;
-    q.done[id] = true; q.total = (q.total || 0) + 1;
+    delete q.picked[id]; q.done[id] = true; q.total = (q.total || 0) + 1;
     q.perDay = q.perDay || {}; q.perDay[WB.dayKey()] = (q.perDay[WB.dayKey()] || 0) + 1;
     q.coinsToday += pay.coins; q.xpToday += pay.xp;
     for (const k of Object.keys(q.perDay)) if (WB.daysBetween(k, WB.dayKey()) > 60) delete q.perDay[k];

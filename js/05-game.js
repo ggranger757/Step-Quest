@@ -689,6 +689,7 @@
   G.buy = (cat, id) => {
     const s = S(), it = G.item(cat, id);
     if (!it || G.owns(cat, id)) return { ok: false };
+    if ((cat === 'weapon' || cat === 'magic') && !G.battlesOpen()) return { ok: false, msg: 'Weapons and magic unlock with battle mode at level ' + D.BATTLE_LEVEL + '.' };
     const st = G.reqStatus(it.req);
     if (!st.buy) return { ok: false, msg: st.label };
     if (s.coins < it.req.cost) return { ok: false, msg: 'You need ' + WB.fmt(it.req.cost - s.coins) + ' more coins. Keep walking.' };
@@ -729,6 +730,7 @@
   G.equip = (cat, id) => {
     const s = S();
     if (id && !G.owns(cat, id)) return;
+    if (id && (cat === 'weapon' || cat === 'magic') && !G.battlesOpen()) return;   // locked until battle mode (level D.BATTLE_LEVEL)
     if (cat === 'avatar') s.avatar = id;
     else if (cat === 'magic') {   // charms are worn (up to D.CHARM_SLOTS); battle magic is simply carried
       const m = D.magicById[id]; if (!m || m.kind !== 'charm') return;

@@ -59,6 +59,7 @@
   G.buyAmmo = (id) => {
     const s = S(), w = D.weaponById[id];
     if (!w || w.slot !== 'ranged' || !G.owns('weapon', id)) return { ok: false };
+    if (!G.battlesOpen()) return { ok: false, msg: 'Weapons and magic unlock with battle mode at level ' + D.BATTLE_LEVEL + '.' };
     const free = G.freeRefill(), cost = free ? 0 : G.price(w);
     if (G.ammo(id) + D.AMMO_PACK > D.AMMO_MAX) return { ok: false, msg: 'You can carry ' + D.AMMO_MAX + ' shots. Use some first.' };
     if (s.coins < cost) return { ok: false, msg: 'You need ' + WB.fmt(cost - s.coins) + ' more coins for ' + D.AMMO_PACK + ' more shots.' };
@@ -74,6 +75,7 @@
   G.buyUses = (id) => {
     const s = S(), m = D.magicById[id];
     if (!m || m.kind !== 'battle' || !G.owns('magic', id)) return { ok: false };
+    if (!G.battlesOpen()) return { ok: false, msg: 'Weapons and magic unlock with battle mode at level ' + D.BATTLE_LEVEL + '.' };
     const free = G.freeRefill(), cost = free ? 0 : G.price(m);
     if (G.uses(id) + D.MAGIC_USES > D.MAGIC_MAX) return { ok: false, msg: 'You can carry ' + D.MAGIC_MAX + ' uses. Use some first.' };
     if (s.coins < cost) return { ok: false, msg: 'You need ' + WB.fmt(cost - s.coins) + ' more coins for ' + D.MAGIC_USES + ' more uses.' };
@@ -93,6 +95,7 @@
   G.repair = (id) => {
     const s = S(), w = D.weaponById[id];
     if (!w || w.slot !== 'melee' || !G.owns('weapon', id)) return { ok: false };
+    if (!G.battlesOpen()) return { ok: false, msg: 'Weapons and magic unlock with battle mode at level ' + D.BATTLE_LEVEL + '.' };
     if (G.cond(id) >= 100) return { ok: false, msg: w.name + ' is in top shape.' };
     const cost = G.repairCost(id);
     if (s.coins < cost) return { ok: false, msg: 'Repairing costs ' + WB.fmt(cost) + ' coins. You need ' + WB.fmt(cost - s.coins) + ' more.' };

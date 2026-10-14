@@ -7,7 +7,7 @@
   // ---------- the button under "New mission" ----------
   UI.quickButton = () => {
     const n = G.quickCount();
-    return `<button class="btn block qk-open" type="button" data-qopen="1">${WB.icon('bolt', 2)}Quick missions<small>${n ? n + ' done today' : 'One tap each'}</small></button>`;
+    return `<button class="btn block qk-open" type="button" data-qopen="1">${WB.icon('bolt', 2)}Quick missions<small>${G.quickPickedList().length ? G.quickPickedList().length + ' selected' : n ? n + ' done today' : 'Select, then tap'}</small></button>`;
   };
 
   // ---------- the quick missions sheet ----------
@@ -15,7 +15,7 @@
   const rewardLine = (r) => '+' + r.coins + ' coins · +' + r.xp + ' XP';
   function quickBody() {
     const q = G.quickState(), left = G.quickLeft(), cap = D.QUICK_CAP, cat = D.mcatById[UI.quickCat] ? UI.quickCat : 'body';
-    const list = D.QUICK.filter((t) => t.cat === cat), n = G.quickCount();
+    const list = D.QUICK.filter((t) => t.cat === cat), n = G.quickCount(), sel = G.quickPickedList();
     const capped = !left.coins && !left.xp;
     const chips = D.MCATS.map((c) => {
       const all = D.QUICK.filter((t) => t.cat === c.id), done = all.filter((t) => q.done[t.id]).length;
@@ -24,17 +24,18 @@
     return `<div class="qk-sum pbox"><div class="qk-sum-top"><b>${n} done today</b><span class="lbl">${q.coinsToday} / ${cap.coins} coins · ${q.xpToday} / ${cap.xp} XP</span></div>
         <div class="bar seg ${capped ? 'gold' : 'cyan'}"><i style="width:${Math.min(100, (q.coinsToday / cap.coins) * 100)}%"></i></div></div>
       ${capped ? '<p class="fine">You’ve hit today’s quick mission rewards. You can still finish them and they still count; rewards come back tomorrow.</p>' : ''}
+      ${sel.length ? `<div class="qk-sel"><h3 class="mx-g">Selected for today <span class="aside">Tap one when you’ve done it</span></h3><div class="qk-list">${sel.map((t) => { const p = G.quickPayout(t); return `<div class="qk pbox picked"><button class="qk-main qk-tap" type="button" data-qdone="${t.id}" aria-label="Mark done: ${esc(t.title)}"><span class="qk-t">${esc(t.title)}</span><span class="t-rew">${rewardLine(p.coins || p.xp ? p : { coins: 0, xp: 0 })} · Tap when done</span></button><button class="btn ghost sm" type="button" data-qpick="${t.id}">Remove</button></div>`; }).join('')}</div></div>` : ''}
       <div class="qk-cats" role="tablist" aria-label="Quick mission categories">${chips}</div>
-      <p class="fine qk-blurb">${esc(D.mcatById[cat].blurb)}</p>
+      <p class="fine qk-blurb">${esc(D.mcatById[cat].blurb)} Select the ones you want to do today, then tap them when they’re done.</p>
       <div class="qk-list">${list.map((t) => {
-        const done = !!q.done[t.id], p = G.quickPayout(t);
-        return `<div class="qk pbox ${done ? 'done' : ''}"><div class="qk-main"><span class="qk-t">${esc(t.title)}</span><span class="t-rew">${done ? 'Done today' : rewardLine(p.coins || p.xp ? p : { coins: 0, xp: 0 })}</span></div>
-          ${done ? `<span class="stamp">${WB.icon('check', 2)}Done</span>` : `<button class="btn gold sm" type="button" data-qdone="${t.id}">Done</button>`}</div>`;
+        const done = !!q.done[t.id], pk = G.quickPicked(t.id), p = G.quickPayout(t);
+        return `<div class="qk pbox ${done ? 'done' : pk ? 'picked' : ''}"><div class="qk-main"><span class="qk-t">${esc(t.title)}</span><span class="t-rew">${done ? 'Done today' : pk ? 'Selected · tap Done when finished' : rewardLine(p.coins || p.xp ? p : { coins: 0, xp: 0 })}</span></div>
+          ${done ? `<span class="stamp">${WB.icon('check', 2)}Done</span>` : pk ? `<button class="btn gold sm" type="button" data-qdone="${t.id}">Done</button>` : `<button class="btn ghost sm" type="button" data-qpick="${t.id}">Select</button>`}</div>`;
       }).join('')}</div>`;
   }
   const paintQuick = () => { const el = $('#qk-wrap'); if (el) el.innerHTML = quickBody(); };
   UI.quickOpen = () => {
-    UI.sheet(`<h3 id="sheet-title">Quick missions</h3><p>Small, one-tap missions. Do the thing, then tap Done. Each one can be done once a day, and they reset at midnight.</p><div id="qk-wrap">${quickBody()}</div>`);
+    UI.sheet(`<h3 id="sheet-title">Quick missions</h3><p>Small missions. Select the ones you want to do today, then tap a selected mission when you’ve done it. Each one can be done once a day, and they reset at midnight.</p><div id="qk-wrap">${quickBody()}</div>`);
   };
 
   // ---------- a battle breaks out after a mission ----------
@@ -84,11 +85,12 @@
 
   // ---------- events ----------
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-qopen], [data-qcat], [data-qdone], [data-mixspan], [data-mixnav]');
+    const t = e.target.closest('[data-qopen], [data-qcat], [data-qpick], [data-qdone], [data-mixspan], [data-mixnav]');
     if (!t || t.disabled || t.getAttribute('aria-disabled') === 'true') return;
     const d = t.dataset;
     if (d.qopen) { WB.Sfx.play('tap'); return UI.quickOpen(); }
     if (d.qcat) { UI.quickCat = d.qcat; WB.Sfx.play('tap'); return paintQuick(); }
+    if (d.qpick) { const r = G.quickPick(d.qpick); if (r) WB.Sfx.play('tap'); return paintQuick(); }
     if (d.qdone) {
       const r = G.quickComplete(d.qdone); if (!r) return;
       UI.toast({ kicker: 'Quick mission done', title: r.pay.coins || r.pay.xp ? rewardLine(r.pay) : r.def.title, sub: r.pay.coins || r.pay.xp ? r.def.title : 'Today’s quick rewards are used up', icon: 'bolt', cls: r.pay.coins ? 'gold' : 'ok', ms: 2200 });

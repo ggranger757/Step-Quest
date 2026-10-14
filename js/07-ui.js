@@ -349,6 +349,25 @@
     `, () => { $('#hl-go').onclick = async () => { UI.closeSheet(); await WB.Health.connect(true); UI.render(); }; });
   };
 
+  // ---------- motion prompt ----------
+  // Motion is off by itself when the device is set to reduce motion and the player never chose. Ask on every
+  // reopen until they pick: Allow motion, or keep it off (either answer is saved, so it is only asked until then).
+  UI.motionAutoOff = () => { const st = S().settings; if (!st || st.reducedMotion != null) return false; try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+  UI.motionSheet = () => {
+    if (!UI.motionAutoOff()) return false;
+    const pick = (off) => { S().settings.reducedMotion = off; document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Sfx.play('tap'); UI.closeSheet(); UI.render(); };
+    UI.sheet(`
+      <h3 id="sheet-title">Motion is turned off</h3>
+      <p>Your device is set to reduce motion, so Step Quest switched animations and particles off for you.</p>
+      <p class="fine">Allow motion to see walkers move, battle effects and celebrations. You can change this any time in Profile → Settings → Reduce motion.</p>
+      <button class="btn block" type="button" id="mo-on" data-autofocus>Allow motion</button>
+      <button class="linkbtn" type="button" id="mo-off">Keep motion off</button>
+    `, () => { $('#mo-on').onclick = () => pick(false); $('#mo-off').onclick = () => pick(true); });
+    return true;
+  };
+  // run something once no sheet is in the way (so two prompts never stack)
+  UI.whenSheetClear = (fn) => { const t = () => { if ($('#sheet').hidden) fn(); else setTimeout(t, 400); }; t(); };
+
   // ---------- log steps sheet ----------
   UI.logSheet = () => {
     UI.sheet(`
@@ -760,10 +779,23 @@
       ${slotBadge(k, w)}<canvas width="64" height="64" ${w ? `data-prev="weapon:${w.id}"` : ''}></canvas><span class="ws-t"><span class="lbl">${D.WEAPON_SLOTS[k]}</span><span class="ws-v">${w ? WB.esc(w.name) : '<span class="none">None</span>'}</span></span></button>`; }).join('')}</div>`;
   const hpCard = () => { const s = S(), hp = s.hp, max = G.maxHp(); return `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">${hp >= max ? 'Full health.' : 'Full in about ' + UI.dur(G.minsToFull()) + '.'} Walking doesn’t heal. HP refills on its own in ${D.HEAL_MINUTES} minutes, or drink a potion to heal now.</p></div>`; };
 
+  // Weapons and magic stay locked until battle mode opens (D.BATTLE_LEVEL), in both the Shop and the Inventory
+  const gearLock = (what) => `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${D.BATTLE_LEVEL} · Battle mode</span>
+      <h3>${what} are locked</h3>
+      <p class="fine">Weapons and magic are only used in battle, and battles begin at level ${D.BATTLE_LEVEL}. Keep walking: you can buy, equip and refill ${what.toLowerCase()} once you get there.</p>
+      <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${D.BATTLE_LEVEL}" aria-valuenow="${Math.min(S().level, D.BATTLE_LEVEL)}"><i style="width:${Math.min(100, (S().level / D.BATTLE_LEVEL) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${D.BATTLE_LEVEL}</p>
+    </div>`;
+  // Artifacts → Collection stays locked until level D.COLLECTION_LEVEL (7)
+  const collectionLock = () => `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${D.COLLECTION_LEVEL}</span>
+      <h3>Collection is locked</h3>
+      <p class="fine">The artifact Collection opens at level ${D.COLLECTION_LEVEL}. Keep walking: your finds will be waiting for you here.</p>
+      <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${D.COLLECTION_LEVEL}" aria-valuenow="${Math.min(S().level, D.COLLECTION_LEVEL)}"><i style="width:${Math.min(100, (S().level / D.COLLECTION_LEVEL) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${D.COLLECTION_LEVEL}</p>
+    </div>`;
   // ----- Shop sections -----
   function shopBody(cat) {
     const s = S();
     if (cat === 'weapons') {
+      if (!G.battlesOpen()) return gearLock('Weapons');
       const slot = UI.wpnSlot || 'melee';
       const all = (k) => D.WEAPONS.filter((w) => w.slot === k).length, own = (k) => D.WEAPONS.filter((w) => w.slot === k && G.owns('weapon', w.id)).length;
       return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike. Wears down as you use it.' : slot === 'ranged' ? 'Used by Throw, Shoot or Cast. ' + D.AMMO_PACK + ' shots per purchase.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'} ${own(slot)} of ${all(slot)} owned.</p>
@@ -789,6 +821,7 @@
     }
     if (cat === 'pets') return `<div class="grid">${byUnlock(D.PETS).map((p) => itemCard('pet', p, { desc: p.atk ? p.kind + '. ' + p.atkVerb + ' the creature after each of your moves.' : p.kind, stat: 'HP ' + G.petMax(p.id) + ' · Guards ' + Math.round(p.share * 100) + '% of hits' })).join('')}</div>`;
     if (cat === 'magic') {
+      if (!G.battlesOpen()) return gearLock('Magic');
       const sect = (kind, title, aside) => `<div class="sect"><h2>${title} <span class="aside">${aside}</span></h2><div class="grid">${byUnlock(D.MAGIC.filter((m) => m.kind === kind)).map((it) => itemCard('magic', it, { desc: it.desc, stat: it.tag })).join('')}</div></div>`;
       return sect('charm', 'Charms', 'Never run out') + sect('battle', 'Battle magic', D.MAGIC_USES + ' uses per purchase');
     }
@@ -799,11 +832,13 @@
     const s = S();
     if (tab === 'worldkey') return G.featOn('wk') ? UI.wkSection() : UI.wkLocked();
     if (tab === 'weapons') {
+      if (!G.battlesOpen()) return gearLock('Weapons');
       const slot = UI.wpnSlot || 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
       return `${loadout(slot)}<p class="fine wnote">${!G.gearCare() && slot !== 'shield' ? 'Your gear never runs out or wears down until level ' + D.UPKEEP_LEVEL + '.' : slot === 'melee' ? 'Every Strike wears your weapon a little. Below ' + D.WORN_AT + '% it hits noticeably softer, and at 0% it breaks and can’t be used until you repair it. Repairs cost a quarter of the price.' : slot === 'ranged' ? 'Each Throw, Shoot or Cast uses one shot. Your first refill each day is free.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
         ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields or belts' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
     }
     if (tab === 'magic') {
+      if (!G.battlesOpen()) return gearLock('Magic');
       const charms = byUnlock(D.MAGIC.filter((m) => m.kind === 'charm' && G.owns('magic', m.id))), bm = byUnlock(D.MAGIC.filter((m) => m.kind === 'battle' && G.owns('magic', m.id)));
       return `<div class="sect"><h2>Charms <span class="aside">Wearing ${G.charms().length} / ${D.CHARM_SLOTS}</span></h2>${charms.length ? `<div class="grid">${charms.map((it) => bagCard('magic', it, { stat: it.tag })).join('')}</div>` : emptyBag('charms', 'magic')}</div>
         <div class="sect"><h2>Battle magic <span class="aside">${bm.reduce((n, m) => n + G.uses(m.id), 0)} uses</span></h2>${bm.length ? `<div class="grid">${bm.map((it) => bagCard('magic', it, { stat: it.tag })).join('')}</div>` : emptyBag('battle magic', 'magic')}</div>`;
@@ -827,6 +862,7 @@
   function artBody(tab) {
     const s = S();
     if (tab === 'forge') return G.upkeep() ? UI.forgeSection() : UI.forgeLocked();
+    if (!G.collectionOpen()) return collectionLock();
     const locked = D.WORLDS.filter((w) => !s.unlocked.includes(w.id));
     return `<div class="pbox card art-sum"><span><b>${G.artTotal()}</b> artifacts to craft with</span><span class="lbl">${G.findCount()} / ${D.FIND_TOTAL} discovered</span></div>` + D.WORLDS.filter((w) => s.unlocked.includes(w.id)).map((w) => {
       const got = s.enc.finds[w.id] || [], n = D.FINDS[w.id].reduce((t, _, i) => t + G.artHave(w.id, i), 0);
@@ -843,8 +879,8 @@
     if (!TABS.some((t) => t[0] === UI[key])) UI[key] = TABS[0][0];
     const cur = UI[key], def = TABS.find((t) => t[0] === cur);
     const body = hub === 'shop' ? shopBody(cur) : hub === 'bag' ? bagBody(cur) : artBody(cur);
-    const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: s.owned.weapons.length, magic: (s.owned.magic || []).length, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
-    const artCnt = { finds: G.artTotal(), forge: G.upkeep() ? D.DARKMATTER.reduce((n, d) => n + G.wk().dm[d.id], 0) : 'Lv ' + D.UPKEEP_LEVEL };
+    const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: G.battlesOpen() ? s.owned.weapons.length : 'Lv ' + D.BATTLE_LEVEL, magic: G.battlesOpen() ? (s.owned.magic || []).length : 'Lv ' + D.BATTLE_LEVEL, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
+    const artCnt = { finds: G.collectionOpen() ? G.artTotal() : 'Lv ' + D.COLLECTION_LEVEL, forge: G.upkeep() ? D.DARKMATTER.reduce((n, d) => n + G.wk().dm[d.id], 0) : 'Lv ' + D.UPKEEP_LEVEL };
     const segBtn = (attr, id, l, ic, on, n) => `<button type="button" role="tab" data-${attr}="${id}" aria-selected="${on}" aria-pressed="${on}">${tabIcon(ic)}<span>${l}</span>${n != null ? `<span class="cnt">${n}</span>` : ''}</button>`;
     const INV_TABS = [...BAG_TABS, ['art', 'Artifacts', 'img:art/m30.png']], invCur = hub === 'art' ? 'art' : cur;
     const nav = !inv
@@ -855,7 +891,7 @@
     const changed = UI.set(root, `<div class="scr-wrap">
       <div class="scr-head"><h1>${inv ? 'Inventory' : 'Shop'}</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
       ${nav}
-      ${def[3] ? `<p class="scr-note">${typeof def[3] === 'function' ? def[3]() : def[3]}</p>` : ''}
+      ${def[3] && !((hub !== 'art' && (cur === 'weapons' || cur === 'magic') || hub === 'art' && cur === 'finds') && !(cur === 'finds' ? G.collectionOpen() : G.battlesOpen())) ? `<p class="scr-note">${typeof def[3] === 'function' ? def[3]() : def[3]}</p>` : ''}
       ${body}
     </div>`);
     if (changed) paintAll(root);
@@ -926,7 +962,7 @@
   }
   // ---------- color themes ----------
   // night = the original violet + orange; lime = black + yellow/green; field = black + orange. All three pass WCAG AA.
-  UI.THEMES = [['night', 'Night', 'Violet & orange', ['#15122e', '#8f72ff', '#ff9a3d']], ['lime', 'Lime', 'Black, yellow & green', ['#000000', '#9dff3a', '#ecff3a']], ['field', 'Field', 'Black & orange', ['#000000', '#ffb366', '#ff8a1f']]];
+  UI.THEMES = [['night', 'Night', 'Violet & orange', ['#15122e', '#8f72ff', '#ff9a3d']], ['lime', 'Lime', 'Black, lime & purple', ['#000000', '#c6ff00', '#b48cff']], ['field', 'Field', 'Black, orange & blue', ['#000000', '#ff8a1f', '#5db0ff']]];
   UI.applyTheme = () => {
     const t = (S().settings.theme === 'army' ? (S().settings.theme = 'field') : S().settings.theme) || 'night', root = document.documentElement;
     if (t === 'night') delete root.dataset.theme; else root.dataset.theme = t;

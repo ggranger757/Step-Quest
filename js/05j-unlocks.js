@@ -10,6 +10,8 @@
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
   D.UPKEEP_LEVEL = 7;
+  D.COLLECTION_LEVEL = 7;   // Inventory → Artifacts → Collection opens here
+  G.collectionOpen = () => G.lvlReached(D.COLLECTION_LEVEL);
   const feats = () => { const s = S(); if (!s.feats || typeof s.feats !== 'object') s.feats = {}; return s.feats; };
   G.featOn = (k) => !!(S() && feats()[k]);
   G.upkeep = () => G.featOn('dm');   // Worldkey energy and the Forge count from here on (gear care is always on)

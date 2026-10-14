@@ -52,10 +52,11 @@
     WB.view.start();
     if (welcome && welcome.length) showWelcome(welcome);
     // installed app: sync steps from Apple Health / Health Connect (offer it once if not connected yet)
-    const offerHealth = () => { if (WB.Health.status === 'off' && !S().hints.health && S().onboarded) UI.healthSheet(); };
+    const offerHealth = () => { if (WB.Health.status === 'off' && !S().hints.health && S().onboarded) UI.whenSheetClear(() => UI.healthSheet()); };
     const health = WB.Health.init();
     // first launch (and players who haven't seen it yet): the guided tour, then the health-sync offer
-    if (S().onboarded && !S().hints.tour) { WB.Bgm.play('app'); setTimeout(() => WB.Tour.start(() => health.then(offerHealth)), 700); }   // the theme song plays until the tutorial ends
+    if (S().onboarded) UI.motionSheet();   // motion was switched off by the device: ask right away whether to allow it
+    if (S().onboarded && !S().hints.tour) { WB.Bgm.play('app'); setTimeout(() => UI.whenSheetClear(() => WB.Tour.start(() => health.then(offerHealth))), 700); }   // the theme song plays until the tutorial ends
     else health.then(offerHealth);
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
