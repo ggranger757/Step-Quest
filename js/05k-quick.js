@@ -6,8 +6,9 @@
                coinsToday, xpToday, total, perDay: { 'YYYY-MM-DD': n } }
    s.mx    = { days: { 'YYYY-MM-DD': { [typeId]: n } }, cats: { [typeId]: n }, dawn, night, early, ontime }
    Quick missions: add it to today's list, then tick it off; once per task per day. They pay a little, up to D.QUICK_CAP a day in total (past
-   the cap they still complete and count, they just pay what is left). A finished one can be removed again the same day: that takes back
-   exactly what it paid (XP and coins) and undoes its counts, and the mission goes back to the list of ones you can add. */
+   the cap they still complete and count, they just pay what is left). Once finished, a quick mission leaves today's list and keeps
+   what it paid; only missions not done yet can be dropped, and dropping one never costs anything. (G.quickUndo below is no longer
+   offered in the UI; it stays for old saves and tools.) */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
 

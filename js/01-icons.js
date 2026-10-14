@@ -40,6 +40,11 @@
     heart: ['.kk.kk.', 'krrkrrk', 'krRrrrk', 'krrrrrk', '.krrrk.', '..krk..', '...k...'],
     note: ['...kkkk', '...kcck', '...kkck', '...k.ck', '...k.ck', '.kkk.ck', 'kcck.ck', 'kcckkck', '.kk.kcck', '....kcck', '.....kk.'],
     spark: ['...k...', '...C...', '..kCk..', 'kCCwCCk', '..kCk..', '...C...', '...k...'],
+    mood_great: ['..kkkkk..', '.kgggggk.', 'kgggggggk', 'kgkgggkgk', 'kgggggggk', 'kgkkkkkgk', 'kggkkkggk', '.kgggggk.', '..kkkkk..'],   // mood: grin
+    mood_good: ['..kkkkk..', '.kccccck.', 'kccccccck', 'kckccckck', 'kccccccck', 'kckccckck', 'kcckkkcck', '.kccccck.', '..kkkkk..'],   // mood: smile
+    mood_okay: ['..kkkkk..', '.kyyyyyk.', 'kyyyyyyyk', 'kykyyykyk', 'kyyyyyyyk', 'kyyyyyyyk', 'kyykkkyyk', '.kyyyyyk.', '..kkkkk..'],   // mood: flat
+    mood_low: ['..kkkkk..', '.kVVVVVk.', 'kVVVVVVVk', 'kVkVVVkVk', 'kVVVVVVVk', 'kVVkkkVVk', 'kVkVVVkVk', '.kVVVVVk.', '..kkkkk..'],   // mood: frown
+    mood_rough: ['..kkkkk..', '.kRRRRRk.', 'kkRRRRRkk', 'kRkRRRkRk', 'kRcRRRRRk', 'kRRkkkRRk', 'kRkRRRkRk', '.kRRRRRk.', '..kkkkk..'],   // mood: frown, worried brows, a tear
   };
 
   // Item shapes use A (main) B (light) D (dark); palette set per item

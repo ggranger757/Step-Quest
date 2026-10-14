@@ -1032,6 +1032,7 @@
         })().map(([l, v, why]) => `<div class="stat pbox" data-info="${WB.esc(why)}" data-info-k="${WB.esc(l)}" role="button" tabindex="0"><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}
       </div>
       ${UI.missionMix ? UI.missionMix() : ''}
+      ${UI.moodSection ? UI.moodSection() : ''}
       <div class="sect"><div class="chart-h"><h2>Last ${span} days</h2><div class="cm-seg chart-span" role="radiogroup" aria-label="Chart range">${[7, 14, 30].map((d) => `<button type="button" role="radio" aria-checked="${d === span}" data-span="${d}">${d} days</button>`).join('')}</div></div><div class="chart pbox card span-${span}">
         <p class="chart-read" id="chart-read" role="status" aria-live="polite">${chartRead(selDay)}</p>
         ${(span === 30 ? [days.slice(0, 10), days.slice(10, 20), days.slice(20)] : [days]).map((row, r, rows) => `<div class="chart-row">
@@ -1054,6 +1055,7 @@
       </div>
       <div class="sect"><h2>Notifications</h2>
         <div class="setting pbox"><div><div id="lbl-notify">Mission reminders</div><div class="sd">${WB.Remind.desc()}</div></div><div class="acts">${s.settings.notify && WB.Remind.canAsk() ? '<button class="btn sm" type="button" data-act="notify-allow">Allow</button>' : ''}<button class="toggle" type="button" role="switch" aria-labelledby="lbl-notify" aria-checked="${!!s.settings.notify}" data-act="notify-toggle"></button></div></div>
+        <div class="setting pbox"><div><div id="lbl-mood">Mood check-ins</div><div class="sd">While you walk, now and then ask how you’re feeling. Your moods show on Profile → Overview.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-mood" aria-checked="${s.settings.moodAsk !== false}" data-toggle="moodAsk"></button></div>
       </div>
       <div class="sect"><h2>Appearance &amp; sound</h2>
         <div class="setting pbox theme-set"><div><div id="lbl-theme">Theme</div><div class="sd">Colors for the whole app. Every theme meets WCAG AA contrast.</div></div>

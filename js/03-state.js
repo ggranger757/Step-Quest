@@ -27,13 +27,14 @@
       custom: { list: [], history: [], day: '', coinsToday: 0, xpToday: 0, done: 0 },
       quick: { day: '', done: {}, coinsToday: 0, xpToday: 0, total: 0, perDay: {} },   // quick missions (05k-quick.js)
       mx: { days: {}, cats: {}, dawn: 0, night: 0, early: 0, ontime: 0 },             // mission log: types per day, completion times
+      mood: { log: [], at: 0, mark: 0, day: '', asks: 0 },   // mood check-ins on walks (05l-mood.js): log = [{ t, m, w, d }]
       streak: { count: 0, best: 0, lastDay: '', rest: 0, claimed: [] },
       daily: { idx: 0, lastClaim: '' },
       ach: {}, purchases: 0,
       eggs: { frost: 0, ember: 0, crystal: 0 }, eggTrades: 0,
       druid: { asked: [], wins: 0, losses: 0 },
       nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, homeState: '', theme: 'night', notify: true, chartDays: 14 },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, homeState: '', theme: 'night', notify: true, chartDays: 14, moodAsk: true },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }
@@ -44,7 +45,7 @@
     for (const k of Object.keys(f)) if (s[k] === undefined) s[k] = f[k];
     // Sound & music became two switches: Game music starts where the old switch was
     if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
-    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'quick', 'mx', 'streak', 'daily', 'settings', 'seen', 'health'])
+    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'quick', 'mx', 'mood', 'streak', 'daily', 'settings', 'seen', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];
     // v2: dyes and auras were retired. Refund what was bought, drop the rest.
     if (s.v < 2) {

@@ -45,7 +45,7 @@
   --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #8aa31c;
   --text: #f4f8e8; --muted: #bdbdaa; --dim: #a3a38f;
   --violet: #9dff3a; --violet-hi: #e3ff8a; --cyan: #ecff3a; --gold: #c6ff00; --ok: #9dff3a; --danger: #ff6b6b; --ehp: #ff5a4f;
-  --primary: #ffe03a;   /* warm yellow: filled, yet clearly not the lime CTA */
+  --primary: var(--gold);   /* filled in the theme's main lime */
   --xp: #38c8ff; --xp-hi: #8fdcff;   /* sky blue: never confused with the lime HP gauge */
   --shadow: #000000; --ink: #000000;
 }
@@ -53,11 +53,11 @@
   --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #b8651f;
   --text: #f7f2ec; --muted: #c4bbb2; --dim: #aaa197;
   --violet: #ff9a3d; --violet-hi: #ffc68f; --cyan: #ffd84a; --gold: #ff8a1f; --ok: #ffd166; --danger: #ff6b6b; --ehp: #ff4a3d;
-  --primary: #ffd84a;   /* yellow: filled, yet clearly not the orange CTA */
+  --primary: var(--gold);   /* filled in the theme's main orange */
   --xp: #4cc4ff; --xp-hi: #9ad9ff;   /* sky blue: never confused with the yellow HP gauge */
   --shadow: #000000; --ink: #000000;
 }
-/* Lime and Orange: the main call-to-action (gold) and the primary button (plain .btn, yellow) are both solid; the secondary
+/* Lime and Orange: the main call-to-action (gold) and the primary button (plain .btn) are both solid in the theme's main color; the secondary
    (ghost) buttons are glass: a see-through tint with a border in the theme's main color and yellow text.
    In battle, Strike and a charged special are the solid moves; the other battle buttons stay glass. */
 :root[data-theme="lime"] .btn.ghost:not([disabled]):not([aria-disabled="true"]),
@@ -1507,3 +1507,33 @@ html.reduce-motion .hud-chip.bell .ic { animation: none !important; }
 .count small { font-size: 9px; text-transform: uppercase; }
 .count.worn { background: #ff9a3d; }
 .count.out { background: var(--surface-2); color: var(--danger); }
+
+/* ---------- mood check-ins (07l-mood-ui.js): the card on the road, and Profile → Overview → Moods ---------- */
+.mood-card { position: absolute; left: var(--s3); right: var(--s3); top: 64px; z-index: 4; margin: 0 auto; max-width: 440px; display: grid; gap: var(--s2); padding: var(--s2) var(--s2) var(--s3) var(--s3); background: color-mix(in srgb, var(--surface) 96%, transparent); box-shadow: 0 0 0 2px var(--cyan), 0 0 0 5px var(--shadow); }
+.mood-card.in { animation: rise .25s steps(4); }
+.mood-top { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: start; gap: var(--s2); }
+.mood-top p, .mood-done p { margin: 0; display: grid; gap: 2px; font-size: 15px; line-height: 1.3; color: var(--text); }
+.mood-top .lbl, .mood-done .lbl { color: var(--cyan); font-size: 10px; }
+.mood-x { width: 40px; height: 40px; margin: -4px -4px 0 0; border: 0; padding: 0; background: none; cursor: pointer; color: var(--muted); font: 400 26px/1 var(--display); }
+.mood-x:hover, .mood-x:focus-visible { color: var(--text); }
+.mood-opts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s2); padding-right: var(--s1); }
+.mood-opt { display: grid; justify-items: center; gap: 6px; min-height: 64px; padding: var(--s2) 2px; border: 0; cursor: pointer; background: var(--surface-2); color: var(--text); box-shadow: 0 0 0 2px var(--line); font: 400 10px/1 var(--label); text-transform: uppercase; letter-spacing: .03em; }
+.mood-opt:hover, .mood-opt:focus-visible { box-shadow: 0 0 0 2px var(--cyan); outline: none; }
+.mood-opt:active { transform: translateY(2px); }
+.mood-done { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s3); padding-right: var(--s1); }
+@media (prefers-reduced-motion: reduce) { .mood-card.in { animation: none; } }
+html.rm .mood-card.in { animation: none; }
+.mood-sect .chart-span { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mood-sum { display: flex; align-items: center; gap: var(--s3); padding: var(--s2) 0; }
+.mood-sum > div { display: grid; gap: 4px; }
+.mood-sum b { font: 400 22px/1 var(--display); color: var(--text); }
+.mood-sum .fine { margin: 0; }
+/* each mood keeps its own color on every theme, so the breakdown reads at a glance */
+.mood-bar.m-great > i { background: #6ee7a0; } .mood-bar.m-good > i { background: #59e3ff; } .mood-bar.m-okay > i { background: #ffcc4d; }
+.mood-bar.m-low > i { background: #c7b8ff; } .mood-bar.m-rough > i { background: #ffb199; }
+.mood-insight { margin: var(--s1) 0 0; display: flex; gap: var(--s2); align-items: flex-start; padding: var(--s2) var(--s3); background: var(--inset); box-shadow: inset 3px 0 0 var(--cyan); font-size: 14px; line-height: 1.4; color: var(--text); }
+.mood-insight .px-icon { margin-top: 2px; }
+.mood-recent { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s2); }
+.mood-recent li { display: grid; grid-template-columns: 18px 64px minmax(0, 1fr); align-items: center; gap: var(--s2); font-size: 14px; }
+.mood-recent .mr-m { color: var(--text); }
+.mood-recent .mr-w { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
