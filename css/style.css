@@ -35,20 +35,28 @@
   --gutter: 16px;
   color-scheme: dark;
 }
-/* ---------- color themes (Profile → Theme). Lime = lime + purple, Field = orange + blue (no two-of-a-kind accents). Every pair used for text meets WCAG 2.1 AA (4.5:1),
+/* ---------- color themes (Profile → Theme). Lime and Field (orange) use yellow as their secondary accent; their non-primary buttons are glass. Every pair used for text meets WCAG 2.1 AA (4.5:1),
    and borders / focus meet 3:1 (WCAG 1.4.11, Section 508). Token roles stay the same in every theme:
    --gold = primary call-to-action (black text), --violet = XP / selected, --cyan = links / focus. ---------- */
-:root[data-theme="lime"] {   /* black with lime and purple */
-  --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #8a5fe0;
+:root[data-theme="lime"] {   /* black with lime; yellow is the secondary accent */
+  --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #8aa31c;
   --text: #f4f8e8; --muted: #bdbdaa; --dim: #a3a38f;
-  --violet: #b48cff; --violet-hi: #dac8ff; --cyan: #cfb4ff; --gold: #c6ff00; --ok: #9dff3a; --danger: #ff6b6b; --ehp: #ff5a4f;
+  --violet: #9dff3a; --violet-hi: #e3ff8a; --cyan: #ecff3a; --gold: #c6ff00; --ok: #9dff3a; --danger: #ff6b6b; --ehp: #ff5a4f;
   --shadow: #000000; --ink: #000000;
 }
-:root[data-theme="field"] {   /* black with orange and blue */
-  --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #3f7fd1;
+:root[data-theme="field"] {   /* black with orange; yellow is the secondary accent */
+  --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #b8651f;
   --text: #f7f2ec; --muted: #c4bbb2; --dim: #aaa197;
-  --violet: #5db0ff; --violet-hi: #a9d4ff; --cyan: #7cc4ff; --gold: #ff8a1f; --ok: #ffd166; --danger: #ff6b6b; --ehp: #ff4a3d;
+  --violet: #ff9a3d; --violet-hi: #ffc68f; --cyan: #ffd84a; --gold: #ff8a1f; --ok: #ffd166; --danger: #ff6b6b; --ehp: #ff4a3d;
   --shadow: #000000; --ink: #000000;
+}
+/* Lime and Orange: the main button (gold) is solid, and every other button is glass: a see-through tint with a border in the
+   theme's main color and yellow text, so two buttons side by side never look alike. */
+:root[data-theme="lime"] .btn:not(.gold):not(.ok):not(.danger):not([disabled]):not([aria-disabled="true"]),
+:root[data-theme="field"] .btn:not(.gold):not(.ok):not(.danger):not([disabled]):not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--gold) 12%, transparent); color: var(--cyan);
+  -webkit-backdrop-filter: blur(8px) saturate(1.4); backdrop-filter: blur(8px) saturate(1.4);
+  box-shadow: 0 -3px 0 0 var(--gold), 0 3px 0 0 var(--gold), -3px 0 0 0 var(--gold), 3px 0 0 0 var(--gold), inset 0 1px 0 0 rgba(255,255,255,.18);
 }
 
 * { box-sizing: border-box; }

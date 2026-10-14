@@ -962,7 +962,7 @@
   }
   // ---------- color themes ----------
   // night = the original violet + orange; lime = black + yellow/green; field = black + orange. All three pass WCAG AA.
-  UI.THEMES = [['night', 'Night', 'Violet & orange', ['#15122e', '#8f72ff', '#ff9a3d']], ['lime', 'Lime', 'Black, lime & purple', ['#000000', '#c6ff00', '#b48cff']], ['field', 'Field', 'Black, orange & blue', ['#000000', '#ff8a1f', '#5db0ff']]];
+  UI.THEMES = [['night', 'Night', 'Violet & orange', ['#15122e', '#8f72ff', '#ff9a3d']], ['lime', 'Lime', 'Black, lime & yellow', ['#000000', '#c6ff00', '#ecff3a']], ['field', 'Field', 'Black, orange & yellow', ['#000000', '#ff8a1f', '#ffd84a']]];
   UI.applyTheme = () => {
     const t = (S().settings.theme === 'army' ? (S().settings.theme = 'field') : S().settings.theme) || 'night', root = document.documentElement;
     if (t === 'night') delete root.dataset.theme; else root.dataset.theme = t;
