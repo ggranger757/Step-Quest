@@ -650,7 +650,7 @@
   // ---------- Special attacks: one per starter class, chosen at sign-up; unlock at level 10 ----------
   // The gauge fills as you attack (Strike +25, Throw / Cast +30); when it's full the Special button lights up.
   D.SPECIAL_LEVEL = 10;
-  D.COLORS_LEVEL = 25;   // skin tone and outfit colors can be changed from here (the skin tone picked at sign-up stays)
+  // Skin tone and outfit colors can be changed from the start (Profile → Overview → Loadout → Colors); there is no level gate.
   D.SPECIAL_CHARGE = { strike: 25, throw: 30 };
   D.SPECIALS = {
     nova: { id: 'nova', name: 'Arcane Nova', cls: 'Wandering Mage', fx: 'sa_nova', sfx: 'special_nova',

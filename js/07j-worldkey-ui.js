@@ -154,7 +154,7 @@
           <div class="wk-energy"><span class="lbl">Energy</span><b>${pctTxt(w.e)}</b></div>
           ${energyBar(w.e)}
           ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: it can’t open worlds.' : 'Low energy.'}</p>${G.upkeep() ? `<div class="wk-lowcta"><p class="fine">Craft Darkmatter from your artifacts in the Forge, then use it to recharge.</p><button class="btn gold block" type="button" data-wk="forge">${dmImg('void', 20)}Go to the Forge</button></div>` : ''}` : ''}
-          <p class="fine wk-drain">${G.upkeep() ? `Time and walking drain it: about ${K.DRAIN_DAY}% a day, plus ${K.WALK_DRAIN}% per 1,000 steps.` : `Starter charge: opening worlds costs no energy until level ${D.UPKEEP_LEVEL}.`}</p>
+          <p class="fine wk-drain">${G.upkeep() ? `Time and walking drain it: about ${K.DRAIN_DAY}% a day, plus ${K.WALK_DRAIN}% per 1,000 steps.` : `Starter charge: opening worlds costs no energy yet.`}</p>
           ${dest ? `<dl class="wk-dl">
             <div><dt>Destination</dt><dd>${esc(dest.name)}</dd></div>
             <div><dt>Energy needed</dt><dd>${check(st.energyOk)}${st.cost ? st.cost + '%' : 'None yet'}</dd></div>
@@ -181,11 +181,14 @@
       <div class="bar seg cyan" role="progressbar" aria-label="Progress through ${esc(first.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · about ${WB.fmt(left)} steps to go</p>
     </div>`;
   };
-  UI.forgeLocked = () => `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${D.UPKEEP_LEVEL}</span>
+  UI.forgeLocked = () => {
+    const first = G.firstWorld(), pct = first ? Math.floor(Math.min(100, G.explorePct(first.id) / D.FIRST_WORLD_PCT * 100)) : 0;
+    return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks after your first world</span>
       <h3>Darkmatter Forge</h3>
-      <p class="fine">Until then your Worldkey runs on its starter charge, so you don’t need Darkmatter yet. Keep collecting artifacts: the Forge turns them into Darkmatter.</p>
-      <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${D.UPKEEP_LEVEL}" aria-valuenow="${S().level}"><i style="width:${Math.min(100, (S().level / D.UPKEEP_LEVEL) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${D.UPKEEP_LEVEL}</p>
+      <p class="fine">The Forge opens when you finish ${first ? esc(first.name) : 'your first world'}, along with your Worldkey. Keep collecting artifacts: the Forge turns them into Darkmatter.</p>
+      <div class="bar seg cyan" role="progressbar" aria-label="First world explored" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% of ${first ? esc(first.name) : 'your first world'} explored</p>
     </div>`;
+  };
   // Inventory → Artifacts → Forge: Darkmatter is crafted from artifact copies
   UI.forgeSection = () => `<div class="sect" id="wk-forge"><h2>Darkmatter Forge</h2>
       <p class="fine">Darkmatter charges your Worldkey. Each kind uses up artifacts and some of your HP. Walk worlds again to find more artifacts.</p>

@@ -57,7 +57,7 @@
     { go: pf('overview'), sel: '#scr-profile .hero', page: 'Profile', title: 'Profile', text: 'Your walker, title, level and HP. Tap the pencil to rename yourself.' },
     { go: pf('overview'), sel: '#scr-profile .stats', page: 'Profile', title: 'Stats', text: 'Your lifetime totals. Tap any stat to learn what it counts.' },
     { go: pf('overview'), sel: '#scr-profile .chart', page: 'Profile', title: 'Your steps', text: 'Steps per day for the last 7, 14 or 30 days. Highlighted bars reached your streak minimum. Tap a bar to see that day’s steps.' },
-    { go: pf('overview'), sel: '#scr-profile .wardrobe', page: 'Profile', title: 'Loadout', text: 'Change your walker, weapons, defense and pet in one place. From level 25 you can recolor your walker here too.' },
+    { go: pf('overview'), sel: '#scr-profile .wardrobe', page: 'Profile', title: 'Loadout', text: 'Change your walker, weapons, defense and pet in one place. You can recolor your walker here too: skin tone, outfit and trim.' },
     { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Settings', text: 'Steps and goals, mission reminders, theme, sound and your save. Replay this tour any time from Settings → Help.' },
     { go: tab('world'), title: 'You’re ready', text: 'Start walking: every step counts. Good luck out there!' },
   ];
@@ -67,7 +67,7 @@
     wk: [
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Worldkey', title: 'Your Worldkey is awake', text: 'You finished your first world, so your Worldkey can open the next one. Find it in Inventory → Worldkey.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it to a world', text: 'Each world hums at its own frequency: match its symbol pattern to tune the Worldkey to it. A tuning lasts a few days; time and walking knock it out of tune.' },
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-acts', page: 'Worldkey', title: 'Then open the way', text: 'Once it’s tuned, tap Open. Until level ' + D.UPKEEP_LEVEL + ' it runs on its starter charge, so opening worlds costs no energy.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-acts', page: 'Worldkey', title: 'Then open the way', text: 'Once it’s tuned, tap Open. Opening a world costs some energy, so keep it charged with Darkmatter from the Forge.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Worldkey', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here.' },
     ],
     field: [
@@ -76,9 +76,9 @@
       { go: mis('adventure'), sel: () => sect('#scr-tasks', 'Adventure'), page: 'Level ' + D.FIELD_LEVEL, title: 'Adventure', text: 'Long-term goals that grow as you play, plus messages travelers ask you to deliver.' },
     ],
     dm: [
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-energy', page: 'Level ' + D.UPKEEP_LEVEL, title: 'Your Worldkey needs energy now', text: 'From now on, opening a world costs energy. Energy fades a little each day and as you walk, so keep an eye on this bar.' },
-      { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Level ' + D.UPKEEP_LEVEL, title: 'Artifacts become fuel', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
-      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'Level ' + D.UPKEEP_LEVEL, title: 'The Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and a little HP), then charge your Worldkey with it. Here’s a free Void Darkmatter to start.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-energy', page: 'First world', title: 'Your Worldkey needs energy now', text: 'From now on, opening a world costs energy. Energy fades a little each day and as you walk, so keep an eye on this bar.' },
+      { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'First world', title: 'Artifacts become fuel', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
+      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'First world', title: 'The Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and a little HP), then charge your Worldkey with it. Here’s a free Void Darkmatter to start.' },
     ],
   };
   const T = (WB.Tour = { active: false, i: 0 });
@@ -184,7 +184,7 @@
   const FEAT_CARD = {
     wk: { kick: 'Unlocked', title: 'Your Worldkey is awake!', img: 'wk/dm_nebula.png', text: 'You finished your first world, so your Worldkey can open the next one. Here’s how it works.' },
     field: { kick: 'Level ' + D.FIELD_LEVEL + ' unlock', title: 'Field missions & Adventure', egg: 'crystal', text: 'Two new mission tabs are open: Field (real-world walks, Merlin’s quests and egg trades) and Adventure (long-term goals and deliveries).' },
-    dm: { kick: 'Level ' + D.UPKEEP_LEVEL + ' unlock', title: 'Darkmatter and gear care', img: 'wk/dm_void.png', text: 'From here on, your Worldkey runs on Darkmatter (crafted from artifacts), Here’s what changes.' },
+    dm: { kick: 'Unlocked', title: 'Artifacts, the Forge and Darkmatter', img: 'wk/dm_void.png', text: 'You finished your first world, so your artifact Collection and the Darkmatter Forge are open. From here on, your Worldkey runs on Darkmatter (crafted from artifacts). Here’s what changes.' },
   };
   setInterval(() => {
     const G = WB.Game;

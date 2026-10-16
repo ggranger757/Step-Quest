@@ -18,7 +18,7 @@
     for (const [id, at] of Object.entries(w.tuned)) if (typeof at !== 'number' || Date.now() - at > K.TUNE_DAYS * 864e5) delete w.tuned[id];   // drifted out of tune
     // energy fades with time (worked out from the clock, so it also fades while the app is closed)
     if (typeof w.at !== 'number' || w.at > Date.now()) w.at = Date.now();
-    else if (G.upkeep && !G.upkeep()) w.at = Date.now();   // starter charge: nothing fades until Darkmatter unlocks (level 7)
+    else if (G.upkeep && !G.upkeep()) w.at = Date.now();   // starter charge: nothing fades until Darkmatter unlocks (with the first world)
     else { const days = (Date.now() - w.at) / 864e5; if (days > 0.001) { w.e = Math.max(0, (Number(w.e) || 0) - days * K.DRAIN_DAY); w.at = Date.now(); } }
     w.e = clamp(Number(w.e) || 0, 0, K.OVER);
     for (const d of D.DARKMATTER) w.dm[d.id] = clamp(Math.floor(Number(w.dm[d.id]) || 0), 0, K.DM_MAX);
@@ -59,7 +59,7 @@
   // next locked world, which can be tuned in advance but not opened yet.
   G.wkDest = () => { const w = G.wk(); return D.worldById[w.found[0]] || G.nextWorld() || null; };
   G.wkStatus = (world) => {
-    const w = G.wk(), cost = G.upkeep && !G.upkeep() ? 0 : K.cost(world), found = w.found.includes(world.id);   // starter charge: opening worlds is free until level 7
+    const w = G.wk(), cost = G.upkeep && !G.upkeep() ? 0 : K.cost(world), found = w.found.includes(world.id);   // starter charge: opening worlds is free until Darkmatter unlocks
     const energyOk = w.e >= cost, tunedAt = w.tuned[world.id], tuned = !!tunedAt, tuneLeft = tuned ? K.TUNE_DAYS * 864e5 - (Date.now() - tunedAt) : 0;
     return { world, cost, found, energy: w.e, energyOk, tuned, tuneLeft, ready: found && energyOk && tuned, tier: K.tier(world), unlocked: S().unlocked.includes(world.id) };
   };

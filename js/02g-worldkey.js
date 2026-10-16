@@ -13,7 +13,7 @@
     TUNE_DAYS: 3,      // a learned resonance holds for 3 days, then the key drifts out of tune
     WALK_DRAIN: 1,     // walking scrambles its tech too: -1% energy per 1,000 steps
     WALK_DETUNE_H: 2,  // ...and every 1,000 steps use up 2 more hours of a tuning (about 2 days for a 7,000-step walker)
-    GIFT_VOID: 0,      // the first Void Darkmatter arrives when Darkmatter unlocks (level 7, 05j-unlocks.js)
+    GIFT_VOID: 0,      // the first Void Darkmatter arrives when Darkmatter unlocks (with the first world, 05j-unlocks.js)
     DM_MAX: 9,         // Darkmatter you can hold of each kind
     CHAT_GAP_MIN: 4,   // minutes between ordinary road remarks
   });

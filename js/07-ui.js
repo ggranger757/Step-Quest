@@ -221,7 +221,6 @@
     const items = [
       ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures, guardians and the Druid now roam the road', icon: 'sword' }] : []),
       ...(inRange(D.FIELD_LEVEL) ? [{ n: 'Field missions & Adventure', sub: 'Two new Missions tabs, Merlin’s quests and egg trades', icon: 'map' }] : []),
-      ...(inRange(D.COLORS_LEVEL) ? [{ n: 'Avatar colors', sub: 'Change your skin tone and outfit colors in the Loadout', icon: 'user' }] : []),
       ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · open it with your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name + ' to open it', icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
       ...D.AVATARS.filter((a) => a.req.level && inRange(a.req.level)).map((a) => ({ n: a.name, sub: 'Walker · ' + price(a.req), thumb: { kind: 'av', id: a.id, head: true, face: 'right' }, cat: 'avatar', id: a.id })),
@@ -673,7 +672,7 @@
   UI.hub = 'shop'; UI.invHub = 'bag'; UI.bagTab = 'worldkey'; UI.artTab = 'finds';
   const SHOP_TABS = [
     ['avatar', 'Avatars', 'user', 'Holographic suits the walkers wear when they travel between worlds. Buy them here, then switch in Inventory.'],
-    ['weapons', 'Weapons', 'sword', () => G.gearCare() ? 'Melee weapons wear down as you strike. Repair them in Inventory. Ranged weapons come with ' + D.AMMO_PACK + ' shots. Buy more here when they run out.' : 'Melee weapons power Strike, ranged weapons power Throw, Shoot or Cast, and defense powers Defend. Nothing wears down or runs out until level ' + D.UPKEEP_LEVEL + '.'],
+    ['weapons', 'Weapons', 'sword', () => G.gearCare() ? 'Melee weapons wear down as you strike. Repair them in Inventory. Ranged weapons come with ' + D.AMMO_PACK + ' shots. Buy more here when they run out.' : 'Melee weapons power Strike, ranged weapons power Throw, Shoot or Cast, and defense powers Defend. Nothing wears down or runs out yet.'],
     ['potions', 'Potions / Food', 'img:pot/tonic.png', 'Each one works once. Carry up to ' + D.POTION_MAX + ' of each.'],
     ['pets', 'Pets', 'paw', 'Pets take part of every hit aimed at you in battle. A knocked-out pet recovers over time.'],
     ['magic', 'Magic', 'img:mg/book.png', () => 'Charms give passive perks and never run out.' + (G.gearCare() ? ' Battle magic comes with ' + D.MAGIC_USES + ' uses. Buy more when they run out.' : ' Battle magic works once per battle.')],
@@ -688,7 +687,7 @@
   ];
   const ART_TABS = [
     ['finds', 'Collection', 'img:art/m30.png', 'Artifacts hide along the road in every world. Walk a world again to find more copies.'],
-    ['forge', 'Forge', 'img:wk/dm_void.png', ''],   // (locked until level 7: see UI.forgeLocked)
+    ['forge', 'Forge', 'img:wk/dm_void.png', ''],   // (locked until the first world is finished: see UI.forgeLocked)
   ];
   const GEAR = ['weapons', 'potions', 'pets'];
   // open a hub (and one of its sections) from anywhere
@@ -785,12 +784,15 @@
       <p class="fine">Weapons and magic are only used in battle, and battles begin at level ${D.BATTLE_LEVEL}. Keep walking: you can buy, equip and refill ${what.toLowerCase()} once you get there.</p>
       <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${D.BATTLE_LEVEL}" aria-valuenow="${Math.min(S().level, D.BATTLE_LEVEL)}"><i style="width:${Math.min(100, (S().level / D.BATTLE_LEVEL) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${D.BATTLE_LEVEL}</p>
     </div>`;
-  // Artifacts → Collection stays locked until level D.COLLECTION_LEVEL (7)
-  const collectionLock = () => `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${D.COLLECTION_LEVEL}</span>
+  // Artifacts → Collection stays locked until the first world is finished
+  const collectionLock = () => {
+    const f = G.firstWorld(), pct = f ? Math.floor(Math.min(100, G.explorePct(f.id) / D.FIRST_WORLD_PCT * 100)) : 0;
+    return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks after your first world</span>
       <h3>Collection is locked</h3>
-      <p class="fine">The artifact Collection opens at level ${D.COLLECTION_LEVEL}. Keep walking: your finds will be waiting for you here.</p>
-      <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${D.COLLECTION_LEVEL}" aria-valuenow="${Math.min(S().level, D.COLLECTION_LEVEL)}"><i style="width:${Math.min(100, (S().level / D.COLLECTION_LEVEL) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${D.COLLECTION_LEVEL}</p>
+      <p class="fine">The artifact Collection opens when you finish ${f ? WB.esc(f.name) : 'your first world'}. Keep walking: your finds will be waiting for you here.</p>
+      <div class="bar seg cyan" role="progressbar" aria-label="First world explored" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% of ${f ? WB.esc(f.name) : 'your first world'} explored</p>
     </div>`;
+  };
   // ----- Shop sections -----
   function shopBody(cat) {
     const s = S();
@@ -834,7 +836,7 @@
     if (tab === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
       const slot = UI.wpnSlot || 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
-      return `${loadout(slot)}<p class="fine wnote">${!G.gearCare() && slot !== 'shield' ? 'Your gear never runs out or wears down until level ' + D.UPKEEP_LEVEL + '.' : slot === 'melee' ? 'Every Strike wears your weapon a little. Below ' + D.WORN_AT + '% it hits noticeably softer, and at 0% it breaks and can’t be used until you repair it. Repairs cost a quarter of the price.' : slot === 'ranged' ? 'Each Throw, Shoot or Cast uses one shot. Your first refill each day is free.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
+      return `${loadout(slot)}<p class="fine wnote">${!G.gearCare() && slot !== 'shield' ? 'Your gear never runs out or wears down yet.' : slot === 'melee' ? 'Every Strike wears your weapon a little. Below ' + D.WORN_AT + '% it hits noticeably softer, and at 0% it breaks and can’t be used until you repair it. Repairs cost a quarter of the price.' : slot === 'ranged' ? 'Each Throw, Shoot or Cast uses one shot. Your first refill each day is free.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
         ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields or belts' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
     }
     if (tab === 'magic') {
@@ -861,7 +863,7 @@
   // ----- Artifacts sections -----
   function artBody(tab) {
     const s = S();
-    if (tab === 'forge') return G.upkeep() ? UI.forgeSection() : UI.forgeLocked();
+    if (tab === 'forge') return G.forgeOpen() ? UI.forgeSection() : UI.forgeLocked();
     if (!G.collectionOpen()) return collectionLock();
     const locked = D.WORLDS.filter((w) => !s.unlocked.includes(w.id));
     return `<div class="pbox card art-sum"><span><b>${G.artTotal()}</b> artifacts to craft with</span><span class="lbl">${G.findCount()} / ${D.FIND_TOTAL} discovered</span></div>` + D.WORLDS.filter((w) => s.unlocked.includes(w.id)).map((w) => {
@@ -880,7 +882,7 @@
     const cur = UI[key], def = TABS.find((t) => t[0] === cur);
     const body = hub === 'shop' ? shopBody(cur) : hub === 'bag' ? bagBody(cur) : artBody(cur);
     const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: G.battlesOpen() ? s.owned.weapons.length : 'Lv ' + D.BATTLE_LEVEL, magic: G.battlesOpen() ? (s.owned.magic || []).length : 'Lv ' + D.BATTLE_LEVEL, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
-    const artCnt = { finds: G.collectionOpen() ? G.artTotal() : 'Lv ' + D.COLLECTION_LEVEL, forge: G.upkeep() ? D.DARKMATTER.reduce((n, d) => n + G.wk().dm[d.id], 0) : 'Lv ' + D.UPKEEP_LEVEL };
+    const artCnt = { finds: G.collectionOpen() ? G.artTotal() : 'Locked', forge: G.forgeOpen() ? D.DARKMATTER.reduce((n, d) => n + G.wk().dm[d.id], 0) : 'Locked' };
     const segBtn = (attr, id, l, ic, on, n) => `<button type="button" role="tab" data-${attr}="${id}" aria-selected="${on}" aria-pressed="${on}">${tabIcon(ic)}<span>${l}</span>${n != null ? `<span class="cnt">${n}</span>` : ''}</button>`;
     const INV_TABS = [...BAG_TABS, ['art', 'Artifacts', 'img:art/m30.png']], invCur = hub === 'art' ? 'art' : cur;
     const nav = !inv
@@ -980,11 +982,11 @@
     const mx = Math.max(s.settings.streakMin * 1.2, ...days.map((d) => d[1]));
     const own = (c) => s.owned[G.CATS[c][0]].length + '/' + G.CATS[c][1].length;
     const slot = (cat, label, id, icon, sub) => `<button class="wslot pbox" type="button" data-wslot="${cat}" ${sub ? `data-wsub="${sub}"` : ''}>${cat === 'weapon' && id ? `<canvas width="36" height="36" data-prev="weapon:${id}"></canvas>` : WB.icon(icon, 3)}<span class="ws-t"><span class="lbl">${label}</span><span class="ws-v">${id ? WB.esc(G.item(cat, id).name) : '<span class="none">None</span>'}</span></span></button>`;
-    // Colors (skin tone + outfit dyes): one slot, locked until level D.COLORS_LEVEL
+    // Colors (skin tone + outfit dyes): one slot, open to everyone
     const tone = s.skin && D.SKIN_TONES.find((t) => t.id === s.skin), om = D.OUTFIT_MAP[s.avatar] || {};
     const skinCol = tone ? tone.ramp[2] : UI.originalSkin(s.avatar), dyeCol = UI.dyeColors(s.avatar, om.o ? 'o' : 't', WB.outfitOf(s.avatar)[om.o ? 'o' : 't'])[0];
-    const colorsOn = UI.colorsOpen(), hasColors = WB.hasSkin(s.avatar) || WB.hasOutfit(s.avatar);
-    const colorsSlot = `<button class="wslot pbox${colorsOn ? '' : ' locked'}" type="button" data-act="colors">${colorsOn ? `<span class="sw-dot dye-dot" style="--a:${WB.hasSkin(s.avatar) ? skinCol : dyeCol};--b:${WB.hasOutfit(s.avatar) ? dyeCol : skinCol}"></span>` : WB.icon('lock', 3)}<span class="ws-t"><span class="lbl">Colors</span><span class="ws-v">${colorsOn ? WB.esc(UI.colorsLabel(s.avatar)) : '<span class="none">Level ' + D.COLORS_LEVEL + '</span>'}</span></span></button>`;
+    const hasColors = WB.hasSkin(s.avatar) || WB.hasOutfit(s.avatar);
+    const colorsSlot = `<button class="wslot pbox" type="button" data-act="colors"><span class="sw-dot dye-dot" style="--a:${WB.hasSkin(s.avatar) ? skinCol : dyeCol};--b:${WB.hasOutfit(s.avatar) ? dyeCol : skinCol}"></span><span class="ws-t"><span class="lbl">Colors</span><span class="ws-v">${WB.esc(UI.colorsLabel(s.avatar))}</span></span></button>`;
     const opt = (arr, v, f) => arr.map((a) => `<option value="${a}" ${a === v ? 'selected' : ''}>${f(a)}</option>`).join('');
     const st = WB.Steps.status;
     const pf = $('#scr-profile'); pf._html = null; pf.innerHTML = `<div class="scr-wrap">
@@ -1154,9 +1156,7 @@
     const one = (id, name) => { const [a, b] = UI.dyeColors(avatarId, k, id); return `<button type="button" class="sw" role="radio" aria-checked="${cur === id}" aria-label="${label}: ${name}" title="${name}" data-dye="${k}:${id || ''}" style="--a:${a};--b:${b}"></button>`; };
     return `<div class="swatches" role="radiogroup" aria-labelledby="dy-l-${k}">${one(null, 'Original')}${D.DYES.map((d) => one(d.id, d.name)).join('')}</div>`;
   };
-  // ---------- COLORS (skin tone + outfit dyes, one sheet; opens at level D.COLORS_LEVEL) ----------
-  UI.colorsOpen = () => S().level >= D.COLORS_LEVEL;
-  UI.colorsLocked = () => UI.toast({ kicker: 'Avatar colors', title: 'Change your skin tone and outfit colors from level ' + D.COLORS_LEVEL + '.', icon: 'lock', cls: 'msg', ms: 4000 });
+  // ---------- COLORS (skin tone + outfit dyes, one sheet; available from level 1) ----------
   UI.colorsLabel = (avatarId) => {
     const s = S(), parts = [];
     if (WB.hasSkin(avatarId) && s.skin) parts.push(UI.skinName(s.skin));
@@ -1164,7 +1164,6 @@
     return parts.length ? parts.join(' · ') : 'Original';
   };
   UI.colorsSheet = () => {
-    if (!UI.colorsOpen()) return UI.colorsLocked();
     const s = S(), id = s.avatar, m = D.OUTFIT_MAP[id] || {}, skinOn = WB.hasSkin(id);
     const slots = UI.DYE_SLOTS.filter(([k]) => m[k]);
     if (!skinOn && !slots.length) return;

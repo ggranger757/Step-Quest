@@ -45,6 +45,7 @@
     for (const k of Object.keys(f)) if (s[k] === undefined) s[k] = f[k];
     // Sound & music became two switches: Game music starts where the old switch was
     if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
+    s.settings.notify = true;   // mission reminders are always enabled when the app opens
     for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'quick', 'mx', 'mood', 'streak', 'daily', 'settings', 'seen', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];
     // v2: dyes and auras were retired. Refund what was bought, drop the rest.
@@ -126,7 +127,9 @@
     fresh,
     load() {
       const s = WB.store.get(KEY);
+      const remindersWereOff = !!(s && s.v && s.settings && s.settings.notify === false);
       WB.state = s && s.v ? migrate(s) : fresh();
+      if (remindersWereOff) this.queue();
       return WB.state;
     },
     _t: null, _since: 0,
