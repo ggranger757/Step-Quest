@@ -585,7 +585,7 @@
       case 'traveler:decline': out.text = '“Safe roads, then.”'; out.anim = 'talk'; break;
       case 'merlin:accept': {
         out.anim = 'talk'; out.reward = { xp: 10 };
-        if (G.acceptMerlin(e.quest)) { out.merlin = e.quest; out.text = '“Hoo! Splendid. ' + WB.pick(D.MERLIN_ACCEPT) + '” Find the quest under Missions → Field.'; }
+        if (G.acceptMerlin(e.quest)) { out.merlin = e.quest; out.text = '“Hoo! Splendid. ' + WB.pick(D.MERLIN_ACCEPT) + '” Find the quest under Missions → Field → Merlin.'; }
         else out.text = '“You already carry one of my quests. Finish that one first, walker.”';
         break;
       }

@@ -1537,3 +1537,8 @@ html.rm .mood-card.in { animation: none; }
 .mood-recent li { display: grid; grid-template-columns: 18px 64px minmax(0, 1fr); align-items: center; gap: var(--s2); font-size: 14px; }
 .mood-recent .mr-m { color: var(--text); }
 .mood-recent .mr-w { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+
+/* Missions → Field: two selection tabs (Field missions / Merlin). Name and note stack so they fit narrow phones. */
+.seg.ftabs { margin-bottom: var(--s4); }
+.seg.ftabs button { height: auto; min-height: 48px; padding: var(--s2); flex-wrap: wrap; row-gap: 2px; white-space: normal; line-height: 1.15; text-align: center; }
+.seg.ftabs button .cnt { flex-basis: 100%; }

@@ -105,21 +105,21 @@
   ];
   // ---------- gather quests: [item, singular, icon, palette, title] ----------
   const GATHER = [
-    ['Owl quills', 'Owl quill', 'feather', 'bone', 'Quills for the Spellbook'], ['Moon keys', 'Moon key', 'key', 'violet', 'Keys to the Moon Door'],
-    ['Star vials', 'Star vial', 'vial', 'violet', 'Bottled Starlight'], ['Ancient bones', 'Ancient bone', 'bone', 'ash', 'Bones of the Old Kings'],
-    ['Brass gears', 'Brass gear', 'cog', 'brass', 'The Clockwork Familiar'], ['Raven feathers', 'Raven feather', 'feather', 'violet', 'A Cloak of Feathers'],
+    ['Spirit owl quills', 'Spirit owl quill', 'feather', 'bone', 'Quills for the Spellbook'], ['Moon keys', 'Moon key', 'key', 'violet', 'Keys to the Moon Door'],
+    ['Star vials', 'Star vial', 'vial', 'violet', 'Bottled Starlight'], ['Ancient relics', 'Ancient relic', 'bone', 'ash', 'Relics of the Old Kings'],
+    ['Brass gears', 'Brass gear', 'cog', 'brass', 'The Clockwork Familiar'], ['Spirit raven feathers', 'Spirit raven feather', 'feather', 'violet', 'A Cloak of Feathers'],
     ['Spirit lamps', 'Spirit lamp', 'lamp', 'cyan', 'Lamps for the Long Night'], ['Lost compasses', 'Lost compass', 'compass', 'brass', 'Every Compass Points Home'],
     ['Raw gems', 'Raw gem', 'gem', null, 'Gems for the Owl’s Crown'], ['Spark cells', 'Spark cell', 'bolt', null, 'Lightning in a Jar'],
     ['Herb tinctures', 'Herb tincture', 'vial', 'moss', 'The Healer’s Satchel'], ['Festival masks', 'Festival mask', 'mask', 'violet', 'The Masked Parade'],
-    ['Wolf teeth', 'Wolf tooth', 'tooth', 'bone', 'Teeth of the Grey Pack'], ['Silver compasses', 'Silver compass', 'compass', 'ash', 'The Silver Way'],
+    ['Wolf-fang charms', 'Wolf-fang charm', 'tooth', 'bone', 'Charms of the Grey Pack'], ['Silver compasses', 'Silver compass', 'compass', 'ash', 'The Silver Way'],
     ['Old photos', 'Old photo', 'photo', 'bone', 'Memories of the Road'], ['Lucky coins', 'Lucky coin', 'coin', null, 'The Wishing Purse'],
     ['Data chips', 'Data chip', 'chip', 'moss', 'The Thinking Stone'], ['Rusted keys', 'Rusted key', 'key', 'rust', 'Locks of the Sunken Tower'],
-    ['Dew vials', 'Dew vial', 'vial', 'cyan', 'Morning Dew Elixir'], ['Hawk feathers', 'Hawk feather', 'feather', 'rust', 'Wings of the Hunter'],
+    ['Dew vials', 'Dew vial', 'vial', 'cyan', 'Morning Dew Elixir'], ['Spirit hawk feathers', 'Spirit hawk feather', 'feather', 'rust', 'Wings of the Hunter'],
     ['Porcelain masks', 'Porcelain mask', 'mask', 'bone', 'Faces of the Quiet Court'], ['Postcards', 'Postcard', 'photo', 'rose', 'Letters from Far Lands'],
     ['Oil lamps', 'Oil lamp', 'lamp', 'brass', 'The Lamplighter’s Round'], ['Iron sprockets', 'Iron sprocket', 'cog', 'ash', 'The Iron Golem’s Heart'],
-    ['Fossil bones', 'Fossil bone', 'bone', 'bone', 'The Dragon Fossil'], ['Carnival tickets', 'Carnival ticket', 'ticket', 'rose', 'Tickets to the Night Fair'],
-    ['Jay feathers', 'Jay feather', 'feather', 'cyan', 'The Blue Jay’s Riddle'], ['Circuit chips', 'Circuit chip', 'chip', 'cyan', 'The Humming Machine'],
-    ['Shark teeth', 'Shark tooth', 'tooth', 'ash', 'The Sea Witch’s Necklace'], ['Mixtapes', 'Mixtape', 'tape', 'rose', 'Songs for the Road'],
+    ['Fossil charms', 'Fossil charm', 'bone', 'bone', 'The Dragon Fossil'], ['Carnival tickets', 'Carnival ticket', 'ticket', 'rose', 'Tickets to the Night Fair'],
+    ['Spirit jay feathers', 'Spirit jay feather', 'feather', 'cyan', 'The Blue Jay’s Riddle'], ['Circuit chips', 'Circuit chip', 'chip', 'cyan', 'The Humming Machine'],
+    ['Shark-fang charms', 'Shark-fang charm', 'tooth', 'ash', 'The Sea Witch’s Necklace'], ['Mixtapes', 'Mixtape', 'tape', 'rose', 'Songs for the Road'],
   ];
   // ---------- names for timed, multi-walk and distance quests ----------
   const TIME_NAMES = ['The Dawn Vigil', 'Before the Kettle Sings', 'The Noon Pilgrimage', 'Afternoon Sentry', 'Golden-Hour Oath', 'The Lantern Hour',

@@ -2,7 +2,7 @@
    Every mission needs walking: only steps taken after you accept a mission count toward it.
    Kinds:
      photo    walk N steps, then photograph something out in the world (the photo stays on the device)
-     gather   walk N steps; the items turn up along the way as you walk (in-game finds)
+     gather   walk N steps; the items (all magical, in-game finds) land in your pack on their own as you walk: nothing to pick up in real life
      time     walk N steps inside a time window (sunrise, lunch, golden hour…)
      walks    take W separate walks of at least N steps each (a 20-minute break starts a new walk)
      distance cover a distance
@@ -85,13 +85,13 @@
 
   // ---------- gather items: [name, singular, icon, palette] (icons from 01-icons) ----------
   const GATHER = [
-    ['Hawk feathers', 'Hawk feather', 'feather', 'rust'], ['Raven feathers', 'Raven feather', 'feather', 'violet'], ['Jay feathers', 'Jay feather', 'feather', 'cyan'],
-    ['Flamingo plumes', 'Flamingo plume', 'feather', 'rose'], ['Owl down', 'Owl down tuft', 'feather', 'bone'], ['Parrot feathers', 'Parrot feather', 'feather', 'moss'],
+    ['Spirit hawk feathers', 'Spirit hawk feather', 'feather', 'rust'], ['Spirit raven feathers', 'Spirit raven feather', 'feather', 'violet'], ['Spirit jay feathers', 'Spirit jay feather', 'feather', 'cyan'],
+    ['Spirit flamingo plumes', 'Spirit flamingo plume', 'feather', 'rose'], ['Spirit owl down', 'Spirit owl down tuft', 'feather', 'bone'], ['Spirit parrot feathers', 'Spirit parrot feather', 'feather', 'moss'],
     ['Rusty cogs', 'Rusty cog', 'cog', 'rust'], ['Brass gears', 'Brass gear', 'cog', 'brass'], ['Iron sprockets', 'Iron sprocket', 'cog', 'ash'],
     ['Old keys', 'Old key', 'key', 'brass'], ['Rusted keys', 'Rusted key', 'key', 'rust'], ['Moon keys', 'Moon key', 'key', 'violet'],
-    ['Fossil bones', 'Fossil bone', 'bone', 'bone'], ['Ancient bones', 'Ancient bone', 'bone', 'ash'],
+    ['Fossil charms', 'Fossil charm', 'bone', 'bone'], ['Ancient relics', 'Ancient relic', 'bone', 'ash'],
     ['Berry tonics', 'Berry tonic', 'vial', 'rose'], ['Dew vials', 'Dew vial', 'vial', 'cyan'], ['Herb tinctures', 'Herb tincture', 'vial', 'moss'], ['Starlight vials', 'Starlight vial', 'vial', 'violet'],
-    ['Wolf teeth', 'Wolf tooth', 'tooth', 'bone'], ['Shark teeth', 'Shark tooth', 'tooth', 'ash'],
+    ['Wolf-fang charms', 'Wolf-fang charm', 'tooth', 'bone'], ['Shark-fang charms', 'Shark-fang charm', 'tooth', 'ash'],
     ['Lost tickets', 'Lost ticket', 'ticket', 'brass'], ['Carnival tickets', 'Carnival ticket', 'ticket', 'rose'],
     ['Circuit chips', 'Circuit chip', 'chip', 'cyan'], ['Data chips', 'Data chip', 'chip', 'moss'],
     ['Lost compasses', 'Lost compass', 'compass', 'brass'], ['Silver compasses', 'Silver compass', 'compass', 'ash'],

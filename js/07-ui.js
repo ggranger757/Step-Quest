@@ -43,7 +43,7 @@
     if (tab === 'supplies' || tab === 'collection' || tab === 'bag') {   // older routes: everything you own lives on the Inventory tab
       const st = UI.supTab;
       if (st === 'ach') { UI.pfTab = 'ach'; tab = 'profile'; }
-      else if (st === 'eggs') { tab = 'tasks'; UI.missionTab = 'field'; }   // eggs are counted on Missions → Field now
+      else if (st === 'eggs') { tab = 'tasks'; UI.missionTab = 'field'; UI.fieldTab = 'merlin'; }   // eggs are counted on Missions → Field now
       else { tab = 'inv'; if (st === 'finds') { UI.invHub = 'art'; UI.artTab = st; } else { UI.invHub = 'bag'; if (st) UI.bagTab = st; } }
       UI.supTab = null;
     }
