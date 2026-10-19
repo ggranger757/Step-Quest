@@ -47,7 +47,7 @@
 
   // ---------- rendering ----------
   const ic = (m, scale = 3) => WB.icon(m.icon, scale, m.pal ? { pal: m.pal } : {});
-  const tag = (m) => (m.kind === 'deed' ? (m.deed === 'trek' ? 'Trail & trek' : 'Good deed') : ({ photo: 'Photo hunt', gather: 'Walk & collect', time: 'Timed walk', walks: 'Multi-walk', distance: 'Distance' })[m.kind]);
+  const tag = (m) => (m.kind === 'deed' ? (m.deed === 'trek' ? 'Trail & trek' : 'Good deed') : ({ photo: 'Photo hunt', gather: 'Gather', time: 'Timed walk', walks: 'Multi-walk', distance: 'Distance' })[m.kind]);
   const penText = (m) => { const p = G.missionPenalty(m); if (!p.coins && !p.hp) return 'no penalty'; return [p.coins ? '-' + WB.fmt(p.coins) + ' coins' : '', p.hp ? '-' + p.hp + ' HP' : ''].filter(Boolean).join(', '); };
   const left = (a) => { const ms = G.missionLeft(a); return ms <= 0 ? 'Time’s up' : UI.dur(Math.ceil(ms / 60000)) + ' left'; };
   function activeCard(m, a) {
@@ -82,6 +82,26 @@
       <div class="m-foot"><div class="t-rew">${WB.esc(G.rewardText(m.reward))}</div><div class="m-stake">${D.MISSION_HOURS}h to finish · fail ${penText(m)}</div></div>
     </div>`;
   }
+  // ---------- milestones and deliveries: long-term goals in the same card style, with no clock, slot or penalty ----------
+  const GOAL_KIND = { total_battles: ['sword', 'Battles'], bosses: ['trophy', 'Guardians'], total_finds: ['gem', 'Artifacts'], weapons: ['sword', 'Arsenal'], total_steps: ['steps', 'Steps'], total_meters: ['trail', 'Distance'] };
+  function goalCard(t, type) {
+    const cur = G.taskProgress(t), done = cur >= t.target, pct = Math.min(100, (cur / t.target) * 100);
+    const [icon, kind] = type === 'quest' ? ['note', 'From a traveler'] : GOAL_KIND[t.kind] || ['flag', 'Goal'];
+    const num = (v) => (t.kind === 'total_meters' ? WB.fmtKm(v) : WB.fmt(v));
+    return `<div class="task mission goal pbox ${done ? 'done' : ''}">
+      <div class="m-main"><span class="m-ic">${WB.icon(icon, 3)}</span><div><div class="m-kick">${type === 'quest' ? 'Delivery' : 'Milestone'} · ${kind}</div><div class="t-title">${WB.esc(WB.unitText(t.title))}</div></div></div>
+      <div class="m-acts">${done ? `<button class="btn gold sm" type="button" data-claim="${type}:${t.id}">Claim</button>` : ''}</div>
+      <div class="m-foot"><div class="t-rew">${WB.esc(G.rewardText(t.reward))}</div></div>
+      <div class="obj-prog"><div class="bar seg ${done ? 'gold' : 'cyan'}"><i style="width:${Math.max(cur > 0 ? 4 : 0, pct)}%"></i></div><span class="num">${done ? 'Ready to claim' : num(Math.min(cur, t.target)) + ' / ' + num(t.target)}</span></div>
+    </div>`;
+  }
+  function goalsBlock() {
+    const qs = S().tasks.quests, goals = G.activeMilestones(), n = S().tasks.advDone.filter((id) => D.milestoneById[id]).length;
+    return (qs.length ? `<h3 class="m-sub" id="deliveries">Deliveries <span class="aside">${qs.length} / 3 carried</span></h3><div class="list">${qs.map((q) => goalCard(q, 'quest')).join('')}</div>` : '')
+      + `<h3 class="m-sub" id="milestones">Milestones <span class="aside">${n} / ${D.MILESTONES.length} done</span></h3>
+      <p class="fine">Long-term goals: no clock, no penalty, and they don’t take a mission slot. Two show at a time; finish one to reveal the next.${qs.length ? '' : ' Messages travelers ask you to carry show up here too.'}</p>
+      <div class="list">${goals.map((t) => goalCard(t, 'adv')).join('') || '<p class="empty">Every milestone is complete.</p>'}</div>`;
+  }
   UI.missionsSection = () => {
     const ms = S().missions, act = ms.active.map((a) => [D.missionById[a.id], a]).filter(([m]) => m && !m.merlin);
     const board = G.missionBoard(), st = G.homeState(), mer = G.merlinActive(), fieldDone = ms.done.filter((id) => id[0] === 'm').length;
@@ -90,21 +110,16 @@
       <h3 class="m-sub">Your eggs <span class="aside">${G.eggTotal()} carried</span></h3>${UI.eggStrip ? UI.eggStrip() : ''}
       <h3 class="m-sub">Egg trades <span class="aside">${S().eggTrades || 0} made</span></h3>${UI.eggTrades ? UI.eggTrades() : ''}
     </div>`;
-    const field = `<div class="sect" id="field-missions"><h2>Field missions <span class="aside">${fieldDone} / ${D.MISSIONS.length} done</span></h2>
+    return `${merlin}<div class="sect" id="field-missions"><h2>Field missions <span class="aside">${fieldDone} / ${D.MISSIONS.length} done</span></h2>
       <p class="fine m-intro">Real-world walks with a goal: photo hunts, good deeds, trail treks, gathering runs and timed walks. Accept one and you have ${D.MISSION_HOURS} hours; only steps after that count. Miss the deadline or drop it and you lose coins and HP. Run up to ${D.MISSION_ACTIVE_MAX} at once.${st ? '' : ' <button class="linkbtn inl" type="button" data-act="home-state">Set your home state</button> for state bird and flower missions.'}</p>
       ${act.length ? `<div class="list">${act.map(([m, a]) => activeCard(m, a)).join('')}</div>` : ''}
+      ${goalsBlock()}
       ${board.length ? `<h3 class="m-sub">Mission board <span class="aside">${board.length} to pick from</span></h3>
         <div class="m-slots" role="img" aria-label="${act.length} of ${D.MISSION_ACTIVE_MAX} mission slots in use"><span class="lbl">Your slots</span>${Array.from({ length: D.MISSION_ACTIVE_MAX }, (_, i) => `<i class="${i < act.length ? 'on' : ''}"></i>`).join('')}<span class="lbl">${act.length} / ${D.MISSION_ACTIVE_MAX} in use${act.length >= D.MISSION_ACTIVE_MAX ? ' · finish or drop one to accept another' : ''}</span></div>
         <div class="list">${board.map(boardCard).join('')}</div>` : '<p class="empty">Every field mission is complete. Legendary.</p>'}
       <p class="fine">Stay on sidewalks and public paths. Keep away from wildlife, and ask before photographing people or their pets. Photos stay on your phone.</p>
       <h3 class="m-sub">Photo journal <span class="aside" id="jr-count"></span></h3><div class="journal" id="journal"><p class="empty">Photos from your photo hunts appear here.</p></div>
     </div>`;
-    // two selection tabs: the field-mission board, and Merlin (his quest, your eggs and the egg trades)
-    if (UI.fieldTab !== 'merlin') UI.fieldTab = 'field';
-    const ft = UI.fieldTab, merReady = !!(mer && G.missionProgress(mer[0], mer[1]).done);
-    const FT = [['field', 'Field missions', 'map', act.length ? act.length + ' active' : ''], ['merlin', 'Merlin', 'feather', merReady ? '1 ready' : mer ? 'Quest active' : '']];
-    const tabs = `<div class="seg two ftabs" role="tablist" aria-label="Field missions or Merlin">${FT.map(([id, l, icn, note]) => `<button type="button" role="tab" data-ftab="${id}" aria-selected="${id === ft}" aria-pressed="${id === ft}">${WB.icon(icn, 2, id === 'merlin' ? { pal: 'violet' } : {})}<span>${l}</span>${note ? `<span class="cnt${merReady && id === 'merlin' ? ' ready' : ''}">${note}</span>` : ''}</button>`).join('')}</div>`;
-    return tabs + (ft === 'merlin' ? merlin : field);
   };
   UI.fillJournal = async () => {
     const el = $('#journal'); if (!el) return;
@@ -131,13 +146,12 @@
 
   // ---------- events ----------
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-macc], [data-mdrop], [data-mkeep], [data-mskip], [data-mdeed], [data-jr], [data-ftab], [data-act="home-state"]');
+    const t = e.target.closest('[data-macc], [data-mdrop], [data-mkeep], [data-mskip], [data-mdeed], [data-jr], [data-act="home-state"]');
     if (!t || t.getAttribute('aria-disabled') === 'true') return;
     const d = t.dataset;
     if (d.act === 'home-state') return stateSheet();
     if (d.jr) return showPhoto(d.jr);
     WB.Sfx.play('tap');
-    if (d.ftab) { UI.fieldTab = d.ftab; UI.dropArm = null; UI.render(); const sc = $('#scr-tasks'); if (sc) sc.scrollTop = 0; return; }
     if (d.macc) { if (G.acceptMission(d.macc)) UI.toast({ kicker: 'Mission accepted', title: G.missionTitle(D.missionById[d.macc]), icon: 'flag', cls: 'ok' }); }
     else if (d.mkeep) UI.dropArm = null;
     else if (d.mdrop && !d.sure) UI.dropArm = d.mdrop;
@@ -163,7 +177,7 @@
     UI.updateHud();
   });
   WB.bus.on('merlinGone', ({ m, why }) => UI.toast({ kicker: why === 'dropped' ? 'Quest returned to Merlin' : 'Merlin’s quest faded', title: G.missionTitle(m) + ' · no penalty, he’ll offer it again', icon: 'feather', pal: 'violet', cls: 'msg', ms: 4200 }));
-  WB.bus.on('missionSoon', ({ m, a }) => UI.toast({ kicker: (m.merlin ? 'Merlin’s quest ends in ' : 'Mission ends in ') + UI.dur(Math.ceil(G.missionLeft(a) / 60000)), title: G.missionTitle(m) + (m.merlin ? ' · the reward is still waiting' : ' · finish it or lose ' + ((p) => p.coins + ' coins' + (p.hp ? ' and ' + p.hp + ' HP' : ''))(G.missionPenalty(m))), icon: 'calendar', cls: 'msg', ms: 5000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.fieldTab = m.merlin ? 'merlin' : 'field'; UI.go('tasks'); } } }));
-  WB.bus.on('missionDeedReady', ({ m }) => UI.toast({ kicker: m.deed === 'trek' ? 'Trail & trek' : 'Good deed', title: m.deed === 'trek' ? 'Steps done: ' + m.title : 'Ready: ' + m.title, icon: m.deed === 'trek' ? 'map' : 'heart', ms: 3000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.fieldTab = m.merlin ? 'merlin' : 'field'; UI.go('tasks'); } } }));
-  WB.bus.on('missionPhotoReady', ({ m }) => UI.toast({ kicker: 'Photo hunt', title: 'Ready: ' + G.missionSubject(m), icon: 'photo', ms: 3000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.fieldTab = m.merlin ? 'merlin' : 'field'; UI.go('tasks'); } } }));
+  WB.bus.on('missionSoon', ({ m, a }) => UI.toast({ kicker: (m.merlin ? 'Merlin’s quest ends in ' : 'Mission ends in ') + UI.dur(Math.ceil(G.missionLeft(a) / 60000)), title: G.missionTitle(m) + (m.merlin ? ' · the reward is still waiting' : ' · finish it or lose ' + ((p) => p.coins + ' coins' + (p.hp ? ' and ' + p.hp + ' HP' : ''))(G.missionPenalty(m))), icon: 'calendar', cls: 'msg', ms: 5000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
+  WB.bus.on('missionDeedReady', ({ m }) => UI.toast({ kicker: m.deed === 'trek' ? 'Trail & trek' : 'Good deed', title: m.deed === 'trek' ? 'Steps done: ' + m.title : 'Ready: ' + m.title, icon: m.deed === 'trek' ? 'map' : 'heart', ms: 3000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
+  WB.bus.on('missionPhotoReady', ({ m }) => UI.toast({ kicker: 'Photo hunt', title: 'Ready: ' + G.missionSubject(m), icon: 'photo', ms: 3000, action: { label: 'Open', fn: () => { UI.missionTab = 'field'; UI.go('tasks'); } } }));
 })();

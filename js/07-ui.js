@@ -43,7 +43,7 @@
     if (tab === 'supplies' || tab === 'collection' || tab === 'bag') {   // older routes: everything you own lives on the Inventory tab
       const st = UI.supTab;
       if (st === 'ach') { UI.pfTab = 'ach'; tab = 'profile'; }
-      else if (st === 'eggs') { tab = 'tasks'; UI.missionTab = 'field'; UI.fieldTab = 'merlin'; }   // eggs are counted on Missions → Field now
+      else if (st === 'eggs') { tab = 'tasks'; UI.missionTab = 'field'; }   // eggs are counted on Missions → Field now
       else { tab = 'inv'; if (st === 'finds') { UI.invHub = 'art'; UI.artTab = st; } else { UI.invHub = 'bag'; if (st) UI.bagTab = st; } }
       UI.supTab = null;
     }
@@ -220,7 +220,7 @@
     // everything this level opens: thumbnails are painted after the card mounts
     const items = [
       ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures, guardians and the Druid now roam the road', icon: 'sword' }] : []),
-      ...(inRange(D.FIELD_LEVEL) ? [{ n: 'Field missions & Adventure', sub: 'Two new Missions tabs, Merlin’s quests and egg trades', icon: 'map' }] : []),
+      ...(inRange(D.FIELD_LEVEL) ? [{ n: 'Field missions', sub: 'A new Missions tab: field missions, milestones, Merlin’s quests and egg trades', icon: 'map' }] : []),
       ...(inRange(D.FORGE_LEVEL) ? [{ n: 'Artifact Collection & Forge', sub: 'Craft Darkmatter from the artifacts you find', icon: 'spark' }] : []),
       ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · open it with your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name + ' to open it', icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
@@ -317,8 +317,8 @@
   UI.objective = () => {
     const s = S(), list = [];
     s.tasks.daily.forEach((d) => { if (!d.claimed) list.push([G.dailyDef(d.id), 'today']); });
-    G.activeAdventure().forEach((t) => list.push([t, 'adventure']));
-    s.tasks.quests.forEach((q) => list.push([q, 'adventure']));
+    G.activeMilestones().forEach((t) => list.push([t, 'field']));
+    s.tasks.quests.forEach((q) => list.push([q, 'field']));
     let best = null;
     for (const [t, tab] of list) {
       const cur = G.taskProgress(t), pct = Math.min(100, (cur / t.target) * 100);
@@ -573,11 +573,11 @@
       return `<div class="day ${got ? 'got' : ''} ${now2 ? 'now' : ''} ${c.rare ? 'rare' : ''}">Day ${i + 1}${c.rare ? WB.icon('chest', 2) + '<b>Rare</b>' : WB.icon('coin', 2) + '<b>' + r.coins + '</b>'}</div>`;
     }).join('');
     const canDaily = G.dailyCanClaim(), dDone = G.dailyClaimedToday();
-    // four sub-tabs; each shows how many rewards are waiting in it
-    const cl = G.claimable(), cnt = { today: cl.filter((c) => c.type === 'daily').length + (canDaily ? 1 : 0), mine: 0, field: cl.filter((c) => c.type === 'mission').length, adventure: cl.filter((c) => c.type === 'adv' || c.type === 'quest').length };
-    // Field and Adventure open at level D.FIELD_LEVEL: until then the tab shows a lock and what it holds
-    const lockOf = { field: !G.fieldOpen(), adventure: !G.advOpen() };
-    const MT = [['today', 'Today', 'calendar'], ['mine', 'My missions', 'pencil'], ['field', 'Field', 'map'], ['adventure', 'Adventure', 'flag']];
+    // three sub-tabs; each shows how many rewards are waiting in it (Field holds field missions, milestones and deliveries)
+    const cl = G.claimable(), cnt = { today: cl.filter((c) => c.type === 'daily').length + (canDaily ? 1 : 0), mine: 0, field: cl.filter((c) => c.type === 'mission' || c.type === 'adv' || c.type === 'quest').length };
+    // Field opens at level D.FIELD_LEVEL: until then the tab shows a lock and what it holds
+    const lockOf = { field: !G.fieldOpen() };
+    const MT = [['today', 'Today', 'calendar'], ['mine', 'My missions', 'pencil'], ['field', 'Field', 'map']];
     if (!MT.some((t) => t[0] === UI.missionTab)) UI.missionTab = 'today';
     const mt = UI.missionTab;
     let body = '';
@@ -593,17 +593,10 @@
         ${UI.streakCard()}
       </div>`;
     else if (mt === 'mine') body = UI.customSection ? UI.customSection() : '';
-    else if (mt === 'field') body = lockOf.field ? UI.missionLock('field') : UI.missionsSection ? UI.missionsSection() : '';
-    else if (lockOf.adventure) body = UI.missionLock('adventure');
-    else body = `
-      <div class="sect"><h2>Adventure <span class="aside">${s.tasks.advDone.length} / ${D.ADVENTURE.length} done</span></h2>
-        <p class="fine">Long-term goals that grow as you play: reach new worlds${G.battlesOpen() ? ', win battles' : ''} and find artifacts. Two are active at a time. Finish one to reveal the next.</p>
-        <div class="list">${G.activeAdventure().map((t) => taskRow(t, 'adv', false)).join('') || '<p class="empty">Every adventure is complete.</p>'}</div>
-      </div>
-      ${s.tasks.quests.length ? `<div class="sect"><h2>Deliveries <span class="aside">From travelers</span></h2><div class="list">${s.tasks.quests.map((q) => taskRow(q, 'quest', false)).join('')}</div></div>` : '<p class="fine">Travelers you meet may ask you to carry a message. Deliveries show up here.</p>'}`;
+    else if (mt === 'field') body = lockOf.field ? UI.missionLock() : UI.missionsSection ? UI.missionsSection() : '';
     const changed = UI.set($('#scr-tasks'), `<div class="scr-wrap">
       <div class="scr-head"><h1>Missions</h1>${n > 1 ? `<button class="btn gold sm" type="button" data-act="claim-all">Claim all (${n})</button>` : ''}</div>
-      <div class="seg four" role="tablist" aria-label="Mission types">${MT.map(([id, l, ic]) => `<button type="button" role="tab" data-mtab="${id}" aria-selected="${id === mt}" aria-pressed="${id === mt}" class="${lockOf[id] ? 'm-locked' : ''}"${lockOf[id] ? ` aria-label="${l}, locked until level ${D.FIELD_LEVEL}"` : ''}>${WB.icon(lockOf[id] ? 'lock' : ic, 2)}<span>${l}</span>${lockOf[id] ? `<span class="cnt lock">Lv ${D.FIELD_LEVEL}</span>` : cnt[id] ? `<span class="cnt ready">${cnt[id]} ready</span>` : ''}</button>`).join('')}</div>
+      <div class="seg three m-tabs" role="tablist" aria-label="Mission types">${MT.map(([id, l, ic]) => `<button type="button" role="tab" data-mtab="${id}" aria-selected="${id === mt}" aria-pressed="${id === mt}" class="${lockOf[id] ? 'm-locked' : ''}"${lockOf[id] ? ` aria-label="${l}, locked until level ${D.FIELD_LEVEL}"` : ''}>${WB.icon(lockOf[id] ? 'lock' : ic, 2)}<span>${l}</span>${lockOf[id] ? `<span class="cnt lock">Lv ${D.FIELD_LEVEL}</span>` : cnt[id] ? `<span class="cnt ready">${cnt[id]} ready</span>` : ''}</button>`).join('')}</div>
       ${body}
     </div>`);
     if (changed && UI.fillJournal) UI.fillJournal();
@@ -611,23 +604,20 @@
     UI.updateBadges();
   };
 
-  // ---------- Field / Adventure before level D.FIELD_LEVEL: what's inside, and how far away it is ----------
-  UI.missionLock = (which) => {
+  // ---------- Field before level D.FIELD_LEVEL: what's inside, and how far away it is ----------
+  UI.missionLock = () => {
     const s = S(), L = D.FIELD_LEVEL, need = D.xpToNext(s.level), pct = Math.min(100, ((s.level - 1) + Math.min(1, s.xp / need)) / (L - 1) * 100);
     const xpLeft = Math.max(0, need - s.xp) + Array.from({ length: Math.max(0, L - s.level - 1) }, (_, i) => D.xpToNext(s.level + 1 + i)).reduce((a, b) => a + b, 0);
-    const field = which === 'field';
-    const what = field
-      ? [['map', D.MISSIONS.length + ' field missions', 'Photo hunts, trail hikes, good deeds, timed walks and more.'], ['feather', 'Merlin’s quests', 'Bigger walks from the owl-mage, with bigger rewards.'], ['egg', 'Egg trades', 'Trade sets of eggs to Merlin for coins, XP, potions and gear.']]
-      : [['flag', 'Adventure chain', 'Long-term goals: reach new worlds, win battles, find artifacts.'], ['mail', 'Deliveries', 'Travelers on the road ask you to carry a message.']];
-    return `<div class="sect" id="${field ? 'field-missions' : 'adventure-lock'}">
+    const what = [['map', D.MISSIONS.length + ' field missions', 'Photo hunts, trail hikes, good deeds, timed walks and more.'], ['flag', 'Milestones', 'Long-term goals: win battles, beat guardians, find artifacts.'], ['mail', 'Deliveries', 'Travelers on the road ask you to carry a message.'], ['feather', 'Merlin’s quests', 'Bigger walks from the owl-mage, with bigger rewards.'], ['egg', 'Egg trades', 'Trade sets of eggs to Merlin for coins, XP, potions and gear.']];
+    return `<div class="sect" id="field-missions">
       <div class="pbox card feat-lock m-lock">
         <span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${L}</span>
-        <h3>${field ? 'Field missions' : 'Adventure'}</h3>
+        <h3>Field missions</h3>
         <ul class="m-lock-list">${what.map(([ic, t, d]) => `<li>${ic === 'egg' ? WB.eggImg('ember', 24, 'still') : WB.icon(ic === 'mail' ? 'note' : ic, 2, ic === 'feather' ? { pal: 'violet' } : {})}<span><b>${t}</b><small>${d}</small></span></li>`).join('')}</ul>
         <div class="bar seg cyan" role="progressbar" aria-label="Progress to level ${L}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct}%"></i></div>
         <p class="fine">Level ${s.level} of ${L} · about ${WB.fmt(xpLeft)} XP to go. Battles, quick missions and your own missions level you up fastest.</p>
       </div>
-    </div>${field && UI.eggStrip ? `<div class="sect"><h2>Your eggs <span class="aside">${G.eggTotal()} carried</span></h2>${UI.eggStrip()}</div>` : ''}`;
+    </div>${UI.eggStrip ? `<div class="sect"><h2>Your eggs <span class="aside">${G.eggTotal()} carried</span></h2>${UI.eggStrip()}</div>` : ''}`;
   };
 
   // ---------- walking streak (Missions → Today) ----------
@@ -1008,7 +998,7 @@
       <div class="stats">
         ${(() => {
           // every stat explains itself when tapped (dashed border = tap for info)
-          const fieldN = s.missions.done.filter((id) => id[0] === 'm').length, merlinN = G.merlinDone ? G.merlinDone() : 0, advN = s.tasks.advDone.length;
+          const fieldN = s.missions.done.filter((id) => id[0] === 'm').length, merlinN = G.merlinDone ? G.merlinDone() : 0, advN = s.tasks.advDone.length, msN = s.tasks.advDone.filter((id) => D.milestoneById[id]).length;
           const quickN = (s.quick || {}).total || 0, mineN = (s.custom || {}).done || 0, beaten = Object.values((s.nemesis || {}).beaten || {}).reduce((a, b) => a + b, 0);
           const km = WB.fmtKm(s.meters), dr = s.druid || {};
           return [
@@ -1017,9 +1007,9 @@
             ['Walk Coins', WB.fmt(s.coins), 'Coins you hold right now. Walking pays 1 coin every 40 steps; missions, battles and quests pay more. Spend them in the Shop.'],
             ['Streak', sv.count + ' <small>best ' + s.streak.best + '</small>', 'Days in a row you walked at least ' + WB.fmt(s.settings.streakMin) + ' steps. Your best run so far: ' + s.streak.best + ' day' + (s.streak.best === 1 ? '' : 's') + '.'],
             ['Battles won', WB.fmt(s.enc.battles), 'Fights you won against creatures, guardians, bosses and the Druid. Battles start at level ' + D.BATTLE_LEVEL + '.'],
-            ['Missions completed', WB.fmt(fieldN + merlinN + advN + quickN + mineN), 'Everything together: ' + fieldN + ' field, ' + merlinN + ' Merlin’s, ' + advN + ' adventure, ' + quickN + ' quick and ' + mineN + ' of your own missions.'],
+            ['Missions completed', WB.fmt(fieldN + merlinN + advN + quickN + mineN), 'Everything together: ' + fieldN + ' field, ' + merlinN + ' Merlin’s, ' + advN + ' milestone, ' + quickN + ' quick and ' + mineN + ' of your own missions.'],
             ['Field missions', WB.fmt(fieldN) + ' <small>of ' + D.MISSIONS.length + '</small>', 'Real-world walks from Missions → Field: photo hunts, good deeds, trail treks, gathering runs, timed walks and more.' + (G.fieldOpen() ? '' : ' They open at level ' + D.FIELD_LEVEL + '.')],
-            ['Adventures', WB.fmt(advN) + ' <small>of ' + D.ADVENTURE.length + '</small>', 'Long-term goals from Missions → Adventure: reach new worlds, win battles and find artifacts.' + (G.advOpen() ? '' : ' They open at level ' + D.FIELD_LEVEL + '.')],
+            ['Milestones', WB.fmt(msN) + ' <small>of ' + D.MILESTONES.length + '</small>', 'Long-term goals from Missions → Field: win battles, beat guardians, find artifacts and walk far.' + (G.fieldOpen() ? '' : ' They open at level ' + D.FIELD_LEVEL + '.')],
             ['Quick missions', WB.fmt(quickN), 'One-tap missions from Missions → My missions → Quick missions. Each can be done once a day.'],
             ['My missions', WB.fmt(mineN), 'Real-life goals you turned into missions and finished, from Missions → My missions.'],
             ['World creatures beaten', G.bossCount() + '/' + D.WORLDS.length, 'Every world has a guardian. It appears when the world is 100% explored; challenge it from the world map.'],
@@ -1065,6 +1055,7 @@
           <div class="theme-pick" role="radiogroup" aria-labelledby="lbl-theme">${UI.THEMES.map(([id, name, sub, sw]) => `<button type="button" role="radio" aria-checked="${(s.settings.theme || 'night') === id}" data-theme-pick="${id}"><span class="th-sw" aria-hidden="true">${sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span><span class="tn">${name}</span><span class="ts">${sub}</span></button>`).join('')}</div></div>
         <div class="setting pbox"><div><div id="lbl-music">Game music</div><div class="sd">Theme and battle music. Turn it off to play your own music: game sounds then play along with it instead of pausing it.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-music" aria-checked="${s.settings.gameMusic !== false}" data-toggle="gameMusic"></button></div>
         <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Hits, coins, fanfares and other game sounds.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
+        <div class="setting pbox"><div><div id="lbl-timer">Battle turn timer</div><div class="sd">A short clock to pick each move. When it runs out, the creature takes its turn.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-timer" aria-checked="${s.settings.turnTimer !== false}" data-toggle="turnTimer"></button></div>
         <div class="setting pbox"><div><div id="lbl-rm">Reduce motion</div><div class="sd">Fewer particles and animations.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-rm" aria-checked="${!!WB.reducedMotion()}" data-toggle="reducedMotion"></button></div>
       </div>
       <div class="sect"><h2>Help</h2>

@@ -79,7 +79,7 @@
       `Done and dusted. Your future self says thanks.`,
       d.late ? `Late still counts, ${N}. You finished it.` : `Right on time. Nicely done, ${N}.`,
     ]);
-    return pick([   // any game mission: daily, adventure, delivery, field
+    return pick([   // any game mission: daily, milestone, delivery, field
       `Mission complete! ${streakLine}`,
       `Nice work, ${N}. “${d.title}” is done.`,
       `You showed up for yourself this ${c.part}. ${stepsLine}`,

@@ -9,6 +9,8 @@
    Its moves:   attack · magic (its own spell, sometimes with an effect on you) · defend (brace: halves
                 your next hit, guardians raise a reversing ward; heals a little) · flee (when badly hurt)
                 · special (charged a turn ahead, every 4th turn, every 3rd for guardians; Defend!)
+   Initiative:  some creatures strike first, before your opening move (B.ambush, chances in D.AMBUSH)
+   Turn timer:  the battle screen gives you D.TURN_TIME seconds per turn; when it runs out B.timeout() passes your turn
                 Moves and effects per creature: D.CREATURE_MOVES (02-data.js)
    Statuses on you: poison, burn, venom (damage each turn, never below 1 HP; venom is the plants' slow poison: 3% for 6 turns) · weak (-30% damage) · stun (lose a turn)
    Statuses on the creature: poison, burn, bleed — shown to the player as a curse (damage each turn) · freeze, stun (skips a turn)
@@ -37,8 +39,36 @@
       magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.usesLeft(m.id) > 0).map((m) => m.id), magicEmpty: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.usesLeft(m.id) <= 0).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn
       perks: new Set(G.charms().map((id) => D.magicById[id].perk)),   // worn charms
     };
+    // initiative: some creatures strike before your opening move (never in your very first battle)
+    const e0 = B.st.enemy, A = D.AMBUSH;
+    B.st.ambush = s.enc.battles > 0 && (enc.creature === 'druid' || Math.random() < (e0.nemesis || e0.rival ? A.boss : e0.boss ? A.guardian : A.creature));
     B.active = true;
     return B.st;
+  };
+
+  // seconds you get to pick a move (the battle screen runs the clock)
+  B.turnTime = () => { const e = B.st.enemy, T = D.TURN_TIME; return e.nemesis || e.rival ? T.boss : e.boss ? T.guardian : T.creature; };
+
+  // the creature acts before your first move: a plain attack or its spell (never a brace, charge or flee)
+  B.ambush = () => {
+    const st = B.st, events = [];
+    if (!st || st.over || !st.ambush) return events;
+    st.ambush = false;
+    const e = st.enemy;
+    events.push({ who: 'enemy', type: 'ambush', text: e.name + ' strikes first!' });
+    events.push(Math.random() < (e.moves.mw || 0.33) ? enemyMagic(st) : enemyHit(st, 1, 'attack'));
+    if (e.hp <= 0) return win(st, events);        // thorns / a mirror can bounce enough back
+    if (st.hero.hp <= 0) return lose(st, events);
+    return finish(events);
+  };
+
+  // the turn timer ran out: you hesitate, the creature takes its turn and the round ends as usual
+  B.timeout = () => {
+    const st = B.st, events = [];
+    if (!st || st.over) return events;
+    if (st.hero.stun > 0) st.hero.stun--;   // a stunned turn is spent either way
+    events.push({ who: 'hero', type: 'timeout', text: 'Too slow! You hesitate and ' + st.enemy.name + ' seizes the moment.' });
+    return creatureTurn(st, events);
   };
 
   const hit = (base) => Math.max(1, Math.round(base * rnd(0.88, 1.12)));
@@ -260,6 +290,12 @@
     }
     if (e.hp <= 0) return win(st, events);
     if (h.hp <= 0) return lose(st, events);       // a ward can bounce enough back to knock you down
+    return creatureTurn(st, events);
+  };
+
+  // the creature's reply and the end of the round (after your move, or when your turn timer runs out)
+  function creatureTurn(st, events) {
+    const h = st.hero, e = st.enemy, P = st.perks;
 
     // ---- a boss reacts to being hurt (once): rage, or a second form
     if ((e.nemesis || e.rival) && !e.halved && e.hp < e.max * 0.5) {
@@ -327,7 +363,7 @@
     if (e.hp <= 0) return win(st, events);
     if (h.hp <= 0) return lose(st, events);
     return finish(events);
-  };
+  }
 
   // the creature hits you: armor, defending (block / reverse / counter), potions, then your pet takes its share
   // the Illusion Ring's copy strikes alongside you for half the damage

@@ -21,7 +21,7 @@
     if (m.merlin) return m.name;
     switch (m.kind) {
       case 'photo': return 'Photograph ' + G.missionSubject(m);
-      case 'gather': return 'Collect ' + m.count + ' ' + m.item.toLowerCase();
+      case 'gather': return 'Gather ' + m.count + ' ' + m.item.toLowerCase();
       case 'time': return D.MISSION_WINDOWS[m.win].name;
       case 'walks': return m.name;
       case 'deed': return m.title;
@@ -32,7 +32,7 @@
   const missionDesc = (m) => {
     switch (m.kind) {
       case 'photo': return 'Walk ' + fmt(m.steps) + ' steps, then snap a photo' + (m.merlin ? ' of ' + m.subject : '') + '. ' + (D.MISSION_CAT_HINT[m.cat] || '') + (m.cat === 'state' && !G.homeState() ? ' Set your home state in Profile to see which one.' : '');
-      case 'gather': return 'Walk ' + fmt(m.steps) + ' steps. ' + m.item + ' land in your pack on their own as you walk. Nothing to pick up in real life.';
+      case 'gather': return 'Walk ' + fmt(m.steps) + ' steps. ' + m.item + ' turn up along the way.';
       case 'time': return 'Walk ' + fmt(m.steps) + ' steps ' + D.MISSION_WINDOWS[m.win].when + '.';
       case 'deed': return m.deed === 'trek' ? 'Walk ' + fmt(m.steps) + ' steps to get there and back. ' + m.how : 'Walk ' + fmt(m.steps) + ' steps, then do it. ' + m.how;
       case 'walks': return 'Take ' + m.walks + ' separate walks of at least ' + fmt(m.per) + ' steps each. A ' + D.MISSION_WALK_GAP_MIN + '-minute break starts a new walk.';

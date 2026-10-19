@@ -67,13 +67,14 @@
     sprites.hero = { anim: 'idle', f: 0, once: false, t: 0, adv: 0, advTo: 0, enter: 1.5 };
     sprites.enemy = { anim: 'idle', f: 0, once: false, fade: 1, adv: 0, advTo: 0, enter: 1.5, flash: 0 };
     sprites.pet = st.pet ? { anim: 'idle', f: 0, once: false, flash: 0 } : null;
-    fx = []; shake = 0; busy = false;
+    fx = []; shake = 0; busy = false; tmr = null;
     const el = $('#battle');
     el.innerHTML = `
       <div class="b-stage" id="b-stage">
         <canvas id="b-canvas" aria-hidden="true"></canvas>
         <div class="b-fx" id="b-fx" aria-hidden="true"></div>
         <div class="b-flash" id="b-flash" aria-hidden="true"></div>
+        <div class="b-timer" id="b-timer" hidden aria-hidden="true"><span class="bt-k">Your turn</span><span class="bt-bar"><i></i></span><b class="bt-n"></b></div>
       </div>
       <div class="b-intro" id="b-intro" aria-hidden="true">${'<i></i>'.repeat(8)}</div>
       <div class="b-plates"><div class="b-plate mine" id="b-ph"></div><div class="b-plate enemy" id="b-pe"></div></div>
@@ -116,7 +117,11 @@
     setBusy(true);
     const intro = $('#b-intro');
     intro.classList.add('go');
-    setTimeout(() => { intro.remove(); if (enc === e) { setBusy(false); actions(); const b = $('#b-actions button:not([disabled])'); if (b) b.focus({ preventScroll: true }); } }, WB.reducedMotion() ? 60 : 900);
+    setTimeout(() => {
+      intro.remove(); if (enc !== e) return;
+      if (st.ambush) return runEvents(WB.Battle.ambush());   // it strikes first; your turn (and clock) starts after
+      setBusy(false); actions(); startTurn(); const b = $('#b-actions button:not([disabled])'); if (b) b.focus({ preventScroll: true });
+    }, WB.reducedMotion() ? 60 : 900);
     if (e.nemesis) setTimeout(() => { if (WB.Battle.st && !WB.Battle.st.over && view) bubble(WB.pick(D.BOSSES[e.creature].lines.intro)); }, 1300);
     if (e.rival) setTimeout(() => { if (WB.Battle.st && !WB.Battle.st.over && view) bubble(WB.Battle.rivalLine(WB.pick(D.RIVAL.lines.intro), WB.Battle.st)); }, 1300);
   };
@@ -148,7 +153,7 @@
     if (hitStop > 0) { hitStop -= dt; dt = 0; }   // a heavy hit freezes the frame for a beat
     t += dt;
     draw(dt);
-    rollHp(Math.min(0.1, (now - (loop.p || now)) / 1000)); loop.p = now;
+    rollHp(Math.min(0.1, (now - (loop.p || now)) / 1000)); tickTimer(now - (loop.p || now)); loop.p = now;
     if (!$('#battle').hidden) raf = requestAnimationFrame(loop);
   }
   // HP numbers count toward the real value; the pale trail waits, then drains after it
@@ -423,7 +428,41 @@
     if (reducedFx) return;
     for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 70; fx.push({ type: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 20, life: 0.45 + Math.random() * 0.3, t: 0, color: Math.random() < 0.25 ? '#ffffff' : color, size: Math.random() < 0.3 ? 3 : 2 }); }
   }
-  function setBusy(on) { busy = on; WB.$$('#b-actions button').forEach((b) => { if (on) b.disabled = true; }); }
+  function setBusy(on) { busy = on; if (on) stopTimer(); WB.$$('#b-actions button').forEach((b) => { if (on) b.disabled = true; }); }
+
+  // ---------- turn timer: a short clock while you pick a move; when it runs out the creature takes its turn ----------
+  // It counts only while you can act: animations, a backgrounded app and Items / Magic animations don't use it up.
+  // Opening Items or Magic doesn't stop it, and an instant magic item keeps the time you had left on that turn.
+  let tmr = null;   // { full, left, turn, run, sec } in ms
+  const timerOn = () => S().settings.turnTimer !== false && S().enc.battles > 0;   // never in your very first battle
+  function startTurn() {
+    const st = WB.Battle.st, el = $('#b-timer');
+    if (!el || !st || st.over || !timerOn()) { tmr = null; if (el) el.hidden = true; return; }
+    if (!tmr || tmr.turn !== st.turn) { const full = WB.Battle.turnTime() * 1000; tmr = { full, left: full, turn: st.turn, sec: 0 }; }
+    tmr.run = true; el.hidden = false; paintTimer();
+  }
+  function stopTimer() { if (tmr) tmr.run = false; const el = $('#b-timer'); if (el) el.hidden = true; }
+  function tickTimer(ms) {
+    if (!tmr || !tmr.run || busy) return;
+    tmr.left = Math.max(0, tmr.left - Math.min(ms, 250));   // a long gap (app in the background) doesn't burn the clock
+    paintTimer();
+    if (tmr.left <= 0) timeUp();
+  }
+  function paintTimer() {
+    const el = $('#b-timer'); if (!el || !tmr) return;
+    const sec = Math.ceil(tmr.left / 1000), urgent = sec <= 3;
+    el.querySelector('i').style.width = (tmr.left / tmr.full) * 100 + '%';
+    if (sec === tmr.sec) return;
+    if (tmr.sec && urgent && sec > 0) WB.Sfx.tone(sec === 1 ? 990 : 660, 0.07);   // tick, tick, tick in the last three seconds
+    tmr.sec = sec; el.querySelector('.bt-n').textContent = sec; el.classList.toggle('urgent', urgent);
+  }
+  function timeUp() {
+    tmr = null;
+    if (busy || !WB.Battle.st || WB.Battle.st.over) return;
+    actions('main');   // closes Items / Magic if they were open
+    setBusy(true);
+    runEvents(WB.Battle.timeout());
+  }
 
   // "-12 HP" / "+8 HP" / status words that float up from above a fighter's head
   const lane = { hero: 0, enemy: 0, pet: 0 };
@@ -458,13 +497,17 @@
     S().hints.battle = true;
     setBusy(true);
     const events = WB.Battle.act(move, arg);
-    if (!events.length) { setBusy(false); actions(); return; }
+    if (!events.length) { setBusy(false); actions(); startTurn(); return; }
+    return runEvents(events);
+  }
+  // animate a round's events, then hand the turn back to you (or show the result)
+  async function runEvents(events) {
     for (const ev of events) await play(ev);
     const st = WB.Battle.st;
     shown.hero = st.hero.hp; shown.enemy = st.enemy.hp; if (st.pet) shown.pet = st.pet.hp;
     plates();
     if (st.over) return finish(st);
-    setBusy(false); actions();
+    setBusy(false); actions(); startTurn();
     const b = $('#b-actions button:not([disabled])'); if (b) b.focus({ preventScroll: true });
   }
 
@@ -630,6 +673,7 @@
       } else if (ev.type === 'flee') { await sleep(ev.ok ? 500 : 650); }
       else if (ev.type === 'regen') { healHero(ev.heal); await sleep(380); }
       else if (ev.type === 'revive') { WB.Sfx.play('level'); fx.push({ type: 'ring', x: view.hx, y: hY(), color: '#ff8a3d', t: 0 }); burst(view.hx, hY(), '#ff8a3d', 18); shown.hero = 1; floater('Ember Heart!', 'hero', 'tag'); hs.anim = 'idle'; plates(); await sleep(900); }
+      else if (ev.type === 'timeout') { WB.Sfx.tone(196, 0.3); floater('Too slow!', 'hero', 'tag'); await sleep(750); }
       else if (ev.type === 'hstun') { WB.Sfx.play('status_stun'); floater('Stunned', 'hero', 'tag'); hs.anim = 'hurt'; hs.once = true; hs.f = 0; await sleep(750); }
       else if (ev.type === 'hdot') { WB.Sfx.play('status_' + (ev.dot === 'venom' ? 'poison' : ev.dot)); shown.hero -= ev.dmg; floater(hpText(-ev.dmg), 'hero', ev.dot); plates(); await sleep(520); }
       else if (ev.type === 'down') { hs.anim = 'down'; hs.once = true; hs.f = 0; WB.Bgm.stop(500); WB.Sfx.play('lose'); await sleep(1100); }
@@ -655,7 +699,8 @@
         if (ev.status) { await sleep(220); floater(ev.status, 'hero', 'tag'); plates(); }
         if (ev.eheal) { await sleep(200); shown.enemy += ev.eheal; floater(hpText(ev.eheal), 'enemy', 'heal'); plates(); }
         await sleep(ev.combo !== undefined && ev.combo < 2 ? 180 : 560);
-      } else if (ev.type === 'charge') { WB.Sfx.play('charge'); floater('Charging!', 'enemy', 'tag'); plates(); await sleep(800); }
+      } else if (ev.type === 'ambush') { WB.Sfx.play('charge'); flash('#ff6b5b'); shake = Math.max(shake, 0.8); floater('Ambush!', 'enemy', 'tag'); await sleep(650); }
+      else if (ev.type === 'charge') { WB.Sfx.play('charge'); floater('Charging!', 'enemy', 'tag'); plates(); await sleep(800); }
       else if (ev.type === 'brace' || ev.type === 'ward') {
         WB.Sfx.play('defend'); fx.push({ type: 'ring', x: view.ex, y: eY(), color: ev.type === 'ward' ? '#c58bff' : '#ff9a3d', t: 0 });
         floater(ev.type === 'brace' ? 'Defending' : 'Ward', 'enemy', 'tag');
@@ -687,6 +732,7 @@
   }
 
   function finish(st) {
+    stopTimer(); tmr = null;
     const res = WB.Battle.end();
     shown.hero = Math.max(0, Math.min(st.hero.hp, st.hero.max)); shown.enemy = Math.max(0, st.enemy.hp); if (st.pet) shown.pet = st.pet.hp; plates();
     if (res.result !== 'win' && res.result !== 'lose') WB.Bgm.stop(700);
@@ -722,7 +768,7 @@
   }
 
   function close(res) {
-    cancelAnimationFrame(raf); clearInterval(typeT);
+    cancelAnimationFrame(raf); clearInterval(typeT); tmr = null;
     if (BU.ro) BU.ro.disconnect();
     $('#battle').hidden = true; $('#battle').innerHTML = '';
     WB.UI.histDone('battle'); WB.UI.lockScroll('battle', false);

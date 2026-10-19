@@ -737,7 +737,7 @@ html.touring .dev-fab { display: none; }
 .seg.four button { flex-direction: column; height: 60px; gap: 4px; letter-spacing: .02em; }
 @media (min-width: 600px) { .seg.four { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .seg .cnt.ready { color: var(--gold); }
-#scr-tasks .seg.four { margin-bottom: var(--s2); }
+#scr-tasks .seg.four, #scr-tasks .seg.m-tabs { margin-bottom: var(--s2); }
 .tour-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
 .tour-top .tour-skip { flex: none; min-height: 40px; }
 /* scroll lock: while a sheet, battle, the tutorial or onboarding is up, the page behind stays put */
@@ -963,6 +963,17 @@ details.about .about-b { display: grid; gap: var(--s3); padding: 0 var(--s4) var
 /* the message window: a framed box with a blinking ▼ while text types */
 .b-log { position: relative; padding: var(--s2) var(--s3); background: linear-gradient(180deg, var(--surface-2), var(--inset)); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 4px var(--shadow), inset 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent); min-height: calc(4.05em + 16px); cursor: default; }
 .b-log:empty { visibility: hidden; }
+/* turn timer: a short clock at the top of the stage while you pick a move; red and pulsing in the last 3 seconds */
+.b-timer { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 2; width: min(72%, 300px); display: grid; grid-template-columns: auto minmax(0, 1fr) 2ch; align-items: center; gap: var(--s2); padding: 5px var(--s3); background: color-mix(in srgb, var(--surface) 92%, transparent); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 4px var(--shadow); pointer-events: none; }
+.b-timer .bt-k { font: 400 11px/1 var(--label); text-transform: uppercase; letter-spacing: .06em; color: var(--gold); white-space: nowrap; }
+.b-timer .bt-bar { position: relative; height: 8px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--shadow); overflow: hidden; }
+.b-timer .bt-bar i { position: absolute; inset: 0 auto 0 0; background: var(--gold); }
+.b-timer .bt-n { font: 400 20px/1 var(--display); color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+.b-timer.urgent { box-shadow: 0 0 0 2px var(--danger), 0 0 0 4px var(--shadow); animation: b-timer-pulse .5s steps(2) infinite; }
+.b-timer.urgent .bt-bar i { background: var(--danger); }
+.b-timer.urgent .bt-k, .b-timer.urgent .bt-n { color: var(--danger); }
+@keyframes b-timer-pulse { 50% { transform: translateX(-50%) scale(1.05); } }
+html.rm .b-timer.urgent { animation: none; }
 /* command cursor: a pointing ▶ beside the focused or hovered command */
 .b-actions .btn { position: relative; }
 .b-actions .btn:not([disabled]):not([aria-disabled="true"]):is(:hover, :focus-visible)::before { content: '▶'; position: absolute; left: -14px; top: 50%; transform: translateY(-50%); font: 400 14px/1 var(--display); color: var(--text); text-shadow: 2px 2px 0 var(--shadow); animation: cursor-bob .5s steps(2) infinite; z-index: 1; }
@@ -1537,8 +1548,3 @@ html.rm .mood-card.in { animation: none; }
 .mood-recent li { display: grid; grid-template-columns: 18px 64px minmax(0, 1fr); align-items: center; gap: var(--s2); font-size: 14px; }
 .mood-recent .mr-m { color: var(--text); }
 .mood-recent .mr-w { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
-
-/* Missions → Field: two selection tabs (Field missions / Merlin). Name and note stack so they fit narrow phones. */
-.seg.ftabs { margin-bottom: var(--s4); }
-.seg.ftabs button { height: auto; min-height: 48px; padding: var(--s2); flex-wrap: wrap; row-gap: 2px; white-space: normal; line-height: 1.15; text-align: center; }
-.seg.ftabs button .cnt { flex-basis: 100%; }

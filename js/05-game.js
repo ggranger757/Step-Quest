@@ -307,12 +307,12 @@
     return 0;
   };
   const BATTLE_GOALS = ['total_battles', 'bosses'];
-  // battle goals stay hidden until battles unlock (level D.BATTLE_LEVEL); the others move up meanwhile
-  G.activeAdventure = () => !G.lvlReached(D.FIELD_LEVEL) ? [] : D.ADVENTURE.filter((a) => !S().tasks.advDone.includes(a.id) && (G.battlesOpen() || !BATTLE_GOALS.includes(a.kind))).slice(0, 2);
+  // milestones (Missions → Field): battle goals stay hidden until battles unlock (level D.BATTLE_LEVEL); the others move up meanwhile
+  G.activeMilestones = () => !G.lvlReached(D.FIELD_LEVEL) ? [] : D.MILESTONES.filter((a) => !S().tasks.advDone.includes(a.id) && (G.battlesOpen() || !BATTLE_GOALS.includes(a.kind))).slice(0, 2);
   G.claimable = () => {
     const s = S(), out = [];
     s.tasks.daily.forEach((d) => { const t = G.dailyDef(d.id); if (t && !d.claimed && G.taskProgress(t) >= t.target) out.push({ type: 'daily', t, rec: d }); });
-    G.activeAdventure().forEach((t) => { if (G.taskProgress(t) >= t.target) out.push({ type: 'adv', t }); });
+    G.activeMilestones().forEach((t) => { if (G.taskProgress(t) >= t.target) out.push({ type: 'adv', t }); });
     s.tasks.quests.forEach((q) => { if (G.taskProgress(q) >= q.target) out.push({ type: 'quest', t: q }); });
     if (G.missionClaimable) G.missionClaimable().forEach(([m]) => out.push({ type: 'mission', t: { id: m.id, title: G.missionTitle(m), reward: m.reward } }));
     return out;
@@ -325,7 +325,7 @@
       if (!rec || rec.claimed || G.taskProgress(t) < t.target) return null;
       rec.claimed = true; reward = t.reward;
     } else if (type === 'adv') {
-      t = D.ADVENTURE.find((a) => a.id === id);
+      t = D.milestoneById[id];
       if (!t || s.tasks.advDone.includes(id) || G.taskProgress(t) < t.target) return null;
       s.tasks.advDone.push(id); reward = t.reward;
     } else if (type === 'quest') {
@@ -424,7 +424,7 @@
     if (type === 'druid' && s.level < D.BATTLE_LEVEL && !forceType) type = 'chest';   // a wrong answer means a fight, so he waits until battles unlock
     if (type === 'boss' && !G.battlesOpen() && !forceType) type = 'chest';
     if (type === 'creature' && !G.battlesOpen() && !opts.creature) type = WB.pick(['chest', 'find', 'egg', 'traveler']);   // no creatures at all before battles unlock
-    if (type === 'traveler' && !G.advOpen() && !forceType) type = 'chest';   // deliveries land on Missions → Adventure, which opens at level 3
+    if (type === 'traveler' && !G.fieldOpen() && !forceType) type = 'chest';   // deliveries land on Missions → Field, which opens at level 3
     if (type === 'nemesis' && !opts.boss && (s.level < D.BOSS_LEVEL || Date.now() - (s.enc.nemesisAt || 0) < D.BOSS_COOLDOWN_H * 3600000)) type = 'creature';
     if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest && !eggTrade) type = 'chest';
     const e = { id: 'e' + ++s.enc.seq, type, world: w.id };
@@ -500,14 +500,13 @@
   };
   G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 600 + Math.floor(Math.random() * 400); };   // an encounter every 600–1,000 steps
   G.battlesOpen = () => S().level >= D.BATTLE_LEVEL;
-  // Missions → Field (field missions, Merlin's quests, egg trades) and Missions → Adventure (the adventure chain,
-  // deliveries) open at level D.FIELD_LEVEL. A save that already has a field mission running keeps the tab open
-  // until it's finished, so nothing is ever stranded behind the lock.
+  // Missions → Field (field missions, milestones, deliveries, Merlin's quests, egg trades) opens at level D.FIELD_LEVEL.
+  // A save that already has a field mission or a delivery running keeps the tab open until it's finished, so nothing
+  // is ever stranded behind the lock.
   D.FIELD_LEVEL = 3;
   D.FORGE_LEVEL = 3;   // Inventory → Artifacts → Collection and the Forge open at this level
   G.lvlReached = (lv) => Math.max(S().level, S().peakLevel || 0) >= lv;
-  G.fieldOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().missions || {}).active || []).length > 0;
-  G.advOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().tasks || {}).quests || []).length > 0;
+  G.fieldOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().missions || {}).active || []).length > 0 || ((S().tasks || {}).quests || []).length > 0;
   G.tradesOpen = () => G.lvlReached(D.FIELD_LEVEL);
   G.firstEncounterType = () => {
     const s = S();
@@ -585,7 +584,7 @@
       case 'traveler:decline': out.text = '“Safe roads, then.”'; out.anim = 'talk'; break;
       case 'merlin:accept': {
         out.anim = 'talk'; out.reward = { xp: 10 };
-        if (G.acceptMerlin(e.quest)) { out.merlin = e.quest; out.text = '“Hoo! Splendid. ' + WB.pick(D.MERLIN_ACCEPT) + '” Find the quest under Missions → Field → Merlin.'; }
+        if (G.acceptMerlin(e.quest)) { out.merlin = e.quest; out.text = '“Hoo! Splendid. ' + WB.pick(D.MERLIN_ACCEPT) + '” Find the quest under Missions → Field.'; }
         else out.text = '“You already carry one of my quests. Finish that one first, walker.”';
         break;
       }

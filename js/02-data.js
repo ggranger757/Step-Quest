@@ -327,6 +327,10 @@
      rebirth (at half HP turns into a second form, heals and changes moves) · armor (non-piercing hits do 30% less)
      · reaper (hits 40% harder while you're under 35% HP) · ward (raises a ward that reverses 45% often). */
   D.DEFEND_COST = 35; D.DEFEND_REGEN = 15;   // the Defend gauge: each Defend uses 35%, every turn you don't defend restores 15%
+  // Initiative: the chance a creature strikes first, before your opening move (never in your very first battle; the Druid always does)
+  D.AMBUSH = { creature: 0.3, guardian: 0.4, boss: 0.5 };
+  // Turn timer (seconds) to pick a move; when it runs out you hesitate and the creature acts. Tougher foes give you less time.
+  D.TURN_TIME = { creature: 10, guardian: 8, boss: 7 };
   D.BOSS_LEVEL = 20; D.BOSS_COOLDOWN_H = 1.5; D.BOSS_LEVEL_LOSS = 2;
   D.BOSSES = {
     demonlord: { ability: 'enrage', abilityName: 'Hellborn Rage', abilityDesc: 'Below half HP he enrages: his attacks hit 35% harder.',
@@ -1022,33 +1026,29 @@
     { id: 'km15', kind: 'today_meters', target: 1500, title: 'Cover 1.5 km', reward: { coins: 45, xp: 55 } },
   ];
 
-  // ---------- Adventure tasks (chain; 2 active) ----------
-  const reach = (id, coins) => ({ id: 'a_' + id, kind: 'reach', world: id, target: 1, title: 'Reach ' + D.worldById[id].name, reward: { coins } });
-  const REACH = D.WORLDS.slice(1).map((w, i) => reach(w.id, 200 + i * 60));
-  const MILESTONES = [
-    { id: 'a_win10', kind: 'total_battles', target: 10, title: 'Win 10 battles', reward: { coins: 300, xp: 200 } },
-    { id: 'a_2km', kind: 'total_meters', target: 5000, title: 'Explore 5 km', reward: { coins: 200 } },
-    { id: 'a_finds15', kind: 'total_finds', target: 15, title: 'Find 15 artifacts', reward: { coins: 400 } },
-    { id: 'a_boss3', kind: 'bosses', target: 3, title: 'Defeat 3 guardians', reward: { coins: 500 } },
-    { id: 'a_25k', kind: 'total_steps', target: 25000, title: 'Walk 25,000 steps in total', reward: { coins: 400, xp: 300 } },
-    { id: 'a_win50', kind: 'total_battles', target: 50, title: 'Win 50 battles', reward: { coins: 800 } },
-    { id: 'a_boss6', kind: 'bosses', target: 6, title: 'Defeat 6 guardians', reward: { coins: 900 } },
-    { id: 'a_100k', kind: 'total_steps', target: 100000, title: 'Walk 100,000 steps in total', reward: { coins: 1200, xp: 800 } },
-    { id: 'a_finds60', kind: 'total_finds', target: 60, title: 'Find 60 artifacts', reward: { coins: 1200 } },
-    { id: 'a_win150', kind: 'total_battles', target: 150, title: 'Win 150 battles', reward: { coins: 1500 } },
-    { id: 'a_boss18', kind: 'bosses', target: 18, title: 'Defeat 18 guardians', reward: { coins: 2500 } },
-    { id: 'a_500k', kind: 'total_steps', target: 500000, title: 'Walk 500,000 steps in total', reward: { coins: 3000, xp: 3000 } },
-  ];
-  D.ADVENTURE = [
-    { id: 'a_total1k', kind: 'total_steps', target: 1000, title: 'Walk 1,000 steps in total', reward: { coins: 100 } },
+  // ---------- Milestones (Missions → Field): long-term goals, two showing at a time, finish one to reveal the next.
+  // They replaced the old Adventure tab; ids keep the old adventure ids so milestones already claimed stay claimed.
+  // The old "Reach <world>" goals were dropped: the World tab's Next world card and the Worldkey cover them.
+  D.MILESTONES = [
     { id: 'a_win1', kind: 'total_battles', target: 1, title: 'Win your first battle', reward: { xp: 120, potion: 'tonic' } },
     { id: 'a_finds3', kind: 'total_finds', target: 3, title: 'Find 3 artifacts', reward: { coins: 120, xp: 80 } },
     { id: 'a_weapon', kind: 'weapons', target: 2, title: 'Own 2 weapons', reward: { coins: 150, potion: 'iron' } },
     { id: 'a_boss1', kind: 'bosses', target: 1, title: 'Defeat a world guardian', reward: { coins: 300, potion: 'elixir' } },
+    { id: 'a_win10', kind: 'total_battles', target: 10, title: 'Win 10 battles', reward: { coins: 300, xp: 200 } },
+    { id: 'a_2km', kind: 'total_meters', target: 5000, title: 'Explore 5 km', reward: { coins: 200 } },
+    { id: 'a_finds15', kind: 'total_finds', target: 15, title: 'Find 15 artifacts', reward: { coins: 400 } },
+    { id: 'a_25k', kind: 'total_steps', target: 25000, title: 'Walk 25,000 steps in total', reward: { coins: 400, xp: 300 } },
+    { id: 'a_boss3', kind: 'bosses', target: 3, title: 'Defeat 3 guardians', reward: { coins: 500 } },
+    { id: 'a_win50', kind: 'total_battles', target: 50, title: 'Win 50 battles', reward: { coins: 800 } },
+    { id: 'a_100k', kind: 'total_steps', target: 100000, title: 'Walk 100,000 steps in total', reward: { coins: 1200, xp: 800 } },
+    { id: 'a_boss6', kind: 'bosses', target: 6, title: 'Defeat 6 guardians', reward: { coins: 900 } },
+    { id: 'a_finds60', kind: 'total_finds', target: 60, title: 'Find 60 artifacts', reward: { coins: 1200 } },
+    { id: 'a_win150', kind: 'total_battles', target: 150, title: 'Win 150 battles', reward: { coins: 1500 } },
+    { id: 'a_boss18', kind: 'bosses', target: 18, title: 'Defeat 18 guardians', reward: { coins: 2500 } },
+    { id: 'a_500k', kind: 'total_steps', target: 500000, title: 'Walk 500,000 steps in total', reward: { coins: 3000, xp: 3000 } },
+    { id: 'a_bossall', kind: 'bosses', target: D.WORLDS.length, title: 'Defeat every guardian', reward: { coins: 5000 } },
   ];
-  // one milestone after every third world
-  REACH.forEach((r, i) => { D.ADVENTURE.push(r); if (i % 3 === 2 && MILESTONES.length) D.ADVENTURE.push(MILESTONES.shift()); });
-  D.ADVENTURE.push(...MILESTONES, { id: 'a_bossall', kind: 'bosses', target: D.WORLDS.length, title: 'Defeat every guardian', reward: { coins: 5000 } });
+  D.milestoneById = Object.fromEntries(D.MILESTONES.map((m) => [m.id, m]));
 
   // ---------- Achievements ----------
   D.ACHIEVEMENTS = [

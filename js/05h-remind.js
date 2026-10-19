@@ -59,7 +59,7 @@
   // finished or deleted, or you clear it. A badge counts the ones you haven't looked at; the bell rings until then. ----------
   const alerts = () => { const s = S(); if (!Array.isArray(s.alerts)) s.alerts = []; return s.alerts; };
   const parse = (key) => { const t = key[0], rest = key.slice(2), i = rest.lastIndexOf(':'); return { t, id: rest.slice(0, i), x: rest.slice(i + 1) }; };
-  const openMission = (key) => { WB.UI.missionTab = key[0] === 'c' ? 'mine' : 'field'; if (key[0] !== 'c') WB.UI.fieldTab = /^m:w/.test(key) ? 'merlin' : 'field'; WB.UI.go('tasks'); };
+  const openMission = (key) => { WB.UI.missionTab = key[0] === 'c' ? 'mine' : 'field'; WB.UI.go('tasks'); };
   // still worth showing? (an overdue mission of your own stays for a day, a field mission until it's done or fails)
   const live = (a) => {
     const s = S(), k = parse(a.key);
