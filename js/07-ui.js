@@ -43,7 +43,7 @@
     if (tab === 'supplies' || tab === 'collection' || tab === 'bag') {   // older routes: everything you own lives on the Inventory tab
       const st = UI.supTab;
       if (st === 'ach') { UI.pfTab = 'ach'; tab = 'profile'; }
-      else if (st === 'eggs') { tab = 'tasks'; UI.missionTab = 'field'; }   // eggs are counted on Missions → Field now
+      else if (st === 'eggs') { tab = 'tasks'; UI.missionTab = 'merlin'; }   // eggs are counted on Missions → Merlin now
       else { tab = 'inv'; if (st === 'finds') { UI.invHub = 'art'; UI.artTab = st; } else { UI.invHub = 'bag'; if (st) UI.bagTab = st; } }
       UI.supTab = null;
     }
@@ -220,7 +220,7 @@
     // everything this level opens: thumbnails are painted after the card mounts
     const items = [
       ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures, guardians and the Druid now roam the road', icon: 'sword' }] : []),
-      ...(inRange(D.FIELD_LEVEL) ? [{ n: 'Field missions', sub: 'A new Missions tab: field missions, milestones, Merlin’s quests and egg trades', icon: 'map' }] : []),
+      ...(inRange(D.FIELD_LEVEL) ? [{ n: 'Field missions & Merlin', sub: 'Two new Missions tabs: field missions and milestones, plus Merlin’s quests and egg trades', icon: 'map' }] : []),
       ...(inRange(D.FORGE_LEVEL) ? [{ n: 'Artifact Collection & Forge', sub: 'Craft Darkmatter from the artifacts you find', icon: 'spark' }] : []),
       ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · open it with your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name + ' to open it', icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
@@ -328,7 +328,7 @@
     for (const a of s.missions.active) {
       const m = D.missionById[a.id]; if (!m) continue;
       const p = G.missionProgress(m, a), pct = p.done ? 100 : Math.min(99, (p.cur / p.target) * 100);
-      if (!best || pct > best.pct) best = { t: { title: G.missionTitle(m), reward: m.reward }, tab: 'field', pct, label: p.done ? 'Ready to claim' : p.label };
+      if (!best || pct > best.pct) best = { t: { title: G.missionTitle(m), reward: m.reward }, tab: m.merlin ? 'merlin' : 'field', pct, label: p.done ? 'Ready to claim' : p.label };
     }
     return best;
   };
@@ -573,11 +573,12 @@
       return `<div class="day ${got ? 'got' : ''} ${now2 ? 'now' : ''} ${c.rare ? 'rare' : ''}">Day ${i + 1}${c.rare ? WB.icon('chest', 2) + '<b>Rare</b>' : WB.icon('coin', 2) + '<b>' + r.coins + '</b>'}</div>`;
     }).join('');
     const canDaily = G.dailyCanClaim(), dDone = G.dailyClaimedToday();
-    // three sub-tabs; each shows how many rewards are waiting in it (Field holds field missions, milestones and deliveries)
-    const cl = G.claimable(), cnt = { today: cl.filter((c) => c.type === 'daily').length + (canDaily ? 1 : 0), mine: 0, field: cl.filter((c) => c.type === 'mission' || c.type === 'adv' || c.type === 'quest').length };
-    // Field opens at level D.FIELD_LEVEL: until then the tab shows a lock and what it holds
-    const lockOf = { field: !G.fieldOpen() };
-    const MT = [['today', 'Today', 'calendar'], ['mine', 'My missions', 'pencil'], ['field', 'Field', 'map']];
+    // four sub-tabs; each shows how many rewards are waiting in it (Field: field missions, deliveries, milestones; Merlin: his quests)
+    const cl = G.claimable(), isMer = (c) => c.type === 'mission' && !!(D.missionById[c.t.id] || {}).merlin;
+    const cnt = { today: cl.filter((c) => c.type === 'daily').length + (canDaily ? 1 : 0), mine: 0, field: cl.filter((c) => (c.type === 'mission' && !isMer(c)) || c.type === 'adv' || c.type === 'quest').length, merlin: cl.filter(isMer).length };
+    // Field and Merlin open at level D.FIELD_LEVEL: until then each tab shows a lock and what it holds
+    const lockOf = { field: !G.fieldOpen(), merlin: !G.fieldOpen() };
+    const MT = [['today', 'Today', 'calendar'], ['mine', 'My missions', 'pencil'], ['field', 'Field', 'map'], ['merlin', 'Merlin', 'feather']];
     if (!MT.some((t) => t[0] === UI.missionTab)) UI.missionTab = 'today';
     const mt = UI.missionTab;
     let body = '';
@@ -593,10 +594,11 @@
         ${UI.streakCard()}
       </div>`;
     else if (mt === 'mine') body = UI.customSection ? UI.customSection() : '';
-    else if (mt === 'field') body = lockOf.field ? UI.missionLock() : UI.missionsSection ? UI.missionsSection() : '';
+    else if (mt === 'field') body = lockOf.field ? UI.missionLock('field') : UI.missionsSection ? UI.missionsSection() : '';
+    else if (mt === 'merlin') body = lockOf.merlin ? UI.missionLock('merlin') : UI.merlinSection ? UI.merlinSection() : '';
     const changed = UI.set($('#scr-tasks'), `<div class="scr-wrap">
       <div class="scr-head"><h1>Missions</h1>${n > 1 ? `<button class="btn gold sm" type="button" data-act="claim-all">Claim all (${n})</button>` : ''}</div>
-      <div class="seg three m-tabs" role="tablist" aria-label="Mission types">${MT.map(([id, l, ic]) => `<button type="button" role="tab" data-mtab="${id}" aria-selected="${id === mt}" aria-pressed="${id === mt}" class="${lockOf[id] ? 'm-locked' : ''}"${lockOf[id] ? ` aria-label="${l}, locked until level ${D.FIELD_LEVEL}"` : ''}>${WB.icon(lockOf[id] ? 'lock' : ic, 2)}<span>${l}</span>${lockOf[id] ? `<span class="cnt lock">Lv ${D.FIELD_LEVEL}</span>` : cnt[id] ? `<span class="cnt ready">${cnt[id]} ready</span>` : ''}</button>`).join('')}</div>
+      <div class="seg four m-tabs" role="tablist" aria-label="Mission types">${MT.map(([id, l, ic]) => `<button type="button" role="tab" data-mtab="${id}" aria-selected="${id === mt}" aria-pressed="${id === mt}" class="${lockOf[id] ? 'm-locked' : ''}"${lockOf[id] ? ` aria-label="${l}, locked until level ${D.FIELD_LEVEL}"` : ''}>${WB.icon(lockOf[id] ? 'lock' : ic, 2)}<span>${l}</span>${lockOf[id] ? `<span class="cnt lock">Lv ${D.FIELD_LEVEL}</span>` : cnt[id] ? `<span class="cnt ready">${cnt[id]} ready</span>` : ''}</button>`).join('')}</div>
       ${body}
     </div>`);
     if (changed && UI.fillJournal) UI.fillJournal();
@@ -604,20 +606,23 @@
     UI.updateBadges();
   };
 
-  // ---------- Field before level D.FIELD_LEVEL: what's inside, and how far away it is ----------
-  UI.missionLock = () => {
+  // ---------- Field / Merlin before level D.FIELD_LEVEL: what's inside, and how far away it is ----------
+  UI.missionLock = (which) => {
     const s = S(), L = D.FIELD_LEVEL, need = D.xpToNext(s.level), pct = Math.min(100, ((s.level - 1) + Math.min(1, s.xp / need)) / (L - 1) * 100);
     const xpLeft = Math.max(0, need - s.xp) + Array.from({ length: Math.max(0, L - s.level - 1) }, (_, i) => D.xpToNext(s.level + 1 + i)).reduce((a, b) => a + b, 0);
-    const what = [['map', D.MISSIONS.length + ' field missions', 'Photo hunts, trail hikes, good deeds, timed walks and more.'], ['flag', 'Milestones', 'Long-term goals: win battles, beat guardians, find artifacts.'], ['mail', 'Deliveries', 'Travelers on the road ask you to carry a message.'], ['feather', 'Merlin’s quests', 'Bigger walks from the owl-mage, with bigger rewards.'], ['egg', 'Egg trades', 'Trade sets of eggs to Merlin for coins, XP, potions and gear.']];
-    return `<div class="sect" id="field-missions">
+    const field = which !== 'merlin';
+    const what = field
+      ? [['map', D.MISSIONS.length + ' field missions', 'Photo hunts, trail hikes, good deeds, timed walks and more.'], ['flag', 'Milestones', 'Long-term goals: win battles, beat guardians, find artifacts.'], ['mail', 'Deliveries', 'Travelers on the road ask you to carry a message.']]
+      : [['feather', 'Merlin’s quests', 'Bigger walks from the owl-mage, with bigger rewards. Saying no costs nothing.'], ['egg', 'Egg trades', 'Trade sets of eggs to Merlin for coins, XP, potions and gear.']];
+    return `<div class="sect" id="${field ? 'field-missions' : 'merlin-quest'}">
       <div class="pbox card feat-lock m-lock">
         <span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${L}</span>
-        <h3>Field missions</h3>
+        <h3>${field ? 'Field missions' : 'Merlin’s quests'}</h3>
         <ul class="m-lock-list">${what.map(([ic, t, d]) => `<li>${ic === 'egg' ? WB.eggImg('ember', 24, 'still') : WB.icon(ic === 'mail' ? 'note' : ic, 2, ic === 'feather' ? { pal: 'violet' } : {})}<span><b>${t}</b><small>${d}</small></span></li>`).join('')}</ul>
         <div class="bar seg cyan" role="progressbar" aria-label="Progress to level ${L}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct}%"></i></div>
         <p class="fine">Level ${s.level} of ${L} · about ${WB.fmt(xpLeft)} XP to go. Battles, quick missions and your own missions level you up fastest.</p>
       </div>
-    </div>${UI.eggStrip ? `<div class="sect"><h2>Your eggs <span class="aside">${G.eggTotal()} carried</span></h2>${UI.eggStrip()}</div>` : ''}`;
+    </div>${!field && UI.eggStrip ? `<div class="sect"><h2>Your eggs <span class="aside">${G.eggTotal()} carried</span></h2>${UI.eggStrip()}</div>` : ''}`;
   };
 
   // ---------- walking streak (Missions → Today) ----------

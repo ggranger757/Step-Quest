@@ -5,7 +5,7 @@
    'dm'  Worldkey energy (it fades with time and walking): it starts with the Worldkey, the moment the first world is
          finished (gear care — shots, uses, wear — is always on; see G.gearCare in 05i-gear.js). Until then opening
          worlds is free and nothing fades.
-   'field' Missions → Field (field missions, milestones, deliveries, Merlin's quests, egg trades), at level
+   'field' Missions → Field (field missions, milestones, deliveries) and Missions → Merlin (quests, egg trades), at level
          D.FIELD_LEVEL (3). Saves already past it unlock it quietly.
    Each unlock shows a short congratulations card, then plays its own mini tutorial (07f-tour.js).
    Saves from before this rule unlock whatever they have already reached, quietly. */

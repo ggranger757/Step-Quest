@@ -500,7 +500,7 @@
   };
   G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 600 + Math.floor(Math.random() * 400); };   // an encounter every 600–1,000 steps
   G.battlesOpen = () => S().level >= D.BATTLE_LEVEL;
-  // Missions → Field (field missions, milestones, deliveries, Merlin's quests, egg trades) opens at level D.FIELD_LEVEL.
+  // Missions → Field (field missions, milestones, deliveries) and Missions → Merlin (his quests, eggs, egg trades) open at level D.FIELD_LEVEL.
   // A save that already has a field mission or a delivery running keeps the tab open until it's finished, so nothing
   // is ever stranded behind the lock.
   D.FIELD_LEVEL = 3;
@@ -584,7 +584,7 @@
       case 'traveler:decline': out.text = '“Safe roads, then.”'; out.anim = 'talk'; break;
       case 'merlin:accept': {
         out.anim = 'talk'; out.reward = { xp: 10 };
-        if (G.acceptMerlin(e.quest)) { out.merlin = e.quest; out.text = '“Hoo! Splendid. ' + WB.pick(D.MERLIN_ACCEPT) + '” Find the quest under Missions → Field.'; }
+        if (G.acceptMerlin(e.quest)) { out.merlin = e.quest; out.text = '“Hoo! Splendid. ' + WB.pick(D.MERLIN_ACCEPT) + '” Find the quest under Missions → Merlin.'; }
         else out.text = '“You already carry one of my quests. Finish that one first, walker.”';
         break;
       }

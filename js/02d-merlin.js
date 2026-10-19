@@ -165,6 +165,6 @@
   D.MERLIN = out;
   out.forEach((m) => (D.missionById[m.id] = m));   // shares the field-mission engine (progress, photos, claims)
   D.MISSION_CAT_HINT.merlin = 'Merlin wants proof: walk first, then take the photo. Stay on public paths.';
-  D.MERLIN_MIN_LEVEL = 3;   // Merlin's quests live on Missions → Field, which opens at level 3 (D.FIELD_LEVEL)
+  D.MERLIN_MIN_LEVEL = 3;   // Merlin's quests live on Missions → Merlin, which opens at level 3 (D.FIELD_LEVEL)
   D.MERLIN_COOLDOWN_H = 2;   // after Merlin visits, he doesn't come back for a while
 })();

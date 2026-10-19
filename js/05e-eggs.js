@@ -40,7 +40,7 @@
   // s.enc.merlinMet is still recorded (achievements, his first visit); trading itself opens at level 3
   G.merlinMet = () => !!S().enc.merlinMet;
   G.hasSet = (t) => Object.entries(t.need).every(([k, n]) => (eggs()[k] || 0) >= n);
-  // trading opens at level 3 (D.FIELD_LEVEL), together with Missions → Field where the trades live
+  // trading opens at level 3 (D.FIELD_LEVEL), together with Missions → Merlin where the trades live
   G.canTrade = (t) => G.tradesOpen() && G.hasSet(t);
   G.tradesReady = () => D.EGG_TRADES.filter(G.canTrade);
   G.setsReady = () => D.EGG_TRADES.filter(G.hasSet);
