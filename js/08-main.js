@@ -260,7 +260,7 @@
         if (k === 'coins') { s.coins += 500; G.after(); }
         if (k === 'level') G.addXp(D.xpToNext(s.level) - s.xp);
         if (k === 'tasks') {
-          for (const a of s.missions.active) { const m = D.missionById[a.id]; if (!m) continue; a.steps = Math.max(a.steps, m.steps * 2); a.win = Math.max(a.win, m.steps); a.photo = true; a.walks = Array(m.walks || 0).fill(m.per || 0); }
+          for (const a of s.missions.active) { const m = D.missionById[a.id]; if (!m) continue; a.steps = Math.max(a.steps, m.steps * 2); a.win = Math.max(a.win, m.steps); a.walks = Array(m.walks || 0).fill(m.per || 0); }
           const td = s.today; td.encounters = Math.max(td.encounters, 2); td.fights = Math.max(td.fights, 1); td.chests = Math.max(td.chests, 1); td.meters = Math.max(td.meters, 1500); const need = Math.max(0, 4000 - td.steps); if (need) WB.Steps.push(need, 'dev'); else G.after(); }
         if (k === 'world') { const nw = G.nextWorld(); if (nw) { if (nw.unlock.after) s.worldSteps[nw.unlock.after] = Math.max(s.worldSteps[nw.unlock.after] || 0, D.worldById[nw.unlock.after].length); while (s.level < nw.unlock.level) G.addXp(D.xpToNext(s.level) - s.xp + 1); G.after(); } }
         if (k === 'avatars') { D.AVATARS.forEach((a) => G.unlock('avatar', a.id, true)); G.after(); }

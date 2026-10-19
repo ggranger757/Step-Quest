@@ -181,32 +181,29 @@
       <div class="bar seg cyan" role="progressbar" aria-label="Progress through ${esc(first.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · about ${WB.fmt(left)} steps to go</p>
     </div>`;
   };
-  UI.forgeLocked = () => {
-    const L = D.FORGE_LEVEL, lv = Math.min(S().level, L);
-    return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${L}</span>
-      <h3>Darkmatter Forge</h3>
-      <p class="fine">The Forge opens at level ${L}, together with your artifact Collection. Keep collecting artifacts: the Forge turns them into Darkmatter for your Worldkey.</p>
-      <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${L}" aria-valuenow="${lv}"><i style="width:${Math.min(100, (S().level / L) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${L}</p>
+  // Inventory → Artifacts, top of the page: the Forge. One compact row per Darkmatter (what it does, what it costs, one
+  // button), and the Worldkey charge right underneath so crafting and charging happen in one place.
+  UI.forgeSection = () => {
+    const w = G.wk(), up = G.upkeep(), held = D.DARKMATTER.reduce((n, d) => n + w.dm[d.id], 0);
+    const canCharge = up && held > 0 && D.DARKMATTER.some((d) => G.wkChargeMax(d.id) > 0);
+    return `<div class="sect forge" id="wk-forge">
+      <h2>Forge <span class="aside">${up ? 'Worldkey ' + pctTxt(w.e) : held ? held + ' Darkmatter in your pack' : 'Turns artifacts into fuel'}</span></h2>
+      <p class="fine">Melt spare artifacts into Darkmatter, the fuel that charges your Worldkey. Each craft costs a little HP.${up ? '' : ' Your Worldkey runs on its starter charge for now, so Darkmatter you make waits in your pack.'}</p>
+      <div class="forge-list">${D.DARKMATTER.map(forgeRow).join('')}</div>
+      ${canCharge ? `<button class="btn block forge-charge" type="button" data-wk="charge">${dmImg((D.DARKMATTER.find((d) => G.wkChargeMax(d.id) > 0) || D.DARKMATTER[0]).id, 20)}Charge your Worldkey<span class="lbl">${pctTxt(w.e)}</span></button>` : ''}
     </div>`;
   };
-  // Inventory → Artifacts → Forge: Darkmatter is crafted from artifact copies
-  UI.forgeSection = () => `<div class="sect" id="wk-forge"><h2>Darkmatter Forge</h2>
-      <p class="fine">Darkmatter charges your Worldkey. Each kind uses up artifacts and some of your HP. Walk worlds again to find more artifacts.</p>
-      <div class="dm-list">${D.DARKMATTER.map(recipeCard).join('')}</div>
-    </div>`;
-  // one recipe: what it makes, what it uses up, what it costs, what you must own, and one clear next step
-  function recipeCard(d) {
-    const c = G.wkCraftCheck(d.id), w = G.wk(), hpOk = S().hp > c.hp, artsOk = c.arts.have >= c.arts.need;
-    const mark = (okk) => (okk ? `<span class="dm-st ok">${WB.icon('check', 1)}</span>` : '<span class="dm-st no" aria-hidden="true">✕</span>');
-    const used = `<li class="${artsOk ? 'have' : 'miss'}">${mark(artsOk)}${WB.pxImg('art/m30.png', 20)}<span>${c.arts.need} artifact${c.arts.need > 1 ? 's' : ''} <small class="dm-from">${esc(c.arts.from)}</small></span><span class="n">you have ${c.arts.have}</span></li>`
-      + `<li class="${hpOk ? 'have' : 'miss'}">${mark(hpOk)}${WB.icon('heart', 1)}<span>${c.hp} HP</span><span class="n">you have ${S().hp}</span></li>`;
-    const act = c.ok ? `<button class="btn gold sm" type="button" data-wk="craft" data-dm="${d.id}">Craft 1</button>`
-      : !artsOk ? '<button class="btn ghost sm" type="button" data-wk="arts">See your artifacts</button>'
-      : !hpOk ? '<button class="btn ghost sm" type="button" data-wk="heal">Heal</button>' : '';
-    return `<div class="dm pbox ${c.ok ? 'ready' : ''}">
-      <div class="dm-head">${dmImg(d.id, 32)}<div><b>${esc(d.name)}</b><small>Charges your Worldkey +${d.energy}%${d.limit > K.MAX ? ', even past 100%' : ''}</small></div><span class="dm-own" aria-label="You have ${w.dm[d.id]}"><small>You have</small>${w.dm[d.id]}</span></div>
-      <div class="dm-grp"><span class="lbl">Uses up</span><ul class="dm-ing">${used}</ul></div>
-      <div class="dm-foot">${c.ok ? '<p class="dm-why ok">Ready to craft.</p>' : `<p class="dm-why">${esc(c.why)}</p>`}${act}</div>
+  function forgeRow(d) {
+    const c = G.wkCraftCheck(d.id), have = G.wk().dm[d.id], artsOk = c.arts.have >= c.arts.need, hpOk = S().hp > c.hp;
+    // the cost chips already say what it takes; the note only says what's in the way, in a few words
+    const early = !artsOk && d.minLvl > 1 && S().level < d.minLvl;
+    const note = c.ok ? '' : have >= K.DM_MAX ? 'Pack full: charge your Worldkey to make room.' : early ? 'Opens up when you reach level ' + d.minLvl + ' worlds.' : !artsOk ? 'You have ' + c.arts.have + (d.minLvl > 1 ? ' from those worlds.' : '. Find one on the road.') : 'Not enough HP. Heal first.';
+    return `<div class="forge-row pbox ${c.ok ? 'ready' : early ? 'early' : ''}">
+      <span class="fr-ic">${dmImg(d.id, 32)}<b class="fr-n ${have ? '' : 'none'}" aria-label="You have ${have}">×${have}</b></span>
+      <span class="fr-t"><b>${esc(d.name)}</b><small>+${d.energy}% charge${d.limit > K.MAX ? ', even past 100%' : ''}</small>
+        <span class="fr-cost"><span class="${artsOk ? '' : 'miss'}">${WB.pxImg('art/m30.png', 16)}${d.arts} artifact${d.arts > 1 ? 's' : ''}${d.minLvl > 1 ? ' · Lv ' + d.minLvl + '+' : ''}</span><span class="${hpOk ? '' : 'miss'}">${WB.icon('heart', 1)}${c.hp} HP</span></span>
+        ${note ? `<small class="fr-why">${esc(note)}</small>` : ''}</span>
+      <button class="btn ${c.ok ? 'gold' : 'ghost'} sm" type="button" data-wk="craft" data-dm="${d.id}" ${UI.off(c.why)}>Craft</button>
     </div>`;
   }
   WK.mountSection = (root) => {
@@ -446,7 +443,7 @@
     if (a === 'gate' && world) return WK.gate(world);
     if (a === 'about') return WK.about();
     if (a === 'custom') return WK.custom();
-    if (a === 'forge') { UI.closeSheet(); return UI.goHub('art', 'forge'); }
+    if (a === 'forge') { UI.closeSheet(); return UI.goHub('art', 'finds'); }
     if (a === 'arts') { UI.closeSheet(); return UI.goHub('art', 'finds'); }
     if (a === 'shop') { UI.closeSheet(); return UI.goHub('shop', b.dataset.st || 'potions'); }
     if (a === 'heal') { UI.closeSheet(); return UI.goHub('bag', 'potions'); }
@@ -454,7 +451,7 @@
       const r = G.wkCraft(b.dataset.dm); if (!r) return;
       if (!r.ok) return UI.toast({ kicker: 'Can’t craft yet', title: r.why, icon: 'lock' });
       WB.Sfx.play('dm_craft');
-      UI.toast({ kicker: 'Crafted · −' + r.hp + ' HP', title: r.dm.name, sub: 'Used ' + r.used.join(', ') + '.', img: 'wk/dm_' + r.dm.id + '.png', cls: 'cyan' });
+      UI.toast({ kicker: 'Crafted · −' + r.hp + ' HP', title: r.dm.name, sub: 'Used ' + r.used.join(', ') + '.', img: 'wk/dm_' + r.dm.id + '.png', cls: 'cyan', ...(G.upkeep() && G.wkChargeMax(r.dm.id) > 0 ? { action: { label: 'Charge', fn: () => WK.charge() } } : {}) });
       UI.updateHud(); UI.render();
     }
   });

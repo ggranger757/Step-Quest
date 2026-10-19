@@ -34,7 +34,7 @@
       eggs: { frost: 0, ember: 0, crystal: 0 }, eggTrades: 0,
       druid: { asked: [], wins: 0, losses: 0 },
       nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, homeState: '', theme: 'night', notify: true, chartDays: 14, moodAsk: true, turnTimer: true },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, theme: 'night', notify: true, chartDays: 14, moodAsk: true, turnTimer: true },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }
@@ -46,6 +46,9 @@
     // Sound & music became two switches: Game music starts where the old switch was
     if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
     if (s.settings && s.settings.turnTimer === undefined) s.settings.turnTimer = true;   // the battle turn timer is on for older saves too
+    // photo hunts were removed (2.13): a photo mission still running is retired quietly, with no penalty
+    if (s.missions && Array.isArray(s.missions.active)) s.missions.active = s.missions.active.filter((a) => D.missionById[a.id]);
+    if (s.settings) delete s.settings.homeState;   // only photo hunts used it (state bird / flower)
     s.settings.notify = true;   // mission reminders are always enabled when the app opens
     for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'quick', 'mx', 'mood', 'streak', 'daily', 'settings', 'seen', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];

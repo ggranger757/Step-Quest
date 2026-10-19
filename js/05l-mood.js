@@ -17,6 +17,15 @@
     { id: 'rough', name: 'Rough', score: 1, icon: 'mood_rough' },
   ];
   D.moodById = Object.fromEntries(D.MOODS.map((m) => [m.id, m]));
+  // a short word of encouragement after you log a mood, matched to it. Good moods get celebrated; low ones get
+  // acknowledged gently, with no pressure to cheer up. (Never the same line twice in a row: see G.moodCheer.)
+  D.MOOD_CHEER = {
+    great: ['Love that. Ride this energy a few more steps.', 'That’s the spirit. The road looks good on you.', 'Great walks make great days. Keep it rolling.', 'Bottle this feeling. Future you will thank you.'],
+    good: ['Nice. Steady steps, good vibes.', 'Glad it’s a good one. Enjoy the stretch ahead.', 'Good is good. Keep that easy rhythm going.', 'Every good walk adds up, and you’re stacking them.'],
+    okay: ['Okay is a fine place to start. A few more steps might lift it.', 'Thanks for checking in. Notice one nice thing around you.', 'Not every walk has to be epic. Showing up counts.', 'Steady is underrated. You’re still moving.'],
+    low: ['Thanks for being honest. Go at whatever pace feels right.', 'Low days happen. You still got out here, and that matters.', 'Be gentle with yourself. Slow steps still count.', 'Try a few slow, deep breaths as you walk. You’re doing okay.'],
+    rough: ['That sounds hard. Getting out here took real strength.', 'Rough moments pass. Take it one step at a time.', 'No pressure to push today. Any steps are a win.', 'Be kind to yourself today. Talking to someone you trust can help, too.'],
+  };
   D.MOOD = {
     STEPS: 400,        // steps walked since the last check-in before another can show
     GAP_MIN: 150,      // and at least this many minutes since the last one
@@ -55,6 +64,13 @@
     if (m.log.length > D.MOOD.KEEP) m.log.splice(0, m.log.length - D.MOOD.KEEP);
     WB.Save.queue(); WB.bus.emit('mood', e);
     return e;
+  };
+  const lastCheer = {};
+  G.moodCheer = (id) => {
+    const list = D.MOOD_CHEER[id] || D.MOOD_CHEER.okay;
+    let i = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && i === lastCheer[id]) i = (i + 1) % list.length;
+    lastCheer[id] = i; return list[i];
   };
   // take back the entry just logged (the card's Undo)
   G.moodUnlog = (t) => { const m = M(), i = m.log.findIndex((e) => e.t === t); if (i < 0) return false; m.log.splice(i, 1); WB.Save.queue(); return true; };

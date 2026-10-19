@@ -41,9 +41,10 @@
   const logged = (e) => {
     const c = card(), m = D.moodById[e.m]; if (!c) return;
     c.setAttribute('role', 'status');
-    c.innerHTML = `<div class="mood-done">${WB.icon(m.icon, 3)}<p><span class="lbl">Mood logged</span>Feeling ${esc(m.name.toLowerCase())}. See your moods in Profile.</p>
+    // a few warm words matched to the mood, then it slips away (a little longer than before, so there's time to read it)
+    c.innerHTML = `<div class="mood-done m-${m.id}">${WB.icon(m.icon, 3)}<p><span class="lbl">Feeling ${esc(m.name.toLowerCase())} · saved to Profile</span><span class="mood-cheer">${esc(G.moodCheer(m.id))}</span></p>
       <button type="button" class="linkbtn" data-mood-undo="${e.t}">Undo</button></div>`;
-    clearTimeout(hideT); hideT = setTimeout(hide, 4500);
+    clearTimeout(hideT); hideT = setTimeout(hide, 6500);
   };
   // check about every 5 s; a check-in waits until you're walking and nothing else is on screen
   setInterval(() => {

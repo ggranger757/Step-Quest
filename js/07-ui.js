@@ -221,7 +221,7 @@
     const items = [
       ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures, guardians and the Druid now roam the road', icon: 'sword' }] : []),
       ...(inRange(D.FIELD_LEVEL) ? [{ n: 'Field missions & Merlin', sub: 'Two new Missions tabs: field missions and milestones, plus Merlin’s quests and egg trades', icon: 'map' }] : []),
-      ...(inRange(D.FORGE_LEVEL) ? [{ n: 'Artifact Collection & Forge', sub: 'Craft Darkmatter from the artifacts you find', icon: 'spark' }] : []),
+      ...(inRange(D.FORGE_LEVEL) ? [{ n: 'Artifacts & Forge', sub: 'Melt the artifacts you find into Darkmatter for your Worldkey', icon: 'spark' }] : []),
       ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · open it with your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name + ' to open it', icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
       ...D.AVATARS.filter((a) => a.req.level && inRange(a.req.level)).map((a) => ({ n: a.name, sub: 'Walker · ' + price(a.req), thumb: { kind: 'av', id: a.id, head: true, face: 'right' }, cat: 'avatar', id: a.id })),
@@ -601,7 +601,6 @@
       <div class="seg four m-tabs" role="tablist" aria-label="Mission types">${MT.map(([id, l, ic]) => `<button type="button" role="tab" data-mtab="${id}" aria-selected="${id === mt}" aria-pressed="${id === mt}" class="${lockOf[id] ? 'm-locked' : ''}"${lockOf[id] ? ` aria-label="${l}, locked until level ${D.FIELD_LEVEL}"` : ''}>${WB.icon(lockOf[id] ? 'lock' : ic, 2)}<span>${l}</span>${lockOf[id] ? `<span class="cnt lock">Lv ${D.FIELD_LEVEL}</span>` : cnt[id] ? `<span class="cnt ready">${cnt[id]} ready</span>` : ''}</button>`).join('')}</div>
       ${body}
     </div>`);
-    if (changed && UI.fillJournal) UI.fillJournal();
     if (changed) { const mf = $('#scr-tasks .mer-face'); if (mf) WB.paintThumb(mf, { kind: 'npc', id: 'merlin' }); }
     UI.updateBadges();
   };
@@ -612,7 +611,7 @@
     const xpLeft = Math.max(0, need - s.xp) + Array.from({ length: Math.max(0, L - s.level - 1) }, (_, i) => D.xpToNext(s.level + 1 + i)).reduce((a, b) => a + b, 0);
     const field = which !== 'merlin';
     const what = field
-      ? [['map', D.MISSIONS.length + ' field missions', 'Photo hunts, trail hikes, good deeds, timed walks and more.'], ['flag', 'Milestones', 'Long-term goals: win battles, beat guardians, find artifacts.'], ['mail', 'Deliveries', 'Travelers on the road ask you to carry a message.']]
+      ? [['map', D.MISSIONS.length + ' field missions', 'Good deeds, trail treks, gathering runs, timed walks and more.'], ['flag', 'Milestones', 'Long-term goals: win battles, beat guardians, find artifacts.'], ['mail', 'Deliveries', 'Travelers on the road ask you to carry a message.']]
       : [['feather', 'Merlin’s quests', 'Bigger walks from the owl-mage, with bigger rewards. Saying no costs nothing.'], ['egg', 'Egg trades', 'Trade sets of eggs to Merlin for coins, XP, potions and gear.']];
     return `<div class="sect" id="${field ? 'field-missions' : 'merlin-quest'}">
       <div class="pbox card feat-lock m-lock">
@@ -681,10 +680,8 @@
     ['pets', 'Pets', 'paw', 'Pets heal over time, like you. A knocked-out pet rests until it recovers.'],
     ['avatar', 'Avatars', 'user', 'Pick who you walk as.'],
   ];
-  const ART_TABS = [
-    ['finds', 'Collection', 'img:art/m30.png', 'Artifacts hide along the road in every world. Walk a world again to find more copies.'],
-    ['forge', 'Forge', 'img:wk/dm_void.png', ''],   // (locked until level D.FORGE_LEVEL: see UI.forgeLocked)
-  ];
+  // Artifacts is one page: the Forge on top, the Collection under it (no sub-tabs). Older links to 'forge' land here too.
+  const ART_TABS = [['finds', 'Artifacts', 'img:art/m30.png', '']];
   const GEAR = ['weapons', 'potions', 'pets'];
   // open a hub (and one of its sections) from anywhere
   UI.goHub = (hub, sub, opt) => {
@@ -784,8 +781,8 @@
   const collectionLock = () => {
     const L = D.FORGE_LEVEL, lv = Math.min(S().level, L);
     return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${L}</span>
-      <h3>Collection is locked</h3>
-      <p class="fine">The artifact Collection opens at level ${L}, together with the Forge. Keep walking: your finds will be waiting for you here.</p>
+      <h3>Artifacts &amp; Forge</h3>
+      <p class="fine">Your artifact Collection and the Forge open at level ${L}. Artifacts you find before then are kept: they’ll be waiting here, ready to melt into Darkmatter for your Worldkey.</p>
       <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${L}" aria-valuenow="${lv}"><i style="width:${Math.min(100, (S().level / L) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${L}</p>
     </div>`;
   };
@@ -856,17 +853,31 @@
     }
     return `<div class="grid">${byUnlock(D.AVATARS.filter((a) => G.owns('avatar', a.id))).map((it) => bagCard('avatar', it, { desc: it.role })).join('')}</div>`;
   }
-  // ----- Artifacts sections -----
-  function artBody(tab) {
+  // ----- Artifacts: the Forge, then the Collection as one collapsible row per world -----
+  // Only your current world starts open; the rows you open or close stay that way while you move around the app.
+  UI.artOpen = null;
+  document.addEventListener('toggle', (e) => {
+    const d = e.target; if (!d.matches || !d.matches('details[data-artw]')) return;
+    if (!UI.artOpen) UI.artOpen = new Set([S().world]);
+    if (d.open) UI.artOpen.add(d.dataset.artw); else UI.artOpen.delete(d.dataset.artw);
+  }, true);
+  function artBody() {
     const s = S();
-    if (tab === 'forge') return G.forgeOpen() ? UI.forgeSection() : UI.forgeLocked();
     if (!G.collectionOpen()) return collectionLock();
-    const locked = D.WORLDS.filter((w) => !s.unlocked.includes(w.id));
-    return `<div class="pbox card art-sum"><span><b>${G.artTotal()}</b> artifacts to craft with</span><span class="lbl">${G.findCount()} / ${D.FIND_TOTAL} discovered</span></div>` + D.WORLDS.filter((w) => s.unlocked.includes(w.id)).map((w) => {
-      const got = s.enc.finds[w.id] || [], n = D.FINDS[w.id].reduce((t, _, i) => t + G.artHave(w.id, i), 0);
-      return `<div class="sect"><h2>${w.name} <span class="aside">${got.length} / ${D.FINDS[w.id].length} found${n ? ' · ' + n + ' in hand' : ''}</span></h2>
-        <div class="finds">${D.FINDS[w.id].map((f, i) => { const has = got.includes(i), c = G.artHave(w.id, i); return `<div class="find pbox ${has ? 'got' : ''}">${has ? WB.pxImg('art/' + f[0] + '.png', 64) : `<canvas class="px-img" width="64" height="64" data-silimg="art/${f[0]}.png" aria-hidden="true"></canvas>`}${has ? WB.esc(f[1]) : 'Not found yet'}${has ? `<span class="art-n ${c ? '' : 'none'}" aria-label="${c} in hand">×${c}</span>` : ''}</div>`; }).join('')}</div></div>`;
-    }).join('') + (locked.length ? `<div class="sect"><h2>Locked worlds <span class="aside">${locked.reduce((n, w) => n + D.FINDS[w.id].length, 0)} artifacts</span></h2><div class="locked-worlds pbox card">${locked.map((w) => `<div class="lw"><span>${WB.icon('lock', 1)} ${WB.esc(w.name)}</span><span class="lbl">${D.FINDS[w.id].length} to find</span></div>`).join('')}</div></div>` : '');
+    const open = D.WORLDS.filter((w) => s.unlocked.includes(w.id)), shut = D.WORLDS.filter((w) => !s.unlocked.includes(w.id));
+    const found = G.findCount(), inHand = G.artTotal(), isOpen = (id) => (UI.artOpen ? UI.artOpen.has(id) : id === s.world);
+    const row = (w) => {
+      const got = s.enc.finds[w.id] || [], list = D.FINDS[w.id], n = list.reduce((t, _, i) => t + G.artHave(w.id, i), 0);
+      return `<details class="art-w pbox ${got.length >= list.length ? 'done' : ''}" data-artw="${w.id}" ${isOpen(w.id) ? 'open' : ''}>
+        <summary><span class="aw-name">${WB.esc(w.name)}${w.id === s.world ? ' <small>You’re here</small>' : ''}</span><span class="aw-pips" aria-hidden="true">${list.map((_, i) => `<i class="${got.includes(i) ? 'on' : ''}"></i>`).join('')}</span><span class="aw-n">${got.length}/${list.length}${n ? ` · <b>×${n}</b>` : ''}</span><span class="chev" aria-hidden="true">›</span></summary>
+        <div class="finds">${list.map((f, i) => { const has = got.includes(i), c = G.artHave(w.id, i); return `<div class="find pbox ${has ? 'got' : ''}">${has ? WB.pxImg('art/' + f[0] + '.png', 64) : `<canvas class="px-img" width="64" height="64" data-silimg="art/${f[0]}.png" aria-hidden="true"></canvas>`}${has ? WB.esc(f[1]) : 'Not found yet'}${has ? `<span class="art-n ${c ? '' : 'none'}" aria-label="${c} in hand">×${c}</span>` : ''}</div>`; }).join('')}</div>
+      </details>`;
+    };
+    return UI.forgeSection() + `<div class="sect" id="art-collection"><h2>Collection <span class="aside">${found} / ${D.FIND_TOTAL} discovered</span></h2>
+      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to forge with</span><div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">Six artifacts hide along the road in every world. Walk a world again to find more copies of the ones you know.</p></div>
+      <div class="art-worlds">${open.map(row).join('')}</div>
+      ${shut.length ? `<p class="fine art-locked">${WB.icon('lock', 1)} ${shut.length} more world${shut.length > 1 ? 's' : ''} to open · ${shut.reduce((n, w) => n + D.FINDS[w.id].length, 0)} artifacts waiting in them</p>` : ''}
+    </div>`;
   }
 
   UI.renderShop = () => {
@@ -878,13 +889,12 @@
     const cur = UI[key], def = TABS.find((t) => t[0] === cur);
     const body = hub === 'shop' ? shopBody(cur) : hub === 'bag' ? bagBody(cur) : artBody(cur);
     const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: G.battlesOpen() ? s.owned.weapons.length : 'Lv ' + D.BATTLE_LEVEL, magic: G.battlesOpen() ? (s.owned.magic || []).length : 'Lv ' + D.BATTLE_LEVEL, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
-    const artCnt = { finds: G.collectionOpen() ? G.artTotal() : 'Locked', forge: G.forgeOpen() ? D.DARKMATTER.reduce((n, d) => n + G.wk().dm[d.id], 0) : 'Locked' };
     const segBtn = (attr, id, l, ic, on, n) => `<button type="button" role="tab" data-${attr}="${id}" aria-selected="${on}" aria-pressed="${on}">${tabIcon(ic)}<span>${l}</span>${n != null ? `<span class="cnt">${n}</span>` : ''}</button>`;
     const INV_TABS = [...BAG_TABS, ['art', 'Artifacts', 'img:art/m30.png']], invCur = hub === 'art' ? 'art' : cur;
     const nav = !inv
       ? `<div class="seg five sub-seg" role="tablist" aria-label="Shop sections">${SHOP_TABS.map(([id, l, ic]) => segBtn('shoptab', id, l, ic, id === cur)).join('')}</div>`
       : `<div class="seg seven sub-seg" role="tablist" aria-label="Inventory sections">${INV_TABS.map(([id, l, ic]) => segBtn('invtab', id, l, ic, id === invCur, bagCnt[id])).join('')}</div>
-        ${hub === 'art' ? `<div class="hub-seg stacked" role="tablist" aria-label="Artifacts sections">${ART_TABS.map(([id, l, ic]) => segBtn('sub', id, l, ic, id === cur, artCnt[id])).join('')}</div>` : ''}`;
+`;
     const root = $(inv ? '#scr-inv' : '#scr-shop');
     const changed = UI.set(root, `<div class="scr-wrap">
       <div class="scr-head"><h1>${inv ? 'Inventory' : 'Shop'}</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
@@ -1003,7 +1013,7 @@
       <div class="stats">
         ${(() => {
           // every stat explains itself when tapped (dashed border = tap for info)
-          const fieldN = s.missions.done.filter((id) => id[0] === 'm').length, merlinN = G.merlinDone ? G.merlinDone() : 0, advN = s.tasks.advDone.length, msN = s.tasks.advDone.filter((id) => D.milestoneById[id]).length;
+          const fieldN = s.missions.done.filter((id) => id[0] === 'm').length, fieldLive = s.missions.done.filter((id) => D.missionById[id] && !D.missionById[id].merlin).length, merlinN = G.merlinDone ? G.merlinDone() : 0, advN = s.tasks.advDone.length, msN = s.tasks.advDone.filter((id) => D.milestoneById[id]).length;
           const quickN = (s.quick || {}).total || 0, mineN = (s.custom || {}).done || 0, beaten = Object.values((s.nemesis || {}).beaten || {}).reduce((a, b) => a + b, 0);
           const km = WB.fmtKm(s.meters), dr = s.druid || {};
           return [
@@ -1013,7 +1023,7 @@
             ['Streak', sv.count + ' <small>best ' + s.streak.best + '</small>', 'Days in a row you walked at least ' + WB.fmt(s.settings.streakMin) + ' steps. Your best run so far: ' + s.streak.best + ' day' + (s.streak.best === 1 ? '' : 's') + '.'],
             ['Battles won', WB.fmt(s.enc.battles), 'Fights you won against creatures, guardians, bosses and the Druid. Battles start at level ' + D.BATTLE_LEVEL + '.'],
             ['Missions completed', WB.fmt(fieldN + merlinN + advN + quickN + mineN), 'Everything together: ' + fieldN + ' field, ' + merlinN + ' Merlin’s, ' + advN + ' milestone, ' + quickN + ' quick and ' + mineN + ' of your own missions.'],
-            ['Field missions', WB.fmt(fieldN) + ' <small>of ' + D.MISSIONS.length + '</small>', 'Real-world walks from Missions → Field: photo hunts, good deeds, trail treks, gathering runs, timed walks and more.' + (G.fieldOpen() ? '' : ' They open at level ' + D.FIELD_LEVEL + '.')],
+            ['Field missions', WB.fmt(fieldLive) + ' <small>of ' + D.MISSIONS.length + '</small>', 'Real-world walks from Missions → Field: good deeds, trail treks, gathering runs, timed walks and more.' + (G.fieldOpen() ? '' : ' They open at level ' + D.FIELD_LEVEL + '.')],
             ['Milestones', WB.fmt(msN) + ' <small>of ' + D.MILESTONES.length + '</small>', 'Long-term goals from Missions → Field: win battles, beat guardians, find artifacts and walk far.' + (G.fieldOpen() ? '' : ' They open at level ' + D.FIELD_LEVEL + '.')],
             ['Quick missions', WB.fmt(quickN), 'One-tap missions from Missions → My missions → Quick missions. Each can be done once a day.'],
             ['My missions', WB.fmt(mineN), 'Real-life goals you turned into missions and finished, from Missions → My missions.'],

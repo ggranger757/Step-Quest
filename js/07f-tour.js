@@ -33,9 +33,8 @@
     { go: mis('today'), sel: () => sect('#scr-tasks', 'Walking streak'), page: 'Missions', title: 'Streak', text: 'Walk your step minimum every day to grow it. A Streak Shield saves it when you miss a day.' },
     { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'My missions', text: 'Your real-life goals, turned into missions. Set a due time, difficulty and priority, then finish for coins and XP. Late pays half.' },
     { when: () => !WB.Game.featOn('field'), go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field & Merlin', text: 'Two more mission tabs open at level ' + D.FIELD_LEVEL + ': Field (real-world walks, long-term milestones and deliveries) and Merlin (his quests and egg trades). Keep walking to reach them.' },
-    { feat: 'field', go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' real-world walks: photo hunts, gathering runs, timed walks and more. Accept up to ' + D.MISSION_ACTIVE_MAX + '. Each gives you ' + D.MISSION_HOURS + ' hours. Miss or drop one and you lose coins and HP. Merlin’s bigger quests have their own tab.' },
+    { feat: 'field', go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' real-world walks: good deeds, trail treks, gathering runs, timed walks and more. Accept up to ' + D.MISSION_ACTIVE_MAX + '. Each gives you ' + D.MISSION_HOURS + ' hours. Miss or drop one and you lose coins and HP. Merlin’s bigger quests have their own tab.' },
     { feat: 'field', go: mis('merlin'), sel: '#merlin-quest', page: 'Missions', title: 'Merlin', text: 'The owl-mage appears on the road with bigger quests and bigger rewards. One at a time, and saying no costs nothing. Your eggs and his egg trades live here too.' },
-    { feat: 'field', go: mis('field'), sel: '#journal', page: 'Missions', title: 'Photo journal', text: 'Photos from your photo hunts, kept on this phone only.' },
     { feat: 'field', go: mis('field'), sel: '#milestones', page: 'Missions', title: 'Milestones', text: 'Long-term goals: win battles, beat guardians, find artifacts. No clock and no penalty. Two show at a time. Messages travelers ask you to deliver show up here too.' },
     // ---------- shop ----------
     { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Buying and unlocking', text: 'Some items cost coins. Others unlock with levels, streaks or exploring. Tap a locked item to see what it needs.' },
@@ -48,7 +47,7 @@
     { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Inventory', title: 'Your Worldkey', text: 'Your Worldkey opens new worlds. It needs energy (Darkmatter) and the world’s frequency: match its symbol pattern to tune in. Time and walking drain its energy and knock it out of tune, so recharge and retune before you travel.' },
     { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Inventory', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here. Locked ones show as silhouettes.' },
     { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Inventory', title: 'Artifacts', text: 'Artifacts hide in every world. Each find adds a copy. Once you’ve found them all, walking a world again turns up more copies.' },
-    { feat: 'art', go: hub('art', 'forge'), sel: '#wk-forge', page: 'Inventory', title: 'Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and some HP). Stronger kinds need artifacts from later worlds. Darkmatter charges your Worldkey.' },
+    { feat: 'art', go: hub('art', 'forge'), sel: '#wk-forge', page: 'Inventory', title: 'Darkmatter Forge', text: 'At the top of Artifacts: melt spare artifacts (and a little HP) into Darkmatter with one tap. Stronger kinds need artifacts from later worlds. Charge your Worldkey right below.' },
     { go: mis('merlin'), sel: '#egg-strip', page: 'Missions', title: 'Eggs', text: 'Find Frost, Ember and Crystal eggs on the road or in battle. Carry up to ' + D.EGG_MAX + ' of each. Your eggs are counted on Missions → Merlin, right above his egg trades (from level ' + D.FIELD_LEVEL + ').' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'The Druid', text: 'From level ' + D.BATTLE_LEVEL + ', the Druid may stop you with a trivia question. Answer right for XP and coins. Answer wrong and you must battle him. If he wins, he takes your eggs.' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'Bosses', text: 'From level ' + D.BOSS_LEVEL + ', six rare bosses roam the roads. They hit hard and have unique powers. Beat one for big rewards; lose and you drop ' + D.BOSS_LEVEL_LOSS + ' levels.' },
@@ -72,17 +71,17 @@
       { go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Worldkey', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here.' },
     ],
     field: [
-      { go: mis('field'), sel: '#field-missions', page: 'Level ' + D.FIELD_LEVEL, title: 'Field missions', text: 'Real-world walks with a goal: photo hunts, trail hikes, good deeds and more. Accept up to ' + D.MISSION_ACTIVE_MAX + ' at a time; each gives you ' + D.MISSION_HOURS + ' hours.' },
+      { go: mis('field'), sel: '#field-missions', page: 'Level ' + D.FIELD_LEVEL, title: 'Field missions', text: 'Real-world walks with a goal: trail treks, good deeds, gathering runs and more. Accept up to ' + D.MISSION_ACTIVE_MAX + ' at a time; each gives you ' + D.MISSION_HOURS + ' hours.' },
       { go: mis('merlin'), sel: '#egg-strip', page: 'Level ' + D.FIELD_LEVEL, title: 'Eggs and Merlin’s trades', text: 'Your eggs are counted here. Trade full sets to Merlin for coins, XP, potions and even gear. Merlin also starts offering his bigger quests now.' },
       { go: mis('field'), sel: '#milestones', page: 'Level ' + D.FIELD_LEVEL, title: 'Milestones', text: 'Long-term goals that grow as you play, plus messages travelers ask you to deliver. No clock, no penalty.' },
     ],
     art: [
-      { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Level ' + D.FORGE_LEVEL, title: 'Your artifact Collection', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
       { go: hub('art', 'forge'), sel: '#wk-forge', page: 'Level ' + D.FORGE_LEVEL, title: 'The Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and a little HP). It charges your Worldkey once that wakes up after your first world. Here’s a free Void Darkmatter to start.' },
+      { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Level ' + D.FORGE_LEVEL, title: 'Your artifact Collection', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
     ],
     dm: [
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-energy', page: 'First world', title: 'Your Worldkey needs energy now', text: 'From now on, opening a world costs energy. Energy fades a little each day and as you walk, so keep an eye on this bar.' },
-      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'First world', title: 'Charge it with Darkmatter', text: 'Craft Darkmatter in the Forge from artifact copies (and a little HP), then use it to charge your Worldkey.' },
+      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'First world', title: 'Charge it with Darkmatter', text: 'Craft Darkmatter in the Forge from spare artifacts (and a little HP), then tap Charge right below it.' },
     ],
   };
   const T = (WB.Tour = { active: false, i: 0 });
