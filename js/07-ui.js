@@ -221,6 +221,7 @@
     const items = [
       ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures, guardians and the Druid now roam the road', icon: 'sword' }] : []),
       ...(inRange(D.FIELD_LEVEL) ? [{ n: 'Field missions & Adventure', sub: 'Two new Missions tabs, Merlin’s quests and egg trades', icon: 'map' }] : []),
+      ...(inRange(D.FORGE_LEVEL) ? [{ n: 'Artifact Collection & Forge', sub: 'Craft Darkmatter from the artifacts you find', icon: 'spark' }] : []),
       ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · open it with your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name + ' to open it', icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
       ...D.AVATARS.filter((a) => a.req.level && inRange(a.req.level)).map((a) => ({ n: a.name, sub: 'Walker · ' + price(a.req), thumb: { kind: 'av', id: a.id, head: true, face: 'right' }, cat: 'avatar', id: a.id })),
@@ -687,7 +688,7 @@
   ];
   const ART_TABS = [
     ['finds', 'Collection', 'img:art/m30.png', 'Artifacts hide along the road in every world. Walk a world again to find more copies.'],
-    ['forge', 'Forge', 'img:wk/dm_void.png', ''],   // (locked until the first world is finished: see UI.forgeLocked)
+    ['forge', 'Forge', 'img:wk/dm_void.png', ''],   // (locked until level D.FORGE_LEVEL: see UI.forgeLocked)
   ];
   const GEAR = ['weapons', 'potions', 'pets'];
   // open a hub (and one of its sections) from anywhere
@@ -784,13 +785,13 @@
       <p class="fine">Weapons and magic are only used in battle, and battles begin at level ${D.BATTLE_LEVEL}. Keep walking: you can buy, equip and refill ${what.toLowerCase()} once you get there.</p>
       <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${D.BATTLE_LEVEL}" aria-valuenow="${Math.min(S().level, D.BATTLE_LEVEL)}"><i style="width:${Math.min(100, (S().level / D.BATTLE_LEVEL) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${D.BATTLE_LEVEL}</p>
     </div>`;
-  // Artifacts → Collection stays locked until the first world is finished
+  // Artifacts → Collection stays locked until level D.FORGE_LEVEL
   const collectionLock = () => {
-    const f = G.firstWorld(), pct = f ? Math.floor(Math.min(100, G.explorePct(f.id) / D.FIRST_WORLD_PCT * 100)) : 0;
-    return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks after your first world</span>
+    const L = D.FORGE_LEVEL, lv = Math.min(S().level, L);
+    return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${L}</span>
       <h3>Collection is locked</h3>
-      <p class="fine">The artifact Collection opens when you finish ${f ? WB.esc(f.name) : 'your first world'}. Keep walking: your finds will be waiting for you here.</p>
-      <div class="bar seg cyan" role="progressbar" aria-label="First world explored" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% of ${f ? WB.esc(f.name) : 'your first world'} explored</p>
+      <p class="fine">The artifact Collection opens at level ${L}, together with the Forge. Keep walking: your finds will be waiting for you here.</p>
+      <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${L}" aria-valuenow="${lv}"><i style="width:${Math.min(100, (S().level / L) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${L}</p>
     </div>`;
   };
   // ----- Shop sections -----

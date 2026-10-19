@@ -182,11 +182,11 @@
     </div>`;
   };
   UI.forgeLocked = () => {
-    const first = G.firstWorld(), pct = first ? Math.floor(Math.min(100, G.explorePct(first.id) / D.FIRST_WORLD_PCT * 100)) : 0;
-    return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks after your first world</span>
+    const L = D.FORGE_LEVEL, lv = Math.min(S().level, L);
+    return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${L}</span>
       <h3>Darkmatter Forge</h3>
-      <p class="fine">The Forge opens when you finish ${first ? esc(first.name) : 'your first world'}, along with your Worldkey. Keep collecting artifacts: the Forge turns them into Darkmatter.</p>
-      <div class="bar seg cyan" role="progressbar" aria-label="First world explored" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% of ${first ? esc(first.name) : 'your first world'} explored</p>
+      <p class="fine">The Forge opens at level ${L}, together with your artifact Collection. Keep collecting artifacts: the Forge turns them into Darkmatter for your Worldkey.</p>
+      <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${L}" aria-valuenow="${lv}"><i style="width:${Math.min(100, (S().level / L) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${L}</p>
     </div>`;
   };
   // Inventory → Artifacts → Forge: Darkmatter is crafted from artifact copies

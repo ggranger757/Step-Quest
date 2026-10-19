@@ -1146,7 +1146,7 @@
   ];
   D.MERLIN_ACCEPT = ['I’ll be watching from the treetops.', 'Walk well and the reward is yours.', 'Don’t keep an old owl waiting.', 'May your shoes hold out.'];
   D.MERLIN_DECLINE = ['Another day, then. I’ll find you.', 'Rest those legs. I’ll be back.', 'Hoo. Not everyone is ready. Yet.'];
-  D.BATTLE_LEVEL = 4;    // creatures, battles, guardians and the Druid only appear from this level
+  D.BATTLE_LEVEL = 3;    // creatures, battles, guardians and the Druid only appear from this level
   D.FIGHT_CHANCE = 0.5;
   D.RIVAL_CHANCE = 0.08;   // a fighting creature is Redhood Rival 8% of the time, in any world
   // Redhood Rival's battle talk: her travels, and how you don't walk as much as she does.

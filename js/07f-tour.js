@@ -47,7 +47,7 @@
     { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Inventory', title: 'Your Worldkey', text: 'Your Worldkey opens new worlds. It needs energy (Darkmatter) and the world’s frequency: match its symbol pattern to tune in. Time and walking drain its energy and knock it out of tune, so recharge and retune before you travel.' },
     { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Inventory', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here. Locked ones show as silhouettes.' },
     { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Inventory', title: 'Artifacts', text: 'Artifacts hide in every world. Each find adds a copy. Once you’ve found them all, walking a world again turns up more copies.' },
-    { feat: 'dm', go: hub('art', 'forge'), sel: '#wk-forge', page: 'Inventory', title: 'Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and some HP). Stronger kinds need artifacts from later worlds. Darkmatter charges your Worldkey.' },
+    { feat: 'art', go: hub('art', 'forge'), sel: '#wk-forge', page: 'Inventory', title: 'Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and some HP). Stronger kinds need artifacts from later worlds. Darkmatter charges your Worldkey.' },
     { go: mis('field'), sel: '#egg-strip', page: 'Missions', title: 'Eggs', text: 'Find Frost, Ember and Crystal eggs on the road or in battle. Carry up to ' + D.EGG_MAX + ' of each. Your eggs are counted on Missions → Field, right above Merlin’s egg trades (from level ' + D.FIELD_LEVEL + ').' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'The Druid', text: 'From level ' + D.BATTLE_LEVEL + ', the Druid may stop you with a trivia question. Answer right for XP and coins. Answer wrong and you must battle him. If he wins, he takes your eggs.' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'Bosses', text: 'From level ' + D.BOSS_LEVEL + ', six rare bosses roam the roads. They hit hard and have unique powers. Beat one for big rewards; lose and you drop ' + D.BOSS_LEVEL_LOSS + ' levels.' },
@@ -75,10 +75,13 @@
       { go: mis('field'), sel: '#egg-strip', page: 'Level ' + D.FIELD_LEVEL, title: 'Eggs and Merlin’s trades', text: 'Your eggs are counted here. Trade full sets to Merlin for coins, XP, potions and even gear. Merlin also starts offering his bigger quests now.' },
       { go: mis('adventure'), sel: () => sect('#scr-tasks', 'Adventure'), page: 'Level ' + D.FIELD_LEVEL, title: 'Adventure', text: 'Long-term goals that grow as you play, plus messages travelers ask you to deliver.' },
     ],
+    art: [
+      { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Level ' + D.FORGE_LEVEL, title: 'Your artifact Collection', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
+      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'Level ' + D.FORGE_LEVEL, title: 'The Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and a little HP). It charges your Worldkey once that wakes up after your first world. Here’s a free Void Darkmatter to start.' },
+    ],
     dm: [
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-energy', page: 'First world', title: 'Your Worldkey needs energy now', text: 'From now on, opening a world costs energy. Energy fades a little each day and as you walk, so keep an eye on this bar.' },
-      { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'First world', title: 'Artifacts become fuel', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
-      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'First world', title: 'The Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and a little HP), then charge your Worldkey with it. Here’s a free Void Darkmatter to start.' },
+      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'First world', title: 'Charge it with Darkmatter', text: 'Craft Darkmatter in the Forge from artifact copies (and a little HP), then use it to charge your Worldkey.' },
     ],
   };
   const T = (WB.Tour = { active: false, i: 0 });
@@ -184,7 +187,8 @@
   const FEAT_CARD = {
     wk: { kick: 'Unlocked', title: 'Your Worldkey is awake!', img: 'wk/dm_nebula.png', text: 'You finished your first world, so your Worldkey can open the next one. Here’s how it works.' },
     field: { kick: 'Level ' + D.FIELD_LEVEL + ' unlock', title: 'Field missions & Adventure', egg: 'crystal', text: 'Two new mission tabs are open: Field (real-world walks, Merlin’s quests and egg trades) and Adventure (long-term goals and deliveries).' },
-    dm: { kick: 'Unlocked', title: 'Artifacts, the Forge and Darkmatter', img: 'wk/dm_void.png', text: 'You finished your first world, so your artifact Collection and the Darkmatter Forge are open. From here on, your Worldkey runs on Darkmatter (crafted from artifacts). Here’s what changes.' },
+    art: { kick: 'Level ' + D.FORGE_LEVEL + ' unlock', title: 'Artifacts and the Forge', img: 'wk/dm_void.png', text: 'Your artifact Collection and the Darkmatter Forge are open. Artifacts you find turn into Darkmatter, which will charge your Worldkey. Here’s a free Void Darkmatter to start.' },
+    dm: { kick: 'Unlocked', title: 'Your Worldkey needs energy now', img: 'wk/dm_void.png', text: 'You finished your first world, so from here on your Worldkey runs on Darkmatter (crafted from artifacts in the Forge). Here’s what changes.' },
   };
   setInterval(() => {
     const G = WB.Game;

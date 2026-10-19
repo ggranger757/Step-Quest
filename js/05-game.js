@@ -424,7 +424,7 @@
     if (type === 'druid' && s.level < D.BATTLE_LEVEL && !forceType) type = 'chest';   // a wrong answer means a fight, so he waits until battles unlock
     if (type === 'boss' && !G.battlesOpen() && !forceType) type = 'chest';
     if (type === 'creature' && !G.battlesOpen() && !opts.creature) type = WB.pick(['chest', 'find', 'egg', 'traveler']);   // no creatures at all before battles unlock
-    if (type === 'traveler' && !G.advOpen() && !forceType) type = 'chest';   // deliveries land on Missions → Adventure, which opens at level 6
+    if (type === 'traveler' && !G.advOpen() && !forceType) type = 'chest';   // deliveries land on Missions → Adventure, which opens at level 3
     if (type === 'nemesis' && !opts.boss && (s.level < D.BOSS_LEVEL || Date.now() - (s.enc.nemesisAt || 0) < D.BOSS_COOLDOWN_H * 3600000)) type = 'creature';
     if (type === 'merlin' && !(G.merlinEligible && G.merlinEligible()) && !opts.quest && !eggTrade) type = 'chest';
     const e = { id: 'e' + ++s.enc.seq, type, world: w.id };
@@ -503,7 +503,8 @@
   // Missions → Field (field missions, Merlin's quests, egg trades) and Missions → Adventure (the adventure chain,
   // deliveries) open at level D.FIELD_LEVEL. A save that already has a field mission running keeps the tab open
   // until it's finished, so nothing is ever stranded behind the lock.
-  D.FIELD_LEVEL = 6;
+  D.FIELD_LEVEL = 3;
+  D.FORGE_LEVEL = 3;   // Inventory → Artifacts → Collection and the Forge open at this level
   G.lvlReached = (lv) => Math.max(S().level, S().peakLevel || 0) >= lv;
   G.fieldOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().missions || {}).active || []).length > 0;
   G.advOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().tasks || {}).quests || []).length > 0;
