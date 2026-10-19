@@ -76,7 +76,7 @@
         <div class="b-flash" id="b-flash" aria-hidden="true"></div>
         <div class="b-timer" id="b-timer" hidden aria-hidden="true"><span class="bt-k">Your turn</span><span class="bt-bar"><i></i></span><b class="bt-n"></b></div>
       </div>
-      <div class="b-intro" id="b-intro" aria-hidden="true">${'<i></i>'.repeat(8)}</div>
+      <div class="b-intro" id="b-intro" aria-hidden="true"><span class="b-title">Battle<br>Mode</span></div>
       <div class="b-plates"><div class="b-plate mine" id="b-ph"></div><div class="b-plate enemy" id="b-pe"></div></div>
       <div class="b-panel" id="b-panel">
         <div class="b-banner" id="b-banner" hidden></div>
@@ -86,7 +86,7 @@
     el.hidden = false;
     WB.UI.histPush('battle'); WB.UI.lockScroll('battle', true);
     WB.Sfx.play('encounter');
-    setTimeout(() => { if (enc === e) WB.Bgm.play('battle'); }, WB.reducedMotion() ? 0 : 520);   // the music comes in as the wipe clears
+    setTimeout(() => { if (enc === e) WB.Bgm.play('battle'); }, WB.reducedMotion() ? 0 : 520);   // the music comes in as the title clears
     WB.Sfx.preload(BATTLE_SFX);
     document.documentElement.classList.add('battling');
     cv = $('#b-canvas'); ctx = cv.getContext('2d', { alpha: false });
@@ -110,7 +110,7 @@
       (S().hints.battle ? '' : ` Tip: Strike uses your ${st.melee.name}. Your ${st.weapon.name} hits harder but needs to recharge. Defend while it does.`));
     actions();
     last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
-    // the classic battle wipe: the screen flashes, bars sweep across, then the fight fades in
+    // the battle intro: "BATTLE MODE" pops up over the stage for a moment, then the fight begins
     // the panel keeps the main menu's height for the whole fight, so the stage (and the fighters) never jump
     // when Items or Magic open; longer lists scroll inside it
     requestAnimationFrame(() => { const pn = $('#b-panel'); if (pn && innerWidth <= innerHeight) { pn.style.height = pn.offsetHeight + 'px'; pn.classList.add('fixed'); } });
@@ -121,7 +121,7 @@
       intro.remove(); if (enc !== e) return;
       if (st.ambush) return runEvents(WB.Battle.ambush());   // it strikes first; your turn (and clock) starts after
       setBusy(false); actions(); startTurn(); const b = $('#b-actions button:not([disabled])'); if (b) b.focus({ preventScroll: true });
-    }, WB.reducedMotion() ? 60 : 900);
+    }, WB.reducedMotion() ? 700 : 1000);
     if (e.nemesis) setTimeout(() => { if (WB.Battle.st && !WB.Battle.st.over && view) bubble(WB.pick(D.BOSSES[e.creature].lines.intro)); }, 1300);
     if (e.rival) setTimeout(() => { if (WB.Battle.st && !WB.Battle.st.over && view) bubble(WB.Battle.rivalLine(WB.pick(D.RIVAL.lines.intro), WB.Battle.st)); }, 1300);
   };
