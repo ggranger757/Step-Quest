@@ -182,9 +182,43 @@ Levels and prices run from level 4 (700 coins) to level 60 (20,000 coins).
 
 **Sub-missions.** A mission can be broken into sub-missions (one per line in the form; the templates come with some). Checking one off pays **1 coin**, once per sub-mission (unchecking and checking again pays nothing more), counted toward the same daily cap as your own missions.
 
-### Mission reminders
+### Mission reminders and push notifications
 
-**Profile → Settings → Notifications → Mission reminders** (on by default) reminds you **20, 15, 10, 5 and 2 minutes** before any mission is due: your own missions, field missions and Merlin's quests. Each reminder is an in-app notification (with a button that opens the mission) and, once you tap **Allow**, a phone notification. Every reminder also lands on the **alert bell** in the HUD: it appears with the first reminder, rings and shows a badge until you open it, and stays (also after a restart, `state.alerts`) until the mission is finished, deleted or failed, or you tap **Clear all**. Its sheet lists each mission with a live "Due in 7 min" / "Overdue" line and an Open button. If the app was closed through several of those moments, only the latest one is sent, never a burst. The installed app schedules them with the system (`@capacitor/local-notifications`), so they arrive even when Step Quest is closed; the web app can only notify while it's open or in the background, since there is no push server. Code: `js/05h-remind.js`.
+**Profile → Settings → Notifications**:
+
+- **Mission reminders** (on by default) remind you **20, 15, 10, 5 and 2 minutes** before any mission is due: your own missions (and the upcoming occurrences of repeating ones), field missions and Merlin's quests. Each reminder is an in-app notification (with a button that opens the mission), a phone notification once you tap **Allow**, and an entry on the **alert bell** in the HUD. The bell appears with the first reminder, rings and shows a badge until you open it, and keeps the entry (also after a restart, `state.alerts`) until the mission is finished, deleted or failed, or you tap **Clear all**. Its sheet lists each mission with a live "Due in 7 min" / "Overdue" line and an Open button. If the app was closed through several of those moments, only the latest one is sent, never a burst. Successive reminders for the same mission replace each other on the phone instead of piling up.
+- **Daily reminder** (on by default, 9:00 AM; pick any time from 5:00 AM to 10:00 PM): a short summary of the day, such as "2 missions due today: Daily workout (9:00 PM), Budget check-in (6:00 PM). 1 mission is overdue." If nothing is due that day it names the next mission coming up. If you have no missions at all, it stays quiet.
+- **Mission names in notifications**: turn off to keep them private (the notification then only says a mission is due).
+- **Test notifications** sends one right away, to check they reach the phone.
+- **Exact reminder times** (Android 12+ only, shown when needed) asks for the *Alarms & reminders* permission so reminders arrive on the minute.
+
+Tapping any Step Quest notification opens Missions → My missions (field reminders open Field).
+
+How they arrive with the app **closed**. `js/05h-remind.js` builds one plan of every notification for the next 7 days (`WB.Remind.plan()`), rebuilt whenever missions or settings change:
+
+| Where Step Quest runs | How reminders are delivered |
+| --- | --- |
+| **Installed app** (iPhone / Android) | The phone schedules them itself (`@capacitor/local-notifications`, up to 60 at a time), so they work offline and need no server. The plan is handed over again each time the app opens or something changes. |
+| **Web app** (home-screen PWA or browser) | **Web Push** through the Step Quest push server (`push-server/`). The app sends the server its plan; a cron trigger runs every minute and delivers what's due as an encrypted push message, which the service worker (`sw.js`) shows. On iPhone, web push needs iOS 16.4+ and Step Quest added to the Home Screen and opened from there (Settings says so). Without a push server configured, the web app notifies only while it's open or in the background. |
+
+#### Push notifications: setting up the push server (web app)
+
+The push server is a small [Cloudflare Worker](https://developers.cloudflare.com/workers/) with a D1 database (the free plan is plenty). It stores each device's push subscription and its upcoming notification texts, sends them at the right minute, and deletes each one once sent. It implements Web Push itself (RFC 8291 encryption and RFC 8292 VAPID signing on WebCrypto) with no dependencies, only talks to real browser push services, accepts requests only from your site, and stores device tokens hashed. One-time setup, from `push-server/` (Node 22+):
+
+```bash
+cd push-server
+npm install
+node scripts/gen-vapid.mjs                 # prints VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY
+npx wrangler login
+npx wrangler d1 create stepquest-push      # copy the database_id it prints into wrangler.toml
+npx wrangler d1 execute stepquest-push --remote --file=schema.sql
+npx wrangler secret put VAPID_PUBLIC_KEY   # paste the public key
+npx wrangler secret put VAPID_PRIVATE_KEY  # paste the private key (never commit it)
+# in wrangler.toml: set ALLOWED_ORIGINS to your site (e.g. https://you.github.io) and VAPID_SUBJECT to your email
+npx wrangler deploy                        # prints the Worker's URL
+```
+
+Then put the Worker URL and the **public** key in `js/push-config.js`, stamp a version and deploy the site. Later deploys of the server can run from GitHub: the **Deploy push server** workflow (Actions tab, needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets). `npm test` in `push-server/` checks the encryption against the RFC 8291 test vector, then runs subscribe → schedule → delivery against a mock push service and decrypts every message with an independent Python receiver (needs Python 3 with `cryptography`).
 
 ## Profile
 
@@ -272,11 +306,20 @@ Merlin, a wandering owl-mage, now and then swoops down on the road (from level 3
 
 Players can turn real-life goals into missions. **New mission** offers 15 templates (daily workout, book outline, reading, study session, clean & tidy, meal prep, language or instrument practice, meditate & stretch, budget check-in, journal, job application, creative or coding project, call someone) or **Create your own**. Every mission has a name, optional notes, an optional checklist, a **due date and time** (with Tonight / Tomorrow / In 3 days / Next week shortcuts), a **difficulty** and a **priority**.
 
+**Repeating missions.** The form's **Repeat** option makes a mission recur: **Daily**, **Weekdays**, **Weekly** (pick the days, e.g. Mon, Wed, Fri) or **Monthly** (same date; the 31st falls back to a shorter month's last day), with an optional **end date**. It keeps its time of day, also across daylight-saving changes. Only the current one sits in your list: the next appears once the current one's due time passes, so finishing early never brings the next one forward (no farming). A missed one can still be finished late for half the reward until the one after it is also overdue; then it's dropped as missed, with no penalty. Edit a repeating mission to change it from then on (or set Repeat to Never to stop it). Deleting one asks whether to delete just this one or **stop repeating**. Cards show "Repeats weekly on Mon, Wed, Fri". Up to 20 repeating missions. Rules: `WB.Custom.advance`, `C.spawn` and `C.upcoming` in `js/05d-custom.js` (`state.custom.series`).
+
+**List or calendar.** My missions switches between the **List** and a **Calendar** (remembered on the device). The calendar shows a month at a glance, with a marker on each day for missions due, overdue, upcoming repeats, completed and missed. Each status has its own color and shape, so color alone never carries the meaning. Pick a day to see its missions (open ones with all their buttons, upcoming repeats, what you completed) or to create a **New mission on this day**. Arrow keys move between days, Home / End jump to the week's ends, Page Up / Page Down change the month. The week starts on Sunday or Monday depending on the phone's language.
+
 Completing one pays coins and XP: the difficulty sets the base (Easy 15 coins / 25 XP, Medium 30 / 45, Hard 55 / 80, Epic 90 / 130), the priority multiplies it (Low ×1, Medium ×1.15, High ×1.3, Urgent ×1.5), and the timing adjusts it: finishing early earns up to +25% (more the earlier you finish), on time pays in full, and late pays half. The form previews the reward. Difficulty and priority are locked when the mission is created, and rewards always use the original due time. Because Step Quest is a walking game, your own missions together pay at most **300 coins and 450 XP a day** (about what 3,000 steps earn; 10,000 steps earn 1,000 coins); past that they can still be completed, without a reward. A mission can be completed once it's 15 minutes old. Overdue missions get a one-time reminder; there is no penalty beyond the halved reward. Templates and numbers live in `js/05d-custom.js`.
 
 ## Sound and music
 
 **Playing with your own music:** Settings has two switches, **Game music** and **Sound effects**. With Game music on, the browser asks iOS for the `playback` audio session (older iPhones: a silent looping audio track started on the first tap), so sounds play on the speaker even with the Ring/Silent switch on silent. With Game music off, the player is listening to their own music: no game music plays and `WB.Sfx.applySession()` (`js/04-steps.js`) switches to the `ambient` session, so sound effects layer on top of their music instead of pausing it. The installed iOS app sets `AVAudioSession` to `.playback` with `.mixWithOthers` (`native/scripts/patch-native.mjs`), so there both work at once. Old saves start Game music where their Sound & music switch was.
+
+**Your music comes first.** If music from another app (Spotify, Apple Music, a podcast) is already playing when Step Quest opens or comes back to the front, it keeps playing. Game music waits until it stops (a small note says so once), and game sounds mix in on top.
+- **Installed app:** the app asks the phone through a tiny built-in plugin (`AudioFocus`, created by `native/scripts/patch-native.mjs`). iOS uses `AVAudioSession.secondaryAudioShouldBeSilencedHint`; Android uses `AudioManager.isMusicActive()`, checked while Step Quest's own sound is quiet (at launch and on coming back).
+- **Browsers:** a web page can't see other apps' audio, so the web app never takes the audio over on its own. The audio session stays `ambient` (mixing with your music) and switches to `playback` only for the moments game music actually plays: the welcome song on a first open, battles and Merlin. It switches back as soon as the music stops.
+- **Interruptions:** if the phone hands the audio to your music mid-track, game music doesn't grab it back on your next tap; it returns with the next battle or Merlin.
 
 **Sound that stays on.** Phones stop Web Audio behind the game's back (iOS "interrupted" after a call, Siri, an alarm or the lock screen; a suspended context in the background; a context that runs silently after switching speakers or headphones). Every tap now resumes any context that isn't running, one that won't come back is replaced with a fresh one, coming back to the app wakes it, and a new audio device starts a new context. The music player also picks itself back up on the next tap when the phone paused it.
 
@@ -333,7 +376,18 @@ Equipped pets walk beside your walker in every world: dogs, cats, rats, birds, d
 
 ## Music while you walk
 
-Play music from your own music app (Spotify, Apple Music, anything) while Step Quest is open. Game sounds mix in without pausing it (`navigator.audioSession` is set to ambient where supported).
+Play music from your own music app (Spotify, Apple Music, anything) and open Step Quest: your music keeps playing, game sounds mix in without pausing it, and game music waits until your music stops (see **Your music comes first** above).
+
+## Calorie counter
+
+**Profile → Settings → Steps & goals → Calorie counter → Set up**: enter weight, height, age and sex (Female, Male or Prefer not to say), in pounds and feet/inches or kilograms and centimeters to match your distance units. Step Quest then estimates the **active calories** your walking burns (on top of what your body burns at rest, like phone fitness apps). It shows them quietly on the walking screen, next to today's distance ("of 5,000 steps · 3.2 km · 121 kcal"), with a brief glow each time they go up as you walk. They also appear in the step chart's day readout and as **Calories today** on Profile → Overview. The form can also set your stride length from your height (only when it's still on the default), and **Turn off and delete my details** removes everything.
+
+The estimate needs no walking pace, so it works the same for the motion sensor, Health sync and logged steps:
+- The ACSM walking equation puts the oxygen cost of level walking at 0.1 ml/kg per metre above rest.
+- "Corrected METs" replace the average resting rate with your own (Mifflin–St Jeor: 10 × kg + 6.25 × cm − 5 × age + 5 for men, −161 for women, −78 if unspecified).
+- Together that gives **active kcal per step = stride (m) × 0.1 / 3.5 × resting kcal per minute**.
+
+For a 75 kg, 175 cm, 35-year-old man that's about 242 kcal per 10,000 steps. It's an estimate for motivation, not medical advice. Your details stay in your save (`state.body`) and are used for nothing else. Code: `js/07m-calories.js`.
 
 ## Developer mode
 
@@ -358,7 +412,9 @@ js/04b-health.js         automatic step sync (Apple Health / Health Connect) in 
 js/05-game.js            game rules: rewards, leveling, streaks, missions, encounters, shop, HP
 js/05b-battle.js         battle rules (pure logic: moves, weapons, status effects, guardians)
 js/05c-missions.js       field mission rules (progress, board, deeds)
-js/05d-custom.js         your own missions: templates, due dates, difficulty, priority, rewards
+js/05d-custom.js         your own missions: templates, due dates, difficulty, priority, rewards, repeating missions
+js/05h-remind.js         mission reminders and the daily reminder: in-app, phone-scheduled (installed app), Web Push (web app)
+js/push-config.js        the push server's URL and public key (fill in after deploying push-server/)
 js/05e-eggs.js           eggs: finding, breaking, Merlin's trades
 js/02e-quiz.js           the Druid's 945 Knowledge Challenge questions
 js/05f-druid.js          the Druid: questions, rewards, taking your eggs
@@ -367,7 +423,8 @@ js/06-engine.js          canvas renderer: parallax worlds, avatar, pets, particl
 js/07-ui.js              screens (incl. Shop, Inventory), HUD, sheets, toasts
 js/07b-battle-ui.js      battle screen
 js/07d-missions-ui.js    Missions → Field and Merlin (missions, milestones, deliveries)
-js/07e-custom-ui.js      "My missions": create, edit, check off and complete your own missions
+js/07e-custom-ui.js      "My missions": create, edit, repeat, check off and complete your own missions; list and calendar views
+js/07m-calories.js       calorie counter: body details, the estimate, the walking-screen readout
 js/07f-tour.js           the guided tutorial and the one-time low-health tip
 js/07h-eggs.js           egg counts and Merlin's trade cards (Missions → Merlin)
 js/08-main.js            startup, onboarding, developer panel
@@ -389,8 +446,9 @@ tools/prep_assets.py     rebuilds /assets from the original downloads:
                          python3 prep_assets.py <pack1_dir> <pack2_dir> <pack3_dir> <pack4_dir> <pack5_dir> assets [<pack6_dir>]
                          (pack6 = the Knight & Ranger GIFs; their walk cycles are generated from the idle frames)
                          (Parallax Cave ships as a .rar: extract it with unrar into "New Worlds/Parallax Cave" first)
-native/                  Capacitor project for the iPhone / Android app (step sync)
-.github/workflows/       pages.yml publishes the site; android.yml builds a test APK on demand
+native/                  Capacitor project for the iPhone / Android app (step sync, scheduled reminders, the AudioFocus plugin)
+push-server/             Cloudflare Worker that sends reminders as Web Push to the web app (src/, schema.sql, tests)
+.github/workflows/       pages.yml publishes the site; android.yml builds a test APK on demand; push-server.yml deploys the push server on demand
 ```
 
 ## Adding content
@@ -421,7 +479,7 @@ Saves from earlier versions upgrade automatically. Auras and dyes were retired i
 
 ## Saves
 
-Progress is stored on the phone (browser local storage, or the installed app's storage). Clearing site data or uninstalling erases it. There are no accounts and no server.
+Progress is stored on the phone (browser local storage, or the installed app's storage). Clearing site data or uninstalling erases it. There are no accounts. The only server is the optional push server (`push-server/`): if you run one, it holds each device's push subscription and the texts of its upcoming reminders (mission names, unless the player turned them off), deleting each one once it's sent; turning reminders off empties a device's list.
 
 ## Credits and licenses
 

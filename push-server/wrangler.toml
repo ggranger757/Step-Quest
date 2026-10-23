@@ -1,0 +1,21 @@
+# Step Quest push server: sends mission reminders and the daily reminder to the web app, even when it's closed.
+# Setup: see "Push notifications" in the main README.
+name = "stepquest-push"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# runs every minute and sends whatever is due
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "stepquest-push"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"   # printed by: npx wrangler d1 create stepquest-push
+
+[vars]
+# where your Step Quest is hosted (comma-separated); requests from other sites are refused
+ALLOWED_ORIGINS = "https://YOUR-USER.github.io"
+# a contact address push services can reach you at (required by the Web Push standard)
+VAPID_SUBJECT = "mailto:you@example.com"
+# secrets (not in this file): VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, set with `npx wrangler secret put ...`

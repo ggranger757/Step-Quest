@@ -198,17 +198,67 @@
   };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Motion.running) WB.wakeLock(true); });
 
+  /* ---------- The player's own music ----------
+     If music from another app (Spotify, Apple Music, a podcast...) is already playing when Step Quest opens or
+     comes back, it keeps playing: game music waits until it stops, and game sounds mix in on top.
+     Installed app: asked of the phone through the small AudioFocus plugin (native/scripts/patch-native.mjs):
+       iOS     AVAudioSession.secondaryAudioShouldBeSilencedHint / isOtherAudioPlaying (never counts our own audio)
+       Android AudioManager.isMusicActive() (counts every app, so it is only asked while our own audio is quiet:
+               at launch and on coming back, before our sound starts again)
+     Browsers can't see other apps' audio, so there the web audio session simply never takes over on its own
+     (see applySession below). */
+  WB.OtherAudio = (() => {
+    const C = () => window.Capacitor;
+    const native = () => { const c = C(); return !!(c && typeof c.isNativePlatform === 'function' && c.isNativePlatform()); };
+    const platform = () => { const c = C(); try { return c && c.getPlatform ? c.getPlatform() : ''; } catch (e) { return ''; } };
+    let plug = null;
+    const get = () => {
+      if (plug || !native()) return plug;
+      const c = C();
+      try { plug = (c.Plugins && c.Plugins.AudioFocus) || (typeof c.registerPlugin === 'function' ? c.registerPlugin('AudioFocus') : null); } catch (e) { plug = null; }
+      return plug;
+    };
+    let playing = false, pend = null;
+    const O = {
+      native,
+      // true while another app's music is playing (installed app only; always false in a browser)
+      playing: () => playing,
+      // Android's answer includes our own sound, so it is only trusted while ours is quiet
+      precise: () => platform() === 'ios',
+      async check() {
+        const p = get(); if (!p) return false;
+        if (pend) return pend;
+        pend = (async () => {
+          try {
+            const r = await p.otherAudio(), was = playing;
+            playing = !!(r && r.playing);
+            if (was !== playing && WB.bus) WB.bus.emit('otherAudio', playing);
+          } catch (e) { /* an older app build without the plugin: behave as before */ }
+          pend = null; return playing;
+        })();
+        return pend;
+      },
+    };
+    if (native()) {
+      O.check();   // before any of our own sound starts
+      // iPhone: notice when their music stops (or starts) while the app is open
+      setInterval(() => { if (document.visibilityState === 'visible' && O.precise()) O.check(); }, 15000);
+    }
+    return O;
+  })();
+
   /* ---------- Sound hooks (tiny synth blips; swap for real audio files later) ---------- */
   WB.Sfx = (() => {
     let ctx = null;
     const buffers = {};
     /* How game audio shares the phone with other apps.
-       Game music ON  -> "playback": sounds play on the speaker even when an iPhone's Ring/Silent switch is on silent
-                         (iOS treats Web Audio as "ambient" by default, which the silent switch mutes).
-       Game music OFF -> "ambient": the player is listening to their own music, so sound effects layer on top of it
-                         instead of pausing it.
+       Opening the app never stops the player's own music: the session stays "ambient" (sounds mix in on top of
+       whatever is playing) until game music actually starts.
+       Game music playing -> "playback": theme, battle and Merlin music play on the speaker even when an iPhone's
+                             Ring/Silent switch is on silent. Back to "ambient" as soon as it stops.
+       Game music OFF     -> always "ambient".
        iOS 17+ / Safari 16.4+ use navigator.audioSession. Older iPhones reach "playback" through a silent looping
-       <audio> element (only while game music is on: a media element would pause the player's music).
+       <audio> element, used only while game music plays (a media element would pause the player's music).
        The installed app sets its own session natively (playback + mix with others, patch-native.mjs). */
     const nativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
     const iOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -221,15 +271,16 @@
       for (let i = 0; i < n; i++) b.setUint8(44 + i, 128);
       return URL.createObjectURL(new Blob([b.buffer], { type: 'audio/wav' }));
     };
-    const applySession = () => {
+    // starting: game music is about to play (its element still reports "paused" until it does)
+    const applySession = (starting) => {
       if (nativeApp) return;
-      const mix = mixMode();
+      const mix = mixMode() || !(starting || (WB.Bgm && WB.Bgm.active()));   // "playback" only while game music is playing
       try { if (navigator.audioSession) { const t = mix ? 'ambient' : 'playback'; if (navigator.audioSession.type !== t) navigator.audioSession.type = t; } } catch (e) {}
       if (mix && keeper && !keeper.paused) keeper.pause();
     };
     applySession();
     const keepAwake = () => {
-      if (nativeApp || navigator.audioSession || !iOS || mixMode() || document.visibilityState === 'hidden') return;
+      if (nativeApp || navigator.audioSession || !iOS || mixMode() || document.visibilityState === 'hidden' || !(WB.Bgm && WB.Bgm.key())) return;
       try {
         if (!keeper) { keeper = new Audio(silentWav()); keeper.loop = true; keeper.setAttribute('playsinline', ''); keeper.setAttribute('x-webkit-airplay', 'deny'); }
         if (keeper.paused) { const p = keeper.play(); if (p && p.catch) p.catch(() => {}); }
@@ -265,8 +316,13 @@
     // start (or resume) audio on every real tap, so the very first sound already plays on the speaker
     const unlock = () => { if (!muted()) ensure(true); };
     ['pointerup', 'touchend', 'keydown'].forEach((g) => document.addEventListener(g, unlock, { capture: true, passive: true }));
-    // coming back to the app: wake the context (and replace it if it was lost while away)
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ctx && !muted()) ensure(false); });
+    // coming back to the app: wake the context (and replace it if it was lost while away). The installed app first
+    // asks whether the player's own music is playing, while our sound is still quiet.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { if (nativeApp && ctx && ctx.state === 'running') { try { ctx.suspend(); } catch (e) {} } return; }
+      if (!ctx || muted()) return;
+      if (nativeApp) WB.OtherAudio.check().then(() => ensure(false)); else ensure(false);
+    });
     window.addEventListener('pageshow', () => { if (ctx && !muted()) ensure(false); });
     // new speakers or headphones: an old context can keep "running" while making no sound, so start a new one
     try { if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { if (ctx) fresh(); }); } catch (e) {}
@@ -299,7 +355,8 @@
     const muted = () => !WB.state || !WB.state.settings.sound;
     return {
       muted,
-      applySession,   // call after the Game music switch changes
+      applySession,   // call after the Game music switch changes, and whenever game music starts or stops
+      keepAwake,
       // play a recorded sound file (weapon impacts, actions); decoded once and cached
       async file(path, vol = 0.55) {
         try {
@@ -363,9 +420,18 @@
       for (const [f, w] of pool) { r -= w; if (r <= 0) return (lastBattle = f); }
       return (lastBattle = pool[pool.length - 1][0]);
     };
-    let el = null, want = null, fadeT = null, oursAt = 0;
-    const pause = () => { if (!el) return; oursAt = Date.now(); el.pause(); };   // our own pauses (the 'pause' event arrives later, so it's timed)
-    const allowed = () => !!(WB.state && WB.state.settings.gameMusic !== false);   // the Game music switch
+    let el = null, want = null, fadeT = null, oursAt = 0, yielded = false, heldNote = false;
+    const session = () => { if (WB.Sfx) WB.Sfx.applySession(); };
+    const pause = () => { if (!el) return; oursAt = Date.now(); el.pause(); session(); };   // our own pauses (the 'pause' event arrives later, so it's timed)
+    const switchOn = () => !!(WB.state && WB.state.settings.gameMusic !== false);   // the Game music switch
+    // game music waits while the player's own music plays (installed app), and after the phone handed the audio
+    // to another app mid-track (any build): it doesn't grab it back on the next tap
+    const allowed = () => switchOn() && !WB.OtherAudio.playing() && !yielded;
+    const holdNote = () => {
+      if (heldNote || !want || !switchOn() || !WB.OtherAudio.playing() || !WB.UI || !WB.UI.toast) return;
+      heldNote = true;
+      WB.UI.toast({ kicker: 'Your music keeps playing', title: 'Game music waits until it stops', icon: 'note', cls: 'msg', ms: 3600 });
+    };
     // browsers only start audio after a real tap: on phones that is touchend / pointerup / click (not pointerdown)
     const GESTURES = ['pointerup', 'touchend', 'click', 'keydown'];
     const retry = () => { GESTURES.forEach((g) => document.removeEventListener(g, retry, true)); B.sync(); };
@@ -376,13 +442,16 @@
         const epic = key === 'battle' && WB.state && WB.state.level >= WB.DATA.EPIC_MUSIC_LEVEL;
         const t = epic ? TRACKS.battle.concat(TRACKS.battleEpic) : TRACKS[key]; if (!t) return;
         if (want && want.key === key && el && !el.paused) return;
+        if (!want || want.key !== key) yielded = false;   // a new moment (a battle, Merlin) may start music again
         want = { key, src: Array.isArray(t) ? pickTrack(t) : t };
-        B.sync();
+        // iPhone app: ask right before starting whether their music is playing (Android answered at launch / return)
+        if (WB.OtherAudio.native() && WB.OtherAudio.precise()) WB.OtherAudio.check().then(() => B.sync());
+        else B.sync();
       },
       stop(ms = 900) {
         want = null; if (!el) return;
         const a = el, v0 = a.volume, t0 = performance.now(); clearInterval(fadeT);
-        fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = v0 * (1 - k); if (k >= 1) { clearInterval(fadeT); oursAt = Date.now(); a.pause(); } }, 50);
+        fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = v0 * (1 - k); if (k >= 1) { clearInterval(fadeT); oursAt = Date.now(); a.pause(); session(); } }, 50);
       },
       // lower the music while a fanfare plays, then bring it back
       duck(ms) {
@@ -391,26 +460,36 @@
         B._duckT = setTimeout(() => { if (el && !el.paused && want) el.volume = 0.45; }, ms);
       },
       playing: () => !!(el && !el.paused && want),
+      active: () => !!(el && !el.paused && want && allowed()),   // game music is actually sounding right now
+      held: () => !!(want && switchOn() && WB.OtherAudio.playing()),   // wanted, but the player's own music is on
       key: () => want && want.key,
       stopIf(key, ms) { if (want && want.key === key) B.stop(ms); },
       // start, stop or resume to match what's wanted and what's allowed right now
       sync() {
-        if (!want || !allowed()) { if (el && !el.paused) { clearInterval(fadeT); pause(); } return; }
+        if (!want || !allowed()) { holdNote(); if (el && !el.paused) { clearInterval(fadeT); pause(); } session(); return; }
         if (!el) {
           el = new Audio(); el.loop = true; el.preload = 'auto'; el.setAttribute('playsinline', '');
-          // the phone paused it (a call, Siri, another app): pick it back up on the next tap, if it's still wanted
-          el.addEventListener('pause', () => { if (Date.now() - oursAt > 800 && want && allowed() && document.visibilityState === 'visible') GESTURES.forEach((g) => document.addEventListener(g, retry, true)); });
+          // the phone paused it while the app was open (the player started their own music, a call, Siri): leave
+          // the audio to them. Game music comes back with the next track (a new battle, Merlin), not on the next tap.
+          el.addEventListener('pause', () => { if (Date.now() - oursAt > 800 && want && document.visibilityState === 'visible') { yielded = true; session(); if (WB.OtherAudio.native()) WB.OtherAudio.check(); } });
           el.addEventListener('error', () => { if (want) { el.removeAttribute('src'); el.dataset.src = ''; GESTURES.forEach((g) => document.addEventListener(g, retry, true)); } });
         }
         const url = WB.Assets.base + want.src;
-        if (el.dataset.src !== want.src) { el.src = url; el.dataset.src = want.src; }
+        if (el.dataset.src !== want.src) { oursAt = Date.now(); el.src = url; el.dataset.src = want.src; }   // a new track: its 'pause' is ours
         clearInterval(fadeT);
         const fresh = el.paused; el.volume = fresh ? 0 : 0.45;
         if (fresh) { const t0 = performance.now(); fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / 700); if (el) el.volume = 0.45 * k; if (k >= 1) clearInterval(fadeT); }, 50); }   // fade in, never a hard start
-        const p = el.play(); if (p && p.catch) p.catch(() => GESTURES.forEach((g) => document.addEventListener(g, retry, true)));
+        if (WB.Sfx) { WB.Sfx.applySession(true); WB.Sfx.keepAwake(); }   // "playback" just before our music starts (and not a moment earlier)
+        const p = el.play(); if (p && p.catch) p.catch(() => { session(); GESTURES.forEach((g) => document.addEventListener(g, retry, true)); });
       },
     };
-    document.addEventListener('visibilitychange', () => { if (!el) return; if (document.visibilityState === 'hidden') pause(); else B.sync(); });
+    document.addEventListener('visibilitychange', () => {
+      if (!el) return;
+      if (document.visibilityState === 'hidden') return pause();
+      if (WB.OtherAudio.native()) WB.OtherAudio.check().then(() => B.sync()); else B.sync();
+    });
+    // their music stopped (or started) while the app is open
+    if (WB.bus) WB.bus.on('otherAudio', (on) => { if (on) { if (want) holdNote(); B.sync(); } else if (want) B.sync(); });
     return B;
   })();
 })();

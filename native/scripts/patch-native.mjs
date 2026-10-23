@@ -30,6 +30,12 @@ edit(join(native, 'ios', 'App', 'App.xcodeproj', 'project.pbxproj'), (s) =>
 // ---- Android: Location Awareness was removed, so no location permission (older projects drop it here)
 edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) => s.replace(/\s*<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" \/>/, ''));
 
+// ---- Android: mission reminders on time. Android 12+ only fires scheduled notifications exactly with the
+// "Alarms & reminders" permission (Settings → Notifications → Exact reminder times asks for it); without it they
+// can arrive a few minutes late. Remove this line if Google Play asks you not to use it.
+edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) => s.includes('SCHEDULE_EXACT_ALARM') ? s
+  : s.replace(/(<manifest[^>]*>)/, '$1\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />'));
+
 // ---- Android: Health Connect needs minSdk 26
 edit(join(native, 'android', 'variables.gradle'), (s) => s.replace(/minSdkVersion\s*=\s*(\d+)/, (m, n) => (Number(n) < 26 ? 'minSdkVersion = 26' : m)));
 
@@ -82,6 +88,68 @@ edit(vc, (s) => s.includes('AVAudioSession') ? s : s
         super.viewDidLoad()
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
+    }
+
+`));
+// ---- The player's own music: a tiny AudioFocus plugin answers "is another app playing music right now?", so
+// game music waits instead of playing over (or, on Android, stopping) the player's Spotify / Apple Music.
+// iOS: lives in MainViewController.swift (no new file to add to the Xcode target) and is registered there.
+edit(vc, (s) => s.includes('AudioFocusPlugin') ? s : s
+  .replace(/(class MainViewController: CAPBridgeViewController \{\n)/, `$1    // register the app's own plugins
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(AudioFocusPlugin())
+    }
+
+`) + `
+// "Is another app playing music?" Our own session mixes with others, so this never counts Step Quest itself.
+@objc(AudioFocusPlugin)
+public class AudioFocusPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "AudioFocusPlugin"
+    public let jsName = "AudioFocus"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "otherAudio", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func otherAudio(_ call: CAPPluginCall) {
+        let session = AVAudioSession.sharedInstance()
+        call.resolve(["playing": session.secondaryAudioShouldBeSilencedHint || session.isOtherAudioPlaying])
+    }
+}
+`);
+// Android: its own small class, registered in MainActivity before the bridge starts
+const afp = join(javaDir, 'AudioFocusPlugin.java');
+if (existsSync(javaDir) && !existsSync(afp)) {
+  writeFileSync(afp, `package com.stepquest.app;
+
+import android.content.Context;
+import android.media.AudioManager;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+// "Is any music playing right now?" Android counts every app here, Step Quest included, so the game only asks
+// while its own sound is quiet (at launch and when it comes back to the front).
+@CapacitorPlugin(name = "AudioFocus")
+public class AudioFocusPlugin extends Plugin {
+    @PluginMethod
+    public void otherAudio(PluginCall call) {
+        AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+        JSObject r = new JSObject();
+        r.put("playing", am != null && am.isMusicActive());
+        call.resolve(r);
+    }
+}
+`);
+  console.log('created android/app/src/main/java/com/stepquest/app/AudioFocusPlugin.java');
+}
+edit(join(javaDir, 'MainActivity.java'), (s) => s.includes('registerPlugin(AudioFocusPlugin.class)') ? s
+  : s.includes('void onCreate') ? s.replace(/(\n(\s*)super\.onCreate\()/, '\n$2registerPlugin(AudioFocusPlugin.class);   // the player\'s own music$1')
+  : s.replace(/(public class MainActivity extends BridgeActivity \{\n)/, `$1    @Override
+    public void onCreate(android.os.Bundle savedInstanceState) {
+        registerPlugin(AudioFocusPlugin.class);   // the player's own music: is another app playing?
+        super.onCreate(savedInstanceState);
     }
 
 `));

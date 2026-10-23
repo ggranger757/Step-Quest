@@ -1,0 +1,18 @@
+{
+  "name": "stepquest-push",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Step Quest push server: mission reminders and the daily reminder as Web Push notifications.",
+  "type": "module",
+  "scripts": {
+    "keys": "node scripts/gen-vapid.mjs",
+    "db:create": "wrangler d1 create stepquest-push",
+    "db:schema": "wrangler d1 execute stepquest-push --remote --file=schema.sql",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/push.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "engines": { "node": ">=22" }
+}

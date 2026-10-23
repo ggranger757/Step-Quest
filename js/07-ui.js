@@ -984,7 +984,7 @@
     const tab = ['settings', 'ach'].includes(UI.pfTab) ? UI.pfTab : 'overview';
     // tapping a bar shows that day's steps (defaults to today); the pick sticks while it is still inside the range
     const selDay = days.some((d) => d[0] === UI.chartSel) ? UI.chartSel : days[days.length - 1][0];
-    const chartRead = (k, plain) => { const v = s.days[k] || 0, d = WB.parseDay(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }), t = k === WB.dayKey() ? 'Today · ' : ''; return plain ? t + d + ': ' + WB.fmt(v) + ' steps' : `<span class="cr-d">${WB.esc(t + d)}</span><b>${WB.fmt(v)} steps</b><span class="cr-s ${v >= s.settings.streakMin ? 'ok' : ''}">${v >= s.settings.streakMin ? 'Streak day' : WB.fmt(s.settings.streakMin) + '+ for a streak'}</span>`; };
+    const chartRead = (k, plain) => { const v = s.days[k] || 0, d = WB.parseDay(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }), t = k === WB.dayKey() ? 'Today · ' : ''; return plain ? t + d + ': ' + WB.fmt(v) + ' steps' : `<span class="cr-d">${WB.esc(t + d)}</span><b>${WB.fmt(v)} steps${WB.Cal && WB.Cal.ready() ? ' · ' + WB.fmt(WB.Cal.of(v)) + ' kcal' : ''}</b><span class="cr-s ${v >= s.settings.streakMin ? 'ok' : ''}">${v >= s.settings.streakMin ? 'Streak day' : WB.fmt(s.settings.streakMin) + '+ for a streak'}</span>`; };
     const mx = Math.max(s.settings.streakMin * 1.2, ...days.map((d) => d[1]));
     const own = (c) => s.owned[G.CATS[c][0]].length + '/' + G.CATS[c][1].length;
     const slot = (cat, label, id, icon, sub) => `<button class="wslot pbox" type="button" data-wslot="${cat}" ${sub ? `data-wsub="${sub}"` : ''}>${cat === 'weapon' && id ? `<canvas width="36" height="36" data-prev="weapon:${id}"></canvas>` : WB.icon(icon, 3)}<span class="ws-t"><span class="lbl">${label}</span><span class="ws-v">${id ? WB.esc(G.item(cat, id).name) : '<span class="none">None</span>'}</span></span></button>`;
@@ -1036,6 +1036,7 @@
             ['Pets', s.owned.pets.length + '/' + D.PETS.length, 'Pets you own. They walk with you and take part of every hit in battle.'],
             ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL, 'Different artifacts you’ve discovered (6 hide in each world). Copies you find again fuel the Darkmatter Forge.'],
             ['Best day', WB.fmt(s.bestDay), 'The most steps you’ve walked in a single day.'],
+            ...(WB.Cal && WB.Cal.ready() ? [['Calories today', WB.fmt(WB.Cal.today()) + ' <small>kcal</small>', 'Estimated active calories your walking burned today, from your steps, stride, weight, height, age and sex (Settings → Calorie counter). An estimate, not medical advice.']] : []),
           ];
         })().map(([l, v, why]) => `<div class="stat pbox" data-info="${WB.esc(why)}" data-info-k="${WB.esc(l)}" role="button" tabindex="0"><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}
       </div>
@@ -1060,9 +1061,14 @@
         <div class="setting pbox"><div><label for="set-streak">Streak minimum</label><div class="sd">Steps a day to keep your streak.</div></div><select id="set-streak">${opt(D.STREAK_GOALS.includes(s.settings.streakMin) ? D.STREAK_GOALS : [...D.STREAK_GOALS, s.settings.streakMin].sort((a, b) => a - b), s.settings.streakMin, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-units">Distance units</label><div class="sd">How distances are shown.</div></div><select id="set-units">${opt(['mi', 'km'], s.settings.units || 'km', (v) => (v === 'mi' ? 'Miles' : 'Kilometers'))}</select></div>
         <div class="setting pbox"><div><label for="set-stride">Stride length</label><div class="sd">Turns steps into distance.</div></div><select id="set-stride">${opt([0.6, 0.65, 0.7, 0.76, 0.8, 0.85, 0.9], s.settings.stride, (v) => WB.miles() ? Math.round(v * 39.37) + ' in' : v.toFixed(2) + ' m')}</select></div>
+        <div class="setting pbox"><div><div>Calorie counter</div><div class="sd">${WB.esc(WB.Cal.desc())}</div></div><div class="acts"><button class="btn ${WB.Cal.ready() ? 'ghost ' : ''}sm" type="button" data-act="cal-setup">${WB.Cal.ready() ? 'Edit' : 'Set up'}</button></div></div>
       </div>
       <div class="sect"><h2>Notifications</h2>
         <div class="setting pbox"><div><div id="lbl-notify">Mission reminders</div><div class="sd">${WB.Remind.desc()}</div></div><div class="acts">${s.settings.notify && WB.Remind.canAsk() ? '<button class="btn sm" type="button" data-act="notify-allow">Allow</button>' : ''}<button class="toggle" type="button" role="switch" aria-labelledby="lbl-notify" aria-checked="${!!s.settings.notify}" data-act="notify-toggle"></button></div></div>
+        <div class="setting pbox"><div><label id="lbl-daily" for="set-daily-at">Daily reminder</label><div class="sd">${WB.Remind.dailyDesc()}</div></div><div class="acts"><select id="set-daily-at" aria-label="Daily reminder time" ${s.settings.daily === false || !s.settings.notify ? 'disabled' : ''}>${(() => { const cur = s.settings.dailyAt || '09:00', o = []; for (let m = 5 * 60; m <= 22 * 60; m += 30) { const v = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'), d = new Date(); d.setHours(Math.floor(m / 60), m % 60, 0, 0); o.push(`<option value="${v}" ${v === cur ? 'selected' : ''}>${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</option>`); } return o.join(''); })()}</select><button class="toggle" type="button" role="switch" aria-labelledby="lbl-daily" aria-checked="${s.settings.daily !== false}" data-toggle="daily"></button></div></div>
+        <div class="setting pbox"><div><div id="lbl-names">Mission names in notifications</div><div class="sd">Turn off to keep them private: notifications then only say that a mission is due.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-names" aria-checked="${s.settings.notifyNames !== false}" data-toggle="notifyNames"></button></div>
+        ${WB.Remind.canTest() ? '<div class="setting pbox"><div><div>Test notifications</div><div class="sd">Sends one notification now, so you can check they reach your phone.</div></div><div class="acts"><button class="btn sm" type="button" data-act="notify-test">Send test</button></div></div>' : ''}
+        ${WB.Remind.exact === 'denied' && s.settings.notify ? '<div class="setting pbox"><div><div>Exact reminder times</div><div class="sd">Android may deliver reminders a few minutes late unless Step Quest may set alarms &amp; reminders.</div></div><div class="acts"><button class="btn sm" type="button" data-act="notify-exact">Allow</button></div></div>' : ''}
         <div class="setting pbox"><div><div id="lbl-mood">Mood check-ins</div><div class="sd">While you walk, now and then ask how you’re feeling. Your moods show on Profile → Overview.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-mood" aria-checked="${s.settings.moodAsk !== false}" data-toggle="moodAsk"></button></div>
       </div>
       <div class="sect"><h2>Appearance &amp; sound</h2>
@@ -1100,7 +1106,7 @@
     WB.$$('[data-theme-pick]', pf).forEach((b) => (b.onclick = () => { s.settings.theme = b.dataset.themePick; WB.Save.queue(); UI.applyTheme(); WB.Sfx.play('tap'); UI.renderProfile(); const nb = pf.querySelector(`[data-theme-pick="${b.dataset.themePick}"]`); if (nb) nb.focus({ preventScroll: true }); }));
     // arrow keys move between the theme choices (radio-group keyboard pattern)
     const tp = pf.querySelector('.theme-pick'); if (tp) tp.onkeydown = (e) => { const bs = [...tp.querySelectorAll('button')], i = bs.indexOf(document.activeElement); if (i < 0) return; const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0; if (d) { e.preventDefault(); bs[(i + d + bs.length) % bs.length].click(); } };
-    sel('#set-goal', 'dailyGoal', Number); sel('#set-streak', 'streakMin', Number); sel('#set-stride', 'stride', Number); sel('#set-units', 'units', String);
+    sel('#set-goal', 'dailyGoal', Number); sel('#set-streak', 'streakMin', Number); sel('#set-stride', 'stride', Number); sel('#set-units', 'units', String); sel('#set-daily-at', 'dailyAt', String);
     let taps = 0;
     if ($('#ver')) $('#ver').onclick = () => { if (WB.DEV_TOOLS && ++taps >= 5) { taps = 0; const on = !WB.store.get('walkbound.dev'); WB.store.set('walkbound.dev', on); $('#dev-fab').hidden = !on; UI.toast({ kicker: 'Developer mode', title: on ? 'On' : 'Off', icon: 'gear' }); } };
   };
@@ -1276,7 +1282,7 @@
       if (d.wsub) UI.wpnSlot = d.wsub;
       return UI.goHub('bag', d.wslot === 'avatar' ? 'avatar' : d.wslot === 'weapon' ? 'weapons' : 'pets');
     }
-    if (d.toggle) { const s = S(); s.settings[d.toggle] = !(d.toggle === 'reducedMotion' ? WB.reducedMotion() : s.settings[d.toggle]); document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Sfx.applySession(); WB.Bgm.sync(); return UI.renderProfile(); }
+    if (d.toggle) { const s = S(); s.settings[d.toggle] = !(d.toggle === 'reducedMotion' ? WB.reducedMotion() : s.settings[d.toggle]); document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Sfx.applySession(); WB.Bgm.sync(); if (d.toggle === 'daily' || d.toggle === 'notifyNames') WB.Remind.changed(); return UI.renderProfile(); }
     switch (d.act) {
       case 'sensor-start': WB.Steps.motion.start().then(() => UI.render()); UI.render(); break;
       case 'sensor-stop': WB.Steps.motion.stop(); UI.render(); break;
@@ -1291,6 +1297,8 @@
       case 'map': UI.go('map'); break;
       case 'notify-toggle': { const onNow = WB.Remind.toggle(); if (onNow && WB.Remind.canAsk()) WB.Remind.ask().then(() => UI.renderProfile()); UI.renderProfile(); break; }
       case 'notify-allow': WB.Remind.ask().then(() => UI.renderProfile()); break;
+      case 'notify-test': WB.Remind.test().then((ok) => UI.toast(ok ? { kicker: 'Test sent', title: 'A notification is on its way', icon: 'bell', cls: 'ok' } : { kicker: 'Couldn’t send', title: 'Check your connection and notification settings', icon: 'bell', cls: 'msg' })); break;
+      case 'notify-exact': WB.Remind.askExact().then(() => UI.renderProfile()); break;
       case 'back-world': UI.go('world'); break;
       case 'pending': UI.pendingSheet(); break;
       case 'daily': { const r = G.claimDaily(); if (r) { WB.Sfx.play('chest'); UI.toast({ kicker: 'Daily reward', title: G.rewardText(r), icon: 'chestopen', cls: 'gold' }); } UI.render(); break; }

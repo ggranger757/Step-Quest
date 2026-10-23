@@ -47,7 +47,8 @@
     });
     if (G.featBoot) G.featBoot();   // saves from before step-by-step unlocks keep what they've reached
     const h = (location.hash || '').slice(1);
-    UI.go(h === 'missions' ? 'tasks' : ['tasks', 'shop', 'inv', 'collection', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
+    if (h === 'mine') UI.missionTab = 'mine';   // a tapped mission notification
+    UI.go(h === 'missions' || h === 'mine' ? 'tasks' : ['tasks', 'shop', 'inv', 'collection', 'supplies', 'profile', 'map'].includes(h) ? h : 'world');
     UI.updateHud(); UI.paintFace();
     WB.view.start();
     if (welcome && welcome.length) showWelcome(welcome);

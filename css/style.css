@@ -1586,3 +1586,74 @@ html.rm .mood-card.in { animation: none; }
 .mood-done .mood-cheer { font-size: 15px; line-height: 1.35; color: var(--text); animation: mood-cheer .3s steps(3) .12s both; }
 @keyframes mood-cheer { from { transform: translateY(6px); opacity: 0; } }
 html.rm .mood-done .mood-cheer { animation: none; }
+
+/* ---------- My missions: repeat options, list / calendar view ---------- */
+.cm-seg.cm-rep { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.cm-seg.cm-rep button { font-size: 10px; letter-spacing: 0; padding: 0 2px; }
+@media (max-width: 380px) { .cm-seg.cm-rep { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cm-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--s1); }
+.cm-days[hidden], .cm-until[hidden] { display: none; }
+.cm-days button { min-height: 40px; border: 0; cursor: pointer; background: var(--surface-2); color: var(--muted); font: 400 11px/1 var(--label); text-transform: uppercase; box-shadow: 0 0 0 2px var(--line); }
+.cm-days button[aria-pressed="true"] { background: var(--cyan); color: #000; box-shadow: 0 0 0 2px var(--shadow); }
+.cm-days button:focus-visible, .cm-seg button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.cm-until { display: grid; gap: var(--s2); }
+.cm-form input[type="date"] { font: 400 16px/1.35 var(--body); color: var(--text); background: var(--inset); border: 0; box-shadow: 0 0 0 2px var(--line); padding: 0 var(--s3); height: 44px; width: 100%; box-sizing: border-box; border-radius: 0; text-transform: none; letter-spacing: 0; -webkit-appearance: none; appearance: none; }
+.cm-rep-note { margin: 0; text-transform: none; letter-spacing: 0; }
+.cm-rep-note:empty { display: none; }
+.cm .cm-due.cm-repl { color: var(--cyan); }
+.cm-h.missed { color: var(--dim); }
+.cm-seg.cm-view { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--s4); }
+.cm-seg.cm-view button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; }
+.cm-empty { margin: var(--s3) 0 0; }
+
+.mcal { margin-top: var(--s3); padding: var(--s3); }
+.mcal-h { display: flex; align-items: center; gap: var(--s2); margin-bottom: var(--s3); }
+.mcal-h h3 { flex: 1; margin: 0; text-align: center; font: 400 22px/1 var(--display); color: var(--text); }
+.mcal-nav { width: 44px; height: 44px; border: 0; cursor: pointer; background: var(--surface-2); color: var(--text); font: 400 24px/1 var(--display); box-shadow: 0 0 0 2px var(--line); }
+.mcal-nav:focus-visible, .mcal-d:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.mcal-h .mcal-today { min-height: 44px; font-size: 11px; }
+.mcal-g { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.mcal-wd { text-align: center; font: 400 11px/1 var(--label); color: var(--dim); padding-bottom: 4px; }
+.mcal-d { position: relative; display: grid; grid-template-rows: auto 1fr; justify-items: center; gap: 3px; min-height: 48px; padding: 6px 0 4px; border: 0; cursor: pointer; background: var(--surface-2); color: var(--text); box-shadow: 0 0 0 1px var(--line); }
+.mcal-d.past { background: var(--inset); color: var(--muted); }
+.mcal-d.today { box-shadow: 0 0 0 2px var(--gold); }
+.mcal-d[aria-pressed="true"] { background: var(--violet); color: #000; box-shadow: 0 0 0 2px var(--shadow); }
+.mcal-n { font: 400 16px/1 var(--display); }
+.mcal-dots { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; max-width: 100%; }
+.mcal-dots b { font: 400 9px/1 var(--label); }
+.mcal-dot { display: inline-block; width: 6px; height: 6px; background: var(--muted); box-shadow: 0 0 0 1px var(--shadow); }
+.mcal-dot.open { background: var(--gold); }
+.mcal-dot.late { background: var(--danger); }
+.mcal-dot.next { background: transparent; box-shadow: inset 0 0 0 2px var(--cyan); }
+.mcal-dot.done { background: var(--ok); }
+.mcal-dot.missed { background: var(--dim); }
+.mcal-d[aria-pressed="true"] .mcal-dot.next { box-shadow: inset 0 0 0 2px #000; }
+.mcal-key { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin-top: var(--s3); font: 400 10px/1.2 var(--label); text-transform: uppercase; color: var(--muted); }
+.mcal-key span { display: inline-flex; align-items: center; gap: 5px; }
+.mcal-sel-h { margin-top: var(--s4); }
+.mcal-list { margin-top: var(--s2); }
+.mcal-row { display: flex; align-items: flex-start; gap: var(--s3); padding: var(--s3); }
+.mcal-row > div { display: grid; gap: 4px; min-width: 0; }
+.mcal-row .cm-due { font: 400 11px/1.3 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.mcal-row.next .cm-due { color: var(--cyan); }
+.mcal-row.done .cm-due { color: var(--ok); }
+.mcal-row.missed { opacity: .85; }
+.mcal-row .fine { margin: 0; }
+@media (prefers-reduced-motion: no-preference) { .mcal-d { transition: background-color .12s; } }
+
+/* ---------- calorie counter ---------- */
+.today .of .kcal { color: var(--dim); white-space: nowrap; }
+.today .of .kcal.tick { animation: kcal-tick .9s ease-out; }
+@keyframes kcal-tick { 0% { color: var(--gold); } 100% { color: var(--dim); } }
+.cal-form .cal-in { display: flex; align-items: center; gap: var(--s2); }
+.cal-form .cal-in input { flex: 1; min-width: 0; height: 44px; font: 400 16px/1.35 var(--body); color: var(--text); background: var(--inset); border: 0; box-shadow: 0 0 0 2px var(--line); padding: 0 var(--s3); border-radius: 0; text-transform: none; letter-spacing: 0; }
+.cal-form .cal-in i { font-style: normal; color: var(--muted); min-width: 3.2em; }
+.cal-form .cal-in2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.cal-form .cm-seg.cal-sex { grid-template-columns: 1fr 1fr 1.6fr; }
+.cal-form .cal-stride { text-transform: none; letter-spacing: 0; font: 400 14px/1.35 var(--body); color: var(--muted); display: flex; gap: var(--s2); align-items: flex-start; }
+.cal-form .cal-stride input { width: 20px; height: 20px; margin: 0; accent-color: var(--gold); flex: none; }
+.cal-form #cal-prev[hidden] { display: none; }
+/* calendar dots differ by shape too, not only color (themes reuse hues; colorblind players) */
+.mcal-dot.late { transform: rotate(45deg) scale(.9); }
+.mcal-dot.done { border-radius: 50%; }
+.mcal-dot.missed { background: transparent; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--dim); }
