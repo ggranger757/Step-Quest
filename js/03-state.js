@@ -14,8 +14,7 @@
                 pets: [], weapons: ['star', 'sw_rusty'], magic: [] },
       petHp: {},          // pets have their own health (they take part of every hit in battle)
       hp: D.heroMaxHp(1), potions: { tonic: 2 }, bosses: {},
-      health: { on: false, since: null, last: 0 },
-      body: null,         // calorie counter: { kg, cm, age, sex } (07m-calories.js); null = off   // Apple Health / Health Connect sync (installed app only)
+      health: { on: false, since: null, last: 0 },   // Apple Health / Health Connect sync (installed app only)
       hints: {},
       level: 1, xp: 0, coins: 0, frac: { coins: 0, xp: 0 },
       totalSteps: 0, meters: 0, bestDay: 0,
@@ -25,7 +24,7 @@
       enc: { next: 120, seq: 0, pending: [], count: 0, fights: 0, battles: 0, losses: 0, chests: 0, cards: {}, finds: {} },
       tasks: { day: '', daily: [], advDone: [], quests: [] },
       missions: { active: [], done: [], skip: [] },
-      custom: { list: [], series: [], history: [], day: '', coinsToday: 0, xpToday: 0, done: 0 },   // series: recurring missions (05d-custom.js)
+      custom: { list: [], history: [], day: '', coinsToday: 0, xpToday: 0, done: 0 },
       quick: { day: '', done: {}, coinsToday: 0, xpToday: 0, total: 0, perDay: {} },   // quick missions (05k-quick.js)
       mx: { days: {}, cats: {}, dawn: 0, night: 0, early: 0, ontime: 0 },             // mission log: types per day, completion times
       mood: { log: [], at: 0, mark: 0, day: '', asks: 0 },   // mood check-ins on walks (05l-mood.js): log = [{ t, m, w, d }]
@@ -35,7 +34,7 @@
       eggs: { frost: 0, ember: 0, crystal: 0 }, eggTrades: 0,
       druid: { asked: [], wins: 0, losses: 0 },
       nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, theme: 'night', notify: true, daily: true, dailyAt: '09:00', notifyNames: true, chartDays: 14, moodAsk: true, turnTimer: true },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, theme: 'night', notify: true, chartDays: 14, moodAsk: true, turnTimer: true },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }

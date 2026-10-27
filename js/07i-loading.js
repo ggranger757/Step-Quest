@@ -40,7 +40,7 @@
       const start = performance.now();
       await Promise.race([Promise.allSettled([fonts, ...art]), new Promise((r) => setTimeout(r, 6000))]);
       const left = min - (performance.now() - start); if (left > 0) await new Promise((r) => setTimeout(r, left));
-      if (WB.Bgm.playing() || WB.Bgm.held()) return L.hide();   // held: the player's own music is on, so no 'Tap to start'
+      if (WB.Bgm.playing()) return L.hide();
       const sub = $('#boot-sub');
       sub.innerHTML = '<button class="btn gold boot-go" type="button" id="boot-go">Tap to start</button>'; $('#boot').classList.add('ready');   // loaded: the ring stops
       const go = () => { WB.Bgm.home(); L.hide(); };

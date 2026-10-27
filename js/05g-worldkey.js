@@ -5,7 +5,7 @@
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
   // ---------- state (repaired on every read, so old or damaged saves can't break it) ----------
-  G.wkFresh = () => ({ e: K.START, look: D.WK_START, keys: [D.WK_START], chat: 'normal', tuned: {}, found: [], seen: [], told: [], recent: [], dm: { void: K.GIFT_VOID, nebula: 0, eclipse: 0 }, at: Date.now(), lastTalk: 0, walkMark: 0, lowSaid: false, last: null });
+  G.wkFresh = () => ({ e: K.START, look: D.WK_START, keys: [D.WK_START], chat: 'normal', tuned: {}, found: [], seen: [], told: [], recent: [], dm: { void: K.GIFT_VOID, nebula: 0, eclipse: 0 }, at: Date.now(), lastTalk: 0, walkMark: 0, lowSaid: false, last: null, ping: {}, tuneLock: 0 });
   G.wk = () => {
     const s = S(); let w = s.wk;
     if (!w || typeof w !== 'object') w = s.wk = G.wkFresh();
@@ -125,8 +125,11 @@
   };
 
   // ---------- resonance ----------
-  G.wkSequence = (world) => K.sequence(world, K.tuneSpec(S().level).len);
-  G.wkLearn = (world) => { const w = G.wk(); w.tuned[world.id] = Date.now(); G.tally('tuned', 1); WB.Save.queue(); return true; };   // (re)tuning resets the 3-day clock
+  G.wkSequence = () => { const sp = K.tuneSpec(S().level); return K.sequence(sp.len, sp.syms); };   // a fresh pattern for every attempt
+  G.wkLearn = (world) => { const w = G.wk(); w.tuned[world.id] = Date.now(); delete (w.ping || {})['drift:' + world.id]; G.tally('tuned', 1); WB.Save.queue(); return true; };   // (re)tuning resets the clock
+  // too many misses scramble the frequency for a minute (higher levels only, see K.tuneSpec)
+  G.wkTuneWait = () => { const w = G.wk(); return Math.max(0, Math.ceil(((w.tuneLock || 0) - Date.now()) / 1000)); };
+  G.wkTuneLock = () => { const w = G.wk(); w.tuneLock = Date.now() + K.TUNE_COOLDOWN_S * 1000; WB.Save.queue(); };
   // the outdoors scrambles Worldkey tech: every step drains a little energy and wears the tuning down faster
   WB.bus.on('steps', ({ n }) => {
     const s = S(); if (!s || !s.onboarded || !(n > 0)) return;

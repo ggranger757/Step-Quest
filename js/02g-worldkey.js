@@ -10,9 +10,9 @@
     LOW: 25,           // at or below this the screen pulses magenta
     START: 10,         // energy before the Worldkey wakes up; it wakes up full (starter charge) after your first world
     DRAIN_DAY: 6,      // energy fades by itself: about 6% a day (1% every 4 hours), never below 0
-    TUNE_DAYS: 3,      // a learned resonance holds for 3 days, then the key drifts out of tune
+    TUNE_DAYS: 1,      // a learned resonance holds for 1 day at most, then the key drifts out of tune
     WALK_DRAIN: 1,     // walking scrambles its tech too: -1% energy per 1,000 steps
-    WALK_DETUNE_H: 2,  // ...and every 1,000 steps use up 2 more hours of a tuning (about 2 days for a 7,000-step walker)
+    WALK_DETUNE_H: 2,  // ...and every 1,000 steps use up 2 more hours of a tuning (a 7,000-step day leaves about 10 hours)
     GIFT_VOID: 0,      // the first Void Darkmatter arrives when Darkmatter unlocks (with the first world, 05j-unlocks.js)
     DM_MAX: 9,         // Darkmatter you can hold of each kind
     CHAT_GAP_MIN: 4,   // minutes between ordinary road remarks
@@ -21,8 +21,22 @@
   // destination tiers follow the level a world opens at
   K.tier = (w) => (w.unlock.level <= 15 ? 1 : w.unlock.level <= 40 ? 2 : 3);
   K.COST = { 1: 25, 2: 60, 3: 110 };                     // energy to open a world of that tier (tier 3 needs an Eclipse overcharge)
-  // tuning gets harder as your walker levels up: a longer pattern, played faster (never past 9 symbols or 380 ms each)
-  K.tuneSpec = (level) => ({ len: Math.min(9, 4 + Math.floor((level - 1) / 8)), ms: Math.max(380, 760 - (level - 1) * 6) });
+  // tuning gets harder as your walker levels up:
+  //   len     the pattern: 5 symbols at level 1, one more every 6 levels, up to 12
+  //   ms      time per symbol: 680 ms at level 1, 8 ms faster per level, never under 300 ms
+  //   syms    how many symbols are on the pad: 6, then all 9 from level 8
+  //   lit     the pad lights up along with the Worldkey's screen while it plays (a crutch for beginners, gone from level 6)
+  //   shuffle the pad is rearranged before every attempt, so only the shapes can be remembered (from level 18)
+  //   tries   attempts before the frequency scrambles and the Worldkey needs a minute to recover (from level 12; 0 = unlimited)
+  K.tuneSpec = (level) => ({
+    len: Math.min(12, 5 + Math.floor((level - 1) / 6)),
+    ms: Math.max(300, 680 - (level - 1) * 8),
+    syms: level >= 8 ? 9 : 6,
+    lit: level < 6,
+    shuffle: level >= 18,
+    tries: level >= 12 ? 3 : 0,
+  });
+  K.TUNE_COOLDOWN_S = 60;   // after running out of tries
   K.cost = (w) => K.COST[K.tier(w)];
 
   // ---------- Darkmatter: three kinds, three jobs ----------
@@ -49,13 +63,16 @@
     { id: 'plus', name: 'Plus', tone: 587, dots: [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [-2, 0], [-1, 0], [1, 0], [2, 0]] },
     { id: 'zigzag', name: 'Zigzag', tone: 659, dots: [[-2, 1], [-1, 0], [0, 1], [1, 0], [2, 1]] },
     { id: 'diagonal', name: 'Diagonal', tone: 784, dots: [[-2, 2], [-1, 1], [0, 0], [1, -1], [2, -2]] },
+    // three more join the pad from level 8
+    { id: 'ring', name: 'Ring', tone: 880, dots: [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]] },
+    { id: 'arrow', name: 'Arrow', tone: 988, dots: [[0, -2], [-1, -1], [1, -1], [0, -1], [0, 0], [0, 1], [0, 2]] },
+    { id: 'cross', name: 'Cross', tone: 1047, dots: [[-2, -2], [-1, -1], [0, 0], [1, 1], [2, 2], [-2, 2], [-1, 1], [1, -1], [2, -2]] },
   ];
-  // a world's sequence never changes: it is seeded by the world's id
-  K.sequence = (w, len) => {   // the same world always starts the same way; higher levels add symbols on the end
-    let h = 2166136261; for (const ch of w.id) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
-    const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >>> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
-    const n = len || 4, out = [];
-    while (out.length < n) { const k = Math.floor(rnd() * D.WK_SYMBOLS.length); if (out.length >= 2 && out[out.length - 1] === k && out[out.length - 2] === k) continue; out.push(k); }
+  // a world's frequency shifts every time you listen: each attempt plays a new pattern (never the same symbol 3 times in a row),
+  // so a failed try can't simply be repeated from memory. syms = how many of the symbols can appear.
+  K.sequence = (len, syms, rnd = Math.random) => {
+    const n = len || 5, m = Math.min(syms || D.WK_SYMBOLS.length, D.WK_SYMBOLS.length), out = [];
+    while (out.length < n) { const k = Math.floor(rnd() * m); if (out.length >= 2 && out[out.length - 1] === k && out[out.length - 2] === k) continue; out.push(k); }
     return out;
   };
 
@@ -89,7 +106,7 @@
       tuneOk: ['Frequency locked. You have the memory of a goldfish with ambition.', 'Resonance stable. I will pretend that was easy.'],
       tuneFail: ['That was not the frequency. That was noise. Again.', 'Close. Also completely wrong. Try again.'],
       craft: ['{dm}, freshly contained. Please stop shaking it.', 'You made {dm}. And you only lost some health. Bargain.'],
-      needFuel: ['We are short on dimensional fuel. Next stop: the Forge, in Inventory → Artifacts.', 'No charge, no portal. The Forge is that way.'],
+      needFuel: ['We are short on dimensional fuel. Next stop: the Forge, under me in Inventory → Worldkey.', 'No charge, no portal. The Forge is that way.'],
       notTuned: ['Power is adequate. Frequency alignment, however, is a disaster.', 'I have the energy. I do not have the frequency. That part is you.'],
       milestone: ['{pct}% of {world} explored. Not bad for someone who walks into walls.', '{pct}% done. I would clap if I had hands.'],
       nearDone: ['Almost through {world}. I can hear the next world humming.', 'Only a little farther. The next frequency is getting loud.'],
@@ -105,7 +122,7 @@
       tuneOk: ['You found the world’s frequency. It answered.', 'The resonance holds. Few remember it so well.'],
       tuneFail: ['The frequency slipped from you. Listen again.', 'Not yet. The world hums slowly for those who listen.'],
       craft: ['{dm} is born of your strength. Spend it wisely.', 'You gave blood to the Forge. It gave {dm}.'],
-      needFuel: ['No door opens on an empty heart. Seek the Forge.', 'The Forge waits among your artifacts. So does the way forward.'],
+      needFuel: ['No door opens on an empty heart. Seek the Forge.', 'The Forge waits beneath me. So does the way forward.'],
       notTuned: ['The power is ready. The frequency is not yet found.', 'Strength without the frequency opens nothing.'],
       milestone: ['{pct}% of {world} walked. The path remembers.', 'A {pct}% mark. Old travelers rested here.'],
       nearDone: ['The edge of {world} is near. Beyond it, a new frequency.', 'Almost. I can hear the next world breathing.'],
@@ -121,7 +138,7 @@
       tuneOk: ['YES! We’re on the same frequency!', 'You got it! I knew you would! I hoped you would!'],
       tuneFail: ['Oops! Wrong one. I do that too. Again!', 'Boop. That was a wrong boop. Retry!'],
       craft: ['Ooh, {dm}! It’s wobbly! I love it!', 'You made {dm}! Ouch for you, yay for me!'],
-      needFuel: ['No zap, no portal! The Forge is under Artifacts!', 'Fuel, please! The Forge! Go go go!'],
+      needFuel: ['No zap, no portal! The Forge is right under me!', 'Fuel, please! The Forge! Go go go!'],
       notTuned: ['I have the zap but not the frequency! Help me find it!', 'Power: yes! Tune: nope! Let’s play the symbol game!'],
       milestone: ['{pct}% of {world}! Party!', '{pct}%! Is that a lot? It feels like a lot!'],
       nearDone: ['Almost done with {world}! What’s next? WHAT’S NEXT?', 'So close! I can smell the next world!'],
@@ -137,7 +154,7 @@
       tuneOk: ['Sequence matched. Resonance coefficient: 1.0.', 'Frequency aligned. Your recall exceeded my estimate.'],
       tuneFail: ['Sequence mismatch at step {n}. Retry recommended.', 'Input error. The pattern has not changed. You may try again.'],
       craft: ['{dm} produced. Health cost applied as specified.', 'Output: one unit of {dm}. Input: artifacts and some of your health.'],
-      needFuel: ['Fuel reserves: zero. Nearest solution: the Forge, under Artifacts.', 'Insufficient Darkmatter. Crafting is the logical next step.'],
+      needFuel: ['Fuel reserves: zero. Nearest solution: the Forge, directly below me.', 'Insufficient Darkmatter. Crafting is the logical next step.'],
       notTuned: ['Energy: sufficient. Resonance: unknown. Tuning required.', 'Power available. Frequency data missing.'],
       milestone: ['Exploration of {world}: {pct}%. Progress is linear. Good.', '{pct}% mapped. Data quality improving.'],
       nearDone: ['{world} nearly mapped. Next frequency detected faintly.', 'Remaining distance in {world}: small.'],
@@ -169,7 +186,7 @@
       tuneOk: ['We matched the world’s frequency! Together!', 'I felt that click. We’re tuned!'],
       tuneFail: ['Hmm, that wasn’t it. Let’s try again. I believe in us.', 'Almost! Watch my screen one more time.'],
       craft: ['{dm}! It hums like I do.', 'You made {dm}. Are you okay? That looked like it hurt.'],
-      needFuel: ['I need Darkmatter to open the next door. The Forge is in Inventory → Artifacts.', 'No fuel yet. The Forge can make some.'],
+      needFuel: ['I need Darkmatter to open the next door. The Forge is in Inventory → Worldkey.', 'No fuel yet. The Forge can make some.'],
       notTuned: ['I have the energy, but I don’t know {world}’s frequency yet.', 'Ready to go, once we find the frequency.'],
       milestone: ['{pct}% of {world}! We’re really doing this.', '{pct}% explored. I’m keeping notes.'],
       nearDone: ['We’re almost through {world}. I can hear something new out there.', 'So close to the edge of {world}!'],
@@ -185,7 +202,7 @@
       tuneOk: ['> resonance.match = true. Clean input.', '> frequency unlocked. Good hands.'],
       tuneFail: ['> input error at step {n}. Retry.', '> sequence rejected. Run it again.'],
       craft: ['> crafted: {dm}. HP cost applied.', '> {dm} compiled.'],
-      needFuel: ['> fuel = 0. Open Shop > Artifacts > Forge.', '> no Darkmatter found. Craft some.'],
+      needFuel: ['> fuel = 0. Open Inventory > Worldkey > Forge.', '> no Darkmatter found. Craft some.'],
       notTuned: ['> power ok. resonance missing for {world}.', '> tune required before launch.'],
       milestone: ['> {world}: {pct}% mapped.', '> progress {pct}%. Continue.'],
       nearDone: ['> {world} nearly mapped. Next signal faint but real.', '> edge of {world} detected.'],
