@@ -3,6 +3,21 @@
   "appName": "Step Quest",
   "webDir": "www",
   "backgroundColor": "#0b0a1a",
-  "android": { "allowMixedContent": false },
-  "ios": { "contentInset": "never" }
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "never"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_stepquest",
+      "iconColor": "#FF9A3D",
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "list"
+      ]
+    }
+  }
 }

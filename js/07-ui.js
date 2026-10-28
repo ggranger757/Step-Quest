@@ -673,14 +673,14 @@
     ['magic', 'Magic', 'img:mg/book.png', () => 'Charms give passive perks and never run out.' + (G.gearCare() ? ' Battle magic comes with ' + D.MAGIC_USES + ' uses. Buy more when they run out.' : ' Battle magic works once per battle.')],
   ];
   const BAG_TABS = [
-    ['worldkey', 'Worldkey', 'img:wk/dm_nebula.png', () => !G.featOn('wk') ? 'Your guide between worlds, and the Forge that fuels it.' : G.upkeep() ? 'Tune your Worldkey to a world, keep it charged with Darkmatter from the Forge below, then open the way.' : 'Tune your Worldkey to a world, then open the way. The Forge is right below.'],
+    ['worldkey', 'Worldkey', 'img:wk/dm_nebula.png', () => !G.featOn('wk') ? 'Your guide between worlds.' : G.upkeep() ? 'Your guide between worlds. Charge it with Darkmatter, tune it to a world, then open the way.' : 'Your guide between worlds. Tune it to a world, then open the way.'],
     ['weapons', 'Weapons', 'sword', () => G.gearCare() ? 'Equip, repair and refill. Worn melee weapons hit softer, and at 0% they break until repaired. A repair costs a quarter of the price.' : 'Equip the weapons you own.'],
     ['magic', 'Magic', 'img:mg/book.png', 'Wear up to ' + D.CHARM_SLOTS + ' charms. Cast battle magic from the Magic button, once per battle each.'],
     ['potions', 'Potions', 'img:pot/tonic.png', 'Drink healing potions here, or use any potion in battle from Items.'],
     ['pets', 'Pets', 'paw', 'Pets heal over time, like you. A knocked-out pet rests until it recovers.'],
     ['avatar', 'Avatars', 'user', 'Pick who you walk as.'],
   ];
-  // Artifacts is the Collection. The Forge lives on the Worldkey page, right under the Worldkey it fuels.
+  // Artifacts is one page: the Forge on top, the Collection under it (no sub-tabs). Older links to 'forge' land here too.
   const ART_TABS = [['finds', 'Artifacts', 'img:art/m30.png', '']];
   const GEAR = ['weapons', 'potions', 'pets'];
   // open a hub (and one of its sections) from anywhere
@@ -873,8 +873,8 @@
         <div class="finds">${list.map((f, i) => { const has = got.includes(i), c = G.artHave(w.id, i); return `<div class="find pbox ${has ? 'got' : ''}">${has ? WB.pxImg('art/' + f[0] + '.png', 64) : `<canvas class="px-img" width="64" height="64" data-silimg="art/${f[0]}.png" aria-hidden="true"></canvas>`}${has ? WB.esc(f[1]) : 'Not found yet'}${has ? `<span class="art-n ${c ? '' : 'none'}" aria-label="${c} in hand">×${c}</span>` : ''}</div>`; }).join('')}</div>
       </details>`;
     };
-    return `<div class="sect" id="art-collection"><h2>Collection <span class="aside">${found} / ${D.FIND_TOTAL} discovered</span></h2>
-      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to forge with</span><div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">Six artifacts hide along the road in every world. Walk a world again to find more copies of the ones you know.</p><button class="btn ghost sm" type="button" data-wk="forge">${WB.pxImg('wk/dm_void.png', 20)}Melt them in the Forge</button></div>
+    return UI.forgeSection() + `<div class="sect" id="art-collection"><h2>Collection <span class="aside">${found} / ${D.FIND_TOTAL} discovered</span></h2>
+      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to forge with</span><div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">Six artifacts hide along the road in every world. Walk a world again to find more copies of the ones you know.</p></div>
       <div class="art-worlds">${open.map(row).join('')}</div>
       ${shut.length ? `<p class="fine art-locked">${WB.icon('lock', 1)} ${shut.length} more world${shut.length > 1 ? 's' : ''} to open · ${shut.reduce((n, w) => n + D.FINDS[w.id].length, 0)} artifacts waiting in them</p>` : ''}
     </div>`;
@@ -997,7 +997,7 @@
     const st = WB.Steps.status;
     const pf = $('#scr-profile'); pf._html = null; pf.innerHTML = `<div class="scr-wrap">
       <div class="scr-head pf-head"><h1>Profile</h1></div>
-      <div class="seg pf-tabs" role="tablist" aria-label="Profile sections">${[['overview', 'Overview', 'user'], ['ach', 'Achievements', 'trophy', 'Awards'], ['settings', 'Settings', 'gear']].map(([id, l, ic, short]) => `<button type="button" role="tab" data-pftab="${id}" aria-selected="${tab === id}" aria-pressed="${tab === id}"${short ? ` aria-label="${l}"` : ''}>${WB.icon(ic, 2)}${short ? `<span class="l-long" aria-hidden="true">${l}</span><span class="l-short" aria-hidden="true">${short}</span>` : `<span>${l}</span>`}</button>`).join('')}</div>
+      <div class="seg pf-tabs" role="tablist" aria-label="Profile sections">${[['overview', 'Overview', 'user'], ['ach', 'Achievements', 'trophy'], ['settings', 'Settings', 'gear']].map(([id, l, ic]) => `<button type="button" role="tab" data-pftab="${id}" aria-selected="${tab === id}" aria-pressed="${tab === id}">${WB.icon(ic, 2)}<span>${l}</span></button>`).join('')}</div>
       ${tab === 'ach' ? `<p class="scr-note">Milestones that pay coins and XP. ${Object.keys(s.ach).length} of ${D.ACHIEVEMENTS.length} earned.</p>${UI.achList()}` : tab === 'overview' ? `
 
       <div class="hero pbox"><canvas width="144" height="144" id="pf-av"></canvas><div class="meta">
@@ -1062,7 +1062,7 @@
         <div class="setting pbox"><div><label for="set-stride">Stride length</label><div class="sd">Turns steps into distance.</div></div><select id="set-stride">${opt([0.6, 0.65, 0.7, 0.76, 0.8, 0.85, 0.9], s.settings.stride, (v) => WB.miles() ? Math.round(v * 39.37) + ' in' : v.toFixed(2) + ' m')}</select></div>
       </div>
       <div class="sect"><h2>Notifications</h2>
-        <div class="setting pbox"><div><div id="lbl-notify">Mission reminders</div><div class="sd">${WB.Remind.desc()}</div></div><div class="acts">${s.settings.notify && WB.Remind.canAsk() ? '<button class="btn sm" type="button" data-act="notify-allow">Allow</button>' : ''}<button class="toggle" type="button" role="switch" aria-labelledby="lbl-notify" aria-checked="${!!s.settings.notify}" data-act="notify-toggle"></button></div></div>
+        <div class="setting pbox"><div><div id="lbl-notify">Mission reminders</div><div class="sd">${WB.Remind.desc()}</div></div><div class="acts">${s.settings.notify && WB.Remind.canAsk() ? '<button class="btn sm" type="button" data-act="notify-allow">Allow</button>' : ''}${s.settings.notify && WB.Remind.needsExact && WB.Remind.needsExact() ? '<button class="btn sm" type="button" data-remind-exact="1">Exact timing</button>' : ''}<button class="toggle" type="button" role="switch" aria-labelledby="lbl-notify" aria-checked="${!!s.settings.notify}" data-act="notify-toggle"></button></div></div>
         <div class="setting pbox"><div><div id="lbl-mood">Mood check-ins</div><div class="sd">While you walk, now and then ask how you’re feeling. Your moods show on Profile → Overview.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-mood" aria-checked="${s.settings.moodAsk !== false}" data-toggle="moodAsk"></button></div>
       </div>
       <div class="sect"><h2>Appearance &amp; sound</h2>
@@ -1266,7 +1266,7 @@
     if (d.potionBuy) { const r = G.buyPotion(d.potionBuy); UI.toast(r.ok ? { kicker: 'Purchased', title: G.potion(d.potionBuy).name, img: `pot/${d.potionBuy}.png`, cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.drink) { const r = G.drink(d.drink); if (r.ok) WB.Sfx.play('potion'); if (r.ok) UI.toast({ kicker: 'Healed', title: WB.fmt(S().hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', img: `pot/${d.drink}.png`, cls: 'ok' }); else if (r.msg) UI.toast({ kicker: 'Not now', title: r.msg }); UI.updateHud(); return UI.render(); }
     if (d.boss) { WB.BattleUI.challenge(d.boss); return; }
-    if (d.claim) { const [ty, id] = d.claim.split(':'); const r = G.claimTask(ty, id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); if (r && ty === 'daily') UI.missionAmbushRoll('daily', r.t.title); return; }
+    if (d.claim) { const [ty, id] = d.claim.split(':'); const r = G.claimTask(ty, id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); return; }   // battle mode and the Worldkey surge follow on their own (05m-aftermission.js)
     if (d.buy) { const [c, id] = d.buy.split(':'); const r = G.buy(c, id); if (r.ok) UI.toast({ kicker: 'Purchased', title: G.item(c, id).name, icon: 'shop', cls: 'gold' }); else if (r.msg) UI.toast({ kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.supply) { const r = G.buySupply(d.supply); UI.toast(r.ok ? { kicker: 'Purchased', title: 'Streak Shield', sub: 'You hold ' + S().streak.rest + ' / ' + D.SHIELD_MAX + '.', icon: 'sshield', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.equip) { const [c, id] = d.equip.split(':'); const r = G.equip(c, id); if (r && r.full) UI.toast({ kicker: 'Charm slots full', title: 'Take one off first: you can wear ' + D.CHARM_SLOTS + '.', cls: 'msg' }); else WB.Sfx.play('equip'); return UI.render(); }
@@ -1294,7 +1294,7 @@
       case 'back-world': UI.go('world'); break;
       case 'pending': UI.pendingSheet(); break;
       case 'daily': { const r = G.claimDaily(); if (r) { WB.Sfx.play('chest'); UI.toast({ kicker: 'Daily reward', title: G.rewardText(r), icon: 'chestopen', cls: 'gold' }); } UI.render(); break; }
-      case 'claim-all': { let tot = { coins: 0, xp: 0 }, daily = null; for (const c of G.claimable()) { const r = G.claimTask(c.type, c.t.id); if (r) { tot.coins += r.reward.coins || 0; tot.xp += r.reward.xp || 0; if (c.type === 'daily') daily = daily || c.t.title; } } UI.toast({ kicker: 'Rewards claimed', title: G.rewardText(tot) || 'Items unlocked', icon: 'coin', cls: 'gold' }); UI.render(); if (daily) UI.missionAmbushRoll('daily', daily); break; }
+      case 'claim-all': { let tot = { coins: 0, xp: 0 }, daily = null; for (const c of G.claimable()) { const r = G.claimTask(c.type, c.t.id); if (r) { tot.coins += r.reward.coins || 0; tot.xp += r.reward.xp || 0; if (c.type === 'daily') daily = daily || c.t.title; } } UI.toast({ kicker: 'Rewards claimed', title: G.rewardText(tot) || 'Items unlocked', icon: 'coin', cls: 'gold' }); UI.render(); break; }
       case 'rename': UI.sheet(`<h3 id="sheet-title">Your name</h3><div class="field"><label class="lbl" for="nm">Shown on your profile</label><input id="nm" type="text" maxlength="18" value="${WB.esc(S().name)}"></div><button class="btn block" type="button" id="nm-go">Save</button>`, () => { $('#nm-go').onclick = () => { S().name = $('#nm').value.trim().slice(0, 18) || 'Wanderer'; WB.Save.queue(); UI.closeSheet(); UI.renderProfile(); }; }); break;
       case 'reset': UI.sheet(`<h3 id="sheet-title">Reset all progress?</h3><p>This erases your steps, coins, items and streak on this device${WB.Cloud.status === 'cloud' ? ' and in your account' : ''}. It can’t be undone.</p><div class="row"><button class="btn ghost" type="button" data-close>Keep my progress</button><button class="btn" style="--b:var(--danger)" type="button" id="rs-go">Erase everything</button></div>`, () => { $('#rs-go').onclick = async () => { const b = $('#rs-go'); b.disabled = true; b.textContent = 'Erasing\u2026'; await WB.Save.reset(); location.reload(); }; }); break;
     }

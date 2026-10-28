@@ -1,4 +1,4 @@
-/* Step Quest — turn-based battle rules (1v1, plus your pet). Pure logic: every action returns a list of
+/* Step Quest — turn-based battle rules (1v1 or a mob of 2–3 creatures, plus your pet). Pure logic: every action returns a list of
    events that the battle screen animates in order.
 
    Your moves:  Strike (melee weapon, wears down a little with every hit) · Throw / Shoot / Cast (ranged weapon, recharges,
@@ -15,24 +15,89 @@
    Statuses on you: poison, burn, venom (damage each turn, never below 1 HP; venom is the plants' slow poison: 3% for 6 turns) · weak (-30% damage) · stun (lose a turn)
    Statuses on the creature: poison, burn, bleed — shown to the player as a curse (damage each turn) · freeze, stun (skips a turn)
                 · weaken (-40% attack) · sunder (+25% damage taken)
-   Your pet takes part of every hit (its `share`) until its own HP runs out. */
+   Your pet takes part of every hit (its `share`) until its own HP runs out.
+   Mobs:        st.mob holds every creature (one for a normal fight); st.enemy is the one acting or being hit, and
+                st.target the one you picked (B.setTarget). Every event carries `foe`, the index of its creature. */
 (() => {
   const D = WB.DATA, G = WB.Game;
   const rnd = (a, b) => a + Math.random() * (b - a);
   const B = (WB.Battle = { active: false, st: null });
 
+  // ---------- mobs: several road creatures attack at once (enc.mob = [creature ids], the first is enc.creature) ----------
+  // Each member is a little weaker than a lone creature, they act one after another every round, and you pick which
+  // one your attacks hit (B.setTarget). Guardians, bosses, the Rival and the Druid always fight alone.
+  D.MOB = {
+    LEVEL: 5,                        // mobs turn up from this level
+    CHANCE: 0.18,                    // share of hostile road creatures that come as a mob
+    MISSION_CHANCE: 0.35,            // share of after-mission battles that are a mob
+    size: (lvl) => (lvl >= 15 && Math.random() < 0.45 ? 3 : 2),
+    HP: { 2: 0.62, 3: 0.5 },         // each member's HP and attack, as a share of a lone creature's
+    ATK: { 2: 0.6, 3: 0.47 },
+    REWARD: 0.75,                    // each creature beaten pays this share of a lone creature's reward
+    TIME: 3,                         // extra seconds on the turn timer (you also pick a target)
+    FLEE: 0.55,                      // chance to run from a mob (0.75 from one creature)
+    SPLASH: 0.5,                     // Arcane Nova hits the rest of the mob for this share of its damage
+  };
+  const alive = (st) => st.mob.filter((f) => f.hp > 0 && !f.gone);
+  B.alive = () => (B.st ? alive(B.st) : []);
+  B.isMob = () => !!(B.st && B.st.mob.length > 1);
+  // point st.enemy at the chosen target (or the next one standing if it fell)
+  function aim(st) {
+    let t = st.mob[st.target];
+    if (!t || t.hp <= 0 || t.gone) { const a = alive(st); t = a[0] || t || st.mob[0]; st.target = st.mob.indexOf(t); }
+    st.enemy = t;
+    return t;
+  }
+  B.setTarget = (i) => {
+    const st = B.st, f = st && st.mob[i];
+    if (!f || st.over || f.hp <= 0 || f.gone) return false;
+    st.target = i; st.enemy = f; return true;
+  };
+  // every event remembers which creature it belongs to (the one acting or being hit when it happened)
+  function evList(st) {
+    const a = [];
+    a.push = function (...xs) { for (const ev of xs) { if (ev && ev.foe == null) ev.foe = Math.max(0, st.mob.indexOf(st.enemy)); Array.prototype.push.call(this, ev); } return this.length; };
+    return a;
+  }
+  // creatures that just fell: true when none are left standing (the battle is won)
+  function checkFoes(st, events) {
+    const fresh = st.mob.filter((f) => f.hp <= 0 && !f.down && !f.gone);
+    fresh.forEach((f) => (f.down = true));
+    const left = alive(st).length;
+    if (!left) {
+      fresh.slice(0, -1).forEach((f) => events.push({ who: 'enemy', type: 'foeDown', foe: st.mob.indexOf(f), text: f.name + ' is defeated!' }));
+      if (fresh.length) st.enemy = fresh[fresh.length - 1];
+      return true;
+    }
+    fresh.forEach((f) => events.push({ who: 'enemy', type: 'foeDown', foe: st.mob.indexOf(f), text: f.name + ' is defeated! ' + left + ' left.' }));
+    aim(st);
+    return false;
+  }
+
+  function makeFoe(enc, cid, w, s, n, k) {
+    const c = D.CREATURES[cid], bd = enc.nemesis ? D.BOSSES[cid] : null;
+    const cs = enc.nemesis ? D.bossStats(cid, s.level) : c.rival ? D.rivalStats(s.level) : D.creatureStats(cid, D.worldTier(w, s.level), !!enc.boss);
+    const hp = n > 1 ? Math.max(8, Math.round(cs.hp * D.MOB.HP[n])) : cs.hp, atk = n > 1 ? Math.max(3, Math.round(cs.atk * D.MOB.ATK[n])) : cs.atk;
+    return { id: cid, sprite: cid, name: c.name, slot: k, boss: !!enc.boss, nemesis: !!enc.nemesis, rival: !!c.rival, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp, max: hp, atk, lvl: cs.lvl,
+      poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false, fled: 0,
+      moves: D.CREATURE_MOVES[cid] || D.CREATURE_MOVES.hyena };
+  }
+
   B.start = (enc) => {
     const s = WB.state, G = WB.Game, w = D.worldById[enc.world] || G.world();
-    const cs = enc.nemesis ? D.bossStats(enc.creature, s.level) : D.CREATURES[enc.creature].rival ? D.rivalStats(s.level) : D.creatureStats(enc.creature, D.worldTier(w, s.level), !!enc.boss), bd = enc.nemesis ? D.BOSSES[enc.creature] : null;
+    const ids = Array.isArray(enc.mob) && enc.mob.length > 1 && !enc.boss && !enc.nemesis && !enc.druid ? enc.mob.filter((id) => D.CREATURES[id]).slice(0, 3) : [enc.creature];
+    const mob = ids.map((cid, k) => makeFoe(enc, cid, w, s, ids.length, k));
+    if (mob.length > 1) {   // two of the same kind get a letter each, so you can tell who you're aiming at
+      const seen = {};
+      mob.forEach((f) => { if (mob.filter((x) => x.id === f.id).length > 1) { seen[f.id] = (seen[f.id] || 0) + 1; f.name += ' ' + 'ABC'[seen[f.id] - 1]; } });
+    }
     const pdef = s.equip.pet && G.pet(s.equip.pet);
     B.st = {
-      enc, world: w, turn: 1, over: false, result: null,
+      enc, world: w, turn: 1, over: false, result: null, mob, target: 0,
       hero: { hp: Math.max(1, s.hp), max: G.maxHp(), atk: D.heroAtk(s.level), def: D.heroDef(s.level), lvl: s.level, guard: 0, guardF: 0.5, fury: 0, furyMult: 1.5, defend: false, reflect: false, poison: 0, venom: 0, burn: 0, weak: 0, stun: 0,
         clone: 0, tome: 0, twice: 0, dodge: 0, guardPts: 100, defended: false },
       pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0), atk: pdef.atk || 0, verb: pdef.atkVerb } : null,
-      enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, rival: !!D.CREATURES[enc.creature].rival, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
-        poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false, fled: 0,
-        moves: D.CREATURE_MOVES[enc.creature] || D.CREATURE_MOVES.hyena },
+      enemy: mob[0],
       weapon: G.equipped('ranged') || D.WEAPONS[0], melee: (G.equipped('melee') && !G.broken(G.equipped('melee').id)) ? G.equipped('melee') : D.weaponById.sw_rusty, brokenMelee: (G.equipped('melee') && G.broken(G.equipped('melee').id)) ? G.equipped('melee') : null, shield: G.equipped('shield'),
       cooldown: 0,
       special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
@@ -47,27 +112,29 @@
   };
 
   // seconds you get to pick a move (the battle screen runs the clock)
-  B.turnTime = () => { const e = B.st.enemy, T = D.TURN_TIME; return e.nemesis || e.rival ? T.boss : e.boss ? T.guardian : T.creature; };
+  B.turnTime = () => { const e = B.st.enemy, T = D.TURN_TIME; return (e.nemesis || e.rival ? T.boss : e.boss ? T.guardian : T.creature) + (B.st.mob.length > 1 ? D.MOB.TIME : 0); };
 
   // the creature acts before your first move: a plain attack or its spell (never a brace, charge or flee)
+  // (in a mob, the first one in line strikes first)
   B.ambush = () => {
-    const st = B.st, events = [];
+    const st = B.st, events = evList(st);
     if (!st || st.over || !st.ambush) return events;
     st.ambush = false;
-    const e = st.enemy;
+    const e = st.enemy = st.mob[0];
     events.push({ who: 'enemy', type: 'ambush', text: e.name + ' strikes first!' });
     events.push(Math.random() < (e.moves.mw || 0.33) ? enemyMagic(st) : enemyHit(st, 1, 'attack'));
-    if (e.hp <= 0) return win(st, events);        // thorns / a mirror can bounce enough back
+    if (checkFoes(st, events)) return win(st, events);        // thorns / a mirror can bounce enough back
+    aim(st);
     if (st.hero.hp <= 0) return lose(st, events);
     return finish(events);
   };
 
   // the turn timer ran out: you hesitate, the creature takes its turn and the round ends as usual
   B.timeout = () => {
-    const st = B.st, events = [];
+    const st = B.st, events = evList(st);
     if (!st || st.over) return events;
     if (st.hero.stun > 0) st.hero.stun--;   // a stunned turn is spent either way
-    events.push({ who: 'hero', type: 'timeout', text: 'Too slow! You hesitate and ' + st.enemy.name + ' seizes the moment.' });
+    events.push({ who: 'hero', type: 'timeout', text: 'Too slow! You hesitate and ' + (st.mob.length > 1 ? 'the mob seizes' : st.enemy.name + ' seizes') + ' the moment.' });
     return creatureTurn(st, events);
   };
 
@@ -99,7 +166,8 @@
       case 'poison': e.poison = 3; return ' It’s poisoned.';
       case 'burn': e.burn = 2; return ' It’s burning.';
       case 'bleed': e.bleed = 3; return ' It’s cursed.';
-      case 'freeze': case 'freezeAll': e.freeze = 1; return ' Frozen solid!';
+      case 'freezeAll': if (st.mob.length > 1) { alive(st).forEach((f) => (f.freeze = 1)); return ' The whole mob is frozen solid!'; } e.freeze = 1; return ' Frozen solid!';
+      case 'freeze': e.freeze = 1; return ' Frozen solid!';
       case 'stun': e.stun = 1; return ' Stunned!';
       case 'weaken': e.weaken = 3; return ' Its attacks weaken.';
       case 'sunder': e.sunder = 2; return ' Its guard is broken: +25% damage taken.';
@@ -113,9 +181,9 @@
 
   // hero action, then (if the fight continues) the creature's reply and end-of-round effects
   B.act = (move, arg) => {
-    const st = B.st, events = [];
+    const st = B.st, events = st ? evList(st) : [];
     if (!st || st.over) return events;
-    const h = st.hero, e = st.enemy;
+    const h = st.hero, e = aim(st);   // your attacks hit the creature you picked
     const P = st.perks, mult = (h.fury > 0 ? h.furyMult : 1) * (h.weak > 0 ? 0.7 : 1) * (P.has('dmg') ? 1.08 : 1) * (P.has('apex') ? 1.12 : 1) * (P.has('hunter') && (e.boss || e.nemesis) ? 1.15 : 1);
 
     if (move === 'magic') {   // a magic item: instant, it doesn't use your turn (each once per battle, one per turn)
@@ -161,7 +229,7 @@
         case 'drain': { strikeEnemy(st, Math.max(1, Math.round(e.max * fx.power)), ev, true); healBy(ev.dmg / h.max); ev.text = nm + 'drains ' + ev.dmg + ' and heals you ' + ev.heal + '.'; break; }
       }
       events.push(ev);
-      if (e.hp <= 0) return win(st, events);
+      if (checkFoes(st, events)) return win(st, events);
       return finish(events);
     }
     if (h.stun > 0 && move !== 'potion') {   // stunned: this turn is lost (a potion still works)
@@ -234,9 +302,20 @@
       const lvl = h.lvl, ev = { who: 'hero', type: 'spAttack', sp: sp.id };
       const bm = h.tome > 0 ? 1 + D.BOOK_BONUS : 1;   // the Book of Magic powers special attacks too
       if (sp.id === 'nova') {
-        strikeEnemy(st, hit(h.atk * (1.8 + lvl * 0.04) * mult * bm), ev, true);
+        const base = h.atk * (1.8 + lvl * 0.04) * mult * bm;
+        strikeEnemy(st, hit(base), ev, true);
         if (e.hp > 0) e.stun = 3;
         ev.text = 'Arcane Nova blasts for ' + ev.dmg + '!' + (e.hp > 0 ? ' ' + e.name + ' is stunned for 3 turns.' : '');
+        if (st.mob.length > 1) {   // in a mob the blast catches the others too (and stuns them for a turn)
+          ev.splash = [];
+          for (const f of alive(st)) {
+            if (f === e) continue;
+            const sub = {}; st.enemy = f; strikeEnemy(st, hit(base * D.MOB.SPLASH), sub, true); st.enemy = e;
+            if (f.hp > 0) f.stun = Math.max(f.stun, 1);
+            ev.splash.push({ foe: st.mob.indexOf(f), dmg: sub.dmg || 0 });
+          }
+          if (ev.splash.length) ev.text += ' The blast tears through the mob: ' + ev.splash.map((x) => x.dmg).join(' and ') + ' more.';
+        }
       } else if (sp.id === 'drain') {
         e.drain = 3;
         ev.text = 'Life Drain takes hold: for 3 turns you drain ' + e.name + ' and heal' + (h.hp < h.max * 0.5 ? ', faster while you’re low.' : '.');
@@ -276,7 +355,8 @@
       events.push(ev);
       }
     } else if (move === 'flee') {
-      const ok = Math.random() < (P.has('flee') ? (e.nemesis ? 0.6 : e.boss ? 0.7 : 1) : (e.nemesis ? 0.35 : e.boss ? 0.45 : 0.75));
+      const mobbed = st.mob.length > 1 && alive(st).length > 1;   // harder to slip away from a crowd
+      const ok = Math.random() < (P.has('flee') ? (e.nemesis ? 0.6 : e.boss ? 0.7 : mobbed ? 0.85 : 1) : (e.nemesis ? 0.35 : e.boss ? 0.45 : mobbed ? D.MOB.FLEE : 0.75));
       events.push({ who: 'hero', type: 'flee', ok, text: ok ? 'You got away.' : 'You couldn’t get away!' });
       if (ok) { st.over = true; st.result = 'fled'; if (e.nemesis || e.rival) say(st, events, 'victory'); return finish(events); }
     } else return events;
@@ -288,15 +368,63 @@
       ev.text = pet.name + ' ' + pet.verb.toLowerCase() + ' ' + e.name + (ev.dmg ? ' for ' + ev.dmg + '.' : ', but misses.');
       events.push(ev);
     }
-    if (e.hp <= 0) return win(st, events);
+    if (checkFoes(st, events)) return win(st, events);
     if (h.hp <= 0) return lose(st, events);       // a ward can bounce enough back to knock you down
     return creatureTurn(st, events);
   };
 
-  // the creature's reply and the end of the round (after your move, or when your turn timer runs out)
+  // the creature's reply and the end of the round (after your move, or when your turn timer runs out).
+  // In a mob every creature still standing takes its turn, one after another.
   function creatureTurn(st, events) {
-    const h = st.hero, e = st.enemy, P = st.perks;
+    const h = st.hero, P = st.perks;
+    for (const e of st.mob) {
+      if (e.hp <= 0 || e.gone) continue;
+      st.enemy = e;
+      foeTurn(st, events, e);
+      if (st.over) return finish(events);                  // it ran off and nobody is left
+      if (checkFoes(st, events)) return win(st, events);   // reversed or countered to death
+      if (h.hp <= 0) break;                                // knocked down: the round ends (Ember Heart may still save you)
+    }
 
+    // ---- end of round: effects on each creature, then on you
+    for (const e of st.mob) {
+      if (e.hp <= 0 || e.gone) continue;
+      st.enemy = e;
+      for (const [k, frac, label] of [['poison', 0.08, 'Poison hurts ' + e.name + ' for '], ['burn', 0.07, 'The fire burns ' + e.name + ' for '], ['bleed', 0.06, 'The curse hurts ' + e.name + ' for ']]) {
+        if (e.hp > 0 && e[k] > 0) { const d = Math.max(2, Math.round(e.max * frac)); e.hp = Math.max(0, e.hp - d); e[k]--; events.push({ who: 'enemy', type: 'dot', dot: k, dmg: d, text: label + d + ' damage.' }); }
+      }
+      if (e.hp > 0 && e.drain > 0) {   // Life Drain: takes HP from the creature and gives it to you
+        const d = Math.min(e.hp, Math.max(2, Math.round(h.atk * (0.55 + h.lvl * 0.03) * (h.tome > 0 ? 1 + D.BOOK_BONUS : 1)))), low = h.hp < h.max * 0.5;
+        e.hp = Math.max(0, e.hp - d); e.drain--;
+        const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(d * (low ? 1.5 : 1)));
+        events.push({ who: 'hero', type: 'drain', dmg: d, heal: h.hp - b0, left: e.drain, text: 'Life Drain takes ' + d + (h.hp - b0 ? ' and heals you ' + (h.hp - b0) : '') + '.' + (e.drain ? ' ' + e.drain + ' more turn' + (e.drain > 1 ? 's' : '') + '.' : '') });
+      }
+      if (e.weaken > 0) e.weaken--;
+      if (e.sunder > 0) e.sunder--;
+    }
+    for (const [k, frac, label] of [['poison', 0.05, 'Poison stings you for '], ['venom', 0.03, 'Venom hurts you for '], ['burn', 0.06, 'The flames burn you for ']]) {   // effects on you
+      if (h[k] > 0 && h.hp > 1) { const d = Math.min(h.hp - 1, Math.max(1, Math.round(h.max * frac))); h.hp -= d; h[k]--; events.push({ who: 'hero', type: 'hdot', dot: k, dmg: d, text: label + d + ' damage.' + (k === 'venom' && h[k] ? ' ' + h[k] + ' more turn' + (h[k] > 1 ? 's' : '') + '.' : '') }); }
+      else if (h[k] > 0) h[k]--;
+    }
+    if (h.weak > 0) h.weak--;
+    if (h.clone > 0) h.clone--;
+    if (h.tome > 0) h.tome--;
+    if (h.guard > 0) h.guard--;
+    if (h.fury > 0) h.fury--;
+    if (!h.defended) h.guardPts = Math.min(100, h.guardPts + (P.has('guard') ? 25 : D.DEFEND_REGEN));
+    if (P.has('regen') && h.hp > 0 && h.hp < h.max) { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.max(1, Math.round(h.max * 0.03))); events.push({ who: 'hero', type: 'regen', heal: h.hp - b0, text: 'Pendant of Renewal: +' + (h.hp - b0) + ' HP.' }); }
+    h.defend = false; h.defended = false;
+    if (st.cooldown > 0) st.cooldown--;
+    st.turn++;
+    if (checkFoes(st, events)) return win(st, events);
+    aim(st);
+    if (h.hp <= 0) return lose(st, events);
+    return finish(events);
+  }
+
+  // one creature's turn (st.enemy is that creature)
+  function foeTurn(st, events, e) {
+    const mobbed = st.mob.length > 1;
     // ---- a boss reacts to being hurt (once): rage, or a second form
     if ((e.nemesis || e.rival) && !e.halved && e.hp < e.max * 0.5) {
       e.halved = true;
@@ -308,7 +436,7 @@
         events.push({ who: 'enemy', type: 'transform', heal: e.hp - b0, sprite: 'darkfairy2', text: e.name + ' sheds her disguise and spreads her true wings! She recovers ' + (e.hp - b0) + ' HP and grows stronger.' });
       }
     }
-    // ---- the creature's turn
+    // ---- the creature's turn (in a mob they take turns charging their specials, so they don't all land at once)
     const mv = e.moves, every = e.boss || e.nemesis ? 3 : 4;
     if (e.stun > 0) { e.stun--; e.charging = false; events.push({ who: 'enemy', type: 'stunned', text: e.name + ' is stunned and can’t move.' }); }
     else if (e.freeze > 0) { e.freeze--; e.charging = false; events.push({ who: 'enemy', type: 'frozen', text: e.name + ' is frozen and can’t move.' }); }
@@ -317,52 +445,24 @@
       e.fled++;   // badly hurt: it tries to run (never in your very first battle)
       const ok = Math.random() < 0.6;
       events.push({ who: 'enemy', type: 'eflee', ok, text: ok ? e.name + ' turns tail and runs away!' : e.name + ' tries to run, but you cut it off!' });
-      if (ok) { st.over = true; st.result = 'escaped'; return finish(events); }
+      if (ok && mobbed) {   // one of the mob is gone; the rest fight on
+        e.gone = true; e.charging = false;
+        if (!alive(st).length) { st.over = true; st.result = st.mob.some((f) => f.down) ? 'win' : 'escaped'; }
+      } else if (ok) { st.over = true; st.result = 'escaped'; }
     }
-    else if (st.turn % every === every - 1) { e.charging = true; events.push({ who: 'enemy', type: 'charge', text: e.name + ' is gathering power for ' + mv.special[0] + '. Defend!' }); }
+    else if ((st.turn + (e.slot || 0)) % every === every - 1) { e.charging = true; events.push({ who: 'enemy', type: 'charge', text: e.name + ' is gathering power for ' + mv.special[0] + '. Defend!' }); }
     else {
       const r = Math.random(), mw = mv.mw || 0.33, dch = e.ability === 'ward' ? 0.22 : 0.12;
       if ((e.nemesis && Math.random() < 0.3) || (e.rival && Math.random() < 0.5)) say(st, events, 'taunt');
       if (r < dch && !e.brace && !e.ward) {   // defend: brace (or a ward for guardians) and recover a little
         const b0 = e.hp; e.hp = Math.min(e.max, e.hp + Math.round(e.max * 0.06)); const heal = e.hp - b0;
         if (e.boss || e.nemesis) { e.ward = true; events.push({ who: 'enemy', type: 'ward', heal, text: e.name + ' raises a reversing ward' + (heal ? ' and recovers ' + heal + ' HP' : '') + '. ' + Math.round(e.wardF * 100) + '% of your next hit will bounce back at you (piercing weapons ignore it).' }); }
-        else { e.brace = true; events.push({ who: 'enemy', type: 'brace', heal, text: e.name + ' takes a defensive stance' + (heal ? ' and recovers ' + heal + ' HP' : '') + '. Your next hit will do half damage (piercing weapons ignore it).' }); }
+        else { e.brace = true; events.push({ who: 'enemy', type: 'brace', heal, text: e.name + ' takes a defensive stance' + (heal ? ' and recovers ' + heal + ' HP' : '') + '. Your next hit' + (mobbed ? ' on it' : '') + ' will do half damage (piercing weapons ignore it).' }); }
       }
       else if (r < dch + mw) events.push(enemyMagic(st));
       else if (r > (e.nemesis ? 0.97 : 0.94)) events.push({ who: 'enemy', type: 'miss', text: e.name + ' attacks and misses.' });
       else events.push(enemyHit(st, 1, 'attack'));
     }
-    if (e.hp <= 0) return win(st, events);     // reversed or countered to death
-
-    // ---- end of round
-    for (const [k, frac, label] of [['poison', 0.08, 'Poison hurts ' + e.name + ' for '], ['burn', 0.07, 'The fire burns ' + e.name + ' for '], ['bleed', 0.06, 'The curse hurts ' + e.name + ' for ']]) {
-      if (e.hp > 0 && e[k] > 0) { const d = Math.max(2, Math.round(e.max * frac)); e.hp = Math.max(0, e.hp - d); e[k]--; events.push({ who: 'enemy', type: 'dot', dot: k, dmg: d, text: label + d + ' damage.' }); }
-    }
-    if (e.hp > 0 && e.drain > 0) {   // Life Drain: takes HP from the creature and gives it to you
-      const d = Math.min(e.hp, Math.max(2, Math.round(h.atk * (0.55 + h.lvl * 0.03) * (h.tome > 0 ? 1 + D.BOOK_BONUS : 1)))), low = h.hp < h.max * 0.5;
-      e.hp = Math.max(0, e.hp - d); e.drain--;
-      const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(d * (low ? 1.5 : 1)));
-      events.push({ who: 'hero', type: 'drain', dmg: d, heal: h.hp - b0, left: e.drain, text: 'Life Drain takes ' + d + (h.hp - b0 ? ' and heals you ' + (h.hp - b0) : '') + '.' + (e.drain ? ' ' + e.drain + ' more turn' + (e.drain > 1 ? 's' : '') + '.' : '') });
-    }
-    for (const [k, frac, label] of [['poison', 0.05, 'Poison stings you for '], ['venom', 0.03, 'Venom hurts you for '], ['burn', 0.06, 'The flames burn you for ']]) {   // effects on you
-      if (h[k] > 0 && h.hp > 1) { const d = Math.min(h.hp - 1, Math.max(1, Math.round(h.max * frac))); h.hp -= d; h[k]--; events.push({ who: 'hero', type: 'hdot', dot: k, dmg: d, text: label + d + ' damage.' + (k === 'venom' && h[k] ? ' ' + h[k] + ' more turn' + (h[k] > 1 ? 's' : '') + '.' : '') }); }
-      else if (h[k] > 0) h[k]--;
-    }
-    if (h.weak > 0) h.weak--;
-    if (h.clone > 0) h.clone--;
-    if (h.tome > 0) h.tome--;
-    if (e.weaken > 0) e.weaken--;
-    if (e.sunder > 0) e.sunder--;
-    if (h.guard > 0) h.guard--;
-    if (h.fury > 0) h.fury--;
-    if (!h.defended) h.guardPts = Math.min(100, h.guardPts + (P.has('guard') ? 25 : D.DEFEND_REGEN));
-    if (P.has('regen') && h.hp > 0 && h.hp < h.max) { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.max(1, Math.round(h.max * 0.03))); events.push({ who: 'hero', type: 'regen', heal: h.hp - b0, text: 'Pendant of Renewal: +' + (h.hp - b0) + ' HP.' }); }
-    h.defend = false; h.defended = false;
-    if (st.cooldown > 0) st.cooldown--;
-    st.turn++;
-    if (e.hp <= 0) return win(st, events);
-    if (h.hp <= 0) return lose(st, events);
-    return finish(events);
   }
 
   // the creature hits you: armor, defending (block / reverse / counter), potions, then your pet takes its share
@@ -445,7 +545,7 @@
   function win(st, events) {
     st.over = true; st.result = 'win';
     if (st.enemy.id === 'druid') events.push({ who: 'enemy', type: 'druidRun', text: 'The Druid is beaten! He bows, then runs off into the trees.' });   // he doesn't fall: he flees
-    else { if (st.enemy.nemesis || st.enemy.rival) say(st, events, 'defeat', 1); events.push({ who: 'enemy', type: 'die', text: st.enemy.name + ' is defeated!' }); }
+    else { if (st.enemy.nemesis || st.enemy.rival) say(st, events, 'defeat', 1); events.push({ who: 'enemy', type: 'die', text: st.enemy.name + ' is defeated!' + (st.mob.length > 1 ? ' The mob is beaten!' : '') }); }
     return finish(events);
   }
   function lose(st, events) {

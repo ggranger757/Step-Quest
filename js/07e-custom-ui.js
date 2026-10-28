@@ -195,7 +195,7 @@
       UI.toast(res.why ? { kicker: 'Mission complete', title: res.m.title, sub: cheer + ' (' + res.why + ')', icon: 'check', cls: 'ok', ms: 5200 }
         : { kicker: 'Mission complete · ' + res.r.timing, title: '+' + res.r.coins + ' coins · +' + res.r.xp + ' XP', sub: cheer, icon: 'coin', cls: 'gold', ms: 4600 });
       UI.updateHud(); UI.render();
-      UI.missionAmbushRoll('custom', res.m.title);   // finishing a mission can stir up a battle
+      // battle mode and the Worldkey surge follow on their own (05m-aftermission.js)
     }
   });
   WB.bus.on('customOverdue', (m) => UI.toast({ kicker: 'Mission overdue', title: m.title + ' · finish it for half the reward', icon: 'calendar', cls: 'msg', ms: 4000 }));

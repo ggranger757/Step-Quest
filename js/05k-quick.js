@@ -132,6 +132,8 @@
   });
 
   // ---------- battles that break out after a mission ----------
+  // Superseded: finishing a mission now always opens battle mode (WB.After.battle in 05m-aftermission.js).
+  // G.missionBattle stays for older callers and tools.
   // Finishing a mission can stir up trouble: a hostile creature turns up and you choose to fight or walk on.
   // Only from the level battles unlock, not while one is running, never when you're badly hurt, at most
   // D.MISSION_BATTLE_DAY a day and not twice within a few minutes.
