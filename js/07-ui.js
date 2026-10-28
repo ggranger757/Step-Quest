@@ -221,7 +221,7 @@
     const items = [
       ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures, guardians and the Druid now roam the road', icon: 'sword' }] : []),
       ...(inRange(D.FIELD_LEVEL) ? [{ n: 'Field missions & Merlin', sub: 'Two new Missions tabs: field missions and milestones, plus Merlin’s quests and egg trades', icon: 'map' }] : []),
-      ...(inRange(D.FORGE_LEVEL) ? [{ n: 'Artifacts & Forge', sub: 'Melt the artifacts you find into Darkmatter for your Worldkey', icon: 'spark' }] : []),
+      ...(inRange(D.FORGE_LEVEL) ? [{ n: 'Artifacts', sub: 'The artifacts you find charge your Worldkey', icon: 'spark' }] : []),
       ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · open it with your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name + ' to open it', icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
       ...D.AVATARS.filter((a) => a.req.level && inRange(a.req.level)).map((a) => ({ n: a.name, sub: 'Walker · ' + price(a.req), thumb: { kind: 'av', id: a.id, head: true, face: 'right' }, cat: 'avatar', id: a.id })),
@@ -662,8 +662,8 @@
 
   // ---------- SHOP · BAG · ARTIFACTS (one tab) ----------
   // Shop: buy things. Inventory: everything you own (equip, repair, refill, drink), the Worldkey and artifacts.
-  // Artifacts: the collection log, the Darkmatter Forge (crafted from artifact copies) and eggs.
-  // Shop and Inventory are separate tabs. Inventory = the Bag sections plus Artifacts (Collection, Forge, Eggs).
+  // Artifacts: charging the Worldkey (artifact copies are its fuel) and the collection log.
+  // Shop and Inventory are separate tabs. Inventory = the Bag sections plus Artifacts (charge + Collection).
   UI.hub = 'shop'; UI.invHub = 'bag'; UI.bagTab = 'worldkey'; UI.artTab = 'finds';
   const SHOP_TABS = [
     ['avatar', 'Avatars', 'user', 'Holographic suits the walkers wear when they travel between worlds. Buy them here, then switch in Inventory.'],
@@ -673,14 +673,14 @@
     ['magic', 'Magic', 'img:mg/book.png', () => 'Charms give passive perks and never run out.' + (G.gearCare() ? ' Battle magic comes with ' + D.MAGIC_USES + ' uses. Buy more when they run out.' : ' Battle magic works once per battle.')],
   ];
   const BAG_TABS = [
-    ['worldkey', 'Worldkey', 'img:wk/dm_nebula.png', () => !G.featOn('wk') ? 'Your guide between worlds.' : G.upkeep() ? 'Your guide between worlds. Charge it with Darkmatter, tune it to a world, then open the way.' : 'Your guide between worlds. Tune it to a world, then open the way.'],
+    ['worldkey', 'Worldkey', 'img:wk/dm_nebula.png', () => !G.featOn('wk') ? 'Your guide between worlds.' : G.upkeep() ? 'Your guide between worlds. Charge it with artifacts, tune it to a world, then open the way.' : 'Your guide between worlds. Tune it to a world, then open the way.'],
     ['weapons', 'Weapons', 'sword', () => G.gearCare() ? 'Equip, repair and refill. Worn melee weapons hit softer, and at 0% they break until repaired. A repair costs a quarter of the price.' : 'Equip the weapons you own.'],
     ['magic', 'Magic', 'img:mg/book.png', 'Wear up to ' + D.CHARM_SLOTS + ' charms. Cast battle magic from the Magic button, once per battle each.'],
     ['potions', 'Potions', 'img:pot/tonic.png', 'Drink healing potions here, or use any potion in battle from Items.'],
     ['pets', 'Pets', 'paw', 'Pets heal over time, like you. A knocked-out pet rests until it recovers.'],
     ['avatar', 'Avatars', 'user', 'Pick who you walk as.'],
   ];
-  // Artifacts is one page: the Forge on top, the Collection under it (no sub-tabs). Older links to 'forge' land here too.
+  // Artifacts is one page: charging on top, the Collection under it (no sub-tabs). Older links to 'forge' land here too.
   const ART_TABS = [['finds', 'Artifacts', 'img:art/m30.png', '']];
   const GEAR = ['weapons', 'potions', 'pets'];
   // open a hub (and one of its sections) from anywhere
@@ -781,8 +781,8 @@
   const collectionLock = () => {
     const L = D.FORGE_LEVEL, lv = Math.min(S().level, L);
     return `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${L}</span>
-      <h3>Artifacts &amp; Forge</h3>
-      <p class="fine">Your artifact Collection and the Forge open at level ${L}. Artifacts you find before then are kept: they’ll be waiting here, ready to melt into Darkmatter for your Worldkey.</p>
+      <h3>Artifacts</h3>
+      <p class="fine">Your artifact Collection opens at level ${L}. Artifacts you find before then are kept: they’ll be waiting here, ready to charge your Worldkey.</p>
       <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${L}" aria-valuenow="${lv}"><i style="width:${Math.min(100, (S().level / L) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${L}</p>
     </div>`;
   };
@@ -853,7 +853,7 @@
     }
     return `<div class="grid">${byUnlock(D.AVATARS.filter((a) => G.owns('avatar', a.id))).map((it) => bagCard('avatar', it, { desc: it.role })).join('')}</div>`;
   }
-  // ----- Artifacts: the Forge, then the Collection as one collapsible row per world -----
+  // ----- Artifacts: charging, then the Collection as one collapsible row per world -----
   // Only your current world starts open; the rows you open or close stay that way while you move around the app.
   UI.artOpen = null;
   document.addEventListener('toggle', (e) => {
@@ -869,12 +869,12 @@
     const row = (w) => {
       const got = s.enc.finds[w.id] || [], list = D.FINDS[w.id], n = list.reduce((t, _, i) => t + G.artHave(w.id, i), 0);
       return `<details class="art-w pbox ${got.length >= list.length ? 'done' : ''}" data-artw="${w.id}" ${isOpen(w.id) ? 'open' : ''}>
-        <summary><span class="aw-name">${WB.esc(w.name)}${w.id === s.world ? ' <small>You’re here</small>' : ''}</span><span class="aw-pips" aria-hidden="true">${list.map((_, i) => `<i class="${got.includes(i) ? 'on' : ''}"></i>`).join('')}</span><span class="aw-n">${got.length}/${list.length}${n ? ` · <b>×${n}</b>` : ''}</span><span class="chev" aria-hidden="true">›</span></summary>
+        <summary><span class="aw-name">${WB.esc(w.name)}${w.id === s.world ? ' <small>You’re here</small>' : ''}</span><span class="aw-pips" aria-hidden="true">${list.map((_, i) => `<i class="${got.includes(i) ? 'on' : ''}"></i>`).join('')}</span><span class="aw-n">${got.length}/${list.length}${n ? ` · <b>×${n}</b>` : ''} <small class="aw-v">+${D.WK.artTier(w).energy}%</small></span><span class="chev" aria-hidden="true">›</span></summary>
         <div class="finds">${list.map((f, i) => { const has = got.includes(i), c = G.artHave(w.id, i); return `<div class="find pbox ${has ? 'got' : ''}">${has ? WB.pxImg('art/' + f[0] + '.png', 64) : `<canvas class="px-img" width="64" height="64" data-silimg="art/${f[0]}.png" aria-hidden="true"></canvas>`}${has ? WB.esc(f[1]) : 'Not found yet'}${has ? `<span class="art-n ${c ? '' : 'none'}" aria-label="${c} in hand">×${c}</span>` : ''}</div>`; }).join('')}</div>
       </details>`;
     };
-    return UI.forgeSection() + `<div class="sect" id="art-collection"><h2>Collection <span class="aside">${found} / ${D.FIND_TOTAL} discovered</span></h2>
-      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to forge with</span><div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">Six artifacts hide along the road in every world. Walk a world again to find more copies of the ones you know.</p></div>
+    return UI.chargeSection() + `<div class="sect" id="art-collection"><h2>Collection <span class="aside">${found} / ${D.FIND_TOTAL} discovered</span></h2>
+      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to charge with</span><div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">Six artifacts hide along the road in every world. Walk a world again to find more copies of the ones you know.</p></div>
       <div class="art-worlds">${open.map(row).join('')}</div>
       ${shut.length ? `<p class="fine art-locked">${WB.icon('lock', 1)} ${shut.length} more world${shut.length > 1 ? 's' : ''} to open · ${shut.reduce((n, w) => n + D.FINDS[w.id].length, 0)} artifacts waiting in them</p>` : ''}
     </div>`;
@@ -1034,7 +1034,7 @@
             ['Worlds', s.unlocked.length + '/' + D.WORLDS.length, 'Worlds you’ve opened. Each new one needs a level, the world before it explored, and your Worldkey.'],
             ['Avatars', own('avatar'), 'Walkers you own. Buy and unlock more in the Shop.'],
             ['Pets', s.owned.pets.length + '/' + D.PETS.length, 'Pets you own. They walk with you and take part of every hit in battle.'],
-            ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL, 'Different artifacts you’ve discovered (6 hide in each world). Copies you find again fuel the Darkmatter Forge.'],
+            ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL, 'Different artifacts you’ve discovered (6 hide in each world). Every copy you hold can charge your Worldkey.'],
             ['Best day', WB.fmt(s.bestDay), 'The most steps you’ve walked in a single day.'],
           ];
         })().map(([l, v, why]) => `<div class="stat pbox" data-info="${WB.esc(why)}" data-info-k="${WB.esc(l)}" role="button" tabindex="0"><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}

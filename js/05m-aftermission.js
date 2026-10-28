@@ -1,30 +1,32 @@
-/* Step Quest — what happens when you finish a mission (your own missions, quick missions, daily missions, field
+/* Step Quest — what can happen when you finish a mission (your own missions, quick missions, daily missions, field
    missions and Merlin's quests). Rules only; the screens that play it are in 07m-aftermission-ui.js.
 
-   1. Worldkey strain: finishing a mission jolts the Worldkey and drains some of its energy (D.AFTER.DRAIN by kind).
-      Only once the Worldkey is awake and its energy counts (G.upkeep), so it can always be recharged with Darkmatter.
-   2. Battle mode: a hostile creature (sometimes a mob, D.MOB.MISSION_CHANCE) attacks right away. Skipped below the
-      battle level, during a battle, or when your HP is under D.AFTER.MIN_HP.
-   3. The memory game: the Worldkey flickers and you repeat a symbol pattern to stabilize it. Getting it right wins
-      back D.AFTER.REFUND of what the mission drained, plus a little XP. A miss costs nothing more.
-   Several missions finished together (Claim all) become one event: their drains add up, with one battle and one game.
-   Each mission counts once: a quick mission removed and finished again the same day never drains or fights twice. */
+   Two independent rolls, so finishing a mission stays a little unpredictable:
+   1. Battle mode (D.AFTER.BATTLE_CHANCE): a hostile creature (sometimes a mob, D.MOB.MISSION_CHANCE) attacks right
+      away. Skipped below the battle level, during a battle, or when your HP is under D.AFTER.MIN_HP.
+   2. A Worldkey signal (D.AFTER.TUNE_CHANCE): the memory game. Repeat the symbol pattern of the world your Worldkey
+      points at and it's tuned to that world on the spot (same as tuning it from Inventory), plus a little energy
+      and XP. With every world open it's a plain pattern for the bonus. A miss or "Not now" costs nothing.
+   If PITY missions in a row roll nothing, the next one always brings one of the two.
+   Several missions finished together (Claim all) become one event: one roll each.
+   Each mission counts once: a quick mission removed and finished again the same day never rolls twice. */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state, K = D.WK;
 
   D.AFTER = {
-    DRAIN: { quick: 3, custom: 5, daily: 4, mission: 6 },   // % Worldkey energy per finished mission
-    DRAIN_MAX: 15,       // most a burst of missions (Claim all) can take at once
-    REFUND: 0.5,         // share of the drain the memory game wins back
-    MIN_HP: 0.25,        // no battle below this share of your HP
-    xp: (lvl) => 8 + Math.round(lvl / 2),   // XP for stabilizing the Worldkey
-    // the pattern: a little shorter than tuning a world, at the same speed
+    BATTLE_CHANCE: 0.45,  // chance a finished mission stirs up a fight
+    TUNE_CHANCE: 0.45,    // chance the Worldkey picks up a signal (the memory game)
+    PITY: 3,              // missions in a row with neither: the next one always brings one
+    BONUS: 5,             // % energy a matched pattern adds (never past 100%)
+    MIN_HP: 0.25,         // no battle below this share of your HP
+    xp: (lvl) => 8 + Math.round(lvl / 2),   // XP for matching the pattern
+    // the pattern when there's no world left to tune to: a little shorter than tuning, at the same speed
     spec: (lvl) => { const t = K.tuneSpec(lvl); return { len: Math.max(3, Math.min(7, t.len - 1)), ms: t.ms }; },
   };
   const NAME = { quick: 'quick mission', custom: 'mission', daily: 'daily mission', mission: 'mission' };
 
   const A = (WB.After = {});
-  const seen = () => { const s = S(); if (!s.after || typeof s.after !== 'object') s.after = { day: '', keys: {} }; if (s.after.day !== WB.dayKey()) { s.after.day = WB.dayKey(); s.after.keys = {}; } return s.after; };
+  const seen = () => { const s = S(); if (!s.after || typeof s.after !== 'object') s.after = { day: '', keys: {}, dry: 0 }; if (s.after.day !== WB.dayKey()) { s.after.day = WB.dayKey(); s.after.keys = {}; } return s.after; };
   A.wkOn = () => !!(G.featOn && G.featOn('wk'));
 
   // ---------- collect missions finished in the same moment into one event ----------
@@ -36,22 +38,27 @@
     batch.list.push({ src, title });
     clearTimeout(timer); timer = setTimeout(flush, 60);
   };
+  // the rolls (rnd is injectable for tests)
+  A.roll = (rnd = Math.random) => {
+    const log = seen(), canFight = !!(G.battlesOpen && G.battlesOpen()), canTune = A.wkOn();
+    let fight = canFight && rnd() < D.AFTER.BATTLE_CHANCE, tune = canTune && rnd() < D.AFTER.TUNE_CHANCE;
+    if (!fight && !tune && (log.dry || 0) >= D.AFTER.PITY - 1 && (canFight || canTune)) {   // a dry spell ends here
+      if (canFight && canTune) { if (rnd() < 0.5) fight = true; else tune = true; } else if (canFight) fight = true; else tune = true;
+    }
+    log.dry = fight || tune ? 0 : (log.dry || 0) + 1;
+    WB.Save.queue();
+    return { fight, tune };
+  };
   function flush() {
     const b = batch; batch = null; if (!b || !b.list.length) return;
-    const job = { at: Date.now(), list: b.list, src: b.list[0].src, title: b.list[0].title, drained: 0, from: 0, to: 0 };
+    const job = { at: Date.now(), list: b.list, src: b.list[0].src, title: b.list[0].title };
     job.what = b.list.length > 1 ? b.list.length + ' missions' : '“' + job.title + '”';
-    // 1. the Worldkey takes the strain
-    if (A.wkOn() && G.upkeep && G.upkeep()) {
-      const w = G.wk(), want = Math.min(D.AFTER.DRAIN_MAX, b.list.reduce((n, x) => n + (D.AFTER.DRAIN[x.src] || 4), 0));
-      job.from = w.e; w.e = Math.max(0, w.e - want); job.to = w.e; job.drained = Math.round((job.from - job.to) * 10) / 10;
-      WB.Save.queue();
-    }
-    job.memory = A.wkOn();
     job.kind = b.list.length > 1 ? 'missions' : NAME[job.src] || 'mission';
+    const r = A.roll(); job.fight = r.fight; job.memory = r.tune;
     WB.bus.emit('missionAfter', job);
   }
 
-  // ---------- 2. the battle ----------
+  // ---------- 1. the battle ----------
   // returns { e } with the encounter, or { why } when there's no fight this time
   A.battle = (job) => {
     const s = S();
@@ -67,23 +74,27 @@
     return { e };
   };
 
-  // ---------- 3. the memory game ----------
-  A.pattern = () => {
+  // ---------- 2. the memory game: tune the Worldkey ----------
+  // the world it would tune to: where the Worldkey points, if that world isn't open yet
+  A.target = () => { const d = G.wkDest(); return d && !S().unlocked.includes(d.id) ? d : null; };
+  A.pattern = (world) => {
+    if (world) return { seq: G.wkSequence(world), ms: G.wkTuneSpec().ms };   // the world's real frequency
     const sp = D.AFTER.spec(S().level), out = [];
     while (out.length < sp.len) { const k = Math.floor(Math.random() * D.WK_SYMBOLS.length); if (out.length && out[out.length - 1] === k) continue; out.push(k); }
     return { seq: out, ms: sp.ms };
   };
-  // the pattern was matched: win back part of the drain, plus a little XP
-  A.stabilize = (job) => {
+  // the pattern was matched: tuned to the world (if any), a little energy and XP. Pays once per event.
+  A.stabilize = (job, world) => {
     if (!job || job.done) return null;
     job.done = true;
-    const w = G.wk(), back = Math.round(job.drained * D.AFTER.REFUND * 10) / 10, before = w.e;
-    if (back > 0) w.e = Math.min(K.OVER, w.e + back);
+    if (world) G.wkLearn(world);
+    const w = G.wk(), before = w.e;
+    if (w.e < K.MAX) w.e = Math.min(K.MAX, w.e + D.AFTER.BONUS);
     if (w.e > K.LOW) w.lowSaid = false;
     const xp = D.AFTER.xp(S().level);
     G.grant({ xp }, true); G.tally && G.tally('stabilized', 1);
     G.after();
-    return { back: Math.round((w.e - before) * 10) / 10, xp, e: w.e };
+    return { back: Math.round((w.e - before) * 10) / 10, xp, e: w.e, world };
   };
   A.miss = (job) => { if (job) job.done = true; };
 

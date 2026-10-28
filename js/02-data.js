@@ -1109,9 +1109,9 @@
     { id: 'wkopen5', title: 'Keymaster', desc: 'Open 10 worlds with your Worldkey.', stat: 'portals', target: 10, reward: { coins: 700 } },
     { id: 'wkkeys3', title: 'Key Ring', desc: 'Own 5 Worldkeys.', stat: 'worldkeys', target: 5, reward: { coins: 500 } },
     { id: 'tuned5', title: 'Lamplighter', desc: 'Tune your Worldkey 15 times.', stat: 'tuned', target: 15, reward: { coins: 250 } },
-    { id: 'forge1', title: 'First Spark', desc: 'Craft your first Darkmatter.', stat: 'forged', target: 1, reward: { xp: 100 } },
-    { id: 'forge10', title: 'Powder Keg', desc: 'Craft 25 Darkmatter.', stat: 'forged', target: 25, reward: { coins: 500 } },
-    { id: 'forge25', title: 'Demolitionist', desc: 'Craft 60 Darkmatter.', stat: 'forged', target: 60, reward: { coins: 1200 } },
+    { id: 'forge1', title: 'First Spark', desc: 'Charge your Worldkey with an artifact.', stat: 'forged', target: 1, reward: { xp: 100 } },
+    { id: 'forge10', title: 'Powder Keg', desc: 'Use 25 artifacts to charge your Worldkey.', stat: 'forged', target: 25, reward: { coins: 500 } },
+    { id: 'forge25', title: 'Demolitionist', desc: 'Use 60 artifacts to charge your Worldkey.', stat: 'forged', target: 60, reward: { coins: 1200 } },
     // battle
     { id: 'battles50', title: 'Cutlass', desc: 'Win 150 battles.', stat: 'battles', target: 150, reward: { coins: 500 } },
     { id: 'battles250', title: 'Sabre Master', desc: 'Win 750 battles.', stat: 'battles', target: 750, reward: { coins: 2500 } },

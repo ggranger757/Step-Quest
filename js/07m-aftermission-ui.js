@@ -1,6 +1,6 @@
-/* Step Quest — after a mission: battle mode, then the Worldkey memory game (rules: 05m-aftermission.js).
-   The mission's own toast and confetti play first; then a creature (or a mob) attacks and battle mode opens;
-   when the fight is over the Worldkey surges and asks you to stabilize it. Each step waits until the screen is
+/* Step Quest — after a mission: maybe battle mode, maybe the Worldkey tuning game (rules and odds: 05m-aftermission.js).
+   The mission's own toast and confetti play first; then, if the roll says so, a creature (or a mob) attacks and
+   battle mode opens; after that, if the Worldkey picked up a signal, the memory game tunes it. Each step waits until the screen is
    free (no sheet, battle, tour or level-up card open, app in front), so nothing ever opens on top of something else. */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, A = WB.After, $ = WB.$, S = () => WB.state;
@@ -29,12 +29,10 @@
     running = true;
     while (queue.length) {
       const job = queue.shift();
-      if (job.drained > 0) UI.toast({ kicker: 'Worldkey strain', title: '−' + job.drained + '% energy', sub: 'Finishing ' + job.what + ' jolted your Worldkey.', img: 'wk/dm_void.png', cls: 'msg', ms: 2600 });
-      UI.updateHud && UI.updateHud();
-      // 1. battle mode
-      if (await whenIdle(1500)) await battle(job);
-      // 2. the memory game
-      if (job.memory && (await whenIdle(700))) await memory(job);
+      // 1. battle mode (when the roll says so)
+      if (job.fight && (await whenIdle(1500))) await battle(job);
+      // 2. the memory game (when the roll says so; still checks the Worldkey is awake)
+      if (job.memory && A.wkOn() && (await whenIdle(job.fight ? 700 : 1500))) await memory(job);
     }
     running = false;
   }

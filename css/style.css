@@ -1042,6 +1042,8 @@ html.rm .b-intro.go, html.rm .b-intro.go .b-title, html.reduce-motion .b-intro.g
 .wk-lowcta { display: grid; gap: 6px; margin-top: 6px; }
 .wk-lowcta .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .wk-lowcta .fine { margin: 0; }
+.wk-lowcta .btn, .wk-acts .btn { white-space: normal; text-align: center; line-height: 1.2; }
+.wk-info > * { min-width: 0; }
 .wk-dl { margin: 0; display: grid; gap: 6px; }
 .wk-dl > div { display: flex; justify-content: space-between; gap: var(--s2); font-size: 14px; line-height: 1.3; }
 .wk-dl dt { color: var(--muted); }
@@ -1206,7 +1208,7 @@ html.rm .chart .bars .bcol i, html.reduce-motion .chart .bars .bcol i { animatio
 .wk-chat-d { margin: 0 0 var(--s3); font-size: 13px; line-height: 1.4; color: var(--muted); }
 .wk-chat { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
-/* Darkmatter Forge cards: grouped, with a clear status and one next step */
+/* (older Darkmatter cards, unused) */
 .dm-grp { display: grid; gap: 6px; }
 .dm-grp > .lbl { font-size: 10px; color: var(--dim); letter-spacing: .06em; }
 .dm-ing li { grid-template-columns: 14px 20px minmax(0, 1fr) auto; }
@@ -1559,23 +1561,27 @@ html.rm .mood-card.in { animation: none; }
 .mood-recent .mr-m { color: var(--text); }
 .mood-recent .mr-w { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 
-/* ---------- Artifacts page: the Forge (compact rows) over the Collection (one collapsible row per world) ---------- */
-.forge-list { display: grid; gap: var(--s2); }
-.forge-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: var(--s3); padding: var(--s3); }
-.forge-row.ready { box-shadow: 0 0 0 2px var(--gold), 0 0 0 5px var(--shadow); }
-.fr-ic { position: relative; display: grid; place-items: center; width: 44px; height: 44px; background: var(--inset); box-shadow: 0 0 0 2px var(--line); }
-.fr-n { position: absolute; right: -6px; bottom: -6px; font: 400 12px/1 var(--label); padding: 3px 4px; background: var(--cyan); color: var(--ink); }
-.fr-n.none { background: var(--surface-2); color: var(--dim); box-shadow: 0 0 0 2px var(--line); }
-.fr-t { display: grid; gap: 3px; min-width: 0; }
-.fr-t > b { font: 400 18px/1.1 var(--display); color: var(--text); }
-.fr-t > small { font-size: 12px; color: var(--muted); }
-.fr-cost { display: flex; flex-wrap: wrap; gap: 4px var(--s3); font: 400 11px/1.2 var(--label); color: var(--text); text-transform: uppercase; letter-spacing: .04em; }
-.fr-cost > span { display: inline-flex; align-items: center; gap: 4px; }
-.fr-cost > span.miss { color: var(--danger); }
-.fr-why { font-size: 12px; line-height: 1.35; color: var(--muted); }
-.forge-row .btn { min-width: 84px; min-height: 44px; }
-.forge-charge { margin-top: var(--s3); gap: var(--s2); }
-.forge-charge .lbl { margin-left: auto; color: var(--muted); }
+/* ---------- Artifacts page: charging (artifacts are the Worldkey's fuel) over the Collection (one collapsible row per world) ---------- */
+.chg-card { display: grid; gap: var(--s3); }
+.chg-card .fine { margin: 0; }
+.chg-tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); }
+.chg-tier { position: relative; display: grid; justify-items: center; gap: 3px; padding: var(--s2) 4px; background: var(--inset); box-shadow: 0 0 0 2px var(--line); text-align: center; }
+.chg-tier b { font: 400 20px/1 var(--display); color: var(--text); }
+.chg-tier small { font: 400 9px/1.2 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.chg-tier i { font: 400 11px/1 var(--label); font-style: normal; color: var(--gold); }
+.chg-why { color: var(--muted); }
+.forge-charge { gap: var(--s2); }
+.forge-charge .lbl { margin-left: auto; color: var(--ink, #14112a); opacity: .75; }
+.chg-use { display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: center; }
+.chg-art { display: grid; grid-template-columns: 28px auto; grid-template-rows: auto auto; column-gap: 6px; align-items: center; padding: 6px 8px; background: var(--inset); box-shadow: 0 0 0 2px var(--line); }
+.chg-art .px-img { grid-row: 1 / 3; }
+.chg-art b { font: 400 14px/1 var(--label); color: var(--text); }
+.chg-art small { font: 400 10px/1 var(--label); color: var(--cyan); }
+.wk-fuel-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: var(--s3); align-items: center; }
+.wk-fuel-row > span { display: grid; gap: 2px; min-width: 0; font-size: 14px; color: var(--text); }
+.wk-fuel-row small { font-size: 12px; color: var(--muted); }
+.wk-fuel-row .btn { min-width: 84px; min-height: 44px; }
+.aw-v { font: 400 10px/1 var(--label); color: var(--cyan); }
 #art-collection { margin-top: var(--s5); }
 .art-sum { display: grid; gap: var(--s2); }
 .art-sum .bar { height: 8px; }
@@ -1598,8 +1604,6 @@ html.rm .mood-card.in { animation: none; }
 .art-w .finds { padding: 0 var(--s3) var(--s3); }
 .art-locked { display: flex; align-items: center; gap: 6px; margin-top: var(--s3); }
 @media (max-width: 360px) { .aw-pips { display: none; } }
-.forge-row.early { opacity: .62; }
-.forge-row.early .fr-cost > span.miss { color: var(--muted); }
 /* the word of encouragement after logging a mood: it pops in a beat after the card turns over */
 .mood-done .mood-cheer { font-size: 15px; line-height: 1.35; color: var(--text); animation: mood-cheer .3s steps(3) .12s both; }
 @keyframes mood-cheer { from { transform: translateY(6px); opacity: 0; } }

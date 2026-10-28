@@ -515,7 +515,7 @@
   // A save that already has a field mission or a delivery running keeps the tab open until it's finished, so nothing
   // is ever stranded behind the lock.
   D.FIELD_LEVEL = 3;
-  D.FORGE_LEVEL = 3;   // Inventory → Artifacts → Collection and the Forge open at this level
+  D.FORGE_LEVEL = 3;   // Inventory → Artifacts (the Collection and charging with artifacts) opens at this level
   G.lvlReached = (lv) => Math.max(S().level, S().peakLevel || 0) >= lv;
   G.fieldOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().missions || {}).active || []).length > 0 || ((S().tasks || {}).quests || []).length > 0;
   G.tradesOpen = () => G.lvlReached(D.FIELD_LEVEL);
@@ -576,7 +576,7 @@
         if (f) {
           out.find = { world: e.world, i: f.i, first: f.first }; out.reward = { xp: f.first ? 15 + lvl : 8 + Math.floor(lvl / 2) };
           const n = G.artHave(e.world, f.i);
-          out.text = f.first ? 'You found: ' + f.name + '. It’s in your collection, ready for the Darkmatter Forge.' : 'Another ' + f.name + '. You have ' + n + ' now.';
+          out.text = f.first ? 'You found: ' + f.name + '. It’s in your collection, ready to charge your Worldkey.' : 'Another ' + f.name + '. You have ' + n + ' now.';
           if (f.first && G.potion(f.icon)) { out.reward.potion = f.icon; out.text = 'You found a new potion: ' + f.name + '. Buy more in Shop → Potions / Food.'; }
         } else { out.text = 'Just old coins.'; out.reward = { coins: 40 }; }
         break;

@@ -1,4 +1,4 @@
-/* Step Quest — Worldkey screens: the animated device, its Inventory tab, the Darkmatter Forge (Artifacts), the
+/* Step Quest — Worldkey screens: the animated device, its Inventory tab, charging with artifacts (Artifacts), the
    new-world gate, tuning, charging, customizing, the portal, and short remarks on the road.
    All state changes go through 05g-worldkey.js; animations only decorate what already happened. */
 (() => {
@@ -8,7 +8,6 @@
   const esc = WB.esc;
   const SCR = { x: 54, y: 95, w: 152, h: 65, bodyH: 399 };
   const keyPath = (look) => 'wk/key' + (look || G.wk().look) + '.png';
-  const dmImg = (id, size = 24) => WB.pxImg('wk/dm_' + id + '.png', size, 'dm-ic');
   const pctTxt = (e) => Math.floor(e) + '%';
 
   // ---------- the device: body + animated screen (charging loop, magenta low-energy pulse, symbols, particles) ----------
@@ -45,7 +44,7 @@
           if (k >= 1) glyph(3, cx, cy, 6, '#ffffff', 0.6 + 0.4 * Math.sin(c.t * 8));
         }
         if (mode === 'travel') glyph(Math.floor(c.t * 12) % 6, cx, cy, 6, null, 1, 1 + (c.t * 12 % 1));
-        if (mode === 'charging' && !rm() && Math.random() < 0.9) {   // Darkmatter streams into the core
+        if (mode === 'charging' && !rm() && Math.random() < 0.9) {   // artifact energy streams into the core
           const a = Math.random() * Math.PI * 2; c.parts.push({ x: cx + Math.cos(a) * 130, y: cy + Math.sin(a) * 150, life: 0.6 });
         }
         c.parts = c.parts.filter((p) => (p.life -= dt) > 0);
@@ -73,12 +72,15 @@
   const WHY = `Time and walking drain your Worldkey’s energy (about ${K.DRAIN_DAY}% a day, plus ${K.WALK_DRAIN}% every 1,000 steps) and knock it out of tune. A tuning lasts up to ${K.TUNE_DAYS} days, less the more you walk.`;
   let tipN = 0;
   const tip = () => { const id = 'wk-tip-' + ++tipN; return `<span class="wk-tipw"><button class="wk-tip" type="button" data-wk="tip" aria-expanded="false" aria-controls="${id}" aria-label="Why is it out of tune?">?</button><span class="wk-tipbox" id="${id}" role="tooltip" hidden>${esc(WHY)}</span></span>`; };
-  const hasFuel = () => D.DARKMATTER.some((d) => G.wkChargeMax(d.id) > 0);
+  const hasFuel = () => G.wkCanCharge();
+  // every artifact copy you hold, and what they'd add together (ignoring the cap)
+  const fuel = () => { const pool = G.artPool(1); return { n: pool.reduce((t, [, c]) => t + c, 0), worth: pool.reduce((t, [k, c]) => t + c * G.wkArtValue(k), 0) }; };
+  const artImg = (k, size = 28) => WB.pxImg('art/' + G.artIcon(k) + '.png', size);
   // the one next step for a destination
   function nextStep(st) {
     if (!st.found) return st.tuned ? null : { act: 'tune', label: 'Tune ahead', cls: 'ghost' };
     if (!st.tuned) return { act: 'tune', label: 'Tune to ' + st.world.name, cls: 'gold' };
-    if (!st.energyOk) return hasFuel() ? { act: 'charge', label: 'Charge Worldkey', cls: 'gold' } : { act: 'forge', label: 'Craft Darkmatter', cls: 'gold' };
+    if (!st.energyOk) return hasFuel() ? { act: 'charge', label: 'Charge with artifacts', cls: 'gold' } : { act: 'arts', label: 'Find artifacts', cls: 'ghost' };
     return { act: 'open', label: 'Open ' + st.world.name, cls: 'gold' };
   }
 
@@ -153,7 +155,7 @@
           <span class="lbl">${esc(key.name)} · ${esc(v.name)}</span>
           <div class="wk-energy"><span class="lbl">Energy</span><b>${pctTxt(w.e)}</b></div>
           ${energyBar(w.e)}
-          ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: it can’t open worlds.' : 'Low energy.'}</p>${G.upkeep() ? `<div class="wk-lowcta"><p class="fine">Craft Darkmatter from your artifacts in the Forge, then use it to recharge.</p><button class="btn gold block" type="button" data-wk="forge">${dmImg('void', 20)}Go to the Forge</button></div>` : ''}` : ''}
+          ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: it can’t open worlds.' : 'Low energy.'}</p>${G.upkeep() ? `<div class="wk-lowcta">${hasFuel() ? `<p class="fine">Feed it the artifacts you’ve collected to recharge.</p><button class="btn gold block" type="button" data-wk="charge">${WB.pxImg('art/m30.png', 20)}Charge now</button>` : '<p class="fine">Artifacts recharge it. They turn up on the road as you walk.</p>'}</div>` : ''}` : ''}
           <p class="fine wk-drain">${G.upkeep() ? `Time and walking drain it: about ${K.DRAIN_DAY}% a day, plus ${K.WALK_DRAIN}% per 1,000 steps.` : `Starter charge: opening worlds costs no energy yet.`}</p>
           ${dest ? `<dl class="wk-dl">
             <div><dt>Destination</dt><dd>${esc(dest.name)}</dd></div>
@@ -167,9 +169,12 @@
             <div class="bar seg cyan" role="progressbar" aria-label="Progress to ${esc(dest.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
             <p class="fine">${st.found ? 'Ready to open once the Worldkey is charged and tuned.' : `<span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Reach level ${dest.unlock.level}</span>${wp.prev ? ` · <span class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : ''}Explore ${G.gatePct(dest)}% of ${esc(wp.prev.name)}</span>` : ''} · about ${WB.fmt(wp.stepsLeft)} steps to go`}</p>
           </div>`; })() : ''}
-        <div class="wk-acts">${step ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${dest.id}">${esc(step.label)}</button>` : ''}${G.upkeep() && hasFuel() && (!step || step.act !== 'charge') ? '<button class="btn ghost" type="button" data-wk="charge">Charge</button>' : ''}<button class="btn ghost" type="button" data-wk="custom">${WB.icon('key', 2)}Worldkeys</button></div>
+        <div class="wk-acts">${step ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${dest.id}">${esc(step.label)}</button>` : ''}<button class="btn ghost" type="button" data-wk="custom">${WB.icon('key', 2)}Worldkeys</button></div>
       </div>
-      ${!G.upkeep() ? '' : `<div class="dm-have pbox card"><span class="lbl">Your Darkmatter</span><div class="dm-have-row">${D.DARKMATTER.map((d) => `<span>${dmImg(d.id, 24)}<b>${w.dm[d.id]}</b><small>${esc(d.name.split(' ')[0])}</small></span>`).join('')}</div><button class="btn ghost sm" type="button" data-wk="forge">Craft in the Forge</button></div>`}`;
+      ${!G.upkeep() ? '' : (() => { const f = fuel(), low = w.e <= K.LOW, dup = (step && step.act === 'charge') || low;   // one Charge button on screen at a time
+        return `<div class="dm-have wk-fuel pbox card"><span class="lbl">Fuel · your artifacts</span>
+          <div class="wk-fuel-row">${WB.pxImg('art/m30.png', 28)}<span><b>${f.n}</b> in hand${f.n ? ` · worth up to <b>+${f.worth}%</b>` : ''}<small>${f.n ? 'Each one charges your Worldkey directly. No crafting.' : 'Find them on the road as you walk.'}</small></span>
+          ${hasFuel() && !dup ? '<button class="btn gold sm" type="button" data-wk="charge">Charge</button>' : f.n && !hasFuel() ? '<span class="lbl">Full</span>' : ''}</div></div>`; })()}`;
   };
   // before the Worldkey wakes up: what it's waiting for
   UI.wkLocked = () => {
@@ -181,31 +186,22 @@
       <div class="bar seg cyan" role="progressbar" aria-label="Progress through ${esc(first.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · about ${WB.fmt(left)} steps to go</p>
     </div>`;
   };
-  // Inventory → Artifacts, top of the page: the Forge. One compact row per Darkmatter (what it does, what it costs, one
-  // button), and the Worldkey charge right underneath so crafting and charging happen in one place.
-  UI.forgeSection = () => {
-    const w = G.wk(), up = G.upkeep(), held = D.DARKMATTER.reduce((n, d) => n + w.dm[d.id], 0);
-    const canCharge = up && held > 0 && D.DARKMATTER.some((d) => G.wkChargeMax(d.id) > 0);
+  // Inventory → Artifacts, top of the page: charging. Artifacts are the Worldkey's fuel: one button feeds them in.
+  UI.chargeSection = () => {
+    const w = G.wk(), up = G.upkeep(), f = fuel(), max = G.wkChargeMax();
+    const held = (t) => G.artPool(1).filter(([k]) => G.wkArtTier(k).id === t.id).reduce((n, [, c]) => n + c, 0);
+    const why = !G.featOn('wk') ? 'Your Worldkey wakes up when you finish ' + G.firstWorld().name + '. Until then, keep collecting.' : !up ? 'Your Worldkey runs on its starter charge for now.' : !f.n ? 'No artifacts in hand yet. They turn up on the road as you walk.' : !max ? 'Your Worldkey is fully charged (' + K.OVER + '%).' : '';
     return `<div class="sect forge" id="wk-forge">
-      <h2>Forge <span class="aside">${up ? 'Worldkey ' + pctTxt(w.e) : held ? held + ' Darkmatter in your pack' : 'Turns artifacts into fuel'}</span></h2>
-      <p class="fine">Melt spare artifacts into Darkmatter, the fuel that charges your Worldkey. Each craft costs a little HP.${up ? '' : ' Your Worldkey runs on its starter charge for now, so Darkmatter you make waits in your pack.'}</p>
-      <div class="forge-list">${D.DARKMATTER.map(forgeRow).join('')}</div>
-      ${canCharge ? `<button class="btn block forge-charge" type="button" data-wk="charge">${dmImg((D.DARKMATTER.find((d) => G.wkChargeMax(d.id) > 0) || D.DARKMATTER[0]).id, 20)}Charge your Worldkey<span class="lbl">${pctTxt(w.e)}</span></button>` : ''}
+      <h2>Charge your Worldkey <span class="aside">${G.featOn('wk') ? 'Energy ' + pctTxt(w.e) : 'Asleep'}</span></h2>
+      <div class="pbox card chg-card">
+        ${G.featOn('wk') ? energyBar(w.e) : ''}
+        <p class="fine">Artifacts are your Worldkey’s fuel. Tap Charge and they go straight in. Ones from later worlds hold more.</p>
+        <div class="chg-tiers">${D.ART_CHARGE.slice().reverse().map((t) => `<span class="chg-tier"><b>+${t.energy}%</b><small>${esc(t.label)}${t.minLvl > 1 ? ' · Lv ' + t.minLvl + '+' : ''}</small><i>×${held(t)}</i></span>`).join('')}</div>
+        ${up && max ? `<button class="btn gold block forge-charge" type="button" data-wk="charge">${WB.pxImg('art/m30.png', 20)}Charge Worldkey<span class="lbl">${f.n} in hand</span></button>` : `<p class="fine chg-why">${esc(why)}</p>`}
+      </div>
     </div>`;
   };
-  function forgeRow(d) {
-    const c = G.wkCraftCheck(d.id), have = G.wk().dm[d.id], artsOk = c.arts.have >= c.arts.need, hpOk = S().hp > c.hp;
-    // the cost chips already say what it takes; the note only says what's in the way, in a few words
-    const early = !artsOk && d.minLvl > 1 && S().level < d.minLvl;
-    const note = c.ok ? '' : have >= K.DM_MAX ? 'Pack full: charge your Worldkey to make room.' : early ? 'Opens up when you reach level ' + d.minLvl + ' worlds.' : !artsOk ? 'You have ' + c.arts.have + (d.minLvl > 1 ? ' from those worlds.' : '. Find one on the road.') : 'Not enough HP. Heal first.';
-    return `<div class="forge-row pbox ${c.ok ? 'ready' : early ? 'early' : ''}">
-      <span class="fr-ic">${dmImg(d.id, 32)}<b class="fr-n ${have ? '' : 'none'}" aria-label="You have ${have}">×${have}</b></span>
-      <span class="fr-t"><b>${esc(d.name)}</b><small>+${d.energy}% charge${d.limit > K.MAX ? ', even past 100%' : ''}</small>
-        <span class="fr-cost"><span class="${artsOk ? '' : 'miss'}">${WB.pxImg('art/m30.png', 16)}${d.arts} artifact${d.arts > 1 ? 's' : ''}${d.minLvl > 1 ? ' · Lv ' + d.minLvl + '+' : ''}</span><span class="${hpOk ? '' : 'miss'}">${WB.icon('heart', 1)}${c.hp} HP</span></span>
-        ${note ? `<small class="fr-why">${esc(note)}</small>` : ''}</span>
-      <button class="btn ${c.ok ? 'gold' : 'ghost'} sm" type="button" data-wk="craft" data-dm="${d.id}" ${UI.off(c.why)}>Craft</button>
-    </div>`;
-  }
+  UI.forgeSection = UI.chargeSection;   // (old name)
   WK.mountSection = (root) => {
     const cv = root.querySelector('#wk-main'); if (cv && !cv._dev) cv._dev = WK.device(cv);
   };
@@ -285,22 +281,25 @@
     });
   };
 
-  // ---------- stabilizing: the memory game after a mission (rules: 05m-aftermission.js) ----------
-  // Finishing a mission jolts the Worldkey: it drains some energy and flickers. Repeat the pattern once to steady it
-  // and win part of that energy back. One try; a miss (or "Not now") costs nothing more.
+  // ---------- the memory game after a mission (rules and odds: 05m-aftermission.js) ----------
+  // Sometimes finishing a mission makes the Worldkey pick up a signal from the world it points at. Repeat that world's
+  // pattern and it's tuned on the spot (no trip to Inventory), plus a little energy and XP. Wrong taps cost nothing:
+  // try again, or "Not now".
   WK.stabilize = (job, done) => {
-    const A = WB.After, pat = A.pattern(), seq = pat.seq, spd = pat.ms, w = G.wk();
+    const A = WB.After, AF = WB.DATA.AFTER, world = A.target(), pat = A.pattern(world), seq = pat.seq, spd = pat.ms, w = G.wk();
+    const st = world && G.wkStatus(world);
     let dev, phase = 'intro', pos = 0, timers = [], ended = false;
     const clear = () => { timers.forEach(clearTimeout); timers = []; };
     const end = (how) => { if (ended) return; ended = true; clear(); if (how !== 'win') A.miss(job); if (done) done(how); };
-    const back = Math.round(job.drained * WB.DATA.AFTER.REFUND * 10) / 10;
-    const strain = job.drained > 0 ? `Finishing ${esc(job.what)} jolted your Worldkey: <b>−${job.drained}% energy</b> (now ${pctTxt(w.e)}).` : `Finishing ${esc(job.what)} set your Worldkey flickering.`;
+    const bonus = w.e < K.MAX ? Math.min(AF.BONUS, Math.round((K.MAX - w.e) * 10) / 10) : 0;
+    const gains = [world ? (st.tuned ? 'refresh the tuning (' + K.TUNE_DAYS + ' days)' : 'tune it') : '', bonus > 0 ? '+' + bonus + '% energy' : '', '+' + AF.xp(S().level) + ' XP'].filter(Boolean).join(', ');
+    const intro = world ? `Finishing ${esc(job.what)} let your Worldkey catch a signal from <b>${esc(world.name)}</b>.` : `Finishing ${esc(job.what)} set your Worldkey humming.`;
     UI.sheet(`<div class="wk-tune wk-stab">
-      <span class="lbl wk-kick">Worldkey surge</span>
-      <h3 id="sheet-title">Stabilize the Worldkey</h3>
+      <span class="lbl wk-kick">Worldkey signal</span>
+      <h3 id="sheet-title">${world ? 'Tune to ' + esc(world.name) : 'Match the signal'}</h3>
       <div class="wk-tune-top"><canvas class="wk-canvas sm" width="256" height="399" aria-hidden="true"></canvas>
-        <div><p class="fine wk-strain">${strain}</p>
-        <p class="wk-msg" id="wk-msg" role="status" aria-live="polite">Watch its screen, then tap the ${seq.length} symbols in the same order. ${back > 0 ? 'Get it right to win back ' + back + '% energy' : 'Get it right to steady it'} and +${WB.DATA.AFTER.xp(S().level)} XP. One try.</p>
+        <div><p class="fine wk-strain">${intro}</p>
+        <p class="wk-msg" id="wk-msg" role="status" aria-live="polite">Watch its screen, then tap the ${seq.length} symbols in the same order to ${esc(gains)}.</p>
         <div class="wk-pips" aria-hidden="true">${seq.map(() => '<i></i>').join('')}</div></div></div>
       <div class="wk-pad" role="group" aria-label="Symbols">${D.WK_SYMBOLS.map((s, i) => `<button type="button" class="wk-sym" data-sym="${i}" aria-label="${esc(s.name)}" disabled><canvas width="36" height="36" aria-hidden="true"></canvas></button>`).join('')}</div>
       <div class="row" id="wk-tune-acts"><button class="btn gold" type="button" id="wk-start" data-autofocus>Start</button><button class="btn ghost" type="button" data-close>Not now</button></div>
@@ -312,13 +311,13 @@
       const setPads = (on) => pads.forEach((b) => (b.disabled = !on));
       const light = (k, ok) => { dev.glyph = k; dev.glyphOk = ok; const b = pads[k]; b.classList.add('on'); WB.Sfx.tone(D.WK_SYMBOLS[k].tone, 0.2); timers.push(setTimeout(() => { b.classList.remove('on'); if (dev.glyph === k) dev.glyph = null; }, Math.min(420, spd - 120))); };
       const acts = root.querySelector('#wk-tune-acts');
-      const finishBtn = (label) => { acts.hidden = false; acts.innerHTML = `<button class="btn gold" type="button" data-close>${label}</button>`; acts.querySelector('button').focus({ preventScroll: true }); };
-      root.querySelector('#wk-start').onclick = () => {
-        clear(); phase = 'watch'; pos = 0; setPads(false); dev.mode = 'idle';
-        msg.textContent = 'Reading the surge…'; acts.hidden = true;
+      const play = () => {
+        clear(); phase = 'watch'; pos = 0; setPads(false); dev.mode = 'idle'; pips.forEach((p) => (p.className = ''));
+        msg.textContent = 'Reading the signal…'; acts.hidden = true;
         seq.forEach((k, i) => timers.push(setTimeout(() => light(k), 500 + i * spd)));
         timers.push(setTimeout(() => { phase = 'input'; setPads(true); msg.textContent = 'Your turn: tap the symbols in the same order.'; pads[0].focus({ preventScroll: true }); }, 500 + seq.length * spd + 150));
       };
+      root.querySelector('#wk-start').onclick = play;
       pads.forEach((b) => (b.onclick = () => {
         if (phase !== 'input') return;
         const k = +b.dataset.sym;
@@ -326,57 +325,65 @@
           light(k, true); pips[pos].className = 'ok'; pos++;
           if (pos >= seq.length) {
             phase = 'done'; setPads(false);
-            const r = A.stabilize(job);
+            const r = A.stabilize(job, world);
             timers.push(setTimeout(() => {
               dev.mode = 'lock'; dev.t = 0; WB.Sfx.play('wk_tuned');
-              msg.innerHTML = `Stabilized! ${r && r.back > 0 ? '+' + r.back + '% energy (now ' + pctTxt(r.e) + '), ' : ''}+${r ? r.xp : 0} XP. “${esc(G.wkLine('tuneOk'))}”`;
-              finishBtn('Continue'); UI.updateHud(); if (!ended) { ended = true; if (done) done('win'); }
+              const got = [r && r.world ? 'Tuned to ' + esc(r.world.name) + ' for ' + K.TUNE_DAYS + ' days' : 'Signal matched', r && r.back > 0 ? '+' + r.back + '% energy' : '', '+' + (r ? r.xp : 0) + ' XP'].filter(Boolean).join(' · ');
+              msg.innerHTML = `${got}. “${esc(G.wkLine('tuneOk'))}”`;
+              acts.hidden = false;
+              const next = world && nextStep(G.wkStatus(world));
+              acts.innerHTML = (next && next.act !== 'tune' ? `<button class="btn gold" type="button" data-wk="${next.act}" data-wid="${world.id}">${esc(next.label)}</button>` : '') + `<button class="btn ${next && next.act !== 'tune' ? 'ghost' : 'gold'}" type="button" data-close>Continue</button>`;
+              acts.querySelector('button').focus({ preventScroll: true });
+              UI.updateHud(); UI.render(); if (!ended) { ended = true; if (done) done('win'); }
             }, 350));
           }
         } else {
           phase = 'fail'; setPads(false); light(k, false); WB.Sfx.play('wk_wrong');
           pips.forEach((p, i) => { if (i >= pos) p.className = 'bad'; });
-          msg.textContent = 'The surge slips away. “' + G.wkLine('tuneFail', { n: pos + 1 }) + '”';
-          end('miss'); finishBtn('Continue');
+          msg.textContent = 'Signal lost. “' + G.wkLine('tuneFail', { n: pos + 1 }) + '”';
+          acts.hidden = false;
+          acts.innerHTML = '<button class="btn gold" type="button" id="wk-again">Try again</button><button class="btn ghost" type="button" data-close>Not now</button>';
+          acts.querySelector('#wk-again').onclick = play; acts.querySelector('#wk-again').focus({ preventScroll: true });
         }
       }));
-      // closing the sheet (Not now, ×, Back) ends it
+      // closing the sheet (Not now, ×, Back, or a Charge/Open button) ends it
       const stop = new MutationObserver(() => { if (!root.isConnected || $('#sheet').hidden) { stop.disconnect(); end(phase === 'done' ? 'win' : 'skip'); } }); stop.observe($('#sheet'), { attributes: true, childList: true, subtree: false });
     });
   };
 
-  // ---------- charging ----------
+  // ---------- charging: one sheet, one tap ----------
+  // Starts on enough artifacts to reach 100% (or what the discovered world needs); − / + / Fill adjust it.
   WK.charge = (then) => {
-    const w = G.wk();
-    let pick = (D.DARKMATTER.find((d) => G.wkChargeMax(d.id) > 0) || D.DARKMATTER[0]).id, n = 1;
+    if (!hasFuel()) { const full = G.wk().e >= K.OVER; return UI.toast({ kicker: full ? 'Fully charged' : 'No artifacts yet', title: full ? 'Your Worldkey is at ' + K.OVER + '%.' : 'Artifacts turn up on the road as you walk.', icon: full ? 'bolt' : 'lock' }); }
+    let n = G.wkChargeSuggest();
     const view = () => {
-      const max = G.wkChargeMax(pick); n = Math.max(1, Math.min(n, max || 1));
-      const pv = G.wkChargePreview(pick, max ? n : 0);
+      const max = G.wkChargeMax(); n = Math.max(1, Math.min(n, max || 1));
+      const p = G.wkChargePlan(n), groups = new Map();
+      p.keys.forEach((k) => groups.set(k, (groups.get(k) || 0) + 1));
       return `<div class="wk-charge">
         <span class="lbl wk-kick">Charge the Worldkey</span>
-        <h3 id="sheet-title">${pctTxt(pv.from)} → ${pctTxt(pv.to)}</h3>
+        <h3 id="sheet-title">${pctTxt(p.from)} → ${pctTxt(p.to)}</h3>
         <div class="wk-gate-top"><canvas class="wk-canvas sm" width="256" height="399" aria-hidden="true"></canvas>
-          <div class="wk-chg-bar">${energyBar(pv.to)}<p class="fine">Void and Nebula fill to 100%. Only Eclipse can overcharge, up to ${K.OVER}%.</p></div></div>
-        <div class="wk-pick" role="radiogroup" aria-label="Darkmatter">${D.DARKMATTER.map((d) => { const m = G.wkChargeMax(d.id); return `<button type="button" role="radio" aria-checked="${pick === d.id}" data-pick="${d.id}" ${m ? '' : 'disabled'}>${dmImg(d.id, 28)}<span><b>${esc(d.name.split(' ')[0])}</b><small>+${d.energy}% · you have ${w.dm[d.id]}</small></span></button>`; }).join('')}</div>
-        ${max > 1 ? `<div class="wk-qty"><span class="lbl">Use</span><button class="btn ghost sm" type="button" data-q="-1" aria-label="One less">−</button><b>${n}</b><button class="btn ghost sm" type="button" data-q="1" aria-label="One more">+</button></div>` : ''}
-        <div class="row"><button class="btn gold" type="button" id="wk-go" ${UI.off(!max && (w.e >= K.MAX && pick !== 'eclipse' ? 'Already at 100%. Only Eclipse can overcharge.' : 'No ' + D.dmById[pick].name + ' to use. Craft it in the Forge.'))} data-autofocus>Charge</button><button class="btn ghost" type="button" data-close>Not now</button></div>
+          <div class="wk-chg-bar">${energyBar(p.to)}<p class="fine">Uses <b>${p.keys.length}</b> artifact${p.keys.length > 1 ? 's' : ''}, the ones you hold the most of first. Charges up to ${K.OVER}%.</p></div></div>
+        <div class="chg-use" aria-label="Artifacts used">${[...groups].map(([k, c]) => `<span class="chg-art" title="${esc(G.artName(k))}">${artImg(k, 28)}<b>×${c}</b><small>+${G.wkArtValue(k) * c}%</small></span>`).join('')}</div>
+        ${max > 1 ? `<div class="wk-qty"><span class="lbl">Use</span><button class="btn ghost sm" type="button" data-q="-1" aria-label="One less" ${n <= 1 ? 'disabled' : ''}>−</button><b>${n}</b><button class="btn ghost sm" type="button" data-q="1" aria-label="One more" ${n >= max ? 'disabled' : ''}>+</button><button class="btn ghost sm" type="button" data-q="max" ${n >= max ? 'disabled' : ''}>Fill</button></div>` : ''}
+        <div class="row"><button class="btn gold" type="button" id="wk-go" data-autofocus>Charge</button><button class="btn ghost" type="button" data-close>Not now</button></div>
       </div>`;
     };
     const mount = (root) => {
-      const dev = WK.device(root.querySelector('canvas')); dev.color = D.dmById[pick].color;
-      root.querySelectorAll('[data-pick]').forEach((b) => (b.onclick = () => { pick = b.dataset.pick; n = 1; UI.sheet(view(), mount); }));
-      root.querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => { n = Math.max(1, Math.min(G.wkChargeMax(pick), n + +b.dataset.q)); UI.sheet(view(), mount); }));
+      const dev = WK.device(root.querySelector('canvas'));
+      root.querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => { const max = G.wkChargeMax(); n = b.dataset.q === 'max' ? max : Math.max(1, Math.min(max, n + +b.dataset.q)); UI.sheet(view(), mount); }));
       const go = root.querySelector('#wk-go');
       go.onclick = () => {
-        if (go.getAttribute('aria-disabled') === 'true') return;
-        const r = G.wkCharge(pick, n); if (!r || !r.ok) { if (r) UI.toast({ kicker: 'Not charged', title: r.why }); return; }
-        go.disabled = true; dev.mode = 'charging'; WB.Sfx.play('dm_' + pick);   // each Darkmatter has its own charge sound (sfx/dm_void, dm_nebula, dm_eclipse)
+        const r = G.wkCharge(n); if (!r || !r.ok) { if (r) UI.toast({ kicker: 'Not charged', title: r.why }); return; }
+        go.disabled = true; dev.color = r.tier.color; dev.mode = 'charging'; WB.Sfx.play(r.tier.snd);   // the strongest artifact used sets the sound and color
         const bar = root.querySelector('.wk-bar i'); if (bar) bar.style.width = Math.min(100, (r.to / K.MAX) * 100) + '%';
         setTimeout(() => {
           dev.mode = 'auto';
           const line = G.wkLine('charge');
+          UI.updateHud && UI.updateHud();
           if (then) return then(line);
-          UI.closeSheet(); UI.toast({ kicker: 'Worldkey charged', title: pctTxt(r.from) + ' → ' + pctTxt(r.to), sub: line, img: 'wk/dm_' + r.dm.id + '.png', cls: 'cyan' }); UI.render();
+          UI.closeSheet(); UI.toast({ kicker: 'Worldkey charged · ' + r.n + ' artifact' + (r.n > 1 ? 's' : ''), title: pctTxt(r.from) + ' → ' + pctTxt(r.to), sub: line, img: r.tier.img, cls: 'cyan' }); UI.render();
         }, rm() ? 200 : 1300);
       };
     };
@@ -503,17 +510,10 @@
     if (a === 'gate' && world) return WK.gate(world);
     if (a === 'about') return WK.about();
     if (a === 'custom') return WK.custom();
-    if (a === 'forge') { UI.closeSheet(); return UI.goHub('art', 'finds'); }
+    if (a === 'forge') return hasFuel() ? WK.charge() : (UI.closeSheet(), UI.goHub('art', 'finds'));   // (old links)
     if (a === 'arts') { UI.closeSheet(); return UI.goHub('art', 'finds'); }
     if (a === 'shop') { UI.closeSheet(); return UI.goHub('shop', b.dataset.st || 'potions'); }
     if (a === 'heal') { UI.closeSheet(); return UI.goHub('bag', 'potions'); }
-    if (a === 'craft') {
-      const r = G.wkCraft(b.dataset.dm); if (!r) return;
-      if (!r.ok) return UI.toast({ kicker: 'Can’t craft yet', title: r.why, icon: 'lock' });
-      WB.Sfx.play('dm_craft');
-      UI.toast({ kicker: 'Crafted · −' + r.hp + ' HP', title: r.dm.name, sub: 'Used ' + r.used.join(', ') + '.', img: 'wk/dm_' + r.dm.id + '.png', cls: 'cyan', ...(G.upkeep() && G.wkChargeMax(r.dm.id) > 0 ? { action: { label: 'Charge', fn: () => WK.charge() } } : {}) });
-      UI.updateHud(); UI.render();
-    }
   });
 
   // ---------- events ----------
@@ -528,6 +528,14 @@
     w.seen.push(id); WB.Save.queue();
     WK.gate(D.worldById[id]);
   }, 1200);
+  // saves that held Darkmatter: say once where it went (05g-worldkey.js migrateDm)
+  setInterval(() => {
+    const s = S(); if (!s || !s.onboarded || !s.wk || !s.wk.dmNote) return;
+    if (document.documentElement.classList.contains('battling') || !$('#sheet').hidden || !$('#encounter').hidden || (WB.Tour && WB.Tour.active) || document.visibilityState !== 'visible') return;
+    const n = s.wk.dmNote; delete s.wk.dmNote; WB.Save.queue();
+    UI.toast({ kicker: 'The Forge is gone', title: 'Artifacts now charge your Worldkey directly', sub: 'Your Darkmatter went into it' + (n.e ? ' (+' + n.e + '%)' : '') + (n.copies ? '; the rest came back as ' + n.copies + ' artifacts' : n.coins ? '; the rest came back as ' + n.coins + ' coins' : '') + '.', img: 'wk/dm_nebula.png', cls: 'cyan', ms: 6000 });
+    UI.render();
+  }, 1500);
   // exploration milestones already get a toast; the Worldkey comments on them later, in its own time (wkThought)
   WB.bus.on('world', () => { hide(); });
 })();
