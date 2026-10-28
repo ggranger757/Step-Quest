@@ -515,7 +515,7 @@
   // A save that already has a field mission or a delivery running keeps the tab open until it's finished, so nothing
   // is ever stranded behind the lock.
   D.FIELD_LEVEL = 3;
-  D.FORGE_LEVEL = 3;   // Inventory → Artifacts (the Collection and charging with artifacts) opens at this level
+  D.FORGE_LEVEL = 3;   // Inventory → Worldkey's artifact sections (the Collection and charging) opens at this level
   G.lvlReached = (lv) => Math.max(S().level, S().peakLevel || 0) >= lv;
   G.fieldOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().missions || {}).active || []).length > 0 || ((S().tasks || {}).quests || []).length > 0;
   G.tradesOpen = () => G.lvlReached(D.FIELD_LEVEL);

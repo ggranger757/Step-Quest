@@ -44,7 +44,7 @@
       const st = UI.supTab;
       if (st === 'ach') { UI.pfTab = 'ach'; tab = 'profile'; }
       else if (st === 'eggs') { tab = 'tasks'; UI.missionTab = 'merlin'; }   // eggs are counted on Missions → Merlin now
-      else { tab = 'inv'; if (st === 'finds') { UI.invHub = 'art'; UI.artTab = st; } else { UI.invHub = 'bag'; if (st) UI.bagTab = st; } }
+      else { tab = 'inv'; if (st === 'finds') { UI.invHub = 'bag'; UI.bagTab = 'worldkey'; UI.scrollTo = '#art-collection'; } else { UI.invHub = 'bag'; if (st) UI.bagTab = st; } }
       UI.supTab = null;
     }
     const prev = UI.tab;
@@ -673,20 +673,21 @@
     ['magic', 'Magic', 'img:mg/book.png', () => 'Charms give passive perks and never run out.' + (G.gearCare() ? ' Battle magic comes with ' + D.MAGIC_USES + ' uses. Buy more when they run out.' : ' Battle magic works once per battle.')],
   ];
   const BAG_TABS = [
-    ['worldkey', 'Worldkey', 'img:wk/dm_nebula.png', () => !G.featOn('wk') ? 'Your guide between worlds.' : G.upkeep() ? 'Your guide between worlds. Charge it with artifacts, tune it to a world, then open the way.' : 'Your guide between worlds. Tune it to a world, then open the way.'],
+    ['worldkey', 'Worldkey', 'img:wk/dm_nebula.png', () => !G.featOn('wk') ? 'Your guide between worlds, and the artifacts you collect to charge it.' : G.upkeep() ? 'Your guide between worlds. Charge it with the artifacts you collect, tune it to a world, then open the way.' : 'Your guide between worlds. Tune it to a world, then open the way.'],
     ['weapons', 'Weapons', 'sword', () => G.gearCare() ? 'Equip, repair and refill. Worn melee weapons hit softer, and at 0% they break until repaired. A repair costs a quarter of the price.' : 'Equip the weapons you own.'],
     ['magic', 'Magic', 'img:mg/book.png', 'Wear up to ' + D.CHARM_SLOTS + ' charms. Cast battle magic from the Magic button, once per battle each.'],
     ['potions', 'Potions', 'img:pot/tonic.png', 'Drink healing potions here, or use any potion in battle from Items.'],
     ['pets', 'Pets', 'paw', 'Pets heal over time, like you. A knocked-out pet rests until it recovers.'],
     ['avatar', 'Avatars', 'user', 'Pick who you walk as.'],
   ];
-  // Artifacts is one page: charging on top, the Collection under it (no sub-tabs). Older links to 'forge' land here too.
-  const ART_TABS = [['finds', 'Artifacts', 'img:art/m30.png', '']];
+  // Artifacts live on the Worldkey page now (the Worldkey, then charging, then the Collection). Older links to
+  // 'art' / 'finds' / 'forge' land there and scroll to the right spot.
   const GEAR = ['weapons', 'potions', 'pets'];
   // open a hub (and one of its sections) from anywhere
   UI.goHub = (hub, sub, opt) => {
+    if (hub === 'art') { UI.scrollTo = sub === 'forge' ? '#wk-forge' : '#art-collection'; hub = 'bag'; sub = 'worldkey'; }   // (the old Artifacts tab)
     UI.hub = hub; if (hub !== 'shop') UI.invHub = hub;
-    if (sub) { if (hub === 'shop') UI.shopTab = sub; else if (hub === 'bag') UI.bagTab = sub; else UI.artTab = sub; }
+    if (sub) { if (hub === 'shop') UI.shopTab = sub; else UI.bagTab = sub; }
     UI.go(hub === 'shop' ? 'shop' : 'inv', opt);
   };
   UI.hubRoot = () => $(UI.tab === 'inv' ? '#scr-inv' : '#scr-shop');
@@ -825,7 +826,7 @@
   // ----- Bag sections -----
   function bagBody(tab) {
     const s = S();
-    if (tab === 'worldkey') return G.featOn('wk') ? UI.wkSection() : UI.wkLocked();
+    if (tab === 'worldkey') return (G.featOn('wk') ? UI.wkSection() : UI.wkLocked()) + artBody();   // the Worldkey, then charging and the Collection
     if (tab === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
       const slot = UI.wpnSlot || 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
@@ -869,12 +870,12 @@
     const row = (w) => {
       const got = s.enc.finds[w.id] || [], list = D.FINDS[w.id], n = list.reduce((t, _, i) => t + G.artHave(w.id, i), 0);
       return `<details class="art-w pbox ${got.length >= list.length ? 'done' : ''}" data-artw="${w.id}" ${isOpen(w.id) ? 'open' : ''}>
-        <summary><span class="aw-name">${WB.esc(w.name)}${w.id === s.world ? ' <small>You’re here</small>' : ''}</span><span class="aw-pips" aria-hidden="true">${list.map((_, i) => `<i class="${got.includes(i) ? 'on' : ''}"></i>`).join('')}</span><span class="aw-n">${got.length}/${list.length}${n ? ` · <b>×${n}</b>` : ''} <small class="aw-v">+${D.WK.artTier(w).energy}%</small></span><span class="chev" aria-hidden="true">›</span></summary>
+        <summary><span class="aw-name">${WB.esc(w.name)}${w.id === s.world ? ' <small>You’re here</small>' : ''}${got.length >= list.length && G.wkFresh && !G.wk().sets[w.id] ? ' <small class="aw-bonus">Set bonus!</small>' : ''}</span><span class="aw-pips" aria-hidden="true">${list.map((_, i) => `<i class="${got.includes(i) ? 'on' : ''}"></i>`).join('')}</span><span class="aw-n">${got.length}/${list.length}${n ? ` · <b>×${n}</b>` : ''} <small class="aw-v">+${D.WK.artTier(w).energy}%</small></span><span class="chev" aria-hidden="true">›</span></summary>
         <div class="finds">${list.map((f, i) => { const has = got.includes(i), c = G.artHave(w.id, i); return `<div class="find pbox ${has ? 'got' : ''}">${has ? WB.pxImg('art/' + f[0] + '.png', 64) : `<canvas class="px-img" width="64" height="64" data-silimg="art/${f[0]}.png" aria-hidden="true"></canvas>`}${has ? WB.esc(f[1]) : 'Not found yet'}${has ? `<span class="art-n ${c ? '' : 'none'}" aria-label="${c} in hand">×${c}</span>` : ''}</div>`; }).join('')}</div>
       </details>`;
     };
     return UI.chargeSection() + `<div class="sect" id="art-collection"><h2>Collection <span class="aside">${found} / ${D.FIND_TOTAL} discovered</span></h2>
-      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to charge with</span><div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">Six artifacts hide along the road in every world. Walk a world again to find more copies of the ones you know.</p></div>
+      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to charge with</span>${(() => { const ids = G.artSetsToClaim(); if (!ids.length) return ''; const c = ids.reduce((t, id) => t + G.artSetReward(id).coins, 0); return `<button class="btn gold block" type="button" data-wk="sets">Claim ${ids.length} set bonus${ids.length > 1 ? 'es' : ''} · +${WB.fmt(c)} coins</button>`; })()}<div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">Six artifacts hide along the road in every world. Find all six for a one-time set bonus (coins and Attunement). Walk a world again to find more copies of the ones you know.</p></div>
       <div class="art-worlds">${open.map(row).join('')}</div>
       ${shut.length ? `<p class="fine art-locked">${WB.icon('lock', 1)} ${shut.length} more world${shut.length > 1 ? 's' : ''} to open · ${shut.reduce((n, w) => n + D.FINDS[w.id].length, 0)} artifacts waiting in them</p>` : ''}
     </div>`;
@@ -882,28 +883,29 @@
 
   UI.renderShop = () => {
     const s = S(), inv = UI.tab === 'inv' || (UI.tab !== 'shop' && UI.hub !== 'shop');
-    const hub = inv ? (UI.invHub === 'art' ? 'art' : 'bag') : 'shop'; UI.hub = hub;
-    const TABS = hub === 'shop' ? SHOP_TABS : hub === 'bag' ? BAG_TABS : ART_TABS;
-    const key = hub === 'shop' ? 'shopTab' : hub === 'bag' ? 'bagTab' : 'artTab';
+    const hub = inv ? 'bag' : 'shop'; UI.hub = hub; if (inv) UI.invHub = 'bag';
+    const TABS = hub === 'shop' ? SHOP_TABS : BAG_TABS;
+    const key = hub === 'shop' ? 'shopTab' : 'bagTab';
     if (!TABS.some((t) => t[0] === UI[key])) UI[key] = TABS[0][0];
     const cur = UI[key], def = TABS.find((t) => t[0] === cur);
-    const body = hub === 'shop' ? shopBody(cur) : hub === 'bag' ? bagBody(cur) : artBody(cur);
-    const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: G.battlesOpen() ? s.owned.weapons.length : 'Lv ' + D.BATTLE_LEVEL, magic: G.battlesOpen() ? (s.owned.magic || []).length : 'Lv ' + D.BATTLE_LEVEL, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
+    const body = hub === 'shop' ? shopBody(cur) : bagBody(cur);
+    const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : G.artTotal(), weapons: G.battlesOpen() ? s.owned.weapons.length : 'Lv ' + D.BATTLE_LEVEL, magic: G.battlesOpen() ? (s.owned.magic || []).length : 'Lv ' + D.BATTLE_LEVEL, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
     const segBtn = (attr, id, l, ic, on, n) => `<button type="button" role="tab" data-${attr}="${id}" aria-selected="${on}" aria-pressed="${on}">${tabIcon(ic)}<span>${l}</span>${n != null ? `<span class="cnt">${n}</span>` : ''}</button>`;
-    const INV_TABS = [...BAG_TABS, ['art', 'Artifacts', 'img:art/m30.png']], invCur = hub === 'art' ? 'art' : cur;
+    const INV_TABS = BAG_TABS, invCur = cur;
     const nav = !inv
       ? `<div class="seg five sub-seg" role="tablist" aria-label="Shop sections">${SHOP_TABS.map(([id, l, ic]) => segBtn('shoptab', id, l, ic, id === cur)).join('')}</div>`
-      : `<div class="seg seven sub-seg" role="tablist" aria-label="Inventory sections">${INV_TABS.map(([id, l, ic]) => segBtn('invtab', id, l, ic, id === invCur, bagCnt[id])).join('')}</div>
+      : `<div class="seg seven inv6 sub-seg" role="tablist" aria-label="Inventory sections">${INV_TABS.map(([id, l, ic]) => segBtn('invtab', id, l, ic, id === invCur, bagCnt[id])).join('')}</div>
 `;
     const root = $(inv ? '#scr-inv' : '#scr-shop');
     const changed = UI.set(root, `<div class="scr-wrap">
       <div class="scr-head"><h1>${inv ? 'Inventory' : 'Shop'}</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
       ${nav}
-      ${def[3] && !((hub !== 'art' && (cur === 'weapons' || cur === 'magic') || hub === 'art' && cur === 'finds') && !(cur === 'finds' ? G.collectionOpen() : G.battlesOpen())) ? `<p class="scr-note">${typeof def[3] === 'function' ? def[3]() : def[3]}</p>` : ''}
+      ${def[3] && !((cur === 'weapons' || cur === 'magic') && !G.battlesOpen()) ? `<p class="scr-note">${typeof def[3] === 'function' ? def[3]() : def[3]}</p>` : ''}
       ${body}
     </div>`);
     if (changed) paintAll(root);
     if (hub === 'bag' && cur === 'worldkey' && G.featOn('wk')) WB.WK.mountSection(root);
+    if (UI.scrollTo) { const sel = UI.scrollTo; UI.scrollTo = null; requestAnimationFrame(() => { const el = root.querySelector(sel); if (el) el.scrollIntoView({ block: 'start', behavior: WB.reducedMotion() ? 'auto' : 'smooth' }); }); }
   };
   UI.renderCollection = UI.renderSupplies = () => UI.renderShop();   // older call sites
   function paintAll(root) {
@@ -1252,9 +1254,9 @@
     if (d.close !== undefined) return UI.closeSheet();
     if (d.tab) { WB.Sfx.play('tap'); return UI.go(d.tab); }
     if (d.shoptab) { UI.hub = 'shop'; UI.shopTab = d.shoptab; return UI.renderShop(); }
-    if (d.invtab) { WB.Sfx.play('tap'); if (d.invtab === 'art') UI.invHub = 'art'; else { UI.invHub = 'bag'; UI.bagTab = d.invtab; } UI.renderShop(); return; }
+    if (d.invtab) { WB.Sfx.play('tap'); UI.invHub = 'bag'; UI.bagTab = d.invtab === 'art' ? 'worldkey' : d.invtab; UI.renderShop(); return; }
     if (d.hub) { WB.Sfx.play('tap'); UI.goHub(d.hub); return; }
-    if (d.sub) { UI[UI.hub === 'shop' ? 'shopTab' : UI.hub === 'bag' ? 'bagTab' : 'artTab'] = d.sub; WB.Sfx.play('tap'); return UI.renderShop(); }
+    if (d.sub) { UI[UI.hub === 'shop' ? 'shopTab' : 'bagTab'] = d.sub; WB.Sfx.play('tap'); return UI.renderShop(); }
     if (d.hubgo) { const [h, sub] = d.hubgo.split(':'); WB.Sfx.play('tap'); UI.goHub(h, sub); UI.hubRoot().scrollTop = 0; return; }
     if (d.ammo) { const r = G.buyAmmo(d.ammo); UI.toast(r.ok ? { kicker: r.free ? 'Free daily refill' : 'Purchased', title: D.AMMO_PACK + ' shots · ' + D.weaponById[d.ammo].name, icon: 'shop', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.uses) { const r = G.buyUses(d.uses); UI.toast(r.ok ? { kicker: r.free ? 'Free daily refill' : 'Purchased', title: D.MAGIC_USES + ' uses · ' + D.magicById[d.uses].name, img: 'mg/' + d.uses + '.png', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }

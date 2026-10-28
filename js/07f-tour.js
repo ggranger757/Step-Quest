@@ -46,8 +46,8 @@
     { go: hub('bag', 'weapons'), sel: '#scr-inv .grid .item', page: 'Inventory', title: 'Equip and switch', text: 'Equip weapons, wear charms, drink potions and switch walkers.' },
     { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Inventory', title: 'Your Worldkey', text: 'Your Worldkey opens new worlds. It needs energy (charge it with artifacts) and the world’s frequency: match its symbol pattern to tune in. Time and walking drain its energy and knock it out of tune, so recharge and retune before you travel.' },
     { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Inventory', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here. Locked ones show as silhouettes.' },
-    { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Inventory', title: 'Artifacts', text: 'Artifacts hide in every world. Each find adds a copy. Once you’ve found them all, walking a world again turns up more copies.' },
-    { feat: 'art', go: hub('art', 'forge'), sel: '#wk-forge', page: 'Inventory', title: 'Charge with artifacts', text: 'At the top of Artifacts: the artifacts you find are your Worldkey’s fuel. One tap on Charge feeds them in. Artifacts from later worlds hold more.' },
+    { go: hub('bag', 'worldkey'), sel: '#scr-inv .art-sum', page: 'Inventory', title: 'Artifacts', text: 'Artifacts hide in every world. Each find adds a copy. Once you’ve found them all, walking a world again turns up more copies.' },
+    { feat: 'art', go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Inventory', title: 'Charge with artifacts', text: 'On the Worldkey page, under the Worldkey: the artifacts you find are your Worldkey’s fuel. One tap on Charge feeds them in. Artifacts from later worlds hold more.' },
     { go: mis('merlin'), sel: '#egg-strip', page: 'Missions', title: 'Eggs', text: 'Find Frost, Ember and Crystal eggs on the road or in battle. Carry up to ' + D.EGG_MAX + ' of each. Your eggs are counted on Missions → Merlin, right above his egg trades (from level ' + D.FIELD_LEVEL + ').' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'The Druid', text: 'From level ' + D.BATTLE_LEVEL + ', the Druid may stop you with a trivia question. Answer right for XP and coins. Answer wrong and you must battle him. If he wins, he takes your eggs.' },
     { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'Bosses', text: 'From level ' + D.BOSS_LEVEL + ', six rare bosses roam the roads. They hit hard and have unique powers. Beat one for big rewards; lose and you drop ' + D.BOSS_LEVEL_LOSS + ' levels.' },
@@ -68,6 +68,7 @@
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Worldkey', title: 'Your Worldkey is awake', text: 'You finished your first world, so your Worldkey can open the next one. Find it in Inventory → Worldkey.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it to a world', text: 'Each world hums at its own frequency: match its symbol pattern to tune the Worldkey to it. A tuning lasts a few days; time and walking knock it out of tune.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-acts', page: 'Worldkey', title: 'Then open the way', text: 'Once it’s tuned, tap Open. Opening a world costs some energy, so keep it charged with the artifacts you find.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-grow', page: 'Worldkey', title: 'Grow your Worldkey', text: 'Charging, tuning and signals earn Attunement, which unlocks perks: sparks that charge double, slower fading, longer tunings. Every ' + WB.fmt(D.WK.SIG.STEPS) + ' steps you walk banks a signal: a quick memory game for bonus rewards.' },
       { go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Worldkey', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here.' },
     ],
     field: [
@@ -76,12 +77,12 @@
       { go: mis('field'), sel: '#milestones', page: 'Level ' + D.FIELD_LEVEL, title: 'Milestones', text: 'Long-term goals that grow as you play, plus messages travelers ask you to deliver. No clock, no penalty.' },
     ],
     art: [
-      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'Level ' + D.FORGE_LEVEL, title: 'Artifacts are fuel', text: 'Every artifact you find can charge your Worldkey with one tap, right here. That starts once it wakes up after your first world.' },
-      { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Level ' + D.FORGE_LEVEL, title: 'Your artifact Collection', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
+      { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Level ' + D.FORGE_LEVEL, title: 'Artifacts are fuel', text: 'Every artifact you find can charge your Worldkey with one tap, right here. That starts once it wakes up after your first world.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .art-sum', page: 'Level ' + D.FORGE_LEVEL, title: 'Your artifact Collection', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
     ],
     dm: [
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-energy', page: 'First world', title: 'Your Worldkey needs energy now', text: 'From now on, opening a world costs energy. Energy fades a little each day and as you walk, so keep an eye on this bar.' },
-      { go: hub('art', 'forge'), sel: '#wk-forge', page: 'First world', title: 'Charge it with artifacts', text: 'Tap Charge here and your artifacts go straight into the Worldkey. No crafting.' },
+      { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'First world', title: 'Charge it with artifacts', text: 'Tap Charge here and your artifacts go straight into the Worldkey. No crafting.' },
     ],
   };
   const T = (WB.Tour = { active: false, i: 0 });

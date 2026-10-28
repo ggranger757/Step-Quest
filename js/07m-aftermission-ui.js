@@ -50,6 +50,9 @@
     });
   }
   function memory(job) {
-    return new Promise((ok) => WB.WK.stabilize(job, (how) => { UI.render(); ok(how); }));
+    return new Promise((ok) => WB.WK.stabilize(job, (how) => {
+      if (how === 'skip' && G.wkSigAdd(1)) UI.toast({ kicker: 'Signal saved', title: 'Play it later from Inventory → Worldkey', icon: 'signal', cls: 'cyan', ms: 2600 });   // "Not now" banks it
+      UI.render(); ok(how);
+    }));
   }
 })();

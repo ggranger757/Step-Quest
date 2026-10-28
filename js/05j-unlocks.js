@@ -1,7 +1,7 @@
 /* Step Quest — features that unlock as you play, so a new walker learns one thing at a time.
    'wk'  the Worldkey: wakes up when you finish your first world (the next world's requirements are met).
          Until energy counts it runs on its starter charge: opening worlds costs no energy and nothing fades.
-   'art' Inventory → Artifacts (the Collection, and charging the Worldkey with artifacts), at level D.FORGE_LEVEL (3). Saves already past it unlock it quietly.
+   'art' the artifact sections of Inventory → Worldkey (charging and the Collection), at level D.FORGE_LEVEL (3). Saves already past it unlock it quietly.
    'dm'  Worldkey energy (it fades with time and walking): it starts with the Worldkey, the moment the first world is
          finished (gear care — shots, uses, wear — is always on; see G.gearCare in 05i-gear.js). Until then opening
          worlds is free and nothing fades.
@@ -14,8 +14,8 @@
   const feats = () => { const s = S(); if (!s.feats || typeof s.feats !== 'object') s.feats = {}; return s.feats; };
   G.featOn = (k) => !!(S() && feats()[k]);
   G.upkeep = () => G.featOn('dm');   // Worldkey energy counts from here on (gear care is always on)
-  G.forgeOpen = () => G.featOn('art');   // (old name) Inventory → Artifacts
-  G.collectionOpen = () => G.featOn('art');   // Inventory → Artifacts opens at level D.FORGE_LEVEL
+  G.forgeOpen = () => G.featOn('art');   // (old name) the artifact sections of Inventory → Worldkey
+  G.collectionOpen = () => G.featOn('art');   // they open at level D.FORGE_LEVEL
 
   const queue = [];
   function unlock(k, quiet) {

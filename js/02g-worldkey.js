@@ -6,7 +6,7 @@
   const D = WB.DATA;
   const K = (D.WK = {
     MAX: 100,          // a full charge
-    OVER: 150,         // artifacts can overcharge the Worldkey past 100%, up to this (the far worlds need it)
+    OVER: 100,         // the most it can hold: charging stops at 100% (kept separate from MAX for older code paths)
     LOW: 25,           // at or below this the screen pulses magenta
     START: 10,         // energy before the Worldkey wakes up; it wakes up full (starter charge) after your first world
     DRAIN_DAY: 6,      // energy fades by itself: about 6% a day (1% every 4 hours), never below 0
@@ -18,14 +18,25 @@
 
   // destination tiers follow the level a world opens at
   K.tier = (w) => (w.unlock.level <= 15 ? 1 : w.unlock.level <= 40 ? 2 : 3);
-  K.COST = { 1: 25, 2: 60, 3: 110 };                     // energy to open a world of that tier (tier 3 needs an overcharge past 100%)
-  // tuning gets harder as your walker levels up: a longer pattern, played faster (never past 9 symbols or 380 ms each)
-  K.tuneSpec = (level) => ({ len: Math.min(9, 4 + Math.floor((level - 1) / 8)), ms: Math.max(380, 760 - (level - 1) * 6) });
+  K.COST = { 1: 25, 2: 60, 3: 100 };                     // energy to open a world of that tier (tier 3 takes a full charge)
+  // ---------- the memory game: starts easy, grows with your own tuning experience ----------
+  // `tunes` = patterns you've matched so far; `misses` = misses in a row right now (each 2 ease it a step).
+  // Start: 3 symbols from a pad of 4, played slowly. A symbol longer every 3 successes (up to 9), the pad opens to 5
+  // then 6 symbols, and it plays a little faster each time (never under 420 ms).
+  K.tuneSpec = (tunes = 0, misses = 0) => {
+    const t = Math.max(0, tunes | 0), ease = Math.floor(Math.max(0, misses | 0) / 2);
+    return {
+      len: Math.max(3, Math.min(9, 3 + Math.floor(t / 3) - ease)),
+      pool: t < 3 ? 4 : t < 8 ? 5 : 6,
+      ms: Math.min(1000, Math.max(420, 950 - t * 18 + ease * 80)),
+      rank: t + 1, eased: ease > 0,
+    };
+  };
   K.cost = (w) => K.COST[K.tier(w)];
 
   // ---------- charging: artifacts ARE the fuel ----------
   // Every artifact copy you find can be fed straight into the Worldkey (no crafting, no HP cost). Artifacts from
-  // later worlds hold more charge. A world's tier is the level it opens at. Any artifact can charge up to K.OVER.
+  // later worlds hold more charge. A world's tier is the level it opens at. Charging stops at 100% (K.OVER).
   // snd/color/img only decorate the charge (sound, particles, toast icon).
   D.ART_CHARGE = [
     { id: 'far', minLvl: 25, energy: 25, label: 'Far worlds', snd: 'dm_eclipse', color: '#ffb03d', img: 'wk/dm_eclipse.png' },
@@ -33,6 +44,54 @@
     { id: 'near', minLvl: 1, energy: 15, label: 'Early worlds', snd: 'dm_void', color: '#ff7a3d', img: 'wk/dm_void.png' },
   ];
   K.artTier = (world) => D.ART_CHARGE.find((t) => world && world.unlock && world.unlock.level >= t.minLvl) || D.ART_CHARGE[D.ART_CHARGE.length - 1];
+  // ---------- Attunement: the Worldkey grows with you ----------
+  // Attunement XP (AXP) comes from feeding it artifacts (their charge, 1 per %), matching tuning patterns and
+  // completing artifact sets. Every level unlocks something on a visible track.
+  K.ALV_MAX = 20;
+  K.alvNeed = (lv) => 60 + 40 * (lv - 1);                // AXP from level lv to lv + 1
+  K.AXP = { tune: (len) => 12 + 4 * len, set: 40 };      // per matched pattern / per artifact set claimed
+  // the track: what each level unlocks (kind: spark = chance an artifact charges double, bonus = +% per artifact,
+  // fade = energy fades slower, days = tunings hold longer, coins = a one-time cache)
+  D.WK_PERKS = [
+    { lv: 2, kind: 'spark', val: 0.10, text: 'Resonance sparks: 10% of artifacts charge double' },
+    { lv: 3, kind: 'days', val: 1, text: 'Tunings hold 4 days' },
+    { lv: 4, kind: 'bonus', val: 2, text: '+2% charge from every artifact' },
+    { lv: 5, kind: 'fade', val: 0.8, text: 'Energy fades 20% slower' },
+    { lv: 6, kind: 'spark', val: 0.15, text: 'Resonance sparks: 15%' },
+    { lv: 7, kind: 'coins', val: 400, text: 'Cache: 400 coins' },
+    { lv: 8, kind: 'days', val: 2, text: 'Tunings hold 5 days' },
+    { lv: 9, kind: 'bonus', val: 4, text: '+4% charge from every artifact' },
+    { lv: 10, kind: 'fade', val: 0.65, text: 'Energy fades 35% slower' },
+    { lv: 11, kind: 'spark', val: 0.20, text: 'Resonance sparks: 20%' },
+    { lv: 12, kind: 'coins', val: 900, text: 'Cache: 900 coins' },
+    { lv: 13, kind: 'days', val: 3, text: 'Tunings hold 6 days' },
+    { lv: 14, kind: 'bonus', val: 6, text: '+6% charge from every artifact' },
+    { lv: 15, kind: 'fade', val: 0.5, text: 'Energy fades half as fast' },
+    { lv: 16, kind: 'spark', val: 0.25, text: 'Resonance sparks: 25%' },
+    { lv: 17, kind: 'coins', val: 1600, text: 'Cache: 1,600 coins' },
+    { lv: 18, kind: 'days', val: 4, text: 'Tunings hold 7 days' },
+    { lv: 19, kind: 'bonus', val: 8, text: '+8% charge from every artifact' },
+    { lv: 20, kind: 'fade', val: 0.4, text: 'Energy fades 60% slower. Fully attuned.' },
+  ];
+  // the perks in force at a level (later entries of a kind replace earlier ones)
+  K.perksAt = (lv) => {
+    const p = { spark: 0, bonus: 0, fade: 1, days: 0 };
+    for (const x of D.WK_PERKS) if (x.lv <= lv && x.kind !== 'coins') p[x.kind] = x.val;
+    p.tuneDays = K.TUNE_DAYS + p.days;
+    return p;
+  };
+  // level from total AXP: { lv, into, need, pct }
+  K.alvOf = (axp) => {
+    let lv = 1, left = Math.max(0, Number(axp) || 0);
+    while (lv < K.ALV_MAX && left >= K.alvNeed(lv)) { left -= K.alvNeed(lv); lv++; }
+    const need = lv >= K.ALV_MAX ? 0 : K.alvNeed(lv);
+    return { lv, into: Math.floor(left), need, pct: need ? Math.min(100, (left / need) * 100) : 100 };
+  };
+  // finishing a world's six artifacts: a one-time set bonus (coins by the world's tier, plus AXP)
+  K.SET_COINS = { near: 120, mid: 250, far: 450 };
+  // signals: memory games you bank by walking (play them from Inventory → Worldkey). Skipping one after a mission banks it too.
+  K.SIG = { STEPS: 2500, MAX: 3, ENERGY: 5, DAILY_MULT: 2 };
+
   // what the retired Darkmatter was worth, so old saves can be converted (05g-worldkey.js)
   K.OLD_DM = { void: 20, nebula: 45, eclipse: 70 };
 
@@ -48,11 +107,12 @@
     { id: 'diagonal', name: 'Diagonal', tone: 784, dots: [[-2, 2], [-1, 1], [0, 0], [1, -1], [2, -2]] },
   ];
   // a world's sequence never changes: it is seeded by the world's id
-  K.sequence = (w, len) => {   // the same world always starts the same way; higher levels add symbols on the end
+  K.sequence = (w, len, pool = 6) => {   // the same world always starts the same way; longer patterns add symbols on the end
     let h = 2166136261; for (const ch of w.id) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
     const rnd = () => { h ^= h << 13; h >>>= 0; h ^= h >>> 17; h ^= h << 5; h >>>= 0; return h / 4294967296; };
     const n = len || 4, out = [];
-    while (out.length < n) { const k = Math.floor(rnd() * D.WK_SYMBOLS.length); if (out.length >= 2 && out[out.length - 1] === k && out[out.length - 2] === k) continue; out.push(k); }
+    const m = Math.max(2, Math.min(D.WK_SYMBOLS.length, pool));
+    while (out.length < n) { const k = Math.floor(rnd() * m); if (out.length >= 2 && out[out.length - 1] === k && out[out.length - 2] === k) continue; out.push(k); }
     return out;
   };
 
