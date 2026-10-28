@@ -344,8 +344,9 @@
 
   /* Background music: the app song (first launch, until the tutorial ends) and battle music.
      Streams with an <audio> element so long tracks don't have to download before playing. Off when the player
-     turns Game music off. Browsers only allow audio after a
-     tap, so a blocked start is retried on the next tap. */
+     turns Game music off. Browsers only allow audio after a tap, so a blocked start is retried on every tap
+     until one works. Battles start their music inside the tap that opens the fight (see BattleUI.open), so
+     iOS never sees it as an autoplay from a timer. */
   WB.Bgm = (() => {
     const TRACKS = {
       app: 'music/app_theme.mp3',
@@ -366,45 +367,60 @@
       for (const [f, w] of pool) { r -= w; if (r <= 0) return (lastBattle = f); }
       return (lastBattle = pool[pool.length - 1][0]);
     };
-    let el = null, want = null, fadeT = null, oursAt = 0;
+    let el = null, want = null, fadeT = null, oursAt = 0, primed = false;
     const pause = () => { if (!el) return; oursAt = Date.now(); el.pause(); };   // our own pauses (the 'pause' event arrives later, so it's timed)
     const allowed = () => !!(WB.state && WB.state.settings.gameMusic !== false);   // the Game music switch
-    // browsers only start audio after a real tap: on phones that is touchend / pointerup / click (not pointerdown)
+    // browsers only start audio after a real tap: on phones that is touchend / pointerup / click (not pointerdown).
+    // iOS can refuse a start made in pointerup and allow the touchend / click of the same tap, so every one of these
+    // tries, and nothing stops listening until a start has actually worked.
     const GESTURES = ['pointerup', 'touchend', 'click', 'keydown'];
-    const retry = () => { GESTURES.forEach((g) => document.removeEventListener(g, retry, true)); B.sync(); };
-    // iOS only lets an <audio> element play from code (like the battle music starting on a timer) after that same element
-    // has been started by a real tap once. So the first tap anywhere unlocks it with a silent clip.
-    const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+    // iOS only lets an <audio> element play from code after that same element has been started by a real tap once,
+    // so the first tap anywhere unlocks it with a short silent clip. The clip must hold real samples: Safari refuses
+    // an empty WAV, which used to leave the player locked for good.
+    const SILENT_KEY = '#silent';
+    const SILENT = (() => {
+      const n = 800, bytes = [];   // 0.1 s of 8 kHz, 8-bit mono silence (sample value 128)
+      const str = (s) => { for (const c of s) bytes.push(c.charCodeAt(0)); }, u32 = (v) => bytes.push(v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255), u16 = (v) => bytes.push(v & 255, (v >> 8) & 255);
+      str('RIFF'); u32(36 + n); str('WAVEfmt '); u32(16); u16(1); u16(1); u32(8000); u32(8000); u16(1); u16(8); str('data'); u32(n);
+      for (let i = 0; i < n; i++) bytes.push(128);
+      return 'data:audio/wav;base64,' + btoa(String.fromCharCode(...bytes));
+    })();
     const mk = () => {
       if (el) return el;
       el = new Audio(); el.loop = true; el.preload = 'auto'; el.setAttribute('playsinline', '');
-      // the phone paused it (a call, Siri, another app): pick it back up on the next tap, if it's still wanted
-      el.addEventListener('pause', () => { if (Date.now() - oursAt > 800 && want && allowed() && document.visibilityState === 'visible') GESTURES.forEach((g) => document.addEventListener(g, retry, true)); });
-      el.addEventListener('error', () => { if (want) { el.removeAttribute('src'); el.dataset.src = ''; GESTURES.forEach((g) => document.addEventListener(g, retry, true)); } });
+      // a track that won't load (network, a bad file): battles move on to another track instead of staying silent;
+      // anything else is tried again on the next tap
+      el.addEventListener('error', () => {
+        if (!want || el.dataset.src !== want.src) return;   // the silent unlock clip, or a track we already left
+        const bad = want.src; el.removeAttribute('src'); el.dataset.src = '';
+        if (want.list && (want.tries = (want.tries || 0) + 1) < 4) { want.src = pickTrack(want.list.filter(([f]) => f !== bad)); B.sync(); }
+      });
       return el;
     };
-    let primed = false;
-    const prime = () => {
-      if (primed) return;
-      try {
-        mk();
-        if (want) { primed = true; GESTURES.forEach((g) => document.removeEventListener(g, prime, true)); return B.sync(); }   // something is already wanted: start it for real
-        primed = true; GESTURES.forEach((g) => document.removeEventListener(g, prime, true));
-        el.dataset.src = ''; el.src = SILENT; el.volume = 0; oursAt = Date.now();
-        const p = el.play(); if (p && p.then) p.then(() => { oursAt = Date.now(); if (!want) el.pause(); else B.sync(); }).catch(() => { primed = false; GESTURES.forEach((g) => document.addEventListener(g, prime, true)); });
-      } catch (e) {}
+    const unlock = () => {
+      mk();
+      if (el.dataset.src !== SILENT_KEY) { el.src = SILENT; el.dataset.src = SILENT_KEY; }
+      el.volume = 0; oursAt = Date.now();
+      try { const p = el.play(); if (p && p.then) p.then(() => { primed = true; if (!want) { oursAt = Date.now(); el.pause(); } else B.sync(); }).catch(() => {}); } catch (e) {}
     };
-    GESTURES.forEach((g) => document.addEventListener(g, prime, true));
-    // every tap while music is wanted but not playing: try again (covers any start the phone refused)
-    GESTURES.forEach((g) => document.addEventListener(g, () => { if (want && allowed() && (!el || el.paused) && document.visibilityState === 'visible') B.sync(); }, true));
+    // every tap: if music is wanted but not playing (blocked, or paused by a call / Siri / another app), start it now,
+    // inside the tap; otherwise unlock the player once so later starts from code are allowed
+    GESTURES.forEach((g) => document.addEventListener(g, () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!allowed()) return;   // Game music off: never touch a media element (on iPhones it would pause the player's own music)
+      if (want) { if (!el || el.paused) B.sync(); }
+      else if (!primed) unlock();
+    }, true));
     const B = {
       // key: 'app' (the default theme) | 'battle' | 'merlin'; plays it on a loop until stop()
+      // opt.delay: ms of silence before the fade-in (the start itself still happens now, inside the caller's tap)
       home() { B.play('app'); },
-      play(key) {
+      play(key, opt = {}) {
         const epic = key === 'battle' && WB.state && WB.state.level >= WB.DATA.EPIC_MUSIC_LEVEL;
         const t = epic ? TRACKS.battle.concat(TRACKS.battleEpic) : TRACKS[key]; if (!t) return;
         if (want && want.key === key && el && !el.paused) return;
-        want = { key, src: Array.isArray(t) ? pickTrack(t) : t };
+        const list = Array.isArray(t) ? t : null;
+        want = { key, src: list ? pickTrack(list) : t, list, delay: opt.delay || 0 };
         B.sync();
       },
       stop(ms = 900) {
@@ -426,11 +442,15 @@
         if (!want || !allowed()) { if (el && !el.paused) { clearInterval(fadeT); pause(); } return; }
         mk();
         const url = WB.Assets.base + want.src;
-        if (el.dataset.src !== want.src) { el.src = url; el.dataset.src = want.src; }
+        const swap = el.dataset.src !== want.src;   // a new track (or the unlock clip still playing) always fades in
+        if (swap) { el.src = url; el.dataset.src = want.src; }
         clearInterval(fadeT);
-        const fresh = el.paused; el.volume = fresh ? 0 : 0.45;
-        if (fresh) { const t0 = performance.now(); fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / 700); if (el) el.volume = 0.45 * k; if (k >= 1) clearInterval(fadeT); }, 50); }   // fade in, never a hard start
-        const p = el.play(); if (p && p.catch) p.catch(() => GESTURES.forEach((g) => document.addEventListener(g, retry, true)));
+        const fresh = swap || el.paused, wait = want.delay || 0; want.delay = 0;
+        el.volume = fresh || wait ? 0 : 0.45;
+        if (fresh || wait) { const t0 = performance.now() + wait; fadeT = setInterval(() => { const k = Math.max(0, Math.min(1, (performance.now() - t0) / 700)); if (el) el.volume = 0.45 * k; if (k >= 1) clearInterval(fadeT); }, 50); }   // fade in, never a hard start
+        oursAt = Date.now();
+        // a refused start (no tap yet) is picked up by the next tap; a working one also unlocks the player for later
+        try { const p = el.play(); if (p && p.then) p.then(() => { primed = true; }).catch(() => {}); } catch (e) {}
       },
     };
     document.addEventListener('visibilitychange', () => { if (!el) return; if (document.visibilityState === 'hidden') pause(); else B.sync(); });

@@ -466,7 +466,7 @@
     if (on === merlinOn) return;
     merlinOn = on;
     if (on) { merlinPrev = WB.Bgm.key(); if (merlinPrev === 'merlin') merlinPrev = null; WB.Bgm.play('merlin'); }
-    else { WB.Bgm.stopIf('merlin', 600); if (merlinPrev) setTimeout(() => WB.Bgm.play(merlinPrev), 650); merlinPrev = null; }
+    else { WB.Bgm.stopIf('merlin', 600); const prev = merlinPrev; if (prev) setTimeout(() => { if (!WB.Bgm.key()) WB.Bgm.play(prev); }, 650); merlinPrev = null; }   // never over music that started meanwhile (a battle)
   }, 300);
   UI.merlinMusicOn = () => merlinOn;
   // the Druid's Knowledge Challenge, asked inside his encounter card

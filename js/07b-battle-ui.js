@@ -86,7 +86,9 @@
     el.hidden = false;
     WB.UI.histPush('battle'); WB.UI.lockScroll('battle', true);
     WB.Sfx.play('encounter');
-    setTimeout(() => { if (enc === e) WB.Bgm.play('battle'); }, WB.reducedMotion() ? 0 : 520);   // the music comes in as the title clears
+    // the music starts now, inside the tap that opened the fight (iOS blocks a start from a timer on a player that
+    // hasn't been tapped yet), and stays silent until it fades in as the title clears
+    WB.Bgm.play('battle', { delay: WB.reducedMotion() ? 0 : 520 });
     WB.Sfx.preload(BATTLE_SFX);
     document.documentElement.classList.add('battling');
     cv = $('#b-canvas'); ctx = cv.getContext('2d', { alpha: false });
