@@ -9,7 +9,7 @@
    Pets:            a pet knocked out in battle rests and recovers over time (pets no longer die).
    Artifacts:       the collection log keeps every artifact you've discovered. Each find also gives you a copy, and
                     once a world's artifacts are all discovered, walking it again keeps turning up new copies.
-                    Copies are the Worldkey's fuel (05g-worldkey.js wkCharge). */
+                    Copies are what the Darkmatter Forge uses up. */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
   Object.assign(D, { AMMO_PACK: 20, AMMO_MAX: 100, MAGIC_USES: 3, MAGIC_MAX: 9, WEAR_STRIKE: 1, WEAR_FLOOR: 0.6, WORN_AT: 30 });

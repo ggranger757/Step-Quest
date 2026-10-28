@@ -458,16 +458,6 @@
         e.aggressive = true;
         e.text = e.rival ? c.name + ' ' + c.verb + '. “Still walking? Prove it.”' : 'A ' + c.name + ' ' + c.verb + '!';
         e.choices = [{ id: 'battle', label: 'Battle', hint: 'Lv ' + (e.rival ? D.rivalStats(s.level) : D.creatureStats(e.creature, D.worldTier(w, s.level))).lvl }, { id: 'avoid', label: e.rival ? 'Walk away' : 'Avoid it', hint: e.rival ? 'She’ll be back' : 'Walk on' }];
-        // a mob: two or three of this world's fighters at once (see D.MOB in 05b-battle.js)
-        if (!e.rival && opts.mob !== false && (opts.mob === 'force' || (G.mobsOpen() && (opts.mob || Math.random() < D.MOB.CHANCE)))) {
-          const n = opts.mobSize || D.MOB.size(s.level), pool = hostile.filter((x) => !D.CREATURES[x].rival);
-          e.mob = [e.creature]; while (e.mob.length < n) e.mob.push(WB.pick(pool.length ? pool : [e.creature]));
-          const cnt = {}; e.mob.forEach((x) => (cnt[x] = (cnt[x] || 0) + 1));
-          const names = Object.entries(cnt).map(([x, k]) => (k > 1 ? k + ' ' + D.CREATURES[x].name + 's' : D.CREATURES[x].name));
-          e.text = 'A mob of ' + n + ' closes in: ' + (names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0]) + '!';
-          e.choices[0].hint = 'Mob of ' + n + ' · Lv ' + D.creatureStats(e.creature, D.worldTier(w, s.level)).lvl;
-          e.choices[1].hint = 'Slip past them';
-        }
       } else {
         e.text = 'A ' + c.name + ' ' + c.verb + '.';
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
@@ -508,14 +498,13 @@
     }
     return e;
   };
-  G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 600 + Math.floor(Math.random() * 400); };   // an encounter every 600–1,000 steps
+  G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 900 + Math.floor(Math.random() * 600); };   // an encounter every 900–1,500 steps
   G.battlesOpen = () => S().level >= D.BATTLE_LEVEL;
-  G.mobsOpen = () => G.battlesOpen() && S().level >= D.MOB.LEVEL && S().enc.battles >= 3;   // never in your first few battles
   // Missions → Field (field missions, milestones, deliveries) and Missions → Merlin (his quests, eggs, egg trades) open at level D.FIELD_LEVEL.
   // A save that already has a field mission or a delivery running keeps the tab open until it's finished, so nothing
   // is ever stranded behind the lock.
   D.FIELD_LEVEL = 3;
-  D.FORGE_LEVEL = 3;   // Inventory → Worldkey's artifact sections (the Collection and charging) opens at this level
+  D.FORGE_LEVEL = 3;   // Inventory → Artifacts (Collection) and the Forge (Inventory → Worldkey) open at this level
   G.lvlReached = (lv) => Math.max(S().level, S().peakLevel || 0) >= lv;
   G.fieldOpen = () => G.lvlReached(D.FIELD_LEVEL) || ((S().missions || {}).active || []).length > 0 || ((S().tasks || {}).quests || []).length > 0;
   G.tradesOpen = () => G.lvlReached(D.FIELD_LEVEL);
@@ -576,7 +565,7 @@
         if (f) {
           out.find = { world: e.world, i: f.i, first: f.first }; out.reward = { xp: f.first ? 15 + lvl : 8 + Math.floor(lvl / 2) };
           const n = G.artHave(e.world, f.i);
-          out.text = f.first ? 'You found: ' + f.name + '. It’s in your collection, ready to charge your Worldkey.' : 'Another ' + f.name + '. You have ' + n + ' now.';
+          out.text = f.first ? 'You found: ' + f.name + '. It’s in your collection, ready for the Darkmatter Forge.' : 'Another ' + f.name + '. You have ' + n + ' now.';
           if (f.first && G.potion(f.icon)) { out.reward.potion = f.icon; out.text = 'You found a new potion: ' + f.name + '. Buy more in Shop → Potions / Food.'; }
         } else { out.text = 'Just old coins.'; out.reward = { coins: 40 }; }
         break;
@@ -628,24 +617,14 @@
     G.removePending(e);
     const out = { result: b.result, reward: {}, granted: [] };
     if (e.nemesis) return bossResult(b, out, w);
-    const mob = Array.isArray(b.mob) && b.mob.length > 1 ? b.mob : null;
-    if (mob) { out.mob = { beaten: mob.filter((f) => f.down).map((f) => f.name), fled: mob.filter((f) => f.gone && !f.down).map((f) => f.name) }; }
     if (b.result === 'win') {
       const mult = e.boss ? 4 : 1;
       const tier = D.worldTier(w, s.level);   // the tier the creature fought at (it follows your level)
       out.reward = { xp: Math.round((22 + tier * 9) * mult), coins: Math.round((12 + tier * 5) * (e.boss ? 5 : 1)) };
-      if (mob) {   // a mob pays for every creature beaten (a share each), and half the XP for any that ran off
-        const n = out.mob.beaten.length, ran = out.mob.fled.length, M = D.MOB.REWARD;
-        out.reward = { xp: Math.round((22 + tier * 9) * M * (n + ran * 0.5)), coins: Math.round((12 + tier * 5) * M * n) };
-        s.enc.mobs = (s.enc.mobs || 0) + 1;
-      }
       s.enc.battles++; s.today.battles = (s.today.battles || 0) + 1; s.enc.fights++;
-      const kinds = mob ? [...new Set(mob.filter((f) => f.down).map((f) => f.id))] : [e.creature];
-      for (const k of kinds) {
-        const first = !s.enc.cards[k];
-        s.enc.cards[k] = (s.enc.cards[k] || 0) + 1;
-        if (first) { out.reward.coins += 30; out.newKind = out.newKind || k; }
-      }
+      const first = !s.enc.cards[e.creature];
+      s.enc.cards[e.creature] = (s.enc.cards[e.creature] || 0) + 1;
+      if (first) { out.reward.coins += 30; out.newKind = e.creature; }
       if (e.boss) {
         s.bosses[w.id] = Date.now(); s.enc.bossDue = null; out.boss = w;
         out.reward.potion = 'elixir';
@@ -664,7 +643,7 @@
       out.lostEggs = e.creature === 'druid' ? G.takeAllEggs() : G.breakEggs();   // half of each kind of egg breaks (the Druid takes them all)
       if (e.boss) s.enc.bossDue = null;
     } else if (b.result === 'escaped') {   // it ran away badly hurt: half the battle XP, no coins or loot
-      out.reward = { xp: Math.round((22 + D.worldTier(w, s.level) * 9) * (e.boss ? 4 : 1) * 0.5 * (mob ? D.MOB.REWARD * mob.length : 1)) };
+      out.reward = { xp: Math.round((22 + D.worldTier(w, s.level) * 9) * (e.boss ? 4 : 1) * 0.5) };
       out.granted = G.grant(out.reward, true);
       s.enc.fights++; s.enc.count++; s.today.encounters++;
       if (e.boss) s.enc.bossDue = null;   // a guardian that flees waits on the world map

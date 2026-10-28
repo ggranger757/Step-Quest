@@ -13,6 +13,7 @@
     switch (m.kind) {
       case 'gather': return 'Gather ' + m.count + ' ' + m.item.toLowerCase();
       case 'time': return D.MISSION_WINDOWS[m.win].name;
+      case 'steps': return m.name;
       case 'walks': return m.name;
       case 'deed': return m.title;
       default: return m.name;
@@ -22,6 +23,7 @@
   const missionDesc = (m) => {
     switch (m.kind) {
       case 'gather': return 'Walk ' + fmt(m.steps) + ' steps. ' + m.item + ' turn up along the way.';
+      case 'steps': return 'Walk ' + fmt(m.steps) + ' steps. Only steps after you accept count.';
       case 'time': return 'Walk ' + fmt(m.steps) + ' steps ' + D.MISSION_WINDOWS[m.win].when + '.';
       case 'deed': return m.deed === 'trek' ? 'Walk ' + fmt(m.steps) + ' steps to get there and back. ' + m.how : 'Walk ' + fmt(m.steps) + ' steps, then do it. ' + m.how;
       case 'walks': return 'Take ' + m.walks + ' separate walks of at least ' + fmt(m.per) + ' steps each. A ' + D.MISSION_WALK_GAP_MIN + '-minute break starts a new walk.';
@@ -41,6 +43,7 @@
         const got = Math.min(m.count, Math.floor(a.steps / (m.steps / m.count)));
         return { cur: got, target: m.count, done: got >= m.count, label: got + ' / ' + m.count + ' ' + (m.count === 1 ? m.one : m.item).toLowerCase() };
       }
+      case 'steps': return { cur: Math.min(a.steps, m.steps), target: m.steps, done: a.steps >= m.steps, label: fmt(Math.min(a.steps, m.steps)) + ' / ' + fmt(m.steps) + ' steps' };
       case 'time': return { cur: Math.min(a.win, m.steps), target: m.steps, done: a.win >= m.steps, label: fmt(Math.min(a.win, m.steps)) + ' / ' + fmt(m.steps) + ' steps ' + D.MISSION_WINDOWS[m.win].when };
       case 'walks': {
         const w = a.walks || [], n = w.filter((v) => v >= m.per).length, cur = w.length ? w[w.length - 1] : 0;
@@ -58,7 +61,7 @@
   G.missionBoard = () => {
     const ms = S().missions, busy = new Set([...ms.done, ...ms.active.map((a) => a.id)]), skip = new Set(ms.skip);
     const open = D.MISSIONS.filter((m) => !busy.has(m.id) && !skip.has(m.id));
-    const later = ms.skip.map((id) => D.missionById[id]).filter((m) => m && !busy.has(m.id));
+    const later = ms.skip.map((id) => D.missionById[id]).filter((m) => m && !m.retired && !busy.has(m.id));
     return [...open, ...later].slice(0, D.MISSION_BOARD);
   };
   const fieldActive = () => S().missions.active.filter((a) => !(D.missionById[a.id] || {}).merlin);
@@ -141,6 +144,8 @@
     const s = S();
     return s.level >= D.MERLIN_MIN_LEVEL && !G.merlinActive() && !!G.merlinNext() && Date.now() - (s.enc.merlinAt || 0) > D.MERLIN_COOLDOWN_H * 3600000;
   };
+  // the quest Merlin has ready (shown on Missions → Merlin, where it can be accepted without waiting for him on the road)
+  G.merlinOffer = () => (S().level >= D.MERLIN_MIN_LEVEL && !G.merlinActive() ? G.merlinNext() : null);
   G.merlinDone = () => S().missions.done.filter((id) => id[0] === 'w' && D.missionById[id]).length;
   G.acceptMerlin = (id) => {
     const ms = S().missions, m = D.missionById[id];

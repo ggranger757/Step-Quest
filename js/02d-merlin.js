@@ -1,7 +1,6 @@
 /* Step Quest — Merlin's quests: 300 harder walking quests offered by Merlin, a wandering owl-mage who turns up
    on the road now and then (data only; rules live in 05c-missions.js and 05-game.js).
-   They use the same kinds as field missions (gather, time, walks, distance) but ask for more walking,
-   give you 48 hours instead of 24 and pay far more coins and XP. Only one Merlin quest runs at a time and it
+   Each one is simply "walk N steps": more walking than a field mission, 48 hours instead of 24, far more coins and XP. Only one Merlin quest runs at a time and it
    doesn't use a field-mission slot. Letting one expire or handing it back costs nothing: Merlin simply
    offers it again another day. Everything here is legal, public and outdoors: sidewalks, parks, trails. */
 (() => {
@@ -41,29 +40,18 @@
   // Skipping keeps every remaining quest's id, so a quest in progress or already done stays exactly as it was.
   const PATTERN = ['photo', 'distance', 'gather', 'photo', 'walks', 'time', 'photo', 'gather', 'distance', 'photo',
     'walks', 'gather', 'time', 'photo', 'distance', 'gather', 'photo', 'walks', 'time', 'distance'];
-  const WINDOWS = Object.keys(D.MISSION_WINDOWS);
+  // Simplified: every Merlin quest is the same thing, "walk N steps within 48 hours" (no gathering, time windows or
+  // multi-walk rules). Quests keep the ids they always had, so finished ones stay finished and a quest in progress carries on.
+  const NAMES = GATHER.map((g) => g[4]).concat(TIME_NAMES, WALK_NAMES, DIST_NAMES);
   const out = [];
-  let gi = 0, ti = 0, wi = 0, di = 0;
+  let ni = 0;
   for (let i = 0; i < 300; i++) {
     const kind = PATTERN[i % 20], f = i / 299;
-    const base = 6000 + 14000 * Math.pow(f, 1.1);     // 6,000 -> 20,000 steps across the list
-    const m = { id: 'w' + String(i + 1).padStart(3, '0'), n: i + 1, kind, merlin: true, hours: 48 };
     if (kind === 'photo') continue;   // removed
-    if (kind === 'gather') {
-      const g = GATHER[gi % GATHER.length], count = 10 + Math.round(f * 14) + (gi >= GATHER.length ? 2 : 0);
-      gi++;
-      Object.assign(m, { name: nth(g[4], gi - 1, GATHER.length), item: g[0], one: g[1], icon: g[2], pal: g[3], count, steps: r50(base * 0.9) });
-    } else if (kind === 'time') {
-      const w = WINDOWS[ti % WINDOWS.length];
-      Object.assign(m, { name: nth(TIME_NAMES[ti % TIME_NAMES.length], ti, TIME_NAMES.length), win: w, steps: r50(base * 0.45), icon: w === 'evening' ? 'moon' : 'flame' });
-      ti++;
-    } else if (kind === 'walks') {
-      const walks = 3 + Math.min(2, Math.floor(f * 3)), per = r50(2000 + 2500 * f);   // 3-5 walks of 2,000-4,500 steps
-      Object.assign(m, { name: nth(WALK_NAMES[wi % WALK_NAMES.length], wi++, WALK_NAMES.length), walks, per, steps: per * walks, icon: 'steps' });
-    } else {
-      const meters = Math.round((5000 + 11000 * Math.pow(f, 1.1)) / 100) * 100;   // 5 km -> 16 km
-      Object.assign(m, { name: nth(DIST_NAMES[di % DIST_NAMES.length], di++, DIST_NAMES.length), meters, steps: Math.round(meters / 0.76), icon: 'map' });
-    }
+    const steps = r50(5000 + 10000 * Math.pow(f, 1.1));   // 5,000 -> 15,000 steps across the list
+    const m = { id: 'w' + String(i + 1).padStart(3, '0'), n: out.length + 1, kind: 'steps', merlin: true, hours: 48,
+      name: nth(NAMES[ni % NAMES.length], ni, NAMES.length), steps, icon: 'steps' };
+    ni++;
     m.reward = { coins: r5(150 + 450 * f + (m.steps % 5) * 5), xp: r5(200 + 700 * f + (m.steps % 7) * 5) };   // ~150-600 coins, ~200-900 XP
     if ((i + 1) % 10 === 0) m.reward.potion = 'elixir';
     out.push(m);

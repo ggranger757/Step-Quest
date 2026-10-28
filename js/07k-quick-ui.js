@@ -47,8 +47,7 @@
     }, 1300);
   };
   G.pendingHas = (e) => S().enc.pending.some((p) => p.id === e.id);
-  // (kept for older callers: finishing a mission now always leads to battle mode, see 05m-aftermission.js)
-  UI.missionAmbushRoll = () => false;
+  UI.missionAmbushRoll = (src, title) => { const e = G.missionBattle(src, title); if (e) UI.missionAmbush(e); return !!e; };
 
   // ---------- Profile: Mission mix ----------
   UI.mixSpan = UI.mixSpan || 'week'; UI.mixOff = UI.mixOff || 0;
@@ -96,6 +95,7 @@
       UI.toast({ kicker: 'Quick mission done', title: r.pay.coins || r.pay.xp ? rewardLine(r.pay) : r.def.title, sub: r.pay.coins || r.pay.xp ? r.def.title : 'Today’s quick rewards are used up', icon: 'bolt', cls: r.pay.coins ? 'gold' : 'ok', ms: 2200 });
       WB.Celebrate.confetti(24);
       UI.updateHud(); UI.render();
+      UI.missionAmbushRoll('quick', r.def.title);
       return;
     }
     if (d.mixspan) { UI.mixSpan = d.mixspan; UI.mixOff = 0; WB.Sfx.play('tap'); return UI.renderProfile(); }

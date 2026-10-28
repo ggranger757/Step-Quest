@@ -8,7 +8,7 @@
 
   // ---------- rendering ----------
   const ic = (m, scale = 3) => WB.icon(m.icon, scale, m.pal ? { pal: m.pal } : {});
-  const tag = (m) => (m.kind === 'deed' ? (m.deed === 'trek' ? 'Trail & trek' : 'Good deed') : ({ gather: 'Gather', time: 'Timed walk', walks: 'Multi-walk', distance: 'Distance' })[m.kind]);
+  const tag = (m) => (m.kind === 'deed' ? (m.deed === 'trek' ? 'Trail & trek' : 'Good deed') : ({ gather: 'Gather', steps: 'Walk', time: 'Timed walk', walks: 'Multi-walk', distance: 'Distance' })[m.kind]);
   const penText = (m) => { const p = G.missionPenalty(m); if (!p.coins && !p.hp) return 'no penalty'; return [p.coins ? '-' + WB.fmt(p.coins) + ' coins' : '', p.hp ? '-' + p.hp + ' HP' : ''].filter(Boolean).join(', '); };
   const left = (a) => { const ms = G.missionLeft(a); return ms <= 0 ? 'Time’s up' : UI.dur(Math.ceil(ms / 60000)) + ' left'; };
   function activeCard(m, a) {
@@ -62,9 +62,15 @@
   }
   // Missions → Merlin: his quest, then your eggs and his egg trades
   UI.merlinSection = () => {
-    const mer = G.merlinActive();
-    return `<div class="sect merlin-sect" id="merlin-quest"><h2><canvas class="mer-face" width="40" height="40" aria-hidden="true"></canvas>Merlin’s quest <span class="aside">${G.merlinDone()} / ${D.MERLIN.length} done</span></h2>
-      ${mer ? `<div class="list">${activeCard(mer[0], mer[1])}</div>` : `<p class="fine">Merlin the owl-mage appears on the road with bigger quests and bigger rewards. You get ${D.MERLIN[0].hours} hours, and saying no costs nothing.${S().level < D.MERLIN_MIN_LEVEL ? ' He shows up from level ' + D.MERLIN_MIN_LEVEL + '.' : ''}</p>`}
+    const mer = G.merlinActive(), offer = !mer && G.merlinOffer(), lvl = S().level < D.MERLIN_MIN_LEVEL;
+    const offerCard = (m) => `<div class="task mission offer pbox merlin">
+        <div class="m-main"><span class="m-ic">${ic(m)}</span><div><div class="m-kick">Merlin offers you</div><div class="t-title">${WB.esc(G.missionTitle(m))}</div>
+          <div class="m-desc">Walk ${WB.fmt(m.steps)} steps within ${m.hours} hours.</div></div></div>
+        <div class="m-acts"><button class="btn sm" type="button" data-merlin-acc="${m.id}">Accept</button><button class="linkbtn" type="button" data-merlin-skip="${m.id}">Not now</button></div>
+        <div class="m-foot"><div class="t-rew">${WB.esc(G.rewardText(m.reward))}</div><div class="m-stake">No penalty if you give it back</div></div>
+      </div>`;
+    return `<div class="sect merlin-sect" id="merlin-quest"><h2><canvas class="mer-face" width="40" height="40" aria-hidden="true"></canvas>Merlin’s quest <span class="aside">${G.merlinDone()} done</span></h2>
+      ${mer ? `<div class="list">${activeCard(mer[0], mer[1])}</div>` : lvl ? `<p class="fine">Merlin the owl-mage hands out walking quests from level ${D.MERLIN_MIN_LEVEL}.</p>` : offer ? `<p class="fine">Merlin has a quest for you. Accept it, walk the steps, then claim the reward. One quest at a time, and giving it back costs nothing.</p><div class="list">${offerCard(offer)}</div>` : `<p class="fine">You’ve finished every quest Merlin had. Check back soon.</p>`}
       <h3 class="m-sub">Your eggs <span class="aside">${G.eggTotal()} carried</span></h3>${UI.eggStrip ? UI.eggStrip() : ''}
       <h3 class="m-sub">Egg trades <span class="aside">${S().eggTrades || 0} made</span></h3>${UI.eggTrades ? UI.eggTrades() : ''}
     </div>`;
@@ -72,9 +78,9 @@
   // Missions → Field: field missions, deliveries and milestones, then the board
   UI.missionsSection = () => {
     const ms = S().missions, act = ms.active.map((a) => [D.missionById[a.id], a]).filter(([m]) => m && !m.merlin);
-    const board = G.missionBoard(), fieldDone = ms.done.filter((id) => D.missionById[id] && !D.missionById[id].merlin).length;
+    const board = G.missionBoard(), fieldDone = ms.done.filter((id) => D.missionById[id] && !D.missionById[id].merlin && !D.missionById[id].retired).length;
     return `<div class="sect" id="field-missions"><h2>Field missions <span class="aside">${fieldDone} / ${D.MISSIONS.length} done</span></h2>
-      <p class="fine m-intro">Real-world walks with a goal: good deeds, trail treks, gathering runs, timed walks and distance runs. Accept one and you have ${D.MISSION_HOURS} hours; only steps after that count. Miss the deadline or drop it and you lose coins and HP. Run up to ${D.MISSION_ACTIVE_MAX} at once.</p>
+      <p class="fine m-intro">Real-world walks with a goal: good deeds, easy treks, timed walks and distance runs. Accept one and you have ${D.MISSION_HOURS} hours; only steps after that count. Miss the deadline or drop it and you lose coins and HP. Run up to ${D.MISSION_ACTIVE_MAX} at once.</p>
       ${act.length ? `<div class="list">${act.map(([m, a]) => activeCard(m, a)).join('')}</div>` : ''}
       ${goalsBlock()}
       ${board.length ? `<h3 class="m-sub">Mission board <span class="aside">${board.length} to pick from</span></h3>
@@ -85,11 +91,13 @@
   };
   // ---------- events ----------
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-macc], [data-mdrop], [data-mkeep], [data-mskip], [data-mdeed]');
+    const t = e.target.closest('[data-macc], [data-mdrop], [data-mkeep], [data-mskip], [data-mdeed], [data-merlin-acc], [data-merlin-skip]');
     if (!t || t.getAttribute('aria-disabled') === 'true') return;
     const d = t.dataset;
     WB.Sfx.play('tap');
-    if (d.macc) { if (G.acceptMission(d.macc)) UI.toast({ kicker: 'Mission accepted', title: G.missionTitle(D.missionById[d.macc]), icon: 'flag', cls: 'ok' }); }
+    if (d.merlinAcc) { if (G.acceptMerlin(d.merlinAcc)) { WB.Sfx.play('quest'); UI.toast({ kicker: 'Merlin’s quest accepted', title: G.missionTitle(D.missionById[d.merlinAcc]), sub: 'Walk the steps, then claim your reward.', icon: 'flag', cls: 'ok' }); } }
+    else if (d.merlinSkip) { G.declineMerlin(d.merlinSkip); WB.Save.queue(); }
+    else if (d.macc) { if (G.acceptMission(d.macc)) UI.toast({ kicker: 'Mission accepted', title: G.missionTitle(D.missionById[d.macc]), icon: 'flag', cls: 'ok' }); }
     else if (d.mkeep) UI.dropArm = null;
     else if (d.mdrop && !d.sure) UI.dropArm = d.mdrop;
     else if (d.mdrop) { UI.dropArm = null; G.dropMission(d.mdrop); }

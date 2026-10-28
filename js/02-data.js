@@ -1109,9 +1109,9 @@
     { id: 'wkopen5', title: 'Keymaster', desc: 'Open 10 worlds with your Worldkey.', stat: 'portals', target: 10, reward: { coins: 700 } },
     { id: 'wkkeys3', title: 'Key Ring', desc: 'Own 5 Worldkeys.', stat: 'worldkeys', target: 5, reward: { coins: 500 } },
     { id: 'tuned5', title: 'Lamplighter', desc: 'Tune your Worldkey 15 times.', stat: 'tuned', target: 15, reward: { coins: 250 } },
-    { id: 'forge1', title: 'First Spark', desc: 'Charge your Worldkey with an artifact.', stat: 'forged', target: 1, reward: { xp: 100 } },
-    { id: 'forge10', title: 'Powder Keg', desc: 'Use 25 artifacts to charge your Worldkey.', stat: 'forged', target: 25, reward: { coins: 500 } },
-    { id: 'forge25', title: 'Demolitionist', desc: 'Use 60 artifacts to charge your Worldkey.', stat: 'forged', target: 60, reward: { coins: 1200 } },
+    { id: 'forge1', title: 'First Spark', desc: 'Craft your first Darkmatter.', stat: 'forged', target: 1, reward: { xp: 100 } },
+    { id: 'forge10', title: 'Powder Keg', desc: 'Craft 25 Darkmatter.', stat: 'forged', target: 25, reward: { coins: 500 } },
+    { id: 'forge25', title: 'Demolitionist', desc: 'Craft 60 Darkmatter.', stat: 'forged', target: 60, reward: { coins: 1200 } },
     // battle
     { id: 'battles50', title: 'Cutlass', desc: 'Win 150 battles.', stat: 'battles', target: 150, reward: { coins: 500 } },
     { id: 'battles250', title: 'Sabre Master', desc: 'Win 750 battles.', stat: 'battles', target: 750, reward: { coins: 2500 } },
@@ -1147,7 +1147,7 @@
   D.MERLIN_ACCEPT = ['I’ll be watching from the treetops.', 'Walk well and the reward is yours.', 'Don’t keep an old owl waiting.', 'May your shoes hold out.'];
   D.MERLIN_DECLINE = ['Another day, then. I’ll find you.', 'Rest those legs. I’ll be back.', 'Hoo. Not everyone is ready. Yet.'];
   D.BATTLE_LEVEL = 3;    // creatures, battles, guardians and the Druid only appear from this level
-  D.FIGHT_CHANCE = 0.5;
+  D.FIGHT_CHANCE = 0.4;
   D.RIVAL_CHANCE = 0.08;   // a fighting creature is Redhood Rival 8% of the time, in any world
   // Redhood Rival's battle talk: her travels, and how you don't walk as much as she does.
   // {today} your steps today · {total} your lifetime steps · {streak} your streak · {world} where you are · {far} somewhere she's been
@@ -1158,7 +1158,7 @@
     special: ['Try keeping up with THIS!', 'Ten thousand steps of momentum!', 'Feel the road in my legs!'],
     defeat: ['Fine, you win today. I’ll still out-walk you by tomorrow.', 'Huh. Maybe you DO walk. See you on the next road!', 'Lucky swing. I’m going for a walk to think about it. A long one.'],
     victory: ['Walk more, rival. I’ll be waiting at the next world.', 'Come find me when your legs catch up.', 'Rest up. I’ll do your steps for you. Kidding. Walk!'] } };   // a creature encounter is a fighting creature half the time
-  D.ENCOUNTER_WEIGHTS = [{ type: 'creature', w: 40 }, { type: 'chest', w: 20 }, { type: 'find', w: 16 }, { type: 'merchant', w: 11 }, { type: 'traveler', w: 13 }, { type: 'merlin', w: 5 }, { type: 'egg', w: 9 }, { type: 'druid', w: 6 }, { type: 'nemesis', w: 3 }];   // Merlin only when a quest can be offered (else a crate)
+  D.ENCOUNTER_WEIGHTS = [{ type: 'creature', w: 28 }, { type: 'chest', w: 20 }, { type: 'find', w: 16 }, { type: 'merchant', w: 11 }, { type: 'traveler', w: 13 }, { type: 'merlin', w: 5 }, { type: 'egg', w: 9 }, { type: 'druid', w: 6 }, { type: 'nemesis', w: 3 }];   // Merlin only when a quest can be offered (else a crate)
   D.CHEST_LINES = ['A supply crate sits half-buried in the dirt.', 'You spot a rusted footlocker by the road.', 'A crate with a faded star stencil. Still sealed.'];
   D.FIND_LINES = ['Something glints in the rubble.', 'A small object catches the light.', 'You notice something half-hidden by the path.'];
   D.MERCHANT_CHAT = ['Safe travels. The road is kinder to those who keep moving.', 'I’ve walked every world on this map. Your feet will get you there too.', 'Business is slow, but the view is good. Off you go.', 'Every step counts, walker. I count mine too.'];

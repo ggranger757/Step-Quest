@@ -92,7 +92,7 @@
           const p = WB.view.avatarPos(), c = agg.coins, x = agg.xp;
           if (c) UI.floater(WB.icon('coin', 2) + '+' + c, p.x + 6, p.y - 10);
           if (x) setTimeout(() => UI.floater('+' + x + ' XP', p.x + 30, p.y + 14, 'xp'), 250);
-          if (c) WB.Sfx.play('coin');
+          if (c && !document.documentElement.classList.contains('battling')) WB.Sfx.play('coin');
         }
         agg = { coins: 0, xp: 0 };
       }, 1100);
@@ -247,7 +247,6 @@
         <button class="btn sm" type="button" data-dev="avatars">Unlock all avatars</button>
         <button class="btn sm" type="button" data-dev="enc">Trigger encounter</button>
         <button class="btn sm danger" type="button" data-dev="battle">Start a battle</button>
-        <button class="btn sm danger" type="button" data-dev="mob">Mob battle (3)</button>
         <button class="btn sm danger" type="button" data-dev="boss">Fight the guardian</button>
         <button class="btn sm ok" type="button" data-dev="heal">Full heal</button>
         <button class="btn sm ok" type="button" data-dev="potions">+3 of each potion</button>
@@ -265,8 +264,7 @@
           const td = s.today; td.encounters = Math.max(td.encounters, 2); td.fights = Math.max(td.fights, 1); td.chests = Math.max(td.chests, 1); td.meters = Math.max(td.meters, 1500); const need = Math.max(0, 4000 - td.steps); if (need) WB.Steps.push(need, 'dev'); else G.after(); }
         if (k === 'world') { const nw = G.nextWorld(); if (nw) { if (nw.unlock.after) s.worldSteps[nw.unlock.after] = Math.max(s.worldSteps[nw.unlock.after] || 0, D.worldById[nw.unlock.after].length); while (s.level < nw.unlock.level) G.addXp(D.xpToNext(s.level) - s.xp + 1); G.after(); } }
         if (k === 'avatars') { D.AVATARS.forEach((a) => G.unlock('avatar', a.id, true)); G.after(); }
-        if (k === 'battle') { UI.closeSheet(); UI.go('world'); const w = G.world(), c = w.pool.find((x) => D.CREATURES[x].aggressive) || 'hyena'; WB.BattleUI.open(G.makeEncounter('creature', { creature: c, mob: false }), true); return; }
-        if (k === 'mob') { UI.closeSheet(); UI.go('world'); const w = G.world(), c = w.pool.find((x) => D.CREATURES[x].aggressive) || 'hyena'; WB.BattleUI.open(G.makeEncounter('creature', { creature: c, mob: 'force', mobSize: 3 }), true); return; }
+        if (k === 'battle') { UI.closeSheet(); UI.go('world'); const w = G.world(), c = w.pool.find((x) => D.CREATURES[x].aggressive) || 'hyena'; WB.BattleUI.open(G.makeEncounter('creature', { creature: c }), true); return; }
         if (k === 'boss') { UI.closeSheet(); UI.go('world'); WB.BattleUI.challenge(s.world, true); return; }
         if (k === 'heal') { s.hp = G.maxHp(); G.after(); }
         if (k === 'potions') { D.POTIONS.forEach((p) => G.addPotion(p.id, 3)); G.after(); }

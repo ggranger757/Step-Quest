@@ -1,7 +1,7 @@
 /* Step Quest — field missions: 675 real-world walking missions (data only; rules live in 05c-missions.js).
    Every mission needs walking: only steps taken after you accept a mission count toward it.
    Kinds:
-     gather   walk N steps; the items turn up along the way as you walk (in-game finds)
+     gather   (retired) walk N steps; items turned up along the way. No longer offered.
      time     walk N steps inside a time window (sunrise, lunch, golden hour…)
      walks    take W separate walks of at least N steps each (a 20-minute break starts a new walk)
      distance cover a distance
@@ -60,7 +60,8 @@
     if (kind === 'photo') continue;   // removed
     const steps = r50(800 + 9200 * Math.pow(f, 1.15));     // 800 -> 10,000 steps across the list
     const m = { id: 'm' + String(i + 1).padStart(3, '0'), n: i + 1, kind };
-    if (kind === 'gather') {
+    if (kind === 'gather') {   // retired: in-app gathering missions are off the board (kept only so an accepted one can still be finished)
+      m.retired = true;
       const g = GATHER[(gi * 7) % GATHER.length], count = [3, 4, 5, 6, 8, 10, 12][Math.min(6, Math.floor(f * 7))];
       gi++;
       Object.assign(m, { item: g[0], one: g[1], icon: g[2], pal: g[3], count, steps: r50(steps * 1.1) });
@@ -135,15 +136,16 @@
     const f = at / 674, base = r50(800 + 9200 * Math.pow(f, 1.15));
     const m = { id: 'm' + (601 + k), n: 0, extra: true };
     if (x[1] === 'removed') return;   // an empty slot (see above)
+    if (x[0] === 'trek' && x[3] >= 10000) m.retired = true;   // too much effort for a board mission: off the board
     if (x[0] === 'kind') Object.assign(m, { kind: 'deed', deed: 'kind', title: x[1], how: x[2], steps: Math.max(500, r50(base * 0.6)), icon: 'heart' });
     else Object.assign(m, { kind: 'deed', deed: 'trek', title: x[1], how: x[2], steps: x[3], icon: 'map' });
     m.reward = { coins: r5(40 + m.steps / 30 + at * 0.6), xp: r5((40 + m.steps / 25 + at * 0.8) * (m.deed === 'kind' ? 1.3 : 1)) };   // kindness pays extra XP
     if (k % 10 === 9) m.reward.potion = POTS[k % POTS.length];
     merged.splice(at, 0, m);
   });
-  merged.forEach((m, i) => (m.n = i + 1));   // board numbers follow the board order
-  D.MISSIONS = merged;
-  D.missionById = Object.fromEntries(merged.map((m) => [m.id, m]));
+  D.missionById = Object.fromEntries(merged.map((m) => [m.id, m]));   // everything, so a mission already accepted can still be finished
+  D.MISSIONS = merged.filter((m) => !m.retired);   // the board: real-life missions you can do without much effort
+  D.MISSIONS.forEach((m, i) => (m.n = i + 1));   // board numbers follow the board order
   D.MISSION_ACTIVE_MAX = 3;
   D.MISSION_HOURS = 24;          // time to finish a mission once you pick it
   D.MISSION_WALK_GAP_MIN = 20;   // a break this long between steps starts a new walk

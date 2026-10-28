@@ -296,6 +296,7 @@
     };
     // game sounds stay quiet when the player turned Sound effects off
     let lastLevel = 0;
+    FILES.victory = FILES.level;   // victory, level-up, achievements and claimed rewards all share one fanfare: only ever one song
     const muted = () => !WB.state || !WB.state.settings.sound;
     return {
       muted,
@@ -321,7 +322,9 @@
         for (const path of paths) if (!buffers[path]) buffers[path] = fetch(WB.Assets.base + path).then((r) => r.arrayBuffer()).then((b) => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no))).catch(() => { delete buffers[path]; });
       },
       play(name) {
-        if (name === 'level') { const now = Date.now(); if (now - lastLevel < 11000) return; lastLevel = now; }   // level-up + achievement together: one fanfare, played in full
+        if (name === 'victory') name = 'level';   // one shared fanfare for victory / level-up / rewards
+        if ((name === 'quest' || name === 'discovery' || name === 'unlock') && Date.now() - lastLevel < 11000) return;   // while the fanfare plays, no second song on top of it
+        if (name === 'level') { const now = Date.now(); if (now - lastLevel < 11000) return; lastLevel = now; }   // victory + level-up + achievement together: one fanfare, played in full
         if ((name === 'level' || name === 'discovery') && WB.Bgm && WB.Bgm.duck) WB.Bgm.duck(name === 'level' ? 11000 : 8000);   // the music steps back while it plays
         const f = FILES[name] || (!tones[name] && 'sfx/' + name + '.mp3');   // any other name = its file in sfx/ (tools/synth_sounds.py)
         if (f) return this.file(Array.isArray(f) ? f[Math.floor(Math.random() * f.length)] : f, 0.7);
@@ -369,6 +372,31 @@
     // browsers only start audio after a real tap: on phones that is touchend / pointerup / click (not pointerdown)
     const GESTURES = ['pointerup', 'touchend', 'click', 'keydown'];
     const retry = () => { GESTURES.forEach((g) => document.removeEventListener(g, retry, true)); B.sync(); };
+    // iOS only lets an <audio> element play from code (like the battle music starting on a timer) after that same element
+    // has been started by a real tap once. So the first tap anywhere unlocks it with a silent clip.
+    const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+    const mk = () => {
+      if (el) return el;
+      el = new Audio(); el.loop = true; el.preload = 'auto'; el.setAttribute('playsinline', '');
+      // the phone paused it (a call, Siri, another app): pick it back up on the next tap, if it's still wanted
+      el.addEventListener('pause', () => { if (Date.now() - oursAt > 800 && want && allowed() && document.visibilityState === 'visible') GESTURES.forEach((g) => document.addEventListener(g, retry, true)); });
+      el.addEventListener('error', () => { if (want) { el.removeAttribute('src'); el.dataset.src = ''; GESTURES.forEach((g) => document.addEventListener(g, retry, true)); } });
+      return el;
+    };
+    let primed = false;
+    const prime = () => {
+      if (primed) return;
+      try {
+        mk();
+        if (want) { primed = true; GESTURES.forEach((g) => document.removeEventListener(g, prime, true)); return B.sync(); }   // something is already wanted: start it for real
+        primed = true; GESTURES.forEach((g) => document.removeEventListener(g, prime, true));
+        el.dataset.src = ''; el.src = SILENT; el.volume = 0; oursAt = Date.now();
+        const p = el.play(); if (p && p.then) p.then(() => { oursAt = Date.now(); if (!want) el.pause(); else B.sync(); }).catch(() => { primed = false; GESTURES.forEach((g) => document.addEventListener(g, prime, true)); });
+      } catch (e) {}
+    };
+    GESTURES.forEach((g) => document.addEventListener(g, prime, true));
+    // every tap while music is wanted but not playing: try again (covers any start the phone refused)
+    GESTURES.forEach((g) => document.addEventListener(g, () => { if (want && allowed() && (!el || el.paused) && document.visibilityState === 'visible') B.sync(); }, true));
     const B = {
       // key: 'app' (the default theme) | 'battle' | 'merlin'; plays it on a loop until stop()
       home() { B.play('app'); },
@@ -396,12 +424,7 @@
       // start, stop or resume to match what's wanted and what's allowed right now
       sync() {
         if (!want || !allowed()) { if (el && !el.paused) { clearInterval(fadeT); pause(); } return; }
-        if (!el) {
-          el = new Audio(); el.loop = true; el.preload = 'auto'; el.setAttribute('playsinline', '');
-          // the phone paused it (a call, Siri, another app): pick it back up on the next tap, if it's still wanted
-          el.addEventListener('pause', () => { if (Date.now() - oursAt > 800 && want && allowed() && document.visibilityState === 'visible') GESTURES.forEach((g) => document.addEventListener(g, retry, true)); });
-          el.addEventListener('error', () => { if (want) { el.removeAttribute('src'); el.dataset.src = ''; GESTURES.forEach((g) => document.addEventListener(g, retry, true)); } });
-        }
+        mk();
         const url = WB.Assets.base + want.src;
         if (el.dataset.src !== want.src) { el.src = url; el.dataset.src = want.src; }
         clearInterval(fadeT);

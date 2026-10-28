@@ -1,6 +1,6 @@
 // Adds the settings Apple Health and Health Connect need to the generated native projects.
 // Safe to run again: every change is skipped if it is already there.
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -29,27 +29,6 @@ edit(join(native, 'ios', 'App', 'App.xcodeproj', 'project.pbxproj'), (s) =>
 
 // ---- Android: Location Awareness was removed, so no location permission (older projects drop it here)
 edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) => s.replace(/\s*<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" \/>/, ''));
-
-// ---- Android: mission reminders (@capacitor/local-notifications)
-// POST_NOTIFICATIONS: Android 13+ asks before showing notifications. SCHEDULE_EXACT_ALARM: "due in 5 minutes" arrives on
-// the minute once the player allows exact alarms (Step Quest asks in context; without it Android may deliver a few
-// minutes late). RECEIVE_BOOT_COMPLETED: scheduled reminders survive a restart.
-edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) => {
-  for (const perm of ['android.permission.POST_NOTIFICATIONS', 'android.permission.SCHEDULE_EXACT_ALARM', 'android.permission.RECEIVE_BOOT_COMPLETED']) {
-    if (!s.includes(`android:name="${perm}"`)) s = s.replace(/(\s*)<\/manifest>/, `\n    <uses-permission android:name="${perm}" />$1</manifest>`);
-  }
-  return s;
-});
-// the status-bar icon for reminders: a white bell (Android draws small icons as a single-color silhouette)
-const drawable = join(native, 'android', 'app', 'src', 'main', 'res', 'drawable');
-if (existsSync(join(native, 'android')) && !existsSync(join(drawable, 'ic_stat_stepquest.xml'))) {
-  mkdirSync(drawable, { recursive: true });
-  writeFileSync(join(drawable, 'ic_stat_stepquest.xml'), `<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-  <path android:fillColor="#FFFFFFFF" android:pathData="M12,22a2,2 0,0 0,2 -2h-4a2,2 0,0 0,2 2zM18,16v-5c0,-3.07 -1.64,-5.64 -4.5,-6.32V4a1.5,1.5 0,0 0,-3 0v0.68C7.63,5.36 6,7.92 6,11v5l-2,2v1h16v-1l-2,-2z"/>
-</vector>
-`);
-  console.log('created android/app/src/main/res/drawable/ic_stat_stepquest.xml');
-}
 
 // ---- Android: Health Connect needs minSdk 26
 edit(join(native, 'android', 'variables.gradle'), (s) => s.replace(/minSdkVersion\s*=\s*(\d+)/, (m, n) => (Number(n) < 26 ? 'minSdkVersion = 26' : m)));
@@ -108,4 +87,4 @@ edit(vc, (s) => s.includes('AVAudioSession') ? s : s
 `));
 edit(join(iosApp, 'Base.lproj', 'Main.storyboard'), (s) => s.replace(/customClass="CAPBridgeViewController" customModule="Capacitor"/, 'customClass="MainViewController" customModule="App" customModuleProvider="target"'));
 
-console.log('Native projects are ready for step sync and mission reminders.');
+console.log('Native projects are ready for step sync.');
