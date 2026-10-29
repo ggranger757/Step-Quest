@@ -621,10 +621,43 @@
   };
 
   // ---------- walking streak (Missions → Today) ----------
-  // One card: the count, today's progress, the reward track, and Streak Shields. Rules hide behind "How it works".
+  // One card, top to bottom: the count, this week at a glance, today's progress, the road to the next reward,
+  // Streak Shields, and the rules behind "How it works".
+  // The Missions screen re-renders whenever steps arrive (innerHTML), which used to snap "How it works" shut a moment
+  // after it opened (on iPhone the first tap starts the motion sensor, so it closed straight away). Its open state now
+  // lives here and is written back into the markup on every render.
+  UI.skHowOpen = false;
+  document.addEventListener('toggle', (e) => {
+    const d = e.target; if (d.matches && d.matches('details.sk-how')) UI.skHowOpen = d.open;
+  }, true);
+  const WEEKDAY = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  // the last 7 days, oldest first: walked (streak day), shield (a missed day a shield covered or will cover),
+  // today (still to walk), or miss
+  function streakWeek(sv, min) {
+    const s = S(), st = s.streak, today = WB.dayKey(), walked = (k) => (s.days[k] || 0) >= min;
+    // the days the current streak spans: back from its last day until `count` walked days are found
+    const span = new Set(); let guess = false;
+    if (sv.alive && st.lastDay) {
+      let k = st.lastDay, n = 0, gap = 0;
+      while (n < st.count) {
+        span.add(k);
+        if (walked(k) || k === st.lastDay) { n++; gap = 0; } else if (++gap > D.SHIELD_MAX) break;   // history missing (older than 180 days)
+        k = WB.addDays(k, -1);
+      }
+      if (n < st.count) { guess = true; span.clear(); for (let i = 0; i < Math.min(st.count, 8); i++) span.add(WB.addDays(st.lastDay, -i)); }
+    }
+    return Array.from({ length: 7 }, (_, i) => {
+      const k = WB.addDays(today, i - 6), wd = WEEKDAY[WB.parseDay(k).getDay()];
+      let st8 = 'miss';
+      if (k === today) st8 = sv.today || walked(k) ? 'walked' : 'today';
+      else if (span.has(k)) st8 = walked(k) || k === st.lastDay || guess ? 'walked' : 'shield';
+      else if (sv.rest && st.lastDay && k > st.lastDay) st8 = 'shield';
+      return { k, wd, st: st8, now: k === today };
+    });
+  }
   UI.streakCard = () => {
     const s = S(), sv = G.streakView(), st = s.streak, min = s.settings.streakMin, have = Math.min(s.today.steps, min), max = D.SHIELD_MAX, f = WB.fmt;
-    const cur = sv.alive ? sv.count : 0, next = D.STREAK_MILESTONES.find((m) => !st.claimed.includes(m.days));
+    const cur = sv.alive ? sv.count : 0, MS = D.STREAK_MILESTONES, next = MS.find((m) => !st.claimed.includes(m.days));
     const left = Math.max(0, min - s.today.steps), day = (n) => n + (n === 1 ? ' day' : ' days');
     // one short line, only what matters right now
     const status = sv.today ? `Done for today. Come back tomorrow for day ${cur + 1}.`
@@ -633,24 +666,45 @@
       : sv.lost ? `Your ${sv.lost}-day streak ended. Walk ${f(min)} steps to start again.`
       : `Walk ${f(min)} steps today to start a streak.`;
     const full = st.rest >= max, cost = D.SUPPLIES[0].cost, short = cost - s.coins;
-    return `<div class="pbox card streak-card ${sv.today ? 'done' : sv.rest ? 'saved' : ''}">
-      <div class="sk-top">
-        <span class="sk-count">${WB.icon(sv.today ? 'flame' : 'flameoff', 3)}<b>${cur}</b><span class="lbl">${cur === 1 ? 'day' : 'days'}</span></span>
-        <span class="lbl sk-best">Best ${st.best}</span>
+    const week = streakWeek(sv, min), pct = Math.round((have / min) * 100);
+    const weekIc = { walked: WB.icon('flame', 2), shield: WB.icon('sshield', 2), today: '', miss: '' };
+    const weekLbl = { walked: 'walked', shield: 'saved by a shield', today: 'today, not walked yet', miss: 'missed' };
+    // the reward road: nodes evenly spaced, the line filled up to where your streak is between them
+    const at = (i) => ((i + .5) / MS.length) * 100;
+    let fill = at(0);
+    if (cur >= MS[MS.length - 1].days) fill = at(MS.length - 1);
+    else if (cur > MS[0].days) { const i = MS.findIndex((m, j) => cur >= m.days && cur < MS[j + 1].days); fill = at(i) + (at(i + 1) - at(i)) * ((cur - MS[i].days) / (MS[i + 1].days - MS[i].days)); }
+    else fill = at(0) * (cur / MS[0].days);
+    const road = MS.map((m) => { const got = st.claimed.includes(m.days), nx = next && m.days === next.days;
+      return `<li class="ms ${got ? 'got' : nx ? 'next' : ''}" aria-label="${m.days} days: ${got ? 'claimed' : '+' + f(m.coins) + ' coins'}"><span class="ms-n">${got ? WB.icon('check', 1) : ''}</span><b>${m.days}</b><span class="ms-c">${got ? 'Got' : '+' + f(m.coins)}</span></li>`; }).join('');
+    const toGo = next ? Math.max(0, next.days - cur) : 0;
+    return `<div class="pbox card streak-card ${sv.today ? 'done' : sv.rest ? 'saved' : cur ? 'live' : 'cold'}">
+      <div class="sk-hero">
+        <span class="sk-flame" aria-hidden="true">${WB.icon(cur ? 'flame' : 'flameoff', 4)}</span>
+        <span class="sk-count"><b>${cur}</b><span class="lbl">day streak</span></span>
+        <span class="sk-best" title="Your longest streak">${WB.icon('trophy', 1)}<span class="lbl">Best</span><b>${st.best}</b></span>
       </div>
-      ${sv.today ? '' : `<div class="bar seg cyan" role="progressbar" aria-label="Steps toward today’s streak day" aria-valuemin="0" aria-valuemax="${min}" aria-valuenow="${have}"><i style="width:${(have / min) * 100}%"></i></div>`}
-      <p class="sk-status">${sv.today ? WB.icon('check', 2) : ''}${status}</p>
-      <div class="streak-track" aria-label="Streak rewards">${D.STREAK_MILESTONES.map((m) => `<div class="ms ${st.claimed.includes(m.days) ? 'got' : next && m.days === next.days ? 'next' : ''}"><b>${m.days}</b><span class="ms-c">${st.claimed.includes(m.days) ? WB.icon('check', 1) : '+' + f(m.coins)}</span></div>`).join('')}</div>
+      <ol class="sk-week" aria-label="The last 7 days">${week.map((d) => `<li class="wd ${d.st}${d.now ? ' now' : ''}" aria-label="${d.now ? 'Today' : d.k}: ${weekLbl[d.st]}"><span class="wd-c">${d.st === 'today' ? `<i style="height:${pct}%"></i>` : weekIc[d.st]}</span><span class="wd-l">${d.now ? 'Now' : d.wd}</span></li>`).join('')}</ol>
+      <div class="sk-today">
+        ${sv.today ? '' : `<div class="sk-steps"><span class="lbl">Today</span><span class="sk-num"><b>${f(s.today.steps)}</b> / ${f(min)}</span></div>
+        <div class="bar seg ${left ? 'cyan' : 'ok'}" role="progressbar" aria-label="Steps toward today’s streak day" aria-valuemin="0" aria-valuemax="${min}" aria-valuenow="${have}"><i style="width:${pct}%"></i></div>`}
+        <p class="sk-status">${sv.today ? WB.icon('check', 2) : sv.rest ? WB.icon('sshield', 2) : ''}<span>${status}</span></p>
+      </div>
+      <div class="sk-road">
+        <div class="sk-sub"><span class="lbl">Streak rewards</span><span class="sk-next">${next ? `${WB.icon('coin', 1)}<b>+${f(next.coins)}</b> in ${day(toGo)}` : 'All claimed'}</span></div>
+        <ol class="streak-track" aria-label="Streak rewards" style="--fill:${fill.toFixed(1)}%;--a:${at(0)}%;--z:${at(MS.length - 1)}%">${road}</ol>
+      </div>
       <div class="shields">
         <div class="sh-icons" aria-hidden="true">${Array.from({ length: max }, (_, i) => `<span class="shd ${i < st.rest ? 'on' : ''}">${WB.icon('sshield', 2)}</span>`).join('')}</div>
         <div class="sh-txt"><b>Shields ${st.rest}/${max}</b><span>Saves your streak on a missed day</span></div>
-        <button class="btn ${full ? 'ghost' : 'gold'} sm" type="button" data-supply="rest" ${off(full ? 'You’re carrying the most shields you can (' + max + ').' : short > 0 ? 'You need ' + f(short) + ' more coins.' : '')}>${full ? 'Full' : f(cost)}</button>
+        <button class="btn ${full ? 'ghost' : 'gold'} sm" type="button" data-supply="rest" aria-label="${full ? 'Shields full' : 'Buy a Streak Shield for ' + f(cost) + ' coins'}" ${off(full ? 'You’re carrying the most shields you can (' + max + ').' : short > 0 ? 'You need ' + f(short) + ' more coins.' : '')}>${full ? 'Full' : WB.icon('coin', 1) + f(cost)}</button>
       </div>
-      <details class="sk-how"><summary><span class="lbl">How it works</span><span class="chev" aria-hidden="true"></span></summary>
-        <ul class="streak-rules">
-          <li>Walk ${f(min)} steps to add a day. Change the goal in Profile → Settings.</li>
-          <li>Miss a day and a shield saves your streak. With no shield, it resets.</li>
-          <li>You earn a free shield every ${D.SHIELD_EVERY} days.</li>
+      <details class="sk-how"${UI.skHowOpen ? ' open' : ''}><summary><span class="lbl">How it works</span><span class="chev" aria-hidden="true"></span></summary>
+        <ul class="sk-rules">
+          <li><span class="ri">${WB.icon('flame', 2)}</span><span>Walk <b>${f(min)} steps</b> in a day to add a day. Change the goal in Profile → Settings.</span></li>
+          <li><span class="ri">${WB.icon('sshield', 2)}</span><span>Miss a day and a <b>shield</b> saves your streak. With no shield, it resets to 0.</span></li>
+          <li><span class="ri">${WB.icon('spark', 2)}</span><span>You earn a <b>free shield</b> every ${D.SHIELD_EVERY} streak days (hold up to ${max}).</span></li>
+          <li><span class="ri">${WB.icon('coin', 2)}</span><span>Reach a milestone and its <b>coins</b> are paid out right away.</span></li>
         </ul>
       </details>
     </div>`;

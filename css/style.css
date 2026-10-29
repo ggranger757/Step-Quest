@@ -337,13 +337,6 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .sh-t b { font: 400 32px/1 var(--display); font-weight: 400; }
 .rest { display: inline-flex; align-items: center; gap: 6px; }
 .fine { font-size: 13px; line-height: 1.4; color: var(--muted); }
-.streak-track { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s2); }
-.streak-track .ms { display: grid; justify-items: center; gap: 4px; padding: var(--s2) 2px; background: var(--inset); box-shadow: 0 0 0 2px var(--line); font: 400 10px/1 var(--label); color: var(--muted); min-width: 0; }
-.streak-track .ms b { font: 400 20px/1 var(--display); color: var(--text); font-weight: 400; }
-.streak-track .ms .ms-c { color: var(--gold); min-height: 10px; display: grid; place-items: center; }
-.streak-track .ms.got { box-shadow: 0 0 0 2px var(--ok); }
-.streak-track .ms.got b, .streak-track .ms.got .ms-c { color: var(--ok); }
-.streak-track .ms.next { box-shadow: 0 0 0 2px var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--inset)); }
 
 /* shop + collection */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: var(--s4); }
@@ -1284,30 +1277,97 @@ html, body { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 360px) { .pf-tabs button { font-size: 10px; letter-spacing: 0; } .pf-tabs button .px-icon, .pf-tabs button svg { display: none; } }
 .item.bag { min-width: 0; }
 .item .foot.stack .btn { white-space: normal; height: auto; min-height: 40px; padding-top: 6px; padding-bottom: 6px; line-height: 1.2; text-align: center; }
-/* ---------- walking streak card ---------- */
-.streak-card { display: grid; gap: var(--s3); }
-.sk-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
-.sk-count { display: flex; align-items: center; gap: var(--s2); }
-.sk-count b { font: 400 40px/1 var(--display); font-weight: 400; color: var(--text); }
-.sk-count .lbl { align-self: flex-end; padding-bottom: 4px; }
-.streak-card .bar { height: 8px; }
-.sk-status { margin: 0; font-size: 15px; line-height: 1.4; color: var(--text); }
-.sk-status .px-icon { vertical-align: -3px; margin-right: 6px; }
-.streak-card.done .sk-status { color: var(--ok); }
+/* ---------- walking streak card ----------
+   hero (flame + count) · the last 7 days · today's steps · the reward road · shields · how it works */
+.streak-card { display: grid; gap: var(--s4); position: relative; overflow: hidden; }
+.streak-card > * { position: relative; }
+/* a warm glow behind the flame while the streak is alive; cool once today is banked */
+.streak-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 120px; pointer-events: none;
+  background: radial-gradient(120px 90px at 44px 40px, color-mix(in srgb, var(--gold) 22%, transparent), transparent 70%); opacity: 0; }
+.streak-card.live::before, .streak-card.done::before { opacity: 1; }
+.streak-card.saved::before { opacity: 1; background: radial-gradient(120px 90px at 44px 40px, color-mix(in srgb, var(--cyan) 18%, transparent), transparent 70%); }
+
+.sk-hero { display: flex; align-items: center; gap: var(--s3); }
+.sk-flame { display: grid; place-items: center; width: 56px; height: 56px; flex: none; background: var(--inset); box-shadow: 0 0 0 2px var(--line); }
+.streak-card.live .sk-flame, .streak-card.done .sk-flame { box-shadow: 0 0 0 2px var(--gold), 0 0 18px var(--gold-glow); animation: sk-flicker 1.6s steps(2) infinite; }
+.streak-card.saved .sk-flame { box-shadow: 0 0 0 2px var(--cyan); }
+@keyframes sk-flicker { 50% { box-shadow: 0 0 0 2px var(--gold), 0 0 26px var(--gold-glow); } }
+.sk-count { display: grid; gap: 2px; min-width: 0; }
+.sk-count b { font: 400 48px/.85 var(--display); color: var(--text); }
+.streak-card.live .sk-count b, .streak-card.done .sk-count b { color: var(--gold); }
+.sk-count .lbl { color: var(--muted); }
+.sk-best { margin-left: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 6px var(--s2); background: var(--inset); box-shadow: 0 0 0 2px var(--line); }
+.sk-best b { font: 400 18px/1 var(--display); color: var(--text); }
+
+/* the last 7 days */
+.sk-week { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.sk-week .wd { display: grid; justify-items: center; gap: 6px; min-width: 0; }
+.sk-week .wd-c { position: relative; display: grid; place-items: center; width: 100%; max-width: 40px; aspect-ratio: 1; background: var(--inset); box-shadow: 0 0 0 2px var(--line); overflow: hidden; }
+.sk-week .wd-l { font: 400 10px/1 var(--label); color: var(--dim); text-transform: uppercase; }
+.sk-week .walked .wd-c { background: color-mix(in srgb, var(--gold) 16%, var(--inset)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 70%, var(--line)); }
+.sk-week .shield .wd-c { background: color-mix(in srgb, var(--cyan) 12%, var(--inset)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cyan) 55%, var(--line)); }
+.sk-week .miss .wd-c::after { content: ''; width: 8px; height: 2px; background: var(--line); }
+.sk-week .today .wd-c { box-shadow: 0 0 0 2px var(--gold); }
+.sk-week .today .wd-c i { position: absolute; inset: auto 0 0 0; background: color-mix(in srgb, var(--cyan) 45%, transparent); }
+.sk-week .now .wd-l { color: var(--gold); }
+
+/* today */
+.sk-today { display: grid; gap: var(--s2); }
+.sk-steps { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s2); }
+.sk-num { font-size: 13px; color: var(--muted); }
+.sk-num b { font: 400 20px/1 var(--display); color: var(--text); }
+.streak-card .bar { height: 10px; }
+.sk-status { margin: 0; display: flex; align-items: flex-start; gap: var(--s2); font-size: 15px; line-height: 1.4; color: var(--text); }
+.sk-status .px-icon { flex: none; margin-top: 2px; }
+.streak-card.done .sk-status { color: var(--ok); padding: var(--s2) var(--s3); background: color-mix(in srgb, var(--ok) 10%, var(--inset)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 40%, var(--line)); }
 .streak-card.saved .sk-status { color: var(--cyan); }
-.shields { display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); background: var(--inset); box-shadow: 0 0 0 2px var(--line); }
-.shields .btn { flex: none; margin-left: auto; min-width: 72px; }
+
+/* the reward road: nodes on a line, filled up to your streak */
+.sk-road { display: grid; gap: var(--s3); }
+.sk-sub { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.sk-next { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.sk-next b { color: var(--gold); font-weight: 400; }
+.streak-track { position: relative; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.streak-track::before, .streak-track::after { content: ''; position: absolute; top: 11px; height: 4px; left: var(--a); }
+.streak-track::before { right: calc(100% - var(--z)); background: var(--line); }
+.streak-track::after { width: calc(var(--fill) - var(--a)); max-width: calc(var(--z) - var(--a)); background: var(--gold); }
+.streak-track .ms { position: relative; z-index: 1; display: grid; justify-items: center; gap: 4px; min-width: 0; }
+.streak-track .ms-n { display: grid; place-items: center; width: 22px; height: 22px; margin-top: 2px; background: var(--surface); box-shadow: 0 0 0 2px var(--line); }
+.streak-track .ms b { font: 400 20px/1 var(--display); color: var(--muted); }
+.streak-track .ms .ms-c { font: 400 10px/1 var(--label); color: var(--gold); white-space: nowrap; }
+.streak-track .ms.got .ms-n { background: var(--ok); box-shadow: 0 0 0 2px var(--ok); color: var(--ink); }
+.streak-track .ms.got b { color: var(--text); }
+.streak-track .ms.got .ms-c { color: var(--ok); }
+.streak-track .ms.next .ms-n { background: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 0 12px var(--gold-glow); animation: sk-pulse 1.2s steps(2) infinite; }
+.streak-track .ms.next b { color: var(--gold); }
+@keyframes sk-pulse { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 45%, transparent); } }
+
+/* shields */
+.shields { display: flex; align-items: center; gap: var(--s3); padding: var(--s3); background: var(--inset); box-shadow: 0 0 0 2px var(--line); }
+.shields .btn { flex: none; margin-left: auto; min-width: 76px; gap: 6px; }
 .sh-icons { display: flex; gap: 4px; flex: none; }
-.shd { display: grid; place-items: center; width: 28px; height: 28px; background: var(--surface); box-shadow: 0 0 0 2px var(--line); }
+.shd { display: grid; place-items: center; width: 30px; height: 30px; background: var(--surface); box-shadow: 0 0 0 2px var(--line); }
+.shd.on { box-shadow: 0 0 0 2px color-mix(in srgb, var(--cyan) 60%, var(--line)); }
 .shd:not(.on) .px-icon { opacity: .25; filter: grayscale(1); }
 .sh-txt { display: grid; gap: 2px; min-width: 0; font-size: 12px; line-height: 1.3; color: var(--muted); }
 .sh-txt b { font-weight: 400; color: var(--text); font-size: 14px; }
-.sk-how summary { display: flex; justify-content: space-between; align-items: center; cursor: pointer; list-style: none; min-height: 36px; }
+
+/* how it works */
+.sk-how { background: var(--inset); box-shadow: 0 0 0 2px var(--line); }
+.sk-how[open] { box-shadow: 0 0 0 2px var(--line-hi); }
+.sk-how summary { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); cursor: pointer; list-style: none; min-height: 44px; padding: 0 var(--s3); -webkit-tap-highlight-color: transparent; user-select: none; }
 .sk-how summary::-webkit-details-marker { display: none; }
+.sk-how summary::marker { content: ''; }
+.sk-how summary:hover .lbl, .sk-how[open] summary .lbl { color: var(--text); }
+.sk-how summary:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 /* a drawn chevron (the pixel fonts have no › glyph) */
 .sk-how .chev { width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(-45deg); transition: transform .15s steps(2); margin-right: 4px; }
 .sk-how[open] .chev { transform: rotate(45deg); }
-.sk-how .streak-rules { margin-top: var(--s2); }
+.sk-rules { margin: 0; padding: 0 var(--s3) var(--s3); list-style: none; display: grid; gap: var(--s3); }
+.sk-rules li { display: flex; align-items: flex-start; gap: var(--s3); font-size: 14px; line-height: 1.4; color: var(--muted); }
+.sk-rules li b { color: var(--text); font-weight: 400; }
+.sk-rules .ri { display: grid; place-items: center; width: 30px; height: 30px; flex: none; background: var(--surface); box-shadow: 0 0 0 2px var(--line); }
+@media (max-width: 360px) { .sk-count b { font-size: 40px; } .sk-flame { width: 48px; height: 48px; } .sh-txt span { display: none; } }
 /* locked features (Worldkey before your first world, the Forge before level 7) and the unlock card */
 .feat-lock { display: grid; gap: var(--s2); }
 .feat-lock h3 { margin: 0; font: 400 22px/1.15 var(--display); }
