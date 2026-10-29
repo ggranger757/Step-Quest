@@ -8,57 +8,18 @@
   const hub = (h, t) => () => UI.goHub(h, t, { replace: true });   // 'shop' opens the Shop tab; 'bag' and 'art' open Inventory
   const mis = (t) => () => { UI.missionTab = t; UI.go('tasks', { replace: true }); UI.renderTasks(); };
 
-  // each step: where to go, what to highlight, and what to say
+  // each step: where to go, what to highlight, and what to say. Kept short on purpose: features that open later
+  // (battles, Merlin, the Worldkey) teach themselves with a mini tutorial the moment they unlock.
   const ALL_STEPS = [
-    { go: tab('world'), title: 'Welcome to Step Quest', text: 'Every real step moves your walker through pixel worlds, earning coins and XP along the way. This tour takes a minute. Skip it any time.' },
-    // ---------- world ----------
-    { go: tab('world'), sel: '#hud-me', page: 'World', title: 'Your walker', text: 'Your portrait. Tap it any time to open your Profile.' },
-    { go: tab('world'), sel: '.hud-xp', page: 'World', title: 'Level, XP and health', text: 'The purple bar is XP (1 XP every ' + D.STEPS_PER_XP + ' steps, plus missions and battles). Level up to get stronger and open new worlds. The green bar is your health.' },
-    { go: tab('world'), sel: '#hud-coins', page: 'World', title: 'Walk Coins', text: '1 coin every ' + D.STEPS_PER_COIN + ' steps, plus rewards from missions, battles and crates. Spend them in the Shop.' },
-    { go: tab('world'), sel: '#hud-streak', page: 'World', title: 'Walking streak', text: 'Days in a row you’ve hit your step minimum. Keep it going for streak rewards.' },
-    { go: tab('world'), sel: '#stage', page: 'World', title: 'The world', text: 'Your walker moves only when you do. Along the road you’ll find crates, traders, artifacts and, later, creatures.' },
-    { go: tab('world'), sel: '#world-chip', page: 'World', title: 'Current world', text: 'Where you are and how much you’ve explored. Tap it to open the world map.' },
-    { go: tab('world'), sel: '.today', page: 'World', title: 'Today', text: 'Today’s steps and distance. Hit your daily goal for a 100-coin bonus (change it in Settings).' },
-    { go: tab('world'), sel: '.hpline', page: 'World', title: 'Health', text: 'Battles and failed missions cost HP. Walking doesn’t heal: HP refills in about ' + D.HEAL_MINUTES + ' minutes, or drink a potion. Tap the bar for potions.' },
-    { go: tab('world'), sel: '.sensor', page: 'World', title: 'Step counter', text: 'Counts steps while the app is open. Pause it here, or log a walk you took with the app closed.' },
-    { go: tab('world'), sel: '.map-cta', page: 'World', title: 'World map', text: 'Opens the map of every world: travel between open worlds and see what each one holds.' },
-    { go: tab('world'), sel: '.objective', page: 'World', title: 'Next objective', text: 'The mission closest to done. Tap it to jump to Missions.' },
-    { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Worlds open one at a time. To open the next one, reach the level shown and explore the world before it (finish Rust Hollow completely for the first one, then ' + D.WORLD_GATE_PCT + '% for the rest). There are ' + D.WORLDS.length + ' in all.' },
-    // ---------- map ----------
-    { go: tab('map'), sel: '#scr-map .path', page: 'World map', title: 'World map', text: 'Every world in order. Travel to open ones and see their creatures and artifacts. Once a world is 100% explored, challenge its guardian here.' },
-    // ---------- missions ----------
-    { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'All your rewards, in four tabs. Badges show how many are ready. Claim all collects them in one tap.' },
-    { go: mis('today'), sel: () => sect('#scr-tasks', 'Daily reward'), page: 'Missions', title: 'Daily reward', text: 'Walk ' + D.DAILY_MIN_STEPS + ' steps a day to claim it. Day 7 is a rare prize.' },
-    { go: mis('today'), sel: () => sect('#scr-tasks', 'Daily missions'), page: 'Missions', title: 'Daily missions', text: 'Three quick goals that refresh every day at midnight.' },
-    { go: mis('today'), sel: () => sect('#scr-tasks', 'Walking streak'), page: 'Missions', title: 'Streak', text: 'Walk your step minimum every day to grow it. A Streak Shield saves it when you miss a day.' },
-    { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'My missions', text: 'Your real-life goals, turned into missions. Set a due time, difficulty and priority, then finish for coins and XP. Late pays half.' },
-    { when: () => !WB.Game.featOn('field'), go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field & Merlin', text: 'Two more mission tabs open at level ' + D.FIELD_LEVEL + ': Field (real-world walks, long-term milestones and deliveries) and Merlin (his quests and egg trades). Keep walking to reach them.' },
-    { feat: 'field', go: mis('field'), sel: '#field-missions', page: 'Missions', title: 'Field missions', text: D.MISSIONS.length + ' real-world walks: good deeds, easy treks, timed walks and more. Accept up to ' + D.MISSION_ACTIVE_MAX + '. Each gives you ' + D.MISSION_HOURS + ' hours. Miss or drop one and you lose coins and HP. Merlin’s bigger quests have their own tab.' },
-    { feat: 'field', go: mis('merlin'), sel: '#merlin-quest', page: 'Missions', title: 'Merlin', text: 'The owl-mage appears on the road with bigger quests and bigger rewards. One at a time, and saying no costs nothing. Your eggs and his egg trades live here too.' },
-    { feat: 'field', go: mis('field'), sel: '#milestones', page: 'Missions', title: 'Milestones', text: 'Long-term goals: win battles, beat guardians, find artifacts. No clock and no penalty. Two show at a time. Messages travelers ask you to deliver show up here too.' },
-    // ---------- shop ----------
-    { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Buying and unlocking', text: 'Some items cost coins. Others unlock with levels, streaks or exploring. Tap a locked item to see what it needs.' },
-    { go: hub('shop', 'weapons'), sel: '#scr-shop .loadout', page: 'Shop', title: 'Weapons', text: 'Melee weapons power Strike, ranged weapons power Throw, Shoot or Cast, and defense powers Defend. Tap a slot to see its weapons.' },
-    { go: hub('shop', 'magic'), sel: () => sect('#scr-shop', 'Battle magic'), page: 'Shop', title: 'Magic', text: 'Charms give passive perks. Battle magic is cast from the Magic button, once per battle each.' },
-    { go: hub('shop', 'pets'), sel: '#scr-shop .grid', page: 'Shop', title: 'Pets', text: 'Pets walk with you and take 20–60% of each hit in battle. Some attack, too. A knocked-out pet recovers over time.' },
-    // ---------- inventory ----------
-    { go: hub('bag', 'weapons'), sel: '#tabs [data-tab="inv"]', page: 'Inventory', title: 'Your inventory', text: 'Everything you own lives here: gear, potions, pets, walkers, your Worldkey and your artifacts.' },
-    { go: hub('bag', 'weapons'), sel: '#scr-inv .grid .item', page: 'Inventory', title: 'Equip and switch', text: 'Equip weapons, wear charms, drink potions and switch walkers.' },
-    { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Inventory', title: 'Your Worldkey', text: 'Your Worldkey opens new worlds. It needs energy (Darkmatter) and the world’s frequency: match its symbol pattern to tune in. Time and walking drain its energy and knock it out of tune, so recharge and retune before you travel.' },
-    { feat: 'wk', go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Inventory', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here. Locked ones show as silhouettes.' },
-    { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Inventory', title: 'Artifacts', text: 'Artifacts hide in every world. Each find adds a copy. Once you’ve found them all, walking a world again turns up more copies.' },
-    { feat: 'art', go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Inventory', title: 'Darkmatter Forge', text: 'Right under your Worldkey: melt spare artifacts (and a little HP) into Darkmatter with one tap. Stronger kinds need artifacts from later worlds. Charge your Worldkey right below.' },
-    { go: mis('merlin'), sel: '#egg-strip', page: 'Missions', title: 'Eggs', text: 'Find Frost, Ember and Crystal eggs on the road or in battle. Carry up to ' + D.EGG_MAX + ' of each. Your eggs are counted on Missions → Merlin, right above his egg trades (from level ' + D.FIELD_LEVEL + ').' },
-    { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'The Druid', text: 'From level ' + D.BATTLE_LEVEL + ', the Druid may stop you with a trivia question. Answer right for XP and coins. Answer wrong and you must battle him. If he wins, he takes your eggs.' },
-    { go: tab('world'), sel: '#stage', page: 'Encounters', title: 'Bosses', text: 'From level ' + D.BOSS_LEVEL + ', six rare bosses roam the roads. They hit hard and have unique powers. Beat one for big rewards; lose and you drop ' + D.BOSS_LEVEL_LOSS + ' levels.' },
-    // ---------- battles ----------
-    { go: tab('world'), sel: '#stage', page: 'Battles', title: 'Encounters and battles', text: 'From level ' + D.BATTLE_LEVEL + ', creatures appear on the road. Fight them or walk around. In battle you can Strike, Throw, Defend, use Items or Magic, or run. When a creature is “Charging!”, Defend. From level ' + D.SPECIAL_LEVEL + ', your Special attack charges as you fight.' },
-    // ---------- profile ----------
-    { go: pf('overview'), sel: '#scr-profile .hero', page: 'Profile', title: 'Profile', text: 'Your walker, title, level and HP. Tap the pencil to rename yourself.' },
-    { go: pf('overview'), sel: '#scr-profile .stats', page: 'Profile', title: 'Stats', text: 'Your lifetime totals. Tap any stat to learn what it counts.' },
-    { go: pf('overview'), sel: '#scr-profile .chart', page: 'Profile', title: 'Your steps', text: 'Steps per day for the last 7, 14 or 30 days. Highlighted bars reached your streak minimum. Tap a bar to see that day’s steps.' },
-    { go: pf('overview'), sel: '#scr-profile .wardrobe', page: 'Profile', title: 'Loadout', text: 'Change your walker, weapons, defense and pet in one place. You can recolor your walker here too: skin tone, outfit and trim.' },
-    { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Settings', text: 'Steps and goals, mission reminders, theme, sound and your save. Replay this tour any time from Settings → Help.' },
+    { go: tab('world'), title: 'Welcome to Step Quest', text: 'Every real step moves your walker through pixel worlds, earning coins and XP. This quick tour takes 30 seconds.' },
+    { go: tab('world'), sel: '#stage', page: 'World', title: 'Walk to explore', text: 'Your walker moves only when you do. Crates, artifacts, merchants, travelers and (later) creatures turn up along the road. Tap them as they appear.' },
+    { go: tab('world'), sel: '.today', page: 'World', title: 'Today', text: 'Today’s steps toward your goal. 1 coin every ' + D.STEPS_PER_COIN + ' steps, 1 XP every ' + D.STEPS_PER_XP + ', and a 100-coin bonus when you hit your goal.' },
+    { go: tab('world'), sel: '#hud-streak', page: 'World', title: 'Your streak', text: 'Walk your daily minimum to grow it. A Streak Shield saves it on a missed day.' },
+    { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Explore this world to open the next. There are ' + D.WORLDS.length + ' to discover.' },
+    { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'Today: a daily reward, three daily goals, deliveries and long-term milestones. My missions: your own to-dos, which pay coins and XP. Merlin and his eggs open at level ' + D.MERLIN_MIN_LEVEL + '.' },
+    { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'Turn goals into quests', text: 'Add a real-life task (or tap a quick mission), set when it’s due, and finish it for a reward. Early pays a bonus.' },
+    { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Shop', text: 'Spend coins on walkers, weapons, potions and pets. Tap anything locked to see what it needs.' },
+    { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Profile & settings', text: 'Your stats, moods, step chart, achievements and settings (theme, sound, mood check-ins). Replay this tour any time from Settings → Help.' },
     { go: tab('world'), title: 'You’re ready', text: 'Start walking: every step counts. Good luck out there!' },
   ];
 
@@ -66,22 +27,14 @@
   const MINI = {
     wk: [
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Worldkey', title: 'Your Worldkey is awake', text: 'You finished your first world, so your Worldkey can open the next one. Find it in Inventory → Worldkey.' },
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it to a world', text: 'Each world hums at its own frequency: match its symbol pattern to tune the Worldkey to it. A tuning lasts up to a day; time and walking knock it out of tune, so expect to retune often.' },
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-acts', page: 'Worldkey', title: 'Then open the way', text: 'Once it’s tuned, tap Open. Opening a world costs some energy, so keep it charged with Darkmatter from the Forge.' },
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv [data-wk="custom"]', page: 'Worldkey', title: 'Collect Worldkeys', text: 'There are 18 Worldkeys, each with its own personality. Level up to unlock them, then buy them here.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it once', text: 'Each world hums at its own frequency: repeat its symbol pattern to tune in. A tuning holds until you open that world.' },
+      { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Worldkey', title: 'Charge it with artifacts', text: 'Opening a world costs energy. Every artifact you find on the road charges it, and relics from far worlds hold more. Energy never fades.' },
     ],
-    field: [
-      { go: mis('field'), sel: '#field-missions', page: 'Level ' + D.FIELD_LEVEL, title: 'Field missions', text: 'Real-world walks with a goal: good deeds, easy treks and more. Accept up to ' + D.MISSION_ACTIVE_MAX + ' at a time; each gives you ' + D.MISSION_HOURS + ' hours.' },
-      { go: mis('merlin'), sel: '#egg-strip', page: 'Level ' + D.FIELD_LEVEL, title: 'Eggs and Merlin’s trades', text: 'Your eggs are counted here. Trade full sets to Merlin for coins, XP, potions and even gear. Merlin also starts offering his bigger quests now.' },
-      { go: mis('field'), sel: '#milestones', page: 'Level ' + D.FIELD_LEVEL, title: 'Milestones', text: 'Long-term goals that grow as you play, plus messages travelers ask you to deliver. No clock, no penalty.' },
-    ],
-    art: [
-      { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Level ' + D.FORGE_LEVEL, title: 'The Darkmatter Forge', text: 'Craft Darkmatter from artifact copies (and a little HP). It charges your Worldkey once that wakes up after your first world. Here’s a free Void Darkmatter to start.' },
-      { go: hub('art', 'finds'), sel: '#scr-inv .art-sum', page: 'Level ' + D.FORGE_LEVEL, title: 'Your artifact Collection', text: 'Every artifact you find adds a copy here. Walk worlds again to find more copies.' },
-    ],
-    dm: [
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-energy', page: 'First world', title: 'Your Worldkey needs energy now', text: 'From now on, opening a world costs energy. Energy fades a little each day and as you walk, so keep an eye on this bar.' },
-      { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'First world', title: 'Charge it with Darkmatter', text: 'Craft Darkmatter in the Forge from spare artifacts (and a little HP), then tap Charge right below it.' },
+    merlin: [
+      { go: mis('merlin'), sel: '#egg-strip', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Merlin’s Eggs', text: 'Merlin left you an egg. Every step you walk warms all the eggs in your nest. When one is warm enough, it hatches.' },
+      { go: mis('merlin'), sel: '#merlin-quest', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Knowledge Check', text: 'Hatching asks one trivia question. Get it right for a bigger reward. Either way you get the reward and a short History Note.' },
+      { go: tab('world'), sel: '#stage', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Battles are open too', text: 'Creatures now roam the road. Fight or walk around; when one is “Charging!”, Defend. Guardians wake when a world is 100% explored and guard a Crystal Egg. Finishing a mission can stir one up, too.' },
+      { go: tab('world'), sel: '#stage', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'The Druid and the bosses', text: 'The Druid may stop you with a quick trivia question: right pays XP and coins, wrong means a fight. From level ' + D.BOSS_LEVEL + ', rare roaming bosses and Redhood Rival appear. Losing to a boss costs ' + D.BOSS_LEVEL_LOSS + ' levels.' },
     ],
   };
   const T = (WB.Tour = { active: false, i: 0 });
@@ -185,10 +138,8 @@
 
   // ---------- a feature just unlocked: congratulations, then its mini tutorial ----------
   const FEAT_CARD = {
-    wk: { kick: 'Unlocked', title: 'Your Worldkey is awake!', img: 'wk/dm_nebula.png', text: 'You finished your first world, so your Worldkey can open the next one. Here’s how it works.' },
-    field: { kick: 'Level ' + D.FIELD_LEVEL + ' unlock', title: 'Field missions & Merlin', egg: 'crystal', text: 'Two new mission tabs are open: Field (real-world walks, long-term milestones and deliveries) and Merlin (his quests and egg trades).' },
-    art: { kick: 'Level ' + D.FORGE_LEVEL + ' unlock', title: 'Artifacts and the Forge', img: 'wk/dm_void.png', text: 'Your artifact Collection and the Darkmatter Forge are open. Artifacts you find turn into Darkmatter, which will charge your Worldkey. Here’s a free Void Darkmatter to start.' },
-    dm: { kick: 'Unlocked', title: 'Your Worldkey needs energy now', img: 'wk/dm_void.png', text: 'You finished your first world, so from here on your Worldkey runs on Darkmatter (crafted from artifacts in the Forge). Here’s what changes.' },
+    wk: { kick: 'Unlocked', title: 'Your Worldkey is awake!', icon: 'key', text: 'You finished your first world, so your Worldkey can open the next one. Here’s how it works.' },
+    merlin: { kick: 'Level ' + D.MERLIN_MIN_LEVEL + ' unlock', title: 'Merlin and battles', egg: 'frost', text: 'Merlin the owl-mage left you a Frost Egg: walk to hatch it. Creatures, the Druid and milestones open now, too.' },
   };
   setInterval(() => {
     const G = WB.Game;
@@ -198,7 +149,7 @@
     WB.Sfx.play('level'); if (WB.Celebrate) WB.Celebrate.confetti(70);
     let started = false;
     const go = () => { if (started) return; started = true; setTimeout(() => T.start(null, k), 250); };
-    UI.sheet(`<div class="feat-card"><span class="lbl">${c.kick}</span>${c.egg ? WB.eggImg(c.egg, 48) : WB.pxImg(c.img, 48)}<h3 id="sheet-title">${c.title}</h3><p>${c.text}</p>
+    UI.sheet(`<div class="feat-card"><span class="lbl">${c.kick}</span>${c.egg ? WB.eggImg(c.egg, 48) : c.icon ? WB.icon(c.icon, 4) : WB.pxImg(c.img, 48)}<h3 id="sheet-title">${c.title}</h3><p>${c.text}</p>
       <button class="btn gold block" type="button" id="feat-go" data-autofocus>Show me</button></div>`, (root) => {
       root.querySelector('#feat-go').onclick = () => { UI.closeSheet(); go(); };
     });

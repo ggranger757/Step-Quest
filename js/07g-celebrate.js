@@ -67,9 +67,9 @@
     ]);
     if (kind === 'merlin') return pick([
       `“Hoo! I knew you had it in you, ${N}.” Merlin is impressed.`,
-      `“${d.title}” conquered. Merlin will tell the other owls about you.`,
-      `That was no small walk, ${N}. ${stepsLine}`,
-      `A wizard’s quest, finished on foot. Legendary ${c.part}, ${N}.`,
+      `Your ${d.title} hatched. Merlin will tell the other owls about you.`,
+      `Walked warm, ${N}. ${stepsLine}`,
+      `An egg hatched on foot. Legendary ${c.part}, ${N}.`,
       `Merlin bows low. ${streakLine}`,
     ]);
     if (kind === 'custom') return pick([
@@ -79,7 +79,7 @@
       `Done and dusted. Your future self says thanks.`,
       d.late ? `Late still counts, ${N}. You finished it.` : `Right on time. Nicely done, ${N}.`,
     ]);
-    return pick([   // any game mission: daily, milestone, delivery, field
+    return pick([   // any game mission: daily missions
       `Mission complete! ${streakLine}`,
       `Nice work, ${N}. “${d.title}” is done.`,
       `You showed up for yourself this ${c.part}. ${stepsLine}`,

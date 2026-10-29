@@ -1,5 +1,4 @@
-/* Step Quest — mission reminders: 20, 15, 10, 5 and 2 minutes before any mission is due (your own missions,
-   field missions and Merlin's quests). Each reminder shows in the app (a toast) and, when allowed, as a phone
+/* Step Quest — mission reminders: 20, 15, 10, 5 and 2 minutes before any of your own missions is due. Each reminder shows in the app (a toast) and, when allowed, as a phone
    notification. Installed app: reminders are scheduled with the system, so they arrive even when Step Quest is
    closed. Web app: they arrive while the app is open or in the background (there is no push server). */
 (() => {
@@ -13,12 +12,8 @@
 
   // every open mission with a due time: { key, title, due }
   R.list = () => {
-    const s = S(), G = WB.Game, D = WB.DATA, out = [];
+    const s = S(), out = [];
     for (const m of (s.custom && s.custom.list) || []) if (m.due > Date.now()) out.push({ key: 'c:' + m.id + ':' + m.due, title: m.title, due: m.due });
-    for (const a of (s.missions && s.missions.active) || []) {
-      const m = D.missionById[a.id]; if (!m || G.missionProgress(m, a).done) continue;
-      const due = Date.now() + G.missionLeft(a); if (due > Date.now()) out.push({ key: 'm:' + a.id + ':' + a.at, title: (m.merlin ? 'Merlin’s quest: ' : '') + G.missionTitle(m), due });
-    }
     return out;
   };
   const when = (mins) => (mins <= 1 ? 'in about a minute' : 'in ' + mins + ' minutes');
@@ -62,13 +57,12 @@
   // finished or deleted, or you clear it. A badge counts the ones you haven't looked at; the bell rings until then. ----------
   const alerts = () => { const s = S(); if (!Array.isArray(s.alerts)) s.alerts = []; return s.alerts; };
   const parse = (key) => { const t = key[0], rest = key.slice(2), i = rest.lastIndexOf(':'); return { t, id: rest.slice(0, i), x: rest.slice(i + 1) }; };
-  const openMission = (key) => { const m = key[0] === 'c' ? null : WB.DATA.missionById[parse(key).id]; WB.UI.missionTab = key[0] === 'c' ? 'mine' : m && m.merlin ? 'merlin' : 'field'; WB.UI.go('tasks'); };
-  // still worth showing? (an overdue mission of your own stays for a day, a field mission until it's done or fails)
+  const openMission = () => { WB.UI.missionTab = 'mine'; WB.UI.go('tasks'); };
+  // still worth showing? (an overdue mission stays for a day)
   const live = (a) => {
     const s = S(), k = parse(a.key);
-    if (k.t === 'c') { const m = ((s.custom && s.custom.list) || []).find((c) => String(c.id) === k.id); return !!m && Date.now() - a.due < 24 * 3600000; }
-    const rec = ((s.missions && s.missions.active) || []).find((r) => r.id === k.id && String(r.at) === k.x), m = rec && WB.DATA.missionById[k.id];
-    return !!m && !WB.Game.missionProgress(m, rec).done && WB.Game.missionLeft(rec) > 0;
+    if (k.t !== 'c') return false;   // retired field-mission reminders
+    const m = ((s.custom && s.custom.list) || []).find((c) => String(c.id) === k.id); return !!m && Date.now() - a.due < 24 * 3600000;
   };
   R.alerts = () => alerts().filter(live).sort((a, b) => a.due - b.due);
   R.addAlert = (x, mins) => {

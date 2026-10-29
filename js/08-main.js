@@ -4,6 +4,7 @@
 
   function boot() {
     WB.Save.load();
+    if (S().onboarded) { G.wk(); G.merlin(); G.gear(); }   // repair/upgrade older saves now, so any refund notice shows in the welcome lines
     if (!S().onboarded || !S().hints.tour) WB.Bgm.play('app');   // first open (or after a reset): the theme song starts on the loading screen and plays until the tutorial ends
     const welcome = G.welcomeLines();
     G.rollDay(); G.checkUnlocks(); G.primeAnnounced();
@@ -17,11 +18,11 @@
     // the loading screen lifts once fonts and the first screen's scenery and walker are ready
     { const w = G.world(); WB.Loading.boot([...w.layers.map((l) => WB.layerPath(w, l[0])), WB.sheet('av', S().avatar, 'idle').path], !S().onboarded); }
     WB.Cloud.init();
-    // every 15 seconds (and whenever the app comes back): new day, HP refilling over time, mission deadlines
+    // every 15 seconds (and whenever the app comes back): new day, HP refilling over time
     const tick = () => {
-      const d = S().today.day, hp = S().hp, act = S().missions.active.length;
-      G.rollDay(); G.regen(); G.checkMissions(); WB.Custom.check();
-      if (d !== S().today.day || hp !== S().hp || act !== S().missions.active.length) { WB.Save.queue(); UI.updateHud(); UI.soon(); }
+      const d = S().today.day, hp = S().hp;
+      G.rollDay(); G.regen(); WB.Custom.check();
+      if (d !== S().today.day || hp !== S().hp) { WB.Save.queue(); UI.updateHud(); UI.soon(); }
     };
     tick();
     setInterval(tick, 15000);
@@ -114,7 +115,7 @@
     });
     WB.bus.on('equip', ({ cat }) => { if (cat === 'avatar' || cat === 'skin' || cat === 'outfit') UI.paintFace(); });
     WB.bus.on('achievement', (a) => (WB.Sfx.play('level'), UI.toast({ kicker: 'Achievement', title: a.title, sub: WB.Celebrate.fire('achievement', a, 90), img: 'ach/' + a.id + '.png', cls: 'gold', ms: 4000 })));
-    WB.bus.on('taskComplete', (c) => { const mer = c.type === 'mission' && (D.missionById[c.t.id] || {}).merlin; WB.Sfx.play(mer ? 'level' : 'quest'); UI.toast({ kicker: mer ? 'Merlin’s quest complete' : 'Mission complete', title: c.t.title, sub: WB.Celebrate.fire(mer ? 'merlin' : 'mission', c.t, mer ? 120 : 70), icon: 'check', cls: 'ok', ms: 4600, action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
+    WB.bus.on('taskComplete', (c) => { WB.Sfx.play('quest'); UI.toast({ kicker: 'Mission complete', title: c.t.title, sub: WB.Celebrate.fire('mission', c.t, 70), icon: 'check', cls: 'ok', ms: 4600, action: { label: 'Claim', fn: () => { const r = G.claimTask(c.type, c.t.id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); } } }); });
     WB.bus.on('milestone', (m) => {
       UI.toast({ kicker: 'New discovery · ' + m.pct + '% explored', title: m.landmark + '  +' + m.coins, icon: 'map', cls: 'cyan' });
       if (m.pct === 100) UI.toast({ kicker: m.world.name, title: 'Fully explored', icon: 'flag', cls: 'gold' });
@@ -242,7 +243,7 @@
         ${[100, 500, 1000, 5000].map((n) => `<button class="btn sm" type="button" data-dev="steps:${n}">+${WB.fmt(n)} steps</button>`).join('')}
         <button class="btn sm gold" type="button" data-dev="coins">+500 coins</button>
         <button class="btn sm" type="button" data-dev="level">Level up</button>
-        <button class="btn sm" type="button" data-dev="tasks">Complete missions</button>
+        <button class="btn sm" type="button" data-dev="tasks">Complete missions + eggs</button>
         <button class="btn sm" type="button" data-dev="world">Next world</button>
         <button class="btn sm" type="button" data-dev="avatars">Unlock all avatars</button>
         <button class="btn sm" type="button" data-dev="enc">Trigger encounter</button>
@@ -260,7 +261,7 @@
         if (k === 'coins') { s.coins += 500; G.after(); }
         if (k === 'level') G.addXp(D.xpToNext(s.level) - s.xp);
         if (k === 'tasks') {
-          for (const a of s.missions.active) { const m = D.missionById[a.id]; if (!m) continue; a.steps = Math.max(a.steps, m.steps * 2); a.win = Math.max(a.win, m.steps); a.walks = Array(m.walks || 0).fill(m.per || 0); }
+          for (const r of G.nest()) r.steps = Math.max(r.steps, D.eggById[r.egg].steps);
           const td = s.today; td.encounters = Math.max(td.encounters, 2); td.fights = Math.max(td.fights, 1); td.chests = Math.max(td.chests, 1); td.meters = Math.max(td.meters, 1500); const need = Math.max(0, 4000 - td.steps); if (need) WB.Steps.push(need, 'dev'); else G.after(); }
         if (k === 'world') { const nw = G.nextWorld(); if (nw) { if (nw.unlock.after) s.worldSteps[nw.unlock.after] = Math.max(s.worldSteps[nw.unlock.after] || 0, D.worldById[nw.unlock.after].length); while (s.level < nw.unlock.level) G.addXp(D.xpToNext(s.level) - s.xp + 1); G.after(); } }
         if (k === 'avatars') { D.AVATARS.forEach((a) => G.unlock('avatar', a.id, true)); G.after(); }

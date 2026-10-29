@@ -1,8 +1,7 @@
 /* Step Quest — quick missions and mission types (data only; rules live in 05k-quick.js).
    Quick missions are pre-made, one-tap missions grouped by category. Players can't make their own.
    Each can be finished once a day; a finished one can be removed the same day, which takes back what it paid. Mission types (D.MCATS) are shared: quick missions, the templates behind
-   "My missions" and field missions all count toward one of them, which feeds the Profile "Mission mix" card and
-   the mission achievements. */
+   "My missions" count toward one of them, which feeds the mission achievements. */
 (() => {
   const D = WB.DATA;
 

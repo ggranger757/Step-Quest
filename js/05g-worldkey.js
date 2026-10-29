@@ -1,38 +1,34 @@
-/* Step Quest — Worldkey rules: energy, Darkmatter crafting, charging, resonance, the travel gate and what it says.
-   Every change of state happens here, once, and only after its checks pass; screens only call these functions. */
+/* Step Quest — Worldkey rules: energy, charging with artifacts, resonance, the travel gate and what it says.
+   Every change of state happens here, once, and only after its checks pass; screens only call these functions.
+   Energy only goes down when a world opens (it never fades), and a tuning holds until that world is open. */
 (() => {
   const D = WB.DATA, G = WB.Game, K = D.WK, S = () => WB.state;
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
   // ---------- state (repaired on every read, so old or damaged saves can't break it) ----------
-  G.wkFresh = () => ({ e: K.START, look: D.WK_START, keys: [D.WK_START], chat: 'normal', tuned: {}, found: [], seen: [], told: [], recent: [], dm: { void: K.GIFT_VOID, nebula: 0, eclipse: 0 }, at: Date.now(), lastTalk: 0, walkMark: 0, lowSaid: false, last: null, ping: {}, tuneLock: 0 });
+  G.wkFresh = () => ({ e: K.START, look: D.WK_START, keys: [D.WK_START], tuned: {}, found: [], seen: [], told: [], recent: [], last: null, ping: {} });
   G.wk = () => {
     const s = S(); let w = s.wk;
     if (!w || typeof w !== 'object') w = s.wk = G.wkFresh();
     const f = G.wkFresh();
     for (const k of Object.keys(f)) if (w[k] === undefined || w[k] === null || (Array.isArray(f[k]) && !Array.isArray(w[k])) || (typeof f[k] === 'object' && !Array.isArray(f[k]) && typeof w[k] !== 'object') || (typeof f[k] === 'string' && typeof w[k] !== 'string')) w[k] = f[k];
     for (const k of ['found', 'seen', 'told', 'recent']) w[k] = w[k].filter((x) => typeof x === 'string');
-    // resonance is { worldId: time it was tuned }; older saves kept a list (those count as tuned just now)
     if (Array.isArray(w.tuned)) { const t = {}; w.tuned.forEach((id) => { if (typeof id === 'string') t[id] = Date.now(); }); w.tuned = t; }
     if (!w.tuned || typeof w.tuned !== 'object') w.tuned = {};
-    for (const [id, at] of Object.entries(w.tuned)) if (typeof at !== 'number' || Date.now() - at > K.TUNE_DAYS * 864e5) delete w.tuned[id];   // drifted out of tune
-    // energy fades with time (worked out from the clock, so it also fades while the app is closed)
-    if (typeof w.at !== 'number' || w.at > Date.now()) w.at = Date.now();
-    else if (G.upkeep && !G.upkeep()) w.at = Date.now();   // starter charge: nothing fades until Darkmatter unlocks (with the first world)
-    else { const days = (Date.now() - w.at) / 864e5; if (days > 0.001) { w.e = Math.max(0, (Number(w.e) || 0) - days * K.DRAIN_DAY); w.at = Date.now(); } }
-    w.e = clamp(Number(w.e) || 0, 0, K.OVER);
-    for (const d of D.DARKMATTER) w.dm[d.id] = clamp(Math.floor(Number(w.dm[d.id]) || 0), 0, K.DM_MAX);
-    // Worldkeys: the Rookie is always owned; older saves (one free look of twenty) start over with the Rookie
+    // older saves: Darkmatter in the pack becomes energy, bought Worldkeys are refunded, and the old fading/forge fields go
+    if (w.dm && typeof w.dm === 'object') { w.e = (Number(w.e) || 0) + (w.dm.void || 0) * 20 + (w.dm.nebula || 0) * 45 + (w.dm.eclipse || 0) * 70; delete w.dm; }
+    for (const k of ['at', 'lastTalk', 'walkMark', 'lowSaid', 'tuneLock', 'chat', 'voice']) delete w[k];
+    // Worldkeys: the Rookie is always owned; the key in use must be one you own
     w.keys = [...new Set([D.WK_START, ...w.keys.filter((id) => D.wkLookById[id])])];
     if (!w.keys.includes(w.look)) w.look = D.WK_START;
-    delete w.voice;   // a key's personality comes with the key
+    w.e = clamp(Number(w.e) || 0, 0, K.MAX);
     w.found = w.found.filter((id) => D.worldById[id] && !s.unlocked.includes(id));
     return w;
   };
   G.wkLow = () => G.wk().e <= K.LOW;
-  // ---------- the Worldkey collection: 18 keys, each with its own personality ----------
   G.wkKey = () => D.wkLookById[G.wk().look];
   G.wkVoice = () => D.wkVoiceById[G.wkKey().voice];
+  // ---------- the Worldkey collection: 18 keys, each with its own look and personality ----------
   G.wkKeyState = (id) => {
     const k = D.wkLookById[id], w = G.wk(), s = S();
     if (!k) return null;
@@ -59,9 +55,9 @@
   // next locked world, which can be tuned in advance but not opened yet.
   G.wkDest = () => { const w = G.wk(); return D.worldById[w.found[0]] || G.nextWorld() || null; };
   G.wkStatus = (world) => {
-    const w = G.wk(), cost = G.upkeep && !G.upkeep() ? 0 : K.cost(world), found = w.found.includes(world.id);   // starter charge: opening worlds is free until Darkmatter unlocks
-    const energyOk = w.e >= cost, tunedAt = w.tuned[world.id], tuned = !!tunedAt, tuneLeft = tuned ? K.TUNE_DAYS * 864e5 - (Date.now() - tunedAt) : 0;
-    return { world, cost, found, energy: w.e, energyOk, tuned, tuneLeft, ready: found && energyOk && tuned, tier: K.tier(world), unlocked: S().unlocked.includes(world.id) };
+    const w = G.wk(), cost = K.cost(world), found = w.found.includes(world.id);
+    const energyOk = w.e >= cost, tuned = !!w.tuned[world.id];
+    return { world, cost, found, energy: w.e, energyOk, tuned, ready: found && energyOk && tuned, tier: K.tier(world), unlocked: S().unlocked.includes(world.id) };
   };
   // called by the world-progress check: requirements met = discovered, not entered
   G.wkDiscover = (world) => {
@@ -73,70 +69,42 @@
     return true;
   };
 
-  // ---------- Darkmatter Forge ----------
-  G.wkHpCost = (d) => Math.max(1, Math.round(G.maxHp() * d.hp));
-  G.wkCraftCheck = (id) => {
-    const d = D.dmById[id], s = S(), w = G.wk();
-    if (!d) return { ok: false, why: 'Unknown recipe.' };
-    const have = G.artCount(d.minLvl), from = d.minLvl > 1 ? 'from worlds that open at level ' + d.minLvl + ' or later' : 'from any world';
-    const hp = G.wkHpCost(d), artsOk = have >= d.arts;
-    let why = '';
-    if (w.dm[id] >= K.DM_MAX) why = 'You’re holding the most you can carry (' + K.DM_MAX + '). Use some to charge your Worldkey first.';
-    else if (!artsOk) why = 'You need ' + (d.arts - have) + ' more artifact' + (d.arts - have > 1 ? 's' : '') + ' ' + from + '. Walk those worlds to find more.';
-    else if (s.hp <= hp) why = 'Crafting costs ' + hp + ' HP and you have ' + s.hp + '. Heal first.';
-    return { ok: !why, why, arts: { need: d.arts, have, from, minLvl: d.minLvl }, hp, lowHp: s.hp <= hp && artsOk };
+  // ---------- charging: artifacts go straight into the Worldkey ----------
+  const artWorld = (k) => D.worldById[k.split(':')[0]];
+  G.artCharge = (k) => { const w = artWorld(k); return w ? K.ART_CHARGE[K.tier(w)] : 0; };
+  // the order copies are used in: the ones you hold the most of first (so the collection keeps one of each as long as it can)
+  const order = () => G.artPool().sort((a, b) => b[1] - a[1] || G.artCharge(b[0]) - G.artCharge(a[0]));
+  // the copies n charges would use (never more than it takes to reach 100%)
+  G.wkChargePlan = (n) => {
+    const w = G.wk(), pool = order().map(([k, c]) => [k, c]), used = [];
+    let e = w.e;
+    while (used.length < n && e < K.MAX) {
+      const p = pool.find((x) => x[1] > 0); if (!p) break;
+      p[1]--; used.push(p[0]); e = Math.min(K.MAX, e + G.artCharge(p[0]));
+    }
+    return { used, from: w.e, to: e };
   };
-  let crafting = false;
-  G.wkCraft = (id) => {
-    if (crafting) return null;   // a double tap can't craft twice
-    crafting = true;
-    try {
-      const c = G.wkCraftCheck(id); if (!c.ok) return { ok: false, why: c.why };
-      const s = S(), d = D.dmById[id];
-      const used = G.artSpend(d.minLvl, d.arts);   // all checks passed: take everything in one step
-      s.hp = Math.max(1, s.hp - c.hp);
-      G.wk().dm[id] += 1; G.tally('forged', 1);
-      WB.Save.queue(); G.after && G.after();
-      return { ok: true, dm: d, hp: c.hp, used: used.map(G.artName) };
-    } finally { crafting = false; }
-  };
-
-  // ---------- charging ----------
-  // How many units of a kind are useful right now (never waste more than the last partial unit)
-  G.wkChargeMax = (id) => {
-    const d = D.dmById[id], w = G.wk(); if (!d || w.e >= d.limit) return 0;
-    return Math.min(w.dm[id], Math.ceil((d.limit - w.e) / d.energy));
-  };
-  G.wkChargePreview = (id, n) => { const d = D.dmById[id], w = G.wk(); return { from: w.e, to: Math.min(d.limit, w.e + d.energy * n) }; };
+  // how many copies are worth using right now (the most that still adds energy)
+  G.wkChargeMax = () => G.wkChargePlan(Infinity).used.length;
   let charging = false;
-  G.wkCharge = (id, n) => {
+  G.wkCharge = (n) => {
     if (charging) return null;
     charging = true;
     try {
-      const d = D.dmById[id], w = G.wk(); n = Math.floor(n);
-      if (!d || n < 1) return { ok: false, why: 'Choose how much to use.' };
-      if (n > G.wkChargeMax(id)) return { ok: false, why: w.e >= d.limit ? (d.id === 'eclipse' ? 'Fully overcharged.' : 'Already at 100%. Only Eclipse can overcharge.') : 'You don’t have that much ' + d.name + '.' };
-      const from = w.e;
-      w.dm[id] -= n; w.e = Math.min(d.limit, w.e + d.energy * n);
-      if (w.e > K.LOW) w.lowSaid = false;
-      WB.Save.queue();
-      return { ok: true, from, to: w.e, dm: d, n };
+      const w = G.wk(), s = S();
+      if (w.e >= K.MAX) return { ok: false, why: 'Already fully charged.' };
+      const plan = G.wkChargePlan(Math.max(1, Math.floor(n) || 1));
+      if (!plan.used.length) return { ok: false, why: 'No artifacts to use. Find them on the road (look for the glint).' };
+      for (const k of plan.used) { s.arts[k]--; if (s.arts[k] <= 0) delete s.arts[k]; }
+      w.e = plan.to; G.tally('charged', plan.used.length);
+      WB.Save.queue(); G.after && G.after();
+      return { ok: true, from: plan.from, to: plan.to, used: plan.used.map(G.artName), n: plan.used.length };
     } finally { charging = false; }
   };
 
   // ---------- resonance ----------
   G.wkSequence = () => { const sp = K.tuneSpec(S().level); return K.sequence(sp.len, sp.syms); };   // a fresh pattern for every attempt
-  G.wkLearn = (world) => { const w = G.wk(); w.tuned[world.id] = Date.now(); delete (w.ping || {})['drift:' + world.id]; G.tally('tuned', 1); WB.Save.queue(); return true; };   // (re)tuning resets the clock
-  // too many misses scramble the frequency for a minute (higher levels only, see K.tuneSpec)
-  G.wkTuneWait = () => { const w = G.wk(); return Math.max(0, Math.ceil(((w.tuneLock || 0) - Date.now()) / 1000)); };
-  G.wkTuneLock = () => { const w = G.wk(); w.tuneLock = Date.now() + K.TUNE_COOLDOWN_S * 1000; WB.Save.queue(); };
-  // the outdoors scrambles Worldkey tech: every step drains a little energy and wears the tuning down faster
-  WB.bus.on('steps', ({ n }) => {
-    const s = S(); if (!s || !s.onboarded || !(n > 0)) return;
-    const w = G.wk(), k = n / 1000;
-    if (!G.upkeep || G.upkeep()) w.e = Math.max(0, w.e - k * K.WALK_DRAIN);   // energy only fades once Darkmatter is unlocked
-    for (const id of Object.keys(w.tuned)) w.tuned[id] -= k * K.WALK_DETUNE_H * 36e5;
-  });
+  G.wkLearn = (world) => { const w = G.wk(); w.tuned[world.id] = Date.now(); G.tally('tuned', 1); WB.Save.queue(); return true; };
   G.wkTuneSpec = () => K.tuneSpec(S().level);
 
   // ---------- the gate: activate and travel ----------
@@ -154,16 +122,16 @@
       if (!st.tuned) return { ok: false, why: 'Tune the Worldkey to ' + world.name + ' first.' };
       w.e = Math.max(0, w.e - st.cost);                       // everything checked: spend once, open, go
       w.found = w.found.filter((id) => id !== wid); w.last = wid;
+      delete w.tuned[wid];
       s.unlocked.push(wid); s.worldSteps[wid] = s.worldSteps[wid] || 0; G.tally('portals', 1);
       WB.bus.emit('worldUnlocked', world);
       G.travel(wid);
-      if (w.e > K.LOW) w.lowSaid = false;
       WB.Save.queue();
       return { ok: true, world, spent: st.cost };
     } finally { opening = false; }
   };
 
-  // ---------- dialogue: real game state + the chosen voice ----------
+  // ---------- dialogue: real game state + the key's voice ----------
   G.wkVars = (extra = {}) => {
     const s = S();
     return { world: G.world().name, steps: WB.fmt(s.today.day === WB.dayKey() ? s.today.steps : 0), name: s.name, pct: Math.floor(G.explorePct(s.world)), ...extra };
@@ -177,14 +145,5 @@
     w.recent = [key, ...w.recent.filter((k) => k !== key)].slice(0, 12);
     const vars = G.wkVars(extra);
     return line.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined && vars[k] !== '' ? vars[k] : m));
-  };
-  // what the Worldkey would most usefully say right now, from the game's own data (null if nothing new)
-  G.wkThought = () => {
-    const s = S(), w = G.wk(), dest = G.wkDest(), hpLow = s.hp / G.maxHp() < 0.3;
-    if (hpLow) return ['lowHp'];
-    if (dest && w.found.includes(dest.id)) { const st = G.wkStatus(dest); if (!st.energyOk && !Object.values(w.dm).some((n) => n > 0)) return ['needFuel']; if (st.energyOk && !st.tuned) return ['notTuned', { world: dest.name }]; }   // the destination, not where you stand
-    const pct = G.explorePct(s.world), nw = G.nextWorld();
-    if (pct >= 90 && pct < 100 && nw && !w.told.includes('near:' + s.world)) { w.told.push('near:' + s.world); return ['nearDone']; }
-    return [Math.random() < 0.5 ? 'walk' : 'idle'];
   };
 })();

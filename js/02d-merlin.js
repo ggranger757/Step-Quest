@@ -1,63 +1,188 @@
-/* Step Quest — Merlin's quests: 300 harder walking quests offered by Merlin, a wandering owl-mage who turns up
-   on the road now and then (data only; rules live in 05c-missions.js and 05-game.js).
-   Each one is simply "walk N steps": more walking than a field mission, 48 hours instead of 24, far more coins and XP. Only one Merlin quest runs at a time and it
-   doesn't use a field-mission slot. Letting one expire or handing it back costs nothing: Merlin simply
-   offers it again another day. Everything here is legal, public and outdoors: sidewalks, parks, trails. */
+/* Step Quest — Merlin's Eggs (data). Rules live in 05e-merlin.js, screens in 07h-merlin-ui.js.
+   The loop, in one line: Merlin gives you an egg → walking warms it → it hatches → Merlin's Knowledge Check
+   (one question) → a History Note → your reward. Eggs never expire, never break and are never lost in battle. */
 (() => {
   const D = WB.DATA;
-  const r50 = (v) => Math.max(50, Math.round(v / 50) * 50);
-  const r5 = (v) => Math.round(v / 5) * 5;
-  const nth = (name, i, len) => name + ['', ' II', ' III', ' IV'][Math.floor(i / len)];   // repeat titles get a numeral
 
-  // ---------- gather quests: [item, singular, icon, palette, title] ----------
-  const GATHER = [
-    ['Owl quills', 'Owl quill', 'feather', 'bone', 'Quills for the Spellbook'], ['Moon keys', 'Moon key', 'key', 'violet', 'Keys to the Moon Door'],
-    ['Star vials', 'Star vial', 'vial', 'violet', 'Bottled Starlight'], ['Ancient bones', 'Ancient bone', 'bone', 'ash', 'Bones of the Old Kings'],
-    ['Brass gears', 'Brass gear', 'cog', 'brass', 'The Clockwork Familiar'], ['Raven feathers', 'Raven feather', 'feather', 'violet', 'A Cloak of Feathers'],
-    ['Spirit lamps', 'Spirit lamp', 'lamp', 'cyan', 'Lamps for the Long Night'], ['Lost compasses', 'Lost compass', 'compass', 'brass', 'Every Compass Points Home'],
-    ['Raw gems', 'Raw gem', 'gem', null, 'Gems for the Owl’s Crown'], ['Spark cells', 'Spark cell', 'bolt', null, 'Lightning in a Jar'],
-    ['Herb tinctures', 'Herb tincture', 'vial', 'moss', 'The Healer’s Satchel'], ['Festival masks', 'Festival mask', 'mask', 'violet', 'The Masked Parade'],
-    ['Wolf teeth', 'Wolf tooth', 'tooth', 'bone', 'Teeth of the Grey Pack'], ['Silver compasses', 'Silver compass', 'compass', 'ash', 'The Silver Way'],
-    ['Old photos', 'Old photo', 'photo', 'bone', 'Memories of the Road'], ['Lucky coins', 'Lucky coin', 'coin', null, 'The Wishing Purse'],
-    ['Data chips', 'Data chip', 'chip', 'moss', 'The Thinking Stone'], ['Rusted keys', 'Rusted key', 'key', 'rust', 'Locks of the Sunken Tower'],
-    ['Dew vials', 'Dew vial', 'vial', 'cyan', 'Morning Dew Elixir'], ['Hawk feathers', 'Hawk feather', 'feather', 'rust', 'Wings of the Hunter'],
-    ['Porcelain masks', 'Porcelain mask', 'mask', 'bone', 'Faces of the Quiet Court'], ['Postcards', 'Postcard', 'photo', 'rose', 'Letters from Far Lands'],
-    ['Oil lamps', 'Oil lamp', 'lamp', 'brass', 'The Lamplighter’s Round'], ['Iron sprockets', 'Iron sprocket', 'cog', 'ash', 'The Iron Golem’s Heart'],
-    ['Fossil bones', 'Fossil bone', 'bone', 'bone', 'The Dragon Fossil'], ['Carnival tickets', 'Carnival ticket', 'ticket', 'rose', 'Tickets to the Night Fair'],
-    ['Jay feathers', 'Jay feather', 'feather', 'cyan', 'The Blue Jay’s Riddle'], ['Circuit chips', 'Circuit chip', 'chip', 'cyan', 'The Humming Machine'],
-    ['Shark teeth', 'Shark tooth', 'tooth', 'ash', 'The Sea Witch’s Necklace'], ['Mixtapes', 'Mixtape', 'tape', 'rose', 'Songs for the Road'],
+  D.MERLIN_MIN_LEVEL = 3;     // Merlin and his eggs open with battles (Missions → Merlin)
+  D.MERLIN_COOLDOWN_H = 2;    // after a visit on the road he doesn't swoop down again for a while
+  D.NEST_MAX = 3;             // eggs warming at once; all of them warm with every step you take
+
+  // Three eggs. steps = live steps to hatch · w = how often Merlin hands one out (rarer ones get likelier in later worlds)
+  // reward: coins / xp before the level bonus · bonus = what a right answer adds (×1.5 coins and XP, plus `extra`)
+  D.EGGS = [
+    { id: 'frost', name: 'Frost Egg', rarity: 'Common', steps: 3000, w: 62, reward: { coins: 60, xp: 80, potion: 'tonic' },
+      short: '3,000 steps', desc: 'Cool to the touch. Hatches after 3,000 steps.' },
+    { id: 'ember', name: 'Ember Egg', rarity: 'Uncommon', steps: 6000, w: 28, reward: { coins: 140, xp: 180, potion: 'iron' },
+      short: '6,000 steps', desc: 'Warm, and it ticks softly. Hatches after 6,000 steps.' },
+    { id: 'crystal', name: 'Crystal Egg', rarity: 'Rare', steps: 12000, w: 10, reward: { coins: 300, xp: 400, potion: 'elixir' }, hoard: true,
+      short: '12,000 steps', desc: 'Glows from the inside. Hatches after 12,000 steps. Answer Merlin right and it holds a weapon or pet you don’t own yet.' },
   ];
-  // ---------- names for timed, multi-walk and distance quests ----------
-  const TIME_NAMES = ['The Dawn Vigil', 'Before the Kettle Sings', 'The Noon Pilgrimage', 'Afternoon Sentry', 'Golden-Hour Oath', 'The Lantern Hour',
-    'Sunrise Trial', 'The Early Owl', 'Midday March', 'The Long Afternoon', 'Gilded Evening', 'Twilight Patrol', 'The Rooster’s Challenge', 'Bell of Noon', 'Owl-Light Walk'];
-  const WALK_NAMES = ['The Three Journeys', 'Thrice Around the Tower', 'The Faithful Feet', 'Walker’s Rhythm', 'The Patient Path', 'Rounds of the Watch',
-    'The Owl’s Circuit', 'Many Roads', 'Four Winds', 'The Steady Heart', 'The Tireless', 'Again and Again', 'The Long Habit', 'Seasoned Steps', 'The Five Gates'];
-  const DIST_NAMES = ['The Grand Survey', 'Road to the Far Hills', 'The Pilgrim’s League', 'Edge of the Map', 'The Long Errand', 'Across the Valley',
-    'The Wizard’s Mile', 'Border to Border', 'The Endless Avenue', 'Starlit Courier', 'The Great Loop', 'Riverlength', 'The Owl’s Flight Path',
-    'Kingdom Crossing', 'Ten Thousand Paces', 'The Wayfarer’s Test', 'Trail of Embers', 'The Faraway Bell', 'Horizon Chaser', 'The Last Milestone'];
+  D.eggById = Object.fromEntries(D.EGGS.map((e) => [e.id, e]));
+  D.QUIZ_BONUS = 1.5;   // a right answer multiplies the coins and XP
 
-  // per 20 slots: 6 photo (removed in 2.13: those slots are skipped), 4 gather, 3 time, 3 walks, 4 distance.
-  // Skipping keeps every remaining quest's id, so a quest in progress or already done stays exactly as it was.
-  const PATTERN = ['photo', 'distance', 'gather', 'photo', 'walks', 'time', 'photo', 'gather', 'distance', 'photo',
-    'walks', 'gather', 'time', 'photo', 'distance', 'gather', 'photo', 'walks', 'time', 'distance'];
-  // Simplified: every Merlin quest is the same thing, "walk N steps within 48 hours" (no gathering, time windows or
-  // multi-walk rules). Quests keep the ids they always had, so finished ones stay finished and a quest in progress carries on.
-  const NAMES = GATHER.map((g) => g[4]).concat(TIME_NAMES, WALK_NAMES, DIST_NAMES);
-  const out = [];
-  let ni = 0;
-  for (let i = 0; i < 300; i++) {
-    const kind = PATTERN[i % 20], f = i / 299;
-    if (kind === 'photo') continue;   // removed
-    const steps = r50(5000 + 10000 * Math.pow(f, 1.1));   // 5,000 -> 15,000 steps across the list
-    const m = { id: 'w' + String(i + 1).padStart(3, '0'), n: out.length + 1, kind: 'steps', merlin: true, hours: 48,
-      name: nth(NAMES[ni % NAMES.length], ni, NAMES.length), steps, icon: 'steps' };
-    ni++;
-    m.reward = { coins: r5(150 + 450 * f + (m.steps % 5) * 5), xp: r5(200 + 700 * f + (m.steps % 7) * 5) };   // ~150-600 coins, ~200-900 XP
-    if ((i + 1) % 10 === 0) m.reward.potion = 'elixir';
-    out.push(m);
-  }
-  D.MERLIN = out;
-  out.forEach((m) => (D.missionById[m.id] = m));   // shares the field-mission engine (progress, claims)
-  D.MERLIN_MIN_LEVEL = 3;   // Merlin's quests live on Missions → Merlin, which opens at level 3 (D.FIELD_LEVEL)
-  D.MERLIN_COOLDOWN_H = 2;   // after Merlin visits, he doesn't come back for a while
+  D.MERLIN_LINES = [
+    '“Hoo! A walker with strong legs. Keep this egg warm for me, would you?”',
+    'A dark-winged owl lands on a signpost. “Merlin, at your service. I have an egg that needs a good long walk.”',
+    'Wings beat overhead. “Merlin here. Eggs hatch for walkers, never for sitters.”',
+    'An owl in a tiny pointed hat blinks at you. “Carry this, walk far, and we’ll see what hatches.”',
+    '“Hoo-hoo! You again. Here: one egg, warm side up.”',
+  ];
+  D.MERLIN_HATCH = ['“Hoo! It’s hatching. But first, a question for your mind.”', '“A crack! Before it opens, let’s see what you know.”', '“Look at that. Answer me this and the egg is yours to open.”'];
+  D.MERLIN_RIGHT = ['“Correct! A sharp mind and strong legs.”', '“Hoo! Right you are.”', '“Splendid. The egg glows brighter for it.”', '“Exactly so. I knew you’d know.”'];
+  D.MERLIN_WRONG = ['“Not quite. No shame in it: now you know.”', '“Hoo. Close, but no. Remember it for next time.”', '“A miss. The egg doesn’t mind, and neither do I.”'];
+  D.MERLIN_DECLINE = ['“Another day, then. I’ll find you.”', '“Rest those legs. I’ll be back.”', '“Hoo. Not everyone is ready. Yet.”'];
+
+  // ---------- Merlin's History Notes: one after every hatch, never repeated until you've read them all ----------
+  // Short, well-established facts; each stands alone.
+  D.HISTORY = [
+    'The Great Pyramid of Giza was the tallest human-made structure on Earth for nearly 4,000 years.',
+    'Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid.',
+    'The ancient Olympic Games began in Olympia, Greece, in 776 BC, according to tradition.',
+    'Ancient Romans used a concrete made with volcanic ash. Some of their harbor walls still stand after 2,000 years in seawater.',
+    'The Roman Colosseum could hold around 50,000 spectators.',
+    'Hadrian’s Wall, built from AD 122, ran about 73 miles (117 km) across northern Britain.',
+    'The Library of Alexandria was one of the largest libraries of the ancient world.',
+    'The Great Wall of China was built and rebuilt over many centuries; most of what stands today dates from the Ming dynasty.',
+    'Paper was invented in China; the court official Cai Lun is credited with improving it around AD 105.',
+    'Movable type printing was first developed in China by Bi Sheng around 1040.',
+    'Johannes Gutenberg’s printing press, around 1440, made books far cheaper in Europe.',
+    'The Gutenberg Bible, printed in the 1450s, was one of the first major books printed with movable metal type in Europe.',
+    'The Magna Carta was sealed by King John of England in 1215.',
+    'The Black Death killed roughly a third or more of Europe’s population between 1347 and 1351.',
+    'Marco Polo’s account of his travels to Asia was written while he was in a prison in Genoa.',
+    'The Mongol Empire, founded by Genghis Khan, became the largest contiguous land empire in history.',
+    'Machu Picchu was built by the Inca in the 1400s, high in the Andes of Peru.',
+    'The Aztec capital Tenochtitlan was built on an island in Lake Texcoco, where Mexico City stands today.',
+    'Mansa Musa, ruler of the Mali Empire, is often called one of the richest people who ever lived.',
+    'Timbuktu was a great center of learning in West Africa, with libraries of handwritten manuscripts.',
+    'Angkor Wat in Cambodia, built in the 1100s, is the largest religious monument in the world.',
+    'The Vikings reached North America around the year 1000, at L’Anse aux Meadows in Newfoundland.',
+    'Leonardo da Vinci filled notebooks with designs for flying machines centuries before powered flight.',
+    'Michelangelo painted the Sistine Chapel ceiling between 1508 and 1512.',
+    'Christopher Columbus first reached the Caribbean in 1492.',
+    'Ferdinand Magellan’s expedition (1519–1522) was the first to sail around the world, though Magellan died on the way.',
+    'The printing of Martin Luther’s 95 Theses in 1517 helped spark the Protestant Reformation.',
+    'William Shakespeare is credited with adding many words to English, such as “lonely” and “eyeball”.',
+    'The Globe Theatre, where many of Shakespeare’s plays were performed, was built in London in 1599.',
+    'Galileo was among the first to observe the night sky through a telescope, spotting four moons of Jupiter in 1610.',
+    'The Mayflower carried the Pilgrims from England to Plymouth in 1620.',
+    'Isaac Newton published his laws of motion and universal gravitation in 1687.',
+    'The Taj Mahal was built by the Mughal emperor Shah Jahan in memory of his wife Mumtaz Mahal.',
+    'The United States Declaration of Independence was adopted on July 4, 1776.',
+    'Benjamin Franklin’s kite experiment in 1752 is said to have shown that lightning is electricity.',
+    'The storming of the Bastille on July 14, 1789, became a symbol of the French Revolution.',
+    'The Rosetta Stone, found in 1799, helped scholars finally read Egyptian hieroglyphs.',
+    'Jean-François Champollion announced his decipherment of hieroglyphs in 1822.',
+    'The Lewis and Clark expedition crossed the American West to the Pacific between 1804 and 1806.',
+    'Sacagawea, a Lemhi Shoshone woman, guided and translated for the Lewis and Clark expedition.',
+    'The first public steam railway, the Stockton and Darlington, opened in England in 1825.',
+    'The world’s first photograph that still survives was made by Nicéphore Niépce around 1826.',
+    'Charles Darwin sailed on HMS Beagle from 1831 to 1836, visiting the Galápagos Islands in 1835.',
+    'Samuel Morse sent the telegraph message “What hath God wrought” in 1844.',
+    'Harriet Tubman escaped slavery and then led many others to freedom on the Underground Railroad.',
+    'Florence Nightingale became famous for her nursing work during the Crimean War in the 1850s.',
+    'Abraham Lincoln delivered the Gettysburg Address in 1863; it is only about 270 words long.',
+    'The transcontinental railroad across the United States was completed in 1869 at Promontory Summit, Utah.',
+    'The Suez Canal opened in 1869, linking the Mediterranean Sea and the Red Sea.',
+    'Alexander Graham Bell received a patent for the telephone in 1876.',
+    'Thomas Edison’s lab produced a practical incandescent light bulb in 1879.',
+    'The Statue of Liberty was a gift from France and was dedicated in 1886.',
+    'The Eiffel Tower was built for the 1889 World’s Fair in Paris and was meant to be temporary.',
+    'New Zealand became the first self-governing country to give women the vote, in 1893.',
+    'The first modern Olympic Games were held in Athens in 1896.',
+    'Marie Curie was the first person to win Nobel Prizes in two different sciences: physics and chemistry.',
+    'The Wright brothers made the first powered airplane flights at Kitty Hawk, North Carolina, in 1903. The first lasted 12 seconds.',
+    'Roald Amundsen’s team was the first to reach the South Pole, in December 1911.',
+    'The Titanic sank on its first voyage in April 1912 after hitting an iceberg.',
+    'The Panama Canal opened in 1914.',
+    'Women in the United States won the right to vote with the 19th Amendment in 1920.',
+    'Howard Carter discovered Tutankhamun’s tomb in Egypt’s Valley of the Kings in 1922.',
+    'Alexander Fleming discovered penicillin in 1928 after noticing mold killing bacteria in a dish.',
+    'Charles Lindbergh made the first solo nonstop flight across the Atlantic in 1927.',
+    'Amelia Earhart became the first woman to fly solo across the Atlantic, in 1932.',
+    'The Empire State Building was completed in 1931 in just over a year of construction.',
+    'The Golden Gate Bridge in San Francisco opened in 1937.',
+    'Jesse Owens won four gold medals at the 1936 Berlin Olympics.',
+    'D-Day, the Allied landings in Normandy, took place on June 6, 1944.',
+    'The United Nations was founded in 1945.',
+    'India became independent from British rule in 1947.',
+    'Jackie Robinson broke Major League Baseball’s color line in 1947.',
+    'Edmund Hillary and Tenzing Norgay were the first confirmed climbers to reach the summit of Mount Everest, in 1953.',
+    'The structure of DNA, the double helix, was described in 1953, building on Rosalind Franklin’s X-ray images.',
+    'Rosa Parks refused to give up her bus seat in Montgomery, Alabama, in 1955.',
+    'The Soviet Union launched Sputnik 1, the first artificial satellite, in 1957.',
+    'Yuri Gagarin became the first human in space on April 12, 1961.',
+    'Martin Luther King Jr. gave his “I Have a Dream” speech in Washington, D.C., in 1963.',
+    'Valentina Tereshkova became the first woman in space in 1963.',
+    'Neil Armstrong and Buzz Aldrin walked on the Moon on July 20, 1969.',
+    'The Apollo astronauts left footprints on the Moon that could last millions of years, since there is no wind to erase them.',
+    'The first email was sent by Ray Tomlinson in 1971; he chose the @ sign to separate the user from the computer.',
+    'The Berlin Wall fell on November 9, 1989.',
+    'Nelson Mandela was released from prison in 1990 and became South Africa’s president in 1994.',
+    'Tim Berners-Lee invented the World Wide Web while working at CERN; the first website went online in 1991.',
+    'The Channel Tunnel between England and France opened in 1994.',
+    'The Hubble Space Telescope was launched in 1990 and has helped measure how fast the universe is expanding.',
+    'The International Space Station has been continuously occupied since November 2000.',
+    'The Terracotta Army, buried with China’s first emperor, has thousands of life-size soldiers, and each face is different.',
+    'Stonehenge was built in stages, starting around 3000 BC.',
+    'The Code of Hammurabi, from ancient Babylon around 1750 BC, is one of the oldest written law codes.',
+    'Cuneiform, from ancient Mesopotamia, is one of the earliest known writing systems.',
+    'The ancient Egyptians built a calendar of 365 days.',
+    'The Phoenicians developed an alphabet that later shaped the Greek and Latin alphabets.',
+    'The Parthenon in Athens was completed in 432 BC as a temple to the goddess Athena.',
+    'Alexander the Great built an empire stretching from Greece to northwestern India before he died at 32.',
+    'Hannibal led an army with war elephants across the Alps to attack Rome in 218 BC.',
+    'Julius Caesar was assassinated on the Ides of March, March 15, 44 BC.',
+    'The Roman city of Pompeii was buried by the eruption of Mount Vesuvius in AD 79.',
+    'The Silk Road was a network of trade routes linking China with the Mediterranean world.',
+    'Petra, in present-day Jordan, was carved into rose-colored cliffs by the Nabataeans.',
+    'The Maya developed an advanced calendar and a writing system, and used the concept of zero.',
+    'The House of Wisdom in Baghdad was a famous center of learning during the Islamic Golden Age.',
+    'The word “algebra” comes from the Arabic “al-jabr”, from a book by the mathematician al-Khwarizmi.',
+    'Ibn Battuta traveled roughly 75,000 miles across Africa, Asia and Europe in the 1300s.',
+    'Zheng He led huge Chinese treasure fleets across the Indian Ocean in the early 1400s.',
+    'The Hanseatic League was a network of merchant towns that dominated trade in northern Europe for centuries.',
+    'Notre-Dame de Paris took nearly 200 years to build, from 1163 to about 1345.',
+    'Great Zimbabwe was a stone city built between the 11th and 15th centuries in southern Africa.',
+    'Easter Island’s moai statues were carved by the Rapa Nui people, mostly between about 1250 and 1500.',
+    'Captain James Cook charted the coasts of New Zealand and eastern Australia around 1770.',
+    'The hot-air balloon flight of the Montgolfier brothers in 1783 carried the first human passengers.',
+    'Edward Jenner developed the first vaccine, against smallpox, in 1796.',
+    'Smallpox was declared eradicated worldwide in 1980, the first human disease to be wiped out.',
+    'Louis Braille invented his reading system for blind people when he was a teenager, publishing it in 1829.',
+    'Ada Lovelace wrote what is often called the first computer program, for Charles Babbage’s Analytical Engine, in 1843.',
+    'Levi Strauss and Jacob Davis patented riveted denim work pants, the first blue jeans, in 1873.',
+    'The first Nobel Prizes were awarded in 1901.',
+    'Albert Einstein published his theory of special relativity in 1905.',
+    'The first Tour de France bicycle race was held in 1903.',
+    'Henry Ford’s moving assembly line, introduced in 1913, cut the time to build a Model T to about 90 minutes.',
+    'Insulin was first used to treat a person with diabetes in 1922.',
+    'The first television pictures were demonstrated by John Logie Baird in 1926.',
+    'The first FIFA World Cup was held in Uruguay in 1930, and Uruguay won it.',
+    'Mount Rushmore’s four presidential faces were carved between 1927 and 1941.',
+    'The first electronic general-purpose computer, ENIAC, filled a large room and weighed about 30 tons.',
+    'Chuck Yeager was the first pilot to fly faster than the speed of sound, in 1947.',
+    'Laika, a dog, became the first animal to orbit Earth, aboard Sputnik 2 in 1957.',
+    'The first Paralympic Games were held in Rome in 1960.',
+    'Jane Goodall began studying wild chimpanzees in Tanzania in 1960 and discovered they make and use tools.',
+    'The Concorde could fly from London to New York in about three and a half hours.',
+    'The first mobile phone call was made in 1973 by Martin Cooper of Motorola.',
+    'The Voyager 1 probe, launched in 1977, is the most distant human-made object from Earth.',
+    'Sally Ride became the first American woman in space in 1983.',
+    'The wreck of the Titanic was found on the ocean floor in 1985.',
+    'The Human Genome Project finished mapping human DNA in 2003.',
+    'Ötzi the Iceman, found in the Alps in 1991, lived over 5,000 years ago and carried a copper axe.',
+    'The Lascaux cave paintings in France are around 17,000 years old.',
+    'Dogs were domesticated from wolves many thousands of years ago, long before farming began.',
+    'The ancient Egyptians mummified cats, and harming one could be a serious crime.',
+    'Chess spread from India to Persia and then to Europe; the queen became the strongest piece in the 1400s.',
+    'Coffee drinking spread from Yemen and Ethiopia across the Islamic world, and coffeehouses reached Europe in the 1600s.',
+    'Potatoes were first farmed in the Andes of South America, and only reached Europe in the 1500s.',
+    'Chocolate was drunk as a bitter, spiced drink by the Maya and Aztecs long before it was sweetened in Europe.',
+    'Vienna’s Schönbrunn Zoo, founded in 1752, is the oldest zoo still operating.',
+    'The world’s first underground railway opened in London in 1863.',
+    'Yellowstone, created in 1872, was the world’s first national park.',
+    'Walking is one of humanity’s oldest journeys: early humans walked out of Africa and spread across every continent but Antarctica.',
+  ];
 })();

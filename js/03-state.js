@@ -9,9 +9,9 @@
       v: 2, created: Date.now(), savedAt: 0, name: 'Wanderer', onboarded: false,
       avatar: 'scavenger', skin: null,
       outfit: {},         // per walker: { o: dye id, t: dye id } (Outfit and Trim colors on the Loadout)
-      equip: { pet: null, weapon: 'star', melee: 'sw_rusty', shield: null, charms: [] },
+      equip: { pet: null, weapon: 'star', melee: 'sw_rusty', shield: null },
       owned: { avatars: ['scavenger'],   // replaced by the walker picked at sign-up
-                pets: [], weapons: ['star', 'sw_rusty'], magic: [] },
+                pets: [], weapons: ['star', 'sw_rusty'] },
       petHp: {},          // pets have their own health (they take part of every hit in battle)
       hp: D.heroMaxHp(1), potions: { tonic: 2 }, bosses: {},
       health: { on: false, since: null, last: 0 },   // Apple Health / Health Connect sync (installed app only)
@@ -23,7 +23,6 @@
       world: 'rust', worldSteps: Object.assign({ rust: 0 }, ...D.WORLDS.filter((w) => w.open).map((w) => ({ [w.id]: 0 }))), unlocked: ['rust', ...D.WORLDS.filter((w) => w.open).map((w) => w.id)], milestones: {},   // open: true worlds are open from the start
       enc: { next: 120, seq: 0, pending: [], count: 0, fights: 0, battles: 0, losses: 0, chests: 0, cards: {}, finds: {} },
       tasks: { day: '', daily: [], advDone: [], quests: [] },
-      missions: { active: [], done: [], skip: [] },
       custom: { list: [], history: [], day: '', coinsToday: 0, xpToday: 0, done: 0 },
       quick: { day: '', done: {}, coinsToday: 0, xpToday: 0, total: 0, perDay: {} },   // quick missions (05k-quick.js)
       mx: { days: {}, cats: {}, dawn: 0, night: 0, early: 0, ontime: 0 },             // mission log: types per day, completion times
@@ -31,8 +30,8 @@
       streak: { count: 0, best: 0, lastDay: '', rest: 0, claimed: [] },
       daily: { idx: 0, lastClaim: '' },
       ach: {}, purchases: 0,
-      eggs: { frost: 0, ember: 0, crystal: 0 }, eggTrades: 0,
-      druid: { asked: [], wins: 0, losses: 0 },
+      merlin: { nest: [], seq: 0, hatched: 0, right: 0, taken: 0, asked: [], facts: [], gift: '', at: 0 },   // Merlin's eggs (05e-merlin.js)
+      druid: { asked: [], wins: 0, losses: 0, taken: 0 },
       nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
       settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, theme: 'night', notify: true, chartDays: 14, moodAsk: true, turnTimer: true },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
@@ -46,11 +45,21 @@
     // Sound & music became two switches: Game music starts where the old switch was
     if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
     if (s.settings && s.settings.turnTimer === undefined) s.settings.turnTimer = true;   // the battle turn timer is on for older saves too
-    // photo hunts were removed (2.13): a photo mission still running is retired quietly, with no penalty
-    if (s.missions && Array.isArray(s.missions.active)) s.missions.active = s.missions.active.filter((a) => D.missionById[a.id]);
     if (s.settings) delete s.settings.homeState;   // only photo hunts used it (state bird / flower)
-    s.settings.notify = true;   // mission reminders are always enabled when the app opens
-    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'missions', 'custom', 'quick', 'mx', 'mood', 'streak', 'daily', 'settings', 'seen', 'health'])
+    // 3.0: field missions, Merlin's walking quests, egg trades, the Darkmatter Forge, magic items and gear care were retired.
+    // Eggs carried move into Merlin's nest (05e-merlin.js reads s._oldEggs once); magic items bought are refunded.
+    if (s.eggs) { s._oldEggs = { eggs: s.eggs, at: s.enc && s.enc.merlinAt }; delete s.eggs; }
+    delete s.eggTrades;
+    if (s.owned && Array.isArray(s.owned.magic) && s.owned.magic.length) {
+      const back = s.owned.magic.reduce((n, id) => n + ((D.MAGIC_RETIRED_COST || {})[id] || 0), 0);
+      if (back) { s.coins += back; s.notice = (s.notice ? s.notice + ' ' : '') + 'Magic items were retired. ' + WB.fmt(back) + ' Walk Coins were refunded.'; }
+    }
+    if (s.owned) delete s.owned.magic;
+    if (s.equip) { delete s.equip.charms; delete s.equip.backpack; }
+    delete s.missions;
+    if (s.settings && s.settings.theme === 'field') s.settings.theme = 'night';   // the Field theme was retired
+    if (s.enc && Array.isArray(s.enc.pending)) s.enc.pending = s.enc.pending.filter((e) => e.type !== 'egg' || e.egg);
+    for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'custom', 'quick', 'mx', 'mood', 'streak', 'daily', 'settings', 'seen', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];
     // v2: dyes and auras were retired. Refund what was bought, drop the rest.
     if (s.v < 2) {
@@ -79,14 +88,9 @@
       delete s.owned.trails;
     }
     delete s.equip.trail;
-    // the backpack became a charm (charms: worn magic items)
-    if (!Array.isArray(s.equip.charms)) s.equip.charms = [];
-    if (s.equip.backpack && !s.equip.charms.includes('backpack')) s.equip.charms.push('backpack');
-    delete s.equip.backpack;
     delete s.settings.music;   // an old setting from the retired in-app music player
     delete s.settings.loc;     // Location Awareness was removed
     delete s.music;            // the in-app music player was removed: players use their own music app
-    if (s.enc.merlinAt && !s.enc.merlinMet) s.enc.merlinMet = true;   // players who already met Merlin
     if (s.level > D.LEVEL_CAP) { s.level = D.LEVEL_CAP; s.xp = 0; }   // the cap came down from 100 to 80: walkers above it stay at 80
     s.peakLevel = Math.min(D.LEVEL_CAP, Math.max(s.peakLevel || 0, s.level));   // levels won back after losing to a boss don't pay level-up coins twice
     // the walker picked at sign-up decides the special attack; older saves: the first starter owned is the one picked

@@ -36,6 +36,7 @@
   --label: 'Silkscreen', ui-monospace, monospace;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
   --gutter: 16px;
+  --c-goal: #6ee7a0; --c-today: #ff9a3d; --c-under: #8f72ff;   /* step chart: streak day (green), today (orange), under (violet) */
   color-scheme: dark;
 }
 /* ---------- color themes (Profile → Theme). Lime and Field (orange) use yellow as their secondary accent; their non-primary buttons are glass. Every pair used for text meets WCAG 2.1 AA (4.5:1),
@@ -47,6 +48,7 @@
   --violet: #9dff3a; --violet-hi: #e3ff8a; --cyan: #ecff3a; --gold: #c6ff00; --ok: #9dff3a; --danger: #ff6b6b; --ehp: #ff5a4f;
   --primary: var(--gold);   /* filled in the theme's main lime */
   --xp: #38c8ff; --xp-hi: #8fdcff;   /* sky blue: never confused with the lime HP gauge */
+  --c-goal: #9dff3a; --c-today: #38c8ff; --c-under: #6a6a5a;   /* step chart: lime, sky blue, grey */
   --shadow: #000000; --ink: #000000;
 }
 :root[data-theme="field"] {   /* black with orange; yellow is the secondary accent */
@@ -55,6 +57,7 @@
   --violet: #ff9a3d; --violet-hi: #ffc68f; --cyan: #ffd84a; --gold: #ff8a1f; --ok: #ffd166; --danger: #ff6b6b; --ehp: #ff4a3d;
   --primary: var(--gold);   /* filled in the theme's main orange */
   --xp: #4cc4ff; --xp-hi: #9ad9ff;   /* sky blue: never confused with the yellow HP gauge */
+  --c-goal: #ffd166; --c-today: #4cc4ff; --c-under: #b8651f;   /* step chart: yellow, sky blue, rust */
   --shadow: #000000; --ink: #000000;
 }
 /* Lime and Orange: the main call-to-action (gold) and the primary button (plain .btn) are both solid in the theme's main color; the secondary
@@ -394,9 +397,9 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .stat b small { font: 400 11px/1 var(--label); color: var(--muted); text-transform: uppercase; }
 .chart .bars { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); align-items: end; gap: var(--s1); height: 120px; box-shadow: 0 2px 0 0 var(--line); }
 .chart .bars .bcol { appearance: none; border: 0; background: none; padding: 0; margin: 0; height: 100%; min-width: 0; display: flex; align-items: flex-end; cursor: pointer; position: relative; -webkit-tap-highlight-color: transparent; }
-.chart .bars .bcol i { display: block; width: 100%; background: var(--violet); min-height: 2px; }
-.chart .bars .bcol.goal i { background: var(--ok); }
-.chart .bars .bcol.today i { background: var(--cyan); }
+.chart .bars .bcol i { display: block; width: 100%; background: var(--c-under); min-height: 2px; }
+.chart .bars .bcol.goal i { background: var(--c-goal); }
+.chart .bars .bcol.today i, .k-today { background-color: var(--c-today); background-image: repeating-linear-gradient(135deg, rgba(0,0,0,.32) 0 2px, transparent 2px 6px); }   /* stripes too, so Today never relies on color alone */
 .chart .bars .bcol[aria-pressed="true"] i { box-shadow: 0 0 0 2px var(--text, #fff); }
 .chart .bars .bcol:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .chart-read { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--s3); margin: 0; min-height: 22px; font: 400 12px/1.3 var(--label); color: var(--muted); text-transform: uppercase; }
@@ -406,7 +409,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .chart .legend { display: flex; gap: var(--s2) var(--s4); flex-wrap: wrap; font: 400 11px/1.2 var(--label); color: var(--muted); text-transform: uppercase; }
 .chart .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .chart .legend i { display: inline-block; width: 10px; height: 10px; }
-.k-ok { background: var(--ok); } .k-under { background: var(--violet); } .k-today { background: var(--cyan); }
+.k-ok { background: var(--c-goal); } .k-under { background: var(--c-under); }
 .wardrobe { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s4); }
 .wslot { display: flex; align-items: center; gap: var(--s3); padding: var(--s3); border: 0; cursor: pointer; text-align: left; min-height: 64px; color: var(--text); min-width: 0; }
 .ws-t { display: grid; gap: var(--s1); min-width: 0; }
@@ -1631,3 +1634,55 @@ html.rm .forge.flash { animation: none; }
 .b-actions .gear-btn { grid-column: 1 / -1; min-height: 52px; }
 .b-actions.gear .b-sub { grid-column: 1 / -1; margin: 6px 0 0; font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .06em; color: var(--gold); }
 .b-actions.gear .btn.on { --b: var(--surface-2); box-shadow: 0 -3px 0 0 var(--gold), 0 3px 0 0 var(--gold), -3px 0 0 0 var(--gold), 3px 0 0 0 var(--gold); }
+
+/* ---------- Merlin's Eggs (Missions → Merlin) and the hatching card ---------- */
+.nest { display: grid; gap: var(--s2); }
+.egg-card { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: var(--s3); padding: var(--s3); }
+.egg-card.ready { box-shadow: 0 0 0 2px var(--gold), 0 0 14px var(--gold-glow); }
+.egg-card.empty { opacity: .9; }
+.egg-card .ek-img { display: grid; place-items: center; width: 56px; height: 56px; background: var(--inset); box-shadow: 0 0 0 2px var(--line); }
+.egg-card .ek-none .egg-img { opacity: .25; filter: grayscale(1); }
+.egg-card .ek-main { display: grid; gap: 6px; min-width: 0; }
+.egg-card .ek-main > b, .egg-card .ek-top b { font: 400 18px/1.1 var(--display); color: var(--text); }
+.egg-card .ek-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s2); }
+.egg-card .ek-top .lbl { font-size: 10px; }
+.egg-card .fine { margin: 0; }
+.egg-card .btn { min-width: 84px; min-height: 44px; }
+.hatch .hatch-top { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: var(--s3); align-items: center; margin: var(--s2) 0; }
+.hatch .mer-face { width: 64px; height: 64px; image-rendering: pixelated; }
+.hatch .hatch-say { margin: 0; color: var(--muted); }
+.hatch .hatch-say b { color: var(--text); font-weight: 400; }
+.hatch .dq { font-size: 17px; line-height: 1.35; margin: var(--s3) 0; color: var(--text); }
+.hatch .choices.quiz { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-bottom: var(--s3); }
+.hatch .choices.quiz .btn { height: auto; min-height: 52px; padding: 8px 10px; text-transform: none; letter-spacing: 0; font: 400 14px/1.2 var(--body); white-space: normal; text-align: center; }
+.hatch .choices.quiz .btn.right { background: #1f6b45; box-shadow: 0 0 0 2px var(--ok); color: #fff; opacity: 1; }
+.hatch .choices.quiz .btn.wrong { background: #6b1f2e; box-shadow: 0 0 0 2px var(--danger); color: #fff; opacity: 1; }
+@media (max-width: 360px) { .hatch .choices.quiz { grid-template-columns: 1fr; } }
+.hatch .history { margin: var(--s3) 0; padding: var(--s3) var(--s4); border-left: 4px solid var(--gold); }
+.hatch .history p { margin: 6px 0 0; font-size: 16px; line-height: 1.45; color: var(--text); }
+.hatch .outcome { display: flex; flex-wrap: wrap; gap: var(--s2); margin-bottom: var(--s3); }
+/* charging: the artifacts a charge will use */
+.chg-arts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chg-arts .reward-pill small { color: var(--cyan); margin-left: 2px; }
+/* inventory: six section tabs in a 3 × 2 grid on phones */
+.sub-seg.seg.six { display: grid; grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sub-seg.seg.six button { flex-direction: column; min-height: 58px; gap: 4px; font-size: 11px; letter-spacing: .02em; }
+@media (min-width: 600px) { .sub-seg.seg.six { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.sub-seg.seg.four { display: grid; grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sub-seg.seg.four button { flex-direction: column; min-height: 58px; gap: 4px; }
+@media (min-width: 600px) { .sub-seg.seg.four { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* battle (portrait phones): a bigger stage. The menu panel is capped at ~38% of the screen (07b-battle-ui.js),
+   buttons are compact, and the menu scrolls inside the panel when it doesn't fit. */
+@media (orientation: portrait) {
+  .b-panel { gap: var(--s2); padding-top: var(--s2); }
+  .b-log { min-height: 2.7em; font-size: 14px; line-height: 1.3; }
+  .b-actions { gap: var(--s2); }
+  .b-actions .btn { min-height: 46px; padding: 0 var(--s2); }
+  .b-actions .btn.special { min-height: 46px; }
+  .b-actions .bt small { font-size: 10px; }
+  .b-actions .flee { min-height: 36px; }
+  .b-plates { padding-top: var(--s2); padding-bottom: 6px; }
+}
+.b-panel.fixed .b-actions { min-height: 0; overflow-y: auto; align-content: start; padding: 4px 4px 12px; margin: -4px; scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent); }

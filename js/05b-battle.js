@@ -33,15 +33,15 @@
       enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, rival: !!D.CREATURES[enc.creature].rival, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
         poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false, fled: 0,
         moves: D.CREATURE_MOVES[enc.creature] || D.CREATURE_MOVES.hyena },
-      weapon: G.equipped('ranged') || D.WEAPONS[0], melee: (G.equipped('melee') && !G.broken(G.equipped('melee').id)) ? G.equipped('melee') : D.weaponById.sw_rusty, brokenMelee: (G.equipped('melee') && G.broken(G.equipped('melee').id)) ? G.equipped('melee') : null, shield: G.equipped('shield'),
+      weapon: G.equipped('ranged') || D.WEAPONS[0], melee: G.equipped('melee') || D.weaponById.sw_rusty, brokenMelee: null, shield: G.equipped('shield'),
       cooldown: 0, cds: {},   // cds: the recharge left on ranged weapons you switched away from (switching never skips a recharge)
       special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
-      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.usesLeft(m.id) > 0).map((m) => m.id), magicEmpty: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.usesLeft(m.id) <= 0).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn
-      perks: new Set(G.charms().map((id) => D.magicById[id].perk)),   // worn charms
+      magic: [], magicEmpty: [], mused: {}, magicTurn: 0,   // magic items were retired for the MVP
+      perks: new Set(),
     };
     // initiative: some creatures strike before your opening move (never in your very first battle)
     const e0 = B.st.enemy, A = D.AMBUSH;
-    B.st.ambush = s.enc.battles > 0 && (enc.creature === 'druid' || Math.random() < (e0.nemesis || e0.rival ? A.boss : e0.boss ? A.guardian : A.creature));
+    B.st.ambush = s.enc.battles > 0 && (Math.random() < (e0.nemesis || e0.rival ? A.boss : e0.boss ? A.guardian : A.creature));
     B.active = true;
     return B.st;
   };
@@ -122,7 +122,6 @@
       const [id, mode] = String(arg).split('/'), m = D.magicById[id];
       if (!m || !st.magic.includes(id) || st.mused[id] || st.magicTurn === st.turn) return events;
       if (m.fx.type === 'special' && !(st.special && st.special.unlocked)) return events;
-      if (!G.useMagic(id)) return events;   // spends one of its uses
       st.mused[id] = true; st.magicTurn = st.turn;
       const ev = { who: 'hero', type: 'magic', item: id }, fx = m.fx, nm = m.name + ': ';
       const healBy = (frac) => { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * frac)); ev.heal = (ev.heal || 0) + h.hp - b0; return h.hp - b0; };
@@ -171,7 +170,7 @@
       const m = st.melee, ev = { who: 'hero', type: 'strike', weapon: m.id, hits: [] };
       const lucky = h.twice > 0; if (lucky) { h.twice--; ev.lucky = true; }
       const n = (m.type === 'dagger' ? 2 : m.effect === 'triple' ? 3 : 1) * (lucky ? 2 : 1);
-      const magicMult = (h.tome > 0 && m.type === 'staff' ? 1 + D.BOOK_BONUS : 1) * G.wearMult(m.id);   // a worn weapon hits softer
+      const magicMult = (h.tome > 0 && m.type === 'staff' ? 1 + D.BOOK_BONUS : 1);
       let extra = '';
       for (let i = 0; i < n && e.hp > 0; i++) {
         let base = h.atk * m.power * mult * magicMult;
@@ -193,14 +192,11 @@
       ev.text = (crits ? 'Critical! ' : '') + m.name + (ev.hits.length > 1 ? ' hits ' + ev.hits.length + ' times for ' : ' hits for ') + ev.dmg + '.' +
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = m.name + ' passes straight through ' + e.name + '’s shadow!';
-      const c0 = G.cond(m.id), c1 = G.wearDown(m.id); ev.cond = c1;
-      if (c0 > D.WORN_AT && c1 <= D.WORN_AT) ev.text += ' Your ' + m.name + ' is getting worn (' + Math.round(c1) + '%). Repair it in Inventory → Weapons.';
-      if (G.broken(m.id)) { ev.text += ' Your ' + m.name + ' broke! Repair it in Inventory → Weapons. You switch to the ' + D.weaponById.sw_rusty.name + '.'; st.brokenMelee = m; st.melee = D.weaponById.sw_rusty; ev.broke = true; }
       echo(st, ev);
       events.push(ev);
       chargeSpecial(st, 'strike');
     } else if (move === 'throw') {
-      if (st.cooldown > 0 || !G.useAmmo(st.weapon.id)) return events;   // spends one shot
+      if (st.cooldown > 0) return events;
       const wpn = st.weapon, ev = { who: 'hero', type: 'throw', weapon: wpn.id, hits: [] };
       const lucky = h.twice > 0; if (lucky) { h.twice--; ev.lucky = true; }
       const n = (wpn.effect === 'multi' ? 3 : wpn.hits || 1) * (lucky ? 2 : 1);
@@ -222,8 +218,6 @@
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = wpn.name + ' passes straight through ' + e.name + '’s shadow!';
       st.cooldown = P.has('cooldown') ? Math.max(1, wpn.cd) : wpn.cd + 1;   // the Circlet of Focus: one turn faster
-      const left = G.shotsLeft(wpn.id); ev.ammo = left;
-      if (left === Infinity) { /* shots only count from level 7 */ } else if (!left) ev.text += ' That was your last shot. Buy more in the Shop.'; else if (left <= 3) ev.text += ' ' + left + ' shot' + (left > 1 ? 's' : '') + ' left.';
       echo(st, ev);
       events.push(ev);
       chargeSpecial(st, 'throw');
@@ -445,8 +439,8 @@
   }
   function win(st, events) {
     st.over = true; st.result = 'win';
-    if (st.enemy.id === 'druid') events.push({ who: 'enemy', type: 'druidRun', text: 'The Druid is beaten! He bows, then runs off into the trees.' });   // he doesn't fall: he flees
-    else { if (st.enemy.nemesis || st.enemy.rival) say(st, events, 'defeat', 1); events.push({ who: 'enemy', type: 'die', text: st.enemy.name + ' is defeated!' }); }
+    if (st.enemy.nemesis || st.enemy.rival) say(st, events, 'defeat', 1);
+    events.push({ who: 'enemy', type: 'die', text: st.enemy.name + ' is defeated!' });
     return finish(events);
   }
   function lose(st, events) {
@@ -474,9 +468,9 @@
   B.swap = (slot, id) => {
     const st = B.st, s = WB.state, w = D.weaponById[id];
     if (!st || st.over || !w || w.slot !== slot || !(s.owned.weapons || []).includes(id)) return null;
-    if (slot === 'melee') { if (st.melee.id === id || G.broken(id)) return null; st.melee = w; if (id !== 'sw_rusty') st.brokenMelee = null; }
+    if (slot === 'melee') { if (st.melee.id === id) return null; st.melee = w; }
     else if (slot === 'ranged') {
-      if (st.weapon.id === id || (G.shotsLeft(id) || 0) <= 0) return null;
+      if (st.weapon.id === id) return null;
       st.cds[st.weapon.id] = st.cooldown; st.weapon = w; st.cooldown = st.cds[id] || 0;
     } else if (slot === 'shield') { if (st.shield && st.shield.id === id) return null; st.shield = w; }
     else return null;

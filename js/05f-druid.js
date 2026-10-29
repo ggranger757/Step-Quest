@@ -1,12 +1,12 @@
-/* Step Quest — the Druid. He turns up on the road (an encounter of his own, from level 2) with a Knowledge
-   Challenge: one multiple-choice question from D.QUIZ (02e-quiz.js). Answer right and he pays XP and coins
-   and runs off into the trees; answer wrong and you have to battle him. Lose that battle and he takes every
-   egg you carry. Beat him and he runs away. s.druid = { asked: [question indexes], wins, losses } */
+/* Step Quest — the Druid, the quick NPC on the road (from level 3) with a Knowledge Challenge: one multiple-choice
+   question from D.QUIZ (02e-quiz.js). Answer right and he pays XP and coins and runs off into the trees; answer
+   wrong and you have to battle him (a normal battle: lose and you drop some coins; your eggs are always safe).
+   s.druid = { asked: [question indexes], wins, losses, taken } */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
   const st = () => { const s = S(); if (!s.druid) s.druid = { asked: [], wins: 0, losses: 0, taken: 0 }; if (s.druid.taken == null) s.druid.taken = s.druid.wins + s.druid.losses; return s.druid; };
 
-  G.druidReward = (w) => { const lvl = S().level, tier = (w || G.world()).tier || 0, k = G.perk('druid') ? 1.3 : 1; return { xp: Math.round((30 + lvl * 6 + tier * 4) * k), coins: Math.round((25 + lvl * 4 + tier * 3) * k) }; };
+  G.druidReward = (w) => { const lvl = S().level, tier = (w || G.world()).tier || 0, k = 1; return { xp: Math.round((30 + lvl * 6 + tier * 4) * k), coins: Math.round((25 + lvl * 4 + tier * 3) * k) }; };
   // a question you haven't had yet (once all have been asked, the bank starts over), answers shuffled
   G.druidQuestion = () => {
     const d = st(), n = D.QUIZ.length;
@@ -33,11 +33,5 @@
     G.after();
     return { ok, right, reward, granted };
   };
-  // losing to the Druid: he takes every egg you carry
-  G.takeAllEggs = () => {
-    const e = G.eggs(), lost = {};
-    for (const k of Object.keys(e)) if (e[k] > 0) { lost[k] = e[k]; e[k] = 0; }
-    st().losses++;
-    return Object.keys(lost).length ? lost : null;
-  };
+  G.druidLost = () => { st().losses++; };
 })();

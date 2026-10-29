@@ -1,7 +1,6 @@
-/* Step Quest — quick missions card and picker (Missions → My missions), battles that break out after a mission,
-   and the Profile "Mission mix" card. Rules and data: 02h-quick.js, 05k-quick.js. */
+/* Step Quest — quick missions card and picker (Missions → My missions). Rules and data: 02h-quick.js, 05k-quick.js. */
 (() => {
-  const D = WB.DATA, G = WB.Game, UI = WB.UI, MS = WB.MStats, S = () => WB.state, $ = (q, r = document) => r.querySelector(q);
+  const D = WB.DATA, G = WB.Game, UI = WB.UI, S = () => WB.state, $ = (q, r = document) => r.querySelector(q);
   const esc = WB.esc, fmt = (n) => WB.fmt(n);
 
   // ---------- the Quick missions card under "New mission" ----------
@@ -49,42 +48,9 @@
   G.pendingHas = (e) => S().enc.pending.some((p) => p.id === e.id);
   UI.missionAmbushRoll = (src, title) => { const e = G.missionBattle(src, title); if (e) UI.missionAmbush(e); return !!e; };
 
-  // ---------- Profile: Mission mix ----------
-  UI.mixSpan = UI.mixSpan || 'week'; UI.mixOff = UI.mixOff || 0;
-  const shortDay = (k) => WB.parseDay(k).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  function period() {
-    const today = WB.dayKey(), span = UI.mixSpan, off = Math.min(0, UI.mixOff);
-    if (span === 'all') return { from: null, to: today, label: 'All time' };
-    if (span === 'day') { const k = WB.addDays(today, off); return { from: k, to: k, label: off === 0 ? 'Today' : off === -1 ? 'Yesterday' : WB.parseDay(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) }; }
-    if (span === 'week') { const to = WB.addDays(today, 7 * off), from = WB.addDays(to, -6); return { from, to, label: off === 0 ? 'Last 7 days' : shortDay(from) + ' – ' + shortDay(to) }; }
-    const n = new Date(), a = new Date(n.getFullYear(), n.getMonth() + off, 1), b = new Date(n.getFullYear(), n.getMonth() + off + 1, 0);
-    return { from: WB.dayKey(a), to: WB.dayKey(b), label: a.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) };
-  }
-  // most / in between / least: types with no missions always land in "Least"
-  function groups(counts) {
-    const types = [...D.MCATS, ...(counts.other ? [D.MCAT_OTHER] : [])].map((c, i) => ({ c, n: counts[c.id] || 0, i }));
-    const nz = types.filter((t) => t.n).sort((a, b) => b.n - a.n || a.i - b.i), zero = types.filter((t) => !t.n);
-    const k = nz.length, top = Math.ceil(k / 3), low = k >= 2 ? Math.max(1, Math.floor(k / 3)) : 0;
-    return { most: nz.slice(0, top), mid: nz.slice(top, k - low), least: [...nz.slice(k - low), ...zero] };
-  }
-  UI.missionMix = () => {
-    const p = period(), counts = MS.range(p.from, p.to), total = Object.values(counts).reduce((a, b) => a + b, 0);
-    const first = MS.firstDay(), canBack = UI.mixSpan !== 'all' && !!first && p.from > first, canFwd = UI.mixSpan !== 'all' && UI.mixOff < 0;
-    const g = groups(counts), mx = Math.max(1, ...Object.values(counts));
-    const row = (t) => `<div class="mx-row ${t.n ? '' : 'zero'}"><span class="mx-ic">${WB.icon(t.c.icon, 2)}</span><span class="mx-n">${esc(t.c.name)}</span><span class="bar seg cyan"><i style="width:${t.n ? Math.max(6, (t.n / mx) * 100) : 0}%"></i></span><b class="mx-c">${t.n}</b></div>`;
-    const grp = (title, list) => (list.length ? `<h3 class="mx-g">${title}</h3>${list.map(row).join('')}` : '');
-    return `<div class="sect" id="mission-mix"><h2>Mission mix <span class="aside">${total} completed</span></h2>
-      <div class="pbox card mx-card">
-        <div class="cm-seg chart-span" role="radiogroup" aria-label="Mission mix period">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month'], ['all', 'All']].map(([id, l]) => `<button type="button" role="radio" aria-checked="${id === UI.mixSpan}" data-mixspan="${id}">${l}</button>`).join('')}</div>
-        <div class="mx-nav"><button type="button" class="mx-arrow back" data-mixnav="-1" aria-label="Earlier" ${canBack ? '' : 'disabled'}><i></i></button><span class="mx-lbl" aria-live="polite">${esc(p.label)}</span><button type="button" class="mx-arrow fwd" data-mixnav="1" aria-label="Later" ${canFwd ? '' : 'disabled'}><i></i></button></div>
-        ${total ? grp('Most completed', g.most) + grp('In between', g.mid) + grp('Least completed', g.least)
-          : `<p class="fine mx-empty">${first ? 'No missions completed in this period.' : 'Missions you complete from now on show up here, sorted by type: Body, Mind, Learning and more.'}</p>`}
-      </div></div>`;
-  };
-
   // ---------- events ----------
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-qopen], [data-qadd], [data-qdrop], [data-qdone], [data-mixspan], [data-mixnav]');
+    const t = e.target.closest('[data-qopen], [data-qadd], [data-qdrop], [data-qdone]');
     if (!t || t.disabled || t.getAttribute('aria-disabled') === 'true') return;
     const d = t.dataset;
     if (d.qopen) { WB.Sfx.play('tap'); return UI.quickOpen(); }
@@ -98,7 +64,5 @@
       UI.missionAmbushRoll('quick', r.def.title);
       return;
     }
-    if (d.mixspan) { UI.mixSpan = d.mixspan; UI.mixOff = 0; WB.Sfx.play('tap'); return UI.renderProfile(); }
-    if (d.mixnav) { UI.mixOff = Math.min(0, UI.mixOff + +d.mixnav); WB.Sfx.play('tap'); return UI.renderProfile(); }
   });
 })();

@@ -671,77 +671,12 @@
   // what a Scavenger's Raid can snatch, by world tier (later worlds carry better loot)
   D.RAID_LOOT = [['tonic', 'tonic', 'iron'], ['tonic', 'iron', 'fury'], ['iron', 'fury', 'elixir'], ['fury', 'elixir', 'elixir']];
 
-  // ---------- Magic items (Shop → Magic) ----------
-  // Bought once and kept. Two kinds:
-  //  battle: used from the Magic button in battle. Each works once per battle, at most one per turn, and doesn't
-  //          use your turn. fx = what it does (handled in 05b-battle.js); tag = the short line on its button.
-  //  charm:  worn. Up to D.CHARM_SLOTS at once; each gives a passive perk (see G.perk in 05-game.js).
-  const B = (id, name, lvl, cost, fx, tag, desc) => ({ id, name, kind: 'battle', fx, tag, desc, req: { cost, level: lvl } });
-  const C = (id, name, lvl, cost, perk, tag, desc) => ({ id, name, kind: 'charm', perk, tag, desc, req: { cost, level: lvl } });
-  D.MAGIC = [
-    // ---- battle magic
-    B('windboots', 'Wind Boots', 4, 700, { type: 'recharge' }, 'Weapon ready now', 'Your ranged weapon recharges instantly.'),
-    B('chalice', 'Chalice of Vigor', 4, 750, { type: 'heal', amount: 0.3 }, '+30% HP', 'Restores 30% of your HP.'),
-    B('venom', 'Venom Crystal', 5, 900, { type: 'status', effect: 'poison', turns: 3 }, 'Poison 3 turns', 'Poisons the creature for 3 turns.'),
-    B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill' }, 'Guard to 100%', 'Refills your Defend gauge to 100%.'),
-    B('stoneskin', 'Stoneskin Rune', 7, 1100, { type: 'guard', turns: 4, factor: 0.65 }, '−35% damage, 4 turns', 'You take 35% less damage for 4 turns.'),
-    B('holyrelic', 'Holy Relic', 8, 1250, { type: 'cleanse', amount: 0.15 }, 'Cure + 15% HP', 'Cures poison, burn, weakness and stun, and restores 15% HP.'),
-    B('stormorb', 'Storm Orb', 8, 1350, { type: 'blast', power: 0.15 }, '15% of its HP', 'A lightning blast for 15% of the creature’s max HP. Ignores guards.'),
-    B('emberfist', 'Ember Gauntlet', 9, 1500, { type: 'fury', turns: 3, mult: 1.35 }, '+35% damage, 3 turns', 'Your attacks do 35% more damage for 3 turns.'),
-    B('flamescroll', 'Scroll of Flame', 10, 1700, { type: 'status', effect: 'burn', turns: 3 }, 'Burn 3 turns', 'Sets the creature burning for 3 turns.'),
-    B('frostshard', 'Frost Shard', 11, 1900, { type: 'status', effect: 'freeze', turns: 1 }, 'Freeze 1 turn', 'Freezes the creature: it loses its next turn.'),
-    B('aegis', 'Aegis Shard', 12, 2200, { type: 'guard', turns: 3, factor: 0.5 }, '−50% damage, 3 turns', 'You take half damage for 3 turns.'),
-    B('hexskull', 'Hex Skull', 13, 2400, { type: 'status', effect: 'weaken', turns: 3 }, 'Weaken 3 turns', 'Curses the creature: its attacks do 40% less for 3 turns.'),
-    B('bloodcrystal', 'Ruby Crystal', 14, 2600, { type: 'status', effect: 'bleed', turns: 4 }, 'Curse 4 turns', 'Curses the creature for 4 turns.'),
-    B('genie', 'Genie Lamp', 15, 3200, { type: 'special' }, 'Special ready', 'Fills your special attack gauge (from level 10).'),
-    B('breakrune', 'Rune of Breaking', 16, 3400, { type: 'break', turns: 3 }, 'Break its guard', 'Shatters the creature’s ward or stance; it takes 25% more damage for 3 turns.'),
-    B('goldkey', 'Golden Key', 17, 3000, { type: 'escape' }, 'Escape, guaranteed', 'Unlocks a way out: you leave any battle, even a boss fight.'),
-    B('mirror', 'Mirror Charm', 18, 3600, { type: 'reflect' }, 'Reflect next hit', 'Throws half of the next hit you take back at the creature.'),
-    B('seer', 'Seer’s Crystal Ball', 19, 3800, { type: 'seer' }, 'Cancel its special', 'Sees what’s coming: cancels a special the creature is charging and stuns it for a turn.'),
-    B('starfall', 'Starfall Shard', 20, 4400, { type: 'blast', power: 0.07, hits: 3 }, '3 × 7% of its HP', 'Three falling stars, each for 7% of the creature’s max HP. Ignores guards.'),
-    B('book', 'Book of Magic', 20, 2500, { type: 'book' }, '+40% magic damage', 'Spells, staves and special attacks do 40% more damage for 3 to 5 turns (longer at higher levels).'),
-    B('heartstone', 'Heartstone', 22, 4200, { type: 'heal', amount: 0.5 }, '+50% HP', 'Restores 50% of your HP.'),
-    B('shadowcloak', 'Shadow Cloak', 24, 5000, { type: 'dodge', n: 1 }, 'Dodge next attack', 'You melt into shadow and dodge the creature’s next attack.'),
-    B('vampgem', 'Vampire Gem', 26, 5600, { type: 'drain', power: 0.12 }, 'Steal 12% of its HP', 'Drains 12% of the creature’s max HP and heals you by the same amount.'),
-    B('sunorb', 'Sun Orb', 28, 6000, { type: 'blast', power: 0.25 }, '25% of its HP', 'A blazing blast for 25% of the creature’s max HP. Ignores guards.'),
-    B('furyrune', 'Rune of Fury', 30, 6500, { type: 'fury', turns: 3, mult: 1.6 }, '+60% damage, 3 turns', 'Your attacks do 60% more damage for 3 turns.'),
-    B('sparkwand', 'Spark Wand', 32, 7000, { type: 'blast', power: 0.1, stun: 1 }, '10% + stun', 'A crackling bolt for 10% of the creature’s max HP that stuns it for a turn.'),
-    B('thunderrune', 'Thunder Rune', 35, 8000, { type: 'status', effect: 'stun', turns: 2 }, 'Stun 2 turns', 'A thunderclap stuns the creature for 2 turns.'),
-    B('phoenix', 'Phoenix Feather', 45, 12000, { type: 'heal', amount: 1 }, 'Full heal', 'Restores all of your HP.'),
-    B('ring', 'Illusion Ring', 50, 7500, { type: 'ring' }, 'A copy of you, 3 turns', 'Conjures a copy of your walker for 3 turns. The creature attacks the copy instead of you, and the copy strikes alongside you.'),
-    B('crown', 'Crown of Valor', 50, 14000, { type: 'valor', turns: 4 }, '+25% dmg, −25% taken', 'For 4 turns your attacks do 25% more and you take 25% less.'),
-    B('clover', 'Lucky Clover', 60, 10000, { type: 'clover' }, 'Two lucky turns', 'Choose: your next two attacks strike twice, or you dodge the creature’s next two attacks.'),
-    B('dragonheart', 'Dragon Heart', 60, 20000, { type: 'dragon', amount: 0.4, turns: 3, mult: 1.4 }, '+40% HP, +40% damage', 'Restores 40% HP and your attacks do 40% more for 3 turns.'),
-    // ---- level 79: the Last Road set (see also Dawnbreaker, the Starfall Bow, the Aegis of the Last Road and Ambrosia)
-    B('worldbreaker', 'Worldbreaker Rune', 79, 26000, { type: 'blast', power: 0.18, hits: 2, stun: 1 }, '2 × 18% of its HP + stun', 'Cracks the ground twice, for 18% of the creature’s max HP each time, and stuns it for a turn. Ignores guards.'),
-    // ---- charms (worn)
-    C('horseshoe', 'Lucky Horseshoe', 5, 900, 'crit', '+8% crit chance', 'Your strikes and throws have an extra 8% chance to land a critical hit.'),
-    C('backpack', 'Explorer’s Backpack', 6, 900, 'loot', 'More loot', 'Battle wins pay 50% more coins, potions drop twice as often, and eggs drop more often.'),
-    C('lantern', 'Wayfinder’s Lantern', 7, 1400, 'finds', 'More artifacts', 'Hidden artifacts turn up 50% more often on the road.'),
-    C('purse', 'Merchant’s Purse', 8, 1600, 'coins', '+20% battle coins', 'Battle wins pay 20% more coins.'),
-    C('fleetboots', 'Fleet Boots', 9, 1800, 'flee', 'Always escape', 'Run away always works against creatures, and works more often against guardians and bosses.'),
-    C('vitality', 'Amulet of Vitality', 10, 2500, 'hp', '+10% max HP', 'Raises your max HP by 10%.'),
-    C('nestpearl', 'Nest Pearl', 11, 2000, 'eggs', 'More eggs', 'Creatures you beat drop an egg 10% more often.'),
-    C('might', 'Ring of Might', 12, 3000, 'dmg', '+8% damage', 'All your attacks do 8% more damage.'),
-    C('alchemist', 'Alchemist’s Orb', 13, 2600, 'potions', 'Potions +25%', 'Healing potions and food heal 25% more.'),
-    C('warding', 'Ring of Warding', 14, 3200, 'armor', '−8% damage taken', 'You take 8% less damage from every hit.'),
-    C('bulwark', 'Bulwark Sigil', 15, 3000, 'guard', 'Guard refills faster', 'Your Defend gauge refills 25% a turn instead of 15%.'),
-    C('archat', 'Arcane Hat', 16, 3500, 'charge', 'Special charges +30%', 'Your special attack gauge fills 30% faster.'),
-    C('soulgem', 'Soul Gem', 18, 3800, 'firsthit', 'First hit halved', 'The first hit you take in each battle does half damage.'),
-    C('druidtoken', 'Druid’s Token', 19, 3600, 'druid', 'Druid pays +30%', 'The Druid’s Knowledge Challenge pays 30% more XP and coins.'),
-    C('beastbond', 'Beast Bond Amulet', 20, 4200, 'pet', 'Pet guards +10%', 'Your pet takes 10% more of each hit for you.'),
-    C('thornweave', 'Thornweave Necklace', 22, 4800, 'thorns', 'Hit back 10%', 'Creatures that hit you take 10% of the damage back.'),
-    C('codex', 'Scholar’s Codex', 25, 6000, 'xp', '+15% battle XP', 'Battle wins give 15% more XP.'),
-    C('renewal', 'Pendant of Renewal', 28, 6200, 'regen', 'Heal 3% a turn', 'You recover 3% of your HP at the end of every turn in battle.'),
-    C('voidring', 'Void Ring', 30, 7500, 'pierce', '30% of hits pierce', '30% of your hits ignore wards, stances and shadow.'),
-    C('focus', 'Circlet of Focus', 32, 8000, 'cooldown', 'Recharge −1 turn', 'Your ranged weapon recharges one turn faster.'),
-    C('hunter', 'Hunter’s Ring', 35, 9000, 'hunter', '+15% vs bosses', 'Your attacks do 15% more to guardians and bosses.'),
-    C('precision', 'Ring of Precision', 38, 10000, 'critdmg', 'Crits +50%', 'Your critical hits do 50% more damage.'),
-    C('emberheart', 'Ember Heart', 40, 12000, 'revive', 'Survive one KO', 'Once per battle, a knockout leaves you standing at 1 HP instead.'),
-    C('longwalk', 'Crown of the Long Walk', 79, 28000, 'apex', '+12% damage, −12% taken', 'Worn by walkers who reached the end of the road: your attacks do 12% more and every hit you take does 12% less.'),
-  ];
-  D.CHARM_SLOTS = 3;
-  D.magicById = Object.fromEntries(D.MAGIC.map((m) => [m.id, m]));
+  // Magic items (charms and battle magic) were retired for the MVP: battles use weapons, potions and your special.
+  // Saves that bought any are refunded at these prices (03-state.js).
+  D.MAGIC = [];
+  D.MAGIC_RETIRED_COST = {"windboots":700,"chalice":750,"venom":900,"guardrune":950,"stoneskin":1100,"holyrelic":1250,"stormorb":1350,"emberfist":1500,"flamescroll":1700,"frostshard":1900,"aegis":2200,"hexskull":2400,"bloodcrystal":2600,"genie":3200,"breakrune":3400,"goldkey":3000,"mirror":3600,"seer":3800,"starfall":4400,"book":2500,"heartstone":4200,"shadowcloak":5000,"vampgem":5600,"sunorb":6000,"furyrune":6500,"sparkwand":7000,"thunderrune":8000,"phoenix":12000,"ring":7500,"crown":14000,"clover":10000,"dragonheart":20000,"worldbreaker":26000,"horseshoe":900,"backpack":900,"lantern":1400,"purse":1600,"fleetboots":1800,"vitality":2500,"nestpearl":2000,"might":3000,"alchemist":2600,"warding":3200,"bulwark":3000,"archat":3500,"soulgem":3800,"druidtoken":3600,"beastbond":4200,"thornweave":4800,"codex":6000,"renewal":6200,"voidring":7500,"focus":8000,"hunter":9000,"precision":10000,"emberheart":12000,"longwalk":28000};
+  D.CHARM_SLOTS = 0;
+  D.magicById = {};
   D.BOOK_BONUS = 0.4;
 
   D.WEAPONS = [
@@ -1108,10 +1043,14 @@
     { id: 'wkopen1', title: 'Doorway', desc: 'Open a world with your Worldkey.', stat: 'portals', target: 1, reward: { coins: 150 } },
     { id: 'wkopen5', title: 'Keymaster', desc: 'Open 10 worlds with your Worldkey.', stat: 'portals', target: 10, reward: { coins: 700 } },
     { id: 'wkkeys3', title: 'Key Ring', desc: 'Own 5 Worldkeys.', stat: 'worldkeys', target: 5, reward: { coins: 500 } },
-    { id: 'tuned5', title: 'Lamplighter', desc: 'Tune your Worldkey 15 times.', stat: 'tuned', target: 15, reward: { coins: 250 } },
-    { id: 'forge1', title: 'First Spark', desc: 'Craft your first Darkmatter.', stat: 'forged', target: 1, reward: { xp: 100 } },
-    { id: 'forge10', title: 'Powder Keg', desc: 'Craft 25 Darkmatter.', stat: 'forged', target: 25, reward: { coins: 500 } },
-    { id: 'forge25', title: 'Demolitionist', desc: 'Craft 60 Darkmatter.', stat: 'forged', target: 60, reward: { coins: 1200 } },
+    { id: 'tuned5', title: 'Lamplighter', desc: 'Tune your Worldkey 10 times.', stat: 'tuned', target: 10, reward: { coins: 250 } },
+    { id: 'forge1', title: 'First Spark', desc: 'Charge your Worldkey with an artifact.', stat: 'charged', target: 1, reward: { xp: 100 } },
+    { id: 'forge10', title: 'Powder Keg', desc: 'Charge your Worldkey with 40 artifacts.', stat: 'charged', target: 40, reward: { coins: 500 } },
+    { id: 'forge25', title: 'Demolitionist', desc: 'Charge your Worldkey with 150 artifacts.', stat: 'charged', target: 150, reward: { coins: 1200 } },
+    // Merlin's eggs (walk to hatch)
+    { id: 'egg1', title: 'Hatchling', desc: 'Walk an egg until it hatches.', stat: 'hatched', target: 1, reward: { xp: 100 } },
+    { id: 'egg25', title: 'Egg Whisperer', desc: 'Hatch 25 eggs.', stat: 'hatched', target: 25, reward: { coins: 600 } },
+    { id: 'egg100', title: 'Owl’s Apprentice', desc: 'Hatch 100 eggs.', stat: 'hatched', target: 100, reward: { coins: 3000 } },
     // battle
     { id: 'battles50', title: 'Cutlass', desc: 'Win 150 battles.', stat: 'battles', target: 150, reward: { coins: 500 } },
     { id: 'battles250', title: 'Sabre Master', desc: 'Win 750 battles.', stat: 'battles', target: 750, reward: { coins: 2500 } },
@@ -1121,15 +1060,10 @@
     { id: 'bosses10', title: 'Siege Breaker', desc: 'Defeat 20 world guardians.', stat: 'bosses', target: 20, reward: { coins: 1500 } },
     { id: 'nemesis1', title: 'Boss Hunter', desc: 'Defeat a roaming boss.', stat: 'nemesis', target: 1, reward: { coins: 600 } },
     { id: 'nemesis6', title: 'Nightmare’s End', desc: 'Defeat all six roaming bosses.', stat: 'nemesis', target: 6, reward: { coins: 4000 } },
-    { id: 'druid3', title: 'Hooked on Knowledge', desc: 'Answer the Druid correctly 10 times.', stat: 'druidWins', target: 10, reward: { coins: 300 } },
-    { id: 'shots25', title: 'Grapeshot', desc: 'Fire 75 ranged shots.', stat: 'shots', target: 75, reward: { coins: 100 } },
-    { id: 'shots100', title: 'Broadside', desc: 'Fire 300 ranged shots.', stat: 'shots', target: 300, reward: { coins: 400 } },
-    { id: 'shots500', title: 'Cannonade', desc: 'Fire 1,000 ranged shots.', stat: 'shots', target: 1000, reward: { coins: 1500 } },
+    { id: 'druid3', title: 'Hooked on Knowledge', desc: 'Answer 10 knowledge questions right (the Druid or Merlin).', stat: 'quizRight', target: 10, reward: { coins: 300 } },
     // gear
     { id: 'arsenal12', title: 'Armory', desc: 'Own 20 weapons.', stat: 'weapons', target: 20, reward: { coins: 700 } },
     { id: 'arsenal25', title: 'Quartermaster', desc: 'Own 40 weapons.', stat: 'weapons', target: 40, reward: { coins: 2000 } },
-    { id: 'repair1', title: 'Gunsmith', desc: 'Repair weapons 3 times.', stat: 'repairs', target: 3, reward: { xp: 80 } },
-    { id: 'repair10', title: 'Master Smith', desc: 'Repair weapons 25 times.', stat: 'repairs', target: 25, reward: { coins: 600 } },
     { id: 'avatars5', title: 'Tricorn', desc: 'Own 8 walkers.', stat: 'avatars', target: 8, reward: { coins: 400 } },
     { id: 'avatars15', title: 'Masquerade', desc: 'Own 25 walkers.', stat: 'avatars', target: 25, reward: { coins: 1500 } },
   ];
@@ -1137,15 +1071,6 @@
   // ---------- Encounters ----------
   D.DRUID_LINES = ['A hooded druid steps out of the trees. “Knowledge is the oldest path. Walk it with me.”', 'The Druid blocks the path, staff raised. “Answer truly and pass. Answer wrongly and face me.”', '“Ah, a walker. Let us see what your mind carries besides your feet.”', 'Leaves swirl around a cloaked figure. “One question, walker. Only one.”'];
   D.EGG_LINES = ['Something glints in a nest beside the path.', 'An egg sits all alone in the grass, still warm.', 'Half-buried in leaves: an egg with a strange shell.', 'A bird circles overhead and drops something shiny.', 'There’s an egg wedged between two stones.'];
-  D.MERLIN_LINES = [
-    '“Hoo! A walker with strong legs. I am Merlin, and I have a task worthy of you.”',
-    'A dark-winged owl lands on a signpost. “Merlin, at your service. Care for a real challenge?”',
-    '“Ah, there you are. The old roads told me you’d come. I have a quest, if you dare.”',
-    'Wings beat overhead. “Merlin here. Easy roads make soft walkers. Try this one.”',
-    '“Hoo-hoo! I pay handsomely for hard miles. Interested?”',
-  ];
-  D.MERLIN_ACCEPT = ['I’ll be watching from the treetops.', 'Walk well and the reward is yours.', 'Don’t keep an old owl waiting.', 'May your shoes hold out.'];
-  D.MERLIN_DECLINE = ['Another day, then. I’ll find you.', 'Rest those legs. I’ll be back.', 'Hoo. Not everyone is ready. Yet.'];
   D.BATTLE_LEVEL = 3;    // creatures, battles, guardians and the Druid only appear from this level
   D.FIGHT_CHANCE = 0.4;
   D.RIVAL_CHANCE = 0.08;   // a fighting creature is Redhood Rival 8% of the time, in any world
@@ -1158,7 +1083,8 @@
     special: ['Try keeping up with THIS!', 'Ten thousand steps of momentum!', 'Feel the road in my legs!'],
     defeat: ['Fine, you win today. I’ll still out-walk you by tomorrow.', 'Huh. Maybe you DO walk. See you on the next road!', 'Lucky swing. I’m going for a walk to think about it. A long one.'],
     victory: ['Walk more, rival. I’ll be waiting at the next world.', 'Come find me when your legs catch up.', 'Rest up. I’ll do your steps for you. Kidding. Walk!'] } };   // a creature encounter is a fighting creature half the time
-  D.ENCOUNTER_WEIGHTS = [{ type: 'creature', w: 28 }, { type: 'chest', w: 20 }, { type: 'find', w: 16 }, { type: 'merchant', w: 11 }, { type: 'traveler', w: 13 }, { type: 'merlin', w: 5 }, { type: 'egg', w: 9 }, { type: 'druid', w: 6 }, { type: 'nemesis', w: 3 }];   // Merlin only when a quest can be offered (else a crate)
+  // what turns up on the road. Merlin only comes when your nest has room; an egg goes straight into your nest.
+  D.ENCOUNTER_WEIGHTS = [{ type: 'creature', w: 28 }, { type: 'chest', w: 20 }, { type: 'find', w: 16 }, { type: 'merchant', w: 11 }, { type: 'traveler', w: 13 }, { type: 'merlin', w: 5 }, { type: 'egg', w: 6 }, { type: 'druid', w: 6 }, { type: 'nemesis', w: 3 }];
   D.CHEST_LINES = ['A supply crate sits half-buried in the dirt.', 'You spot a rusted footlocker by the road.', 'A crate with a faded star stencil. Still sealed.'];
   D.FIND_LINES = ['Something glints in the rubble.', 'A small object catches the light.', 'You notice something half-hidden by the path.'];
   D.MERCHANT_CHAT = ['Safe travels. The road is kinder to those who keep moving.', 'I’ve walked every world on this map. Your feet will get you there too.', 'Business is slow, but the view is good. Off you go.', 'Every step counts, walker. I count mine too.'];

@@ -327,10 +327,10 @@
       const sc = WB.scene(this.world);
       if (this.H !== sc.h) { this.H = sc.h; this.resize(); }
       this.world.layers.forEach((L) => Assets.get(WB.layerPath(this.world, L[0])));
+      Assets.get(WB.sheet('npc', this.world.merchant, 'idle').path);
       this.cam = WB.state.worldSteps[wid] || 0;
       this.ents = []; this.parts = []; this.flash = 1;
       [...this.world.pool, this.world.boss].forEach((c) => Assets.get(WB.sheet('cr', c, 'idle').path));
-      Assets.get(WB.sheet('npc', this.world.merchant, 'idle').path);
     }
     real() { return WB.state.worldSteps[WB.state.world] || 0; }
     toCss(nx, ny) { return { x: nx * this.scale, y: ny * this.scale }; }

@@ -1,5 +1,5 @@
-/* Step Quest — quick missions (rules), the mission log behind the Profile "Mission mix" card and the mission
-   achievements, and battles that can break out when you complete a mission. Data: 02h-quick.js.
+/* Step Quest — quick missions (rules), the mission log behind the mission achievements, and battles that can break
+   out when you complete a mission. Data: 02h-quick.js.
 
    s.quick = { day, picked: { [quickId]: true } (selected today, not done yet), done: { [quickId]: true } (today only),
                paid: { [quickId]: { coins, xp, xpReal, dawn, night } } (what each of today's completions paid, so it can be undone),
@@ -57,7 +57,7 @@
     const s = S(), m = mx(), q = s.quick || {}, days = m.days;
     const out = {
       quickDone: q.total || 0, customDone: (s.custom && s.custom.done) || 0,
-      missionsAll: (q.total || 0) + ((s.custom && s.custom.done) || 0) + s.missions.done.length,
+      missionsAll: (q.total || 0) + ((s.custom && s.custom.done) || 0),
       quickBestDay: Math.max(0, ...Object.values(q.perDay || {})),
       missionDawn: m.dawn || 0, missionNight: m.night || 0, missionEarly: m.early || 0, missionOnTime: m.ontime || 0,
       missionDays: Object.keys(days).length, missionRun: bestRun(days), missionBestDay: Math.max(0, ...Object.values(days).map(dayTotal)),

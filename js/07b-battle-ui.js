@@ -113,9 +113,9 @@
     actions();
     last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
     // the battle intro: "BATTLE MODE" pops up over the stage for a moment, then the fight begins
-    // the panel keeps the main menu's height for the whole fight, so the stage (and the fighters) never jump
-    // when Items or Magic open; longer lists scroll inside it
-    requestAnimationFrame(() => { const pn = $('#b-panel'); if (pn && innerWidth <= innerHeight) { pn.style.height = pn.offsetHeight + 'px'; pn.classList.add('fixed'); } });
+    // the panel keeps one height for the whole fight (capped so the stage stays big), so the fighters never jump
+    // when Items or gear open; the menu scrolls inside it
+    requestAnimationFrame(() => { const pn = $('#b-panel'); if (pn && innerWidth <= innerHeight) { pn.style.height = Math.min(pn.offsetHeight, Math.max(220, Math.round(innerHeight * 0.38))) + 'px'; pn.classList.add('fixed'); } });   // at most ~38% of the screen: the stage gets the rest, and the menu scrolls
     setBusy(true);
     const intro = $('#b-intro');
     intro.classList.add('go');
@@ -384,22 +384,12 @@
   function actions(mode = 'main') {
     const st = WB.Battle.st, el = $('#b-actions'), s = S();
     if (!el) return;
-    if (mode === 'magic') {
-      el.className = 'b-actions items';
-      const turnUsed = st.magicTurn === st.turn;
-      const spent = (st.magicEmpty || []).map((id) => { const m = D.magicById[id]; return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(m.name + ' is out of uses. Buy more in the Shop after the fight.')}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>Out of uses</small></span></button>`; }).join('');
-      el.innerHTML = st.magic.map((id) => {
-        const m = D.magicById[id], used = st.mused[id];
-        const why = used ? m.name + ' was already used this battle.' : turnUsed ? 'You’ve used a magic item this turn. Try again next turn.' : m.fx.type === 'special' && !st.special.unlocked ? 'Your special attack unlocks at level ' + D.SPECIAL_LEVEL + '.' : '';
-        if (id === 'clover' && !used) return `<button class="btn ghost" type="button" data-b="magic:clover/twice" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: strike twice</span><small>Next 2 attacks hit twice</small></span></button><button class="btn ghost" type="button" data-b="magic:clover/dodge" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 32)}<span class="bt"><span>Clover: dodge</span><small>Dodge the next 2 attacks</small></span></button>`;
-        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 32)}<span class="bt"><span>${WB.esc(m.name)}</span><small>${used ? 'Used' : WB.esc(m.tag) + (' · ' + WB.Game.uses(id) + ' left')}</small></span></button>`;
-      }).join('') + spent + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
-    } else if (mode === 'gear') {
+    if (mode === 'gear') {
       el.className = 'b-actions items gear';
       const owned = (s.owned.weapons || []).map((id) => D.weaponById[id]).filter(Boolean);
       const row = (w, on, why, ic, sub) => `<button class="btn ghost ${on ? 'on' : ''}" type="button" data-b="swap:${w.slot}/${w.id}" ${on ? 'aria-pressed="true"' : ''} ${WB.UI.off(why)} aria-label="${WB.esc(w.name)}">${ic}<span class="bt"><span>${WB.esc(clip(w.name, 18))}</span><small>${on ? 'In hand' : WB.esc(sub)}</small></span></button>`;
-      const melee = owned.filter((w) => w.slot === 'melee').map((w) => { const c = Math.round(WB.Game.cond(w.id)), brk = WB.Game.broken(w.id); return row(w, st.melee.id === w.id, brk && w.name + ' is broken. Repair it in Inventory → Weapons.', WB.pxImg(w.icon, 24, 'b-ic'), brk ? 'Broken' : 'Strike' + (c < 100 ? ' · ' + c + '%' : '')); });
-      const rng = owned.filter((w) => w.slot === 'ranged').map((w) => { const n = WB.Game.shotsLeft(w.id), cd = st.weapon.id === w.id ? st.cooldown : st.cds[w.id] || 0; return row(w, st.weapon.id === w.id, !n && w.name + ' is out of shots. Buy more in the Shop after the fight.', `<canvas width="24" height="24" class="wp-ic" data-wid="${w.id}"></canvas>`, !n ? 'No shots' : (VERB[w.type] || 'Throw') + (n === Infinity ? '' : ' · ' + n + ' left') + (cd > 0 ? ' · in ' + cd : '')); });
+      const melee = owned.filter((w) => w.slot === 'melee').map((w) => row(w, st.melee.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Strike'));
+      const rng = owned.filter((w) => w.slot === 'ranged').map((w) => { const cd = st.weapon.id === w.id ? st.cooldown : st.cds[w.id] || 0; return row(w, st.weapon.id === w.id, '', `<canvas width="24" height="24" class="wp-ic" data-wid="${w.id}"></canvas>`, (VERB[w.type] || 'Throw') + (cd > 0 ? ' · in ' + cd : '')); });
       const shd = owned.filter((w) => w.slot === 'shield').map((w) => row(w, !!st.shield && st.shield.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Block ' + Math.round(w.block * 100) + '%'));
       const sec = (t, list) => list.length ? `<p class="b-sub">${t}</p>${list.join('')}` : '';
       el.innerHTML = sec('Melee · Strike', melee) + sec('Ranged · Throw / Shoot', rng) + sec('Shield · Defend', shd) + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
@@ -411,16 +401,15 @@
       el.innerHTML = mine.map((p) => `<button class="btn ghost" type="button" data-b="potion:${p.id}">${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(p.name)}</span><small>${potionTag(p)} · x${s.potions[p.id]}</small></span></button>`
         + (pt && p.kind === 'heal' ? `<button class="btn ghost pet-use" type="button" data-b="potion:${p.id}/pet" ${WB.UI.off(!petHurt && pt.name + ' is already at full health.')}>${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(clip(p.name, 12))} → ${WB.esc(clip(pt.name, 10))}</span><small>${pt.hp <= 0 ? 'Revive + heal ' : 'Heal '}${Math.round(p.amount * (WB.Game.perk('potions') ? 1.25 : 1) * 100)}% · x${s.potions[p.id]}</small></span></button>` : '')).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
     } else {
-      const wpn = st.weapon, m = st.melee, sh = st.shield, shots = WB.Game.shotsLeft(wpn.id), ready = st.cooldown === 0, cond = Math.round(WB.Game.cond(m.id)), nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
+      const wpn = st.weapon, m = st.melee, sh = st.shield, ready = st.cooldown === 0, nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
       el.className = 'b-actions';
       el.innerHTML = `
-        <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(clip(m.name, 16))}${st.brokenMelee ? ' · ' + WB.esc(clip(st.brokenMelee.name, 12)) + ' broken' : cond < 100 ? ' · ' + cond + '%' : ''}</small></span></button>
-        <button class="btn" type="button" data-b="throw" ${WB.UI.off(!shots ? wpn.name + ' is out of shots. Buy more in the Shop after the fight. Strike or defend meanwhile.' : !ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(clip(wpn.name, 16))} · ${!shots ? 'no shots' : ready ? (shots === Infinity ? 'ready' : shots + ' left') : 'in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
+        <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(clip(m.name, 16))}</small></span></button>
+        <button class="btn" type="button" data-b="throw" ${WB.UI.off(!ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(clip(wpn.name, 16))} · ${ready ? 'ready' : 'in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
         <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(st.hero.guardPts < D.DEFEND_COST && 'Your guard is worn down (' + st.hero.guardPts + '%). Each Defend uses ' + D.DEFEND_COST + '%; it recovers ' + D.DEFEND_REGEN + '% every turn you don’t defend.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${sh ? 'Block ' + Math.round(sh.block * 100) + '%' + (sh.reflect ? ' + reverse' : '') + (sh.counter ? ' + counter' : '') : 'Block 60% + heal'}<span class="sr-only">, guard ${st.hero.guardPts}%</span></small></span><span class="sp-gauge df-gauge ${st.hero.guardPts < D.DEFEND_COST ? 'low' : ''}" aria-hidden="true"><i style="width:${st.hero.guardPts}%"></i></span></button>
         <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'You have no potions or food. Buy some in Shop → Potions / Food after the fight.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
         <button class="btn ghost gear-btn" type="button" data-b="gearmenu">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Switch gear</span><small>Weapons, bows, shield</small></span></button>
         ${specialBtn(st)}
-        ${st.magic.length ? `<button class="btn ghost magic-btn" type="button" data-b="magicmenu" ${WB.UI.off(st.magic.every((id) => st.mused[id]) ? 'You’ve used every magic item this battle.' : st.magicTurn === st.turn && 'One magic item per turn. Attack, defend or use an item, then try again.')}>${WB.pxImg('mg/' + st.magic[st.magic.length - 1] + '.png', 28)}<span class="bt"><span>Magic</span><small>${st.magic.filter((id) => !st.mused[id]).length} ready${' · ' + st.magic.reduce((n, id) => n + WB.Game.uses(id), 0) + ' uses'}</small></span></button>` : (st.magicEmpty || []).length ? `<button class="btn ghost magic-btn" type="button" data-b="magicmenu" ${WB.UI.off('Your battle magic is out of uses. Buy more in the Shop after the fight.')}>${WB.pxImg('mg/' + st.magicEmpty[st.magicEmpty.length - 1] + '.png', 28)}<span class="bt"><span>Magic</span><small>Out of uses</small></span></button>` : ''}
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
       const ic = el.querySelector('.wp-ic'); if (ic) WB.UI.paintWeapon(ic, wpn.id);
     }
@@ -505,7 +494,6 @@
   async function onAction(a) {
     if (busy) return;
     if (a === 'items') return actions('items');
-    if (a === 'magicmenu') return actions('magic');
     if (a === 'gearmenu') return actions('gear');
     if (a.startsWith('swap:')) {   // switching gear is free: it doesn't use your turn
       const [slot, id] = a.slice(5).split('/'), w = WB.Battle.swap(slot, id);
@@ -767,15 +755,15 @@
     const petNote = st.pet && st.pet.hp <= 0 ? ` ${WB.esc(st.pet.name)} was knocked out and is resting. It recovers over time.` : '';
     if (enc.nemesis) {
       const bd = D.BOSSES[enc.creature];
-      if (res.result === 'win') { title = 'Boss defeated!'; body = `<p>${WB.esc(c.name)} is beaten.${res.newKind ? ' First time: +250 bonus coins.' : ''}${res.egg ? ' It dropped a ' + D.eggById[res.egg].name + '!' : ''}${res.backpack ? ' Your backpack carried extra loot.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`; }
-      else if (res.result === 'lose') { title = 'Defeated by a boss'; body = `<p>${WB.esc(c.name)} knocks you back ${res.levelsLost} level${res.levelsLost === 1 ? '' : 's'}: you’re level ${S().level} now (was ${res.levelFrom}). Your worlds, weapons and items are safe, and levels you win back don’t pay level-up coins twice.${res.lostEggs ? ' Eggs broke in the fall: ' + G.eggText(res.lostEggs) + '.' : ''}${petNote}</p><div class="outcome"><span class="reward-pill lost">−${res.levelsLost} levels</span>${Object.entries(res.lostEggs || {}).map(([k, n]) => `<span class="reward-pill lost">${WB.eggImg(k, 20, 'still')}-${n}</span>`).join('')}</div>`; }
+      if (res.result === 'win') { title = 'Boss defeated!'; body = `<p>${WB.esc(c.name)} is beaten.${res.newKind ? ' First time: +250 bonus coins.' : ''}${res.egg ? ' It dropped a ' + D.eggById[res.egg].name + ': it’s in your nest.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`; }
+      else if (res.result === 'lose') { title = 'Defeated by a boss'; body = `<p>${WB.esc(c.name)} knocks you back ${res.levelsLost} level${res.levelsLost === 1 ? '' : 's'}: you’re level ${S().level} now (was ${res.levelFrom}). Your worlds, weapons and items are safe, and levels you win back don’t pay level-up coins twice.${petNote}</p><div class="outcome"><span class="reward-pill lost">−${res.levelsLost} levels</span></div>`; }
       else { title = 'You got away'; body = `<p>You escaped ${WB.esc(c.name)}. ${bd ? '' : ''}It still roams the roads.${petNote}</p>`; }
     } else if (res.result === 'win') {
       title = res.boss ? 'Guardian defeated!' : enc.creature === 'druid' ? 'The Druid flees' : 'Victory!';
-      body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${res.egg ? ' It was guarding a ' + D.eggById[res.egg].name + '!' : ''}${res.backpack ? ' Your backpack carried extra loot.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`;
+      body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${res.egg ? ' It was guarding a ' + D.eggById[res.egg].name + ': it’s in your nest on Missions → Merlin.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`;
     } else if (res.result === 'lose') {
       title = 'Knocked down';
-      body = `<p>${res.lostCoins ? 'You dropped ' + WB.fmt(res.lostCoins) + ' coins as you fell. ' : ''}${res.lostEggs ? (enc.creature === 'druid' ? 'The Druid took all your eggs: ' : 'You lost half your eggs: ') + G.eggText(res.lostEggs) + '. ' : ''}Walking won’t heal you. HP refills on its own in about ${WB.UI.dur(WB.Game.minsToFull())}, or drink a potion.${enc.boss ? ' The guardian waits on the world map.' : ''}${petNote}</p>${res.lostCoins || res.lostEggs ? `<div class="outcome">${res.lostCoins ? `<span class="reward-pill lost">${WB.icon('coin', 2)}-${WB.fmt(res.lostCoins)}</span>` : ''}${Object.entries(res.lostEggs || {}).map(([k, n]) => `<span class="reward-pill lost">${WB.eggImg(k, 20, 'still')}-${n}</span>`).join('')}</div>` : ''}`;
+      body = `<p>${res.lostCoins ? 'You dropped ' + WB.fmt(res.lostCoins) + ' coins as you fell. ' : ''}Walking won’t heal you. HP refills on its own in about ${WB.UI.dur(WB.Game.minsToFull())}, or drink a potion.${enc.boss ? ' The guardian waits on the world map.' : ''}${petNote}</p>${res.lostCoins || res.lostEggs ? `<div class="outcome">${res.lostCoins ? `<span class="reward-pill lost">${WB.icon('coin', 2)}-${WB.fmt(res.lostCoins)}</span>` : ''}</div>` : ''}`;
       if (res.lostCoins) floater('-' + WB.fmt(res.lostCoins) + ' coins', 'hero', 'coinloss');
     } else if (res.result === 'escaped') {
       title = 'It got away';

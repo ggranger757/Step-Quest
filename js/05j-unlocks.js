@@ -1,62 +1,44 @@
 /* Step Quest — features that unlock as you play, so a new walker learns one thing at a time.
-   'wk'  the Worldkey: wakes up when you finish your first world (the next world's requirements are met).
-         Until Darkmatter unlocks it runs on its starter charge: opening worlds costs no energy and nothing fades.
-   'art' Artifacts → Collection and the Forge, at level D.FORGE_LEVEL (3). Saves already past it unlock it quietly.
-   'dm'  Worldkey energy (it fades with time and walking): it starts with the Worldkey, the moment the first world is
-         finished (gear care — shots, uses, wear — is always on; see G.gearCare in 05i-gear.js). Until then opening
-         worlds is free and nothing fades.
-   'field' Missions → Field (field missions, milestones, deliveries) and Missions → Merlin (quests, egg trades), at level
-         D.FIELD_LEVEL (3). Saves already past it unlock it quietly.
+   'wk'     the Worldkey: wakes up when you finish your first world (Rust Hollow fully explored). Until then you
+            can't travel and opening worlds isn't possible yet.
+   'merlin' Missions → Merlin (his eggs), at level D.MERLIN_MIN_LEVEL (3), together with battles.
    Each unlock shows a short congratulations card, then plays its own mini tutorial (07f-tour.js).
    Saves from before this rule unlock whatever they have already reached, quietly. */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
   const feats = () => { const s = S(); if (!s.feats || typeof s.feats !== 'object') s.feats = {}; return s.feats; };
   G.featOn = (k) => !!(S() && feats()[k]);
-  G.upkeep = () => G.featOn('dm');   // Worldkey energy counts from here on (gear care is always on)
-  G.forgeOpen = () => G.featOn('art');
-  G.collectionOpen = () => G.featOn('art');   // Inventory → Artifacts → Collection opens with the Forge, at level D.FORGE_LEVEL
 
   const queue = [];
   function unlock(k, quiet) {
     const f = feats(); if (f[k]) return; f[k] = Date.now();
-    const w = G.wk();
-    if (k === 'wk' && !quiet) { w.e = Math.max(w.e, 100); w.at = Date.now(); }   // a full starter charge
-    if (k === 'dm') { w.at = Date.now(); if (!quiet) w.e = Math.max(w.e, 50); }   // energy counts from now
-    if (k === 'art' && !quiet) w.dm.void = Math.min(D.WK.DM_MAX, w.dm.void + 1);   // a Void Darkmatter to try the Forge with
+    if (k === 'wk' && !quiet) G.wk().e = Math.max(G.wk().e, 100);   // a full starter charge
+    if (k === 'merlin' && !quiet && G.giveEgg) G.giveEgg('frost');  // Merlin's first egg, to learn the loop with
     WB.Save.queue();
     if (!quiet) { queue.push(k); WB.bus.emit('featUnlocked', k); }
   }
   // The first world is the first one in the chain (Rust Hollow); always-open worlds (`open: true`, none right now) are outside the chain
   // and must never count as progress, or the Worldkey would wake at the first level-up.
   G.firstWorld = () => D.WORLDS.find((x) => !x.open);
-  // Finished = fully explored (D.FIRST_WORLD_PCT). Saves that already got further under the old rule keep what they earned:
-  // a second world discovered or opened through the Worldkey counts as finished too.
+  // Finished = fully explored (D.FIRST_WORLD_PCT). Saves that already got further keep what they earned:
+  // a second world discovered or opened counts as finished too.
   G.firstWorldDone = () => {
     const s = S(), f = G.firstWorld(); if (!s || !f) return false;
     if (G.explorePct(f.id) >= D.FIRST_WORLD_PCT) return true;
     const w = s.wk;
     return s.unlocked.some((id) => id !== f.id && D.worldById[id] && !D.worldById[id].open) || !!(w && Array.isArray(w.found) && w.found.length);
   };
-  // what has been reached: the first world finished (wakes the Worldkey and its energy), level 3 for Field, the Collection and the Forge
   G.featCheck = (quiet) => {
     const s = S(); if (!s || !s.onboarded) return;
-    const done = G.firstWorldDone();
-    if (!feats().wk && done) unlock('wk', quiet);
-    else if (feats().wk && !done) { delete feats().wk; WB.Save.queue(); }   // switched on too early by an older version: it sleeps again until the first world is finished
-    if (feats().wk && !feats().dm) unlock('dm', quiet);   // Worldkey energy comes with the Worldkey
-    if (!feats().art && G.lvlReached(D.FORGE_LEVEL)) unlock('art', quiet);
-    if (!feats().field && G.lvlReached(D.FIELD_LEVEL)) unlock('field', quiet);
+    if (!feats().wk && G.firstWorldDone()) unlock('wk', quiet);
+    if (!feats().merlin && G.lvlReached(D.MERLIN_MIN_LEVEL)) unlock('merlin', quiet);
   };
-  // older saves: unlock what they've already reached without fanfare
+  // older saves: unlock what they've already reached without fanfare (and drop the retired feature flags)
   G.featBoot = () => {
     const s = S(); if (!s || !s.onboarded) return;
-    if (!s.feats) { feats(); G.featCheck(true); }
-    else {
-      if (!s.feats.field && G.lvlReached(D.FIELD_LEVEL)) { s.feats.field = Date.now(); WB.Save.queue(); }   // saves from before the level lock
-      if (!s.feats.art && (s.feats.dm || G.lvlReached(D.FORGE_LEVEL))) { s.feats.art = s.feats.dm || Date.now(); WB.Save.queue(); }   // saves that already had the Forge (or reached level 3) keep it, quietly
-      if (s.feats.wk && !s.feats.dm) G.featCheck(false);   // saves that were waiting: Worldkey energy starts now, with its card
-    }
+    const f = feats(), had = !!(f.wk || f.dm || f.art || f.field);
+    for (const k of ['dm', 'art', 'field']) delete f[k];
+    if (had || !Object.keys(f).length) G.featCheck(true);
   };
   G.featNext = () => queue.shift();
   G.featPending = () => queue.length > 0;
