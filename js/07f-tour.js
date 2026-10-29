@@ -18,7 +18,7 @@
     { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Explore this world to open the next. There are ' + D.WORLDS.length + ' to discover.' },
     { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'Today: a daily reward, three daily goals, deliveries and long-term milestones. My missions: your own to-dos, which pay coins and XP. Merlin and his eggs open at level ' + D.MERLIN_MIN_LEVEL + '.' },
     { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'Turn goals into quests', text: 'Add a real-life task (or tap a quick mission), set when it’s due, and finish it for a reward. Early pays a bonus.' },
-    { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Shop', text: 'Spend coins on walkers, weapons, potions and pets. Tap anything locked to see what it needs.' },
+    { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Shop', text: 'Spend coins on walkers, weapons, ranged weapons and magic, potions and pets. Tap anything locked to see what it needs.' },
     { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Profile & settings', text: 'Your stats, moods, step chart, achievements and settings (theme, sound, mood check-ins). Replay this tour any time from Settings → Help.' },
     { go: tab('world'), title: 'You’re ready', text: 'Start walking: every step counts. Good luck out there!' },
   ];

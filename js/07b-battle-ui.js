@@ -392,7 +392,15 @@
       const rng = owned.filter((w) => w.slot === 'ranged').map((w) => { const cd = st.weapon.id === w.id ? st.cooldown : st.cds[w.id] || 0; return row(w, st.weapon.id === w.id, '', `<canvas width="24" height="24" class="wp-ic" data-wid="${w.id}"></canvas>`, (VERB[w.type] || 'Throw') + (cd > 0 ? ' · in ' + cd : '')); });
       const shd = owned.filter((w) => w.slot === 'shield').map((w) => row(w, !!st.shield && st.shield.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Block ' + Math.round(w.block * 100) + '%'));
       const sec = (t, list) => list.length ? `<p class="b-sub">${t}</p>${list.join('')}` : '';
-      el.innerHTML = sec('Melee · Strike', melee) + sec('Ranged · Throw / Shoot', rng) + sec('Shield · Defend', shd) + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
+      // ranged weapons and battle magic are one family: everything you throw, shoot or cast
+      const turnUsed = st.magicTurn === st.turn;
+      const mag = st.magic.map((id) => {
+        const m = D.magicById[id], used = st.mused[id];
+        const why = used ? m.name + ' was already used this battle.' : turnUsed ? 'You’ve used a magic item this turn. Try again next turn.' : m.fx.type === 'special' && !st.special.unlocked ? 'Your special attack unlocks at level ' + D.SPECIAL_LEVEL + '.' : '';
+        if (id === 'clover' && !used) return `<button class="btn ghost" type="button" data-b="magic:clover/twice" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 24, 'b-ic')}<span class="bt"><span>Clover: strike twice</span><small>Next 2 attacks hit twice</small></span></button><button class="btn ghost" type="button" data-b="magic:clover/dodge" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 24, 'b-ic')}<span class="bt"><span>Clover: dodge</span><small>Dodge the next 2 attacks</small></span></button>`;
+        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 24, 'b-ic')}<span class="bt"><span>${WB.esc(clip(m.name, 18))}</span><small>${used ? 'Used' : WB.esc(m.tag)}</small></span></button>`;
+      });
+      el.innerHTML = sec('Ranged · Throw / Shoot / Cast', rng) + sec('Battle magic · instant, once per battle', mag) + sec('Melee · Strike', melee) + sec('Shield · Defend', shd) + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
       el.querySelectorAll('canvas[data-wid]').forEach((c) => WB.UI.paintWeapon(c, c.dataset.wid));
     } else if (mode === 'items') {
       el.className = 'b-actions items';
@@ -408,7 +416,7 @@
         <button class="btn" type="button" data-b="throw" ${WB.UI.off(!ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(clip(wpn.name, 16))} · ${ready ? 'ready' : 'in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
         <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(st.hero.guardPts < D.DEFEND_COST && 'Your guard is worn down (' + st.hero.guardPts + '%). Each Defend uses ' + D.DEFEND_COST + '%; it recovers ' + D.DEFEND_REGEN + '% every turn you don’t defend.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${sh ? 'Block ' + Math.round(sh.block * 100) + '%' + (sh.reflect ? ' + reverse' : '') + (sh.counter ? ' + counter' : '') : 'Block 60% + heal'}<span class="sr-only">, guard ${st.hero.guardPts}%</span></small></span><span class="sp-gauge df-gauge ${st.hero.guardPts < D.DEFEND_COST ? 'low' : ''}" aria-hidden="true"><i style="width:${st.hero.guardPts}%"></i></span></button>
         <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'You have no potions or food. Buy some in Shop → Potions / Food after the fight.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
-        <button class="btn ghost gear-btn" type="button" data-b="gearmenu">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Switch gear</span><small>Weapons, bows, shield</small></span></button>
+        <button class="btn ghost gear-btn" type="button" data-b="gearmenu">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Gear &amp; Magic</span><small>${st.magic.length ? 'Swap weapons · cast magic' : 'Weapons, bows, shield'}</small></span></button>
         ${specialBtn(st)}
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
       const ic = el.querySelector('.wp-ic'); if (ic) WB.UI.paintWeapon(ic, wpn.id);

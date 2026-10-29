@@ -9,9 +9,9 @@
       v: 2, created: Date.now(), savedAt: 0, name: 'Wanderer', onboarded: false,
       avatar: 'scavenger', skin: null,
       outfit: {},         // per walker: { o: dye id, t: dye id } (Outfit and Trim colors on the Loadout)
-      equip: { pet: null, weapon: 'star', melee: 'sw_rusty', shield: null },
+      equip: { pet: null, weapon: 'star', melee: 'sw_rusty', shield: null, charms: [] },
       owned: { avatars: ['scavenger'],   // replaced by the walker picked at sign-up
-                pets: [], weapons: ['star', 'sw_rusty'] },
+                pets: [], weapons: ['star', 'sw_rusty'], magic: [] },
       petHp: {},          // pets have their own health (they take part of every hit in battle)
       hp: D.heroMaxHp(1), potions: { tonic: 2 }, bosses: {},
       health: { on: false, since: null, last: 0 },   // Apple Health / Health Connect sync (installed app only)
@@ -46,16 +46,13 @@
     if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
     if (s.settings && s.settings.turnTimer === undefined) s.settings.turnTimer = true;   // the battle turn timer is on for older saves too
     if (s.settings) delete s.settings.homeState;   // only photo hunts used it (state bird / flower)
-    // 3.0: field missions, Merlin's walking quests, egg trades, the Darkmatter Forge, magic items and gear care were retired.
-    // Eggs carried move into Merlin's nest (05e-merlin.js reads s._oldEggs once); magic items bought are refunded.
+    // 3.0: field missions, Merlin's walking quests, egg trades, the Darkmatter Forge and gear care were retired.
+    // Eggs carried move into Merlin's nest (05e-merlin.js reads s._oldEggs once). Magic items are kept and never run out.
     if (s.eggs) { s._oldEggs = { eggs: s.eggs, at: s.enc && s.enc.merlinAt }; delete s.eggs; }
     delete s.eggTrades;
-    if (s.owned && Array.isArray(s.owned.magic) && s.owned.magic.length) {
-      const back = s.owned.magic.reduce((n, id) => n + ((D.MAGIC_RETIRED_COST || {})[id] || 0), 0);
-      if (back) { s.coins += back; s.notice = (s.notice ? s.notice + ' ' : '') + 'Magic items were retired. ' + WB.fmt(back) + ' Walk Coins were refunded.'; }
-    }
-    if (s.owned) delete s.owned.magic;
-    if (s.equip) { delete s.equip.charms; delete s.equip.backpack; }
+    if (s.owned && !Array.isArray(s.owned.magic)) s.owned.magic = [];
+    if (s.equip && !Array.isArray(s.equip.charms)) s.equip.charms = [];
+    if (s.equip && s.equip.backpack) { if (!s.equip.charms.includes('backpack')) s.equip.charms.push('backpack'); delete s.equip.backpack; }   // the backpack became a charm
     delete s.missions;
     if (s.settings && s.settings.theme === 'field') s.settings.theme = 'night';   // the Field theme was retired
     if (s.enc && Array.isArray(s.enc.pending)) s.enc.pending = s.enc.pending.filter((e) => e.type !== 'egg' || e.egg);

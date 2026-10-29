@@ -36,8 +36,8 @@
       weapon: G.equipped('ranged') || D.WEAPONS[0], melee: G.equipped('melee') || D.weaponById.sw_rusty, brokenMelee: null, shield: G.equipped('shield'),
       cooldown: 0, cds: {},   // cds: the recharge left on ranged weapons you switched away from (switching never skips a recharge)
       special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
-      magic: [], magicEmpty: [], mused: {}, magicTurn: 0,   // magic items were retired for the MVP
-      perks: new Set(),
+      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id)).map((m) => m.id), magicEmpty: [], mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn; it never runs out
+      perks: new Set(G.charms().map((id) => D.magicById[id].perk)),   // worn charms
     };
     // initiative: some creatures strike before your opening move (never in your very first battle)
     const e0 = B.st.enemy, A = D.AMBUSH;

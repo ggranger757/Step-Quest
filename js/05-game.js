@@ -4,9 +4,9 @@
   const S = () => WB.state;
   const G = (WB.Game = {});
   // unlockable categories: [owned-list key, catalog]
-  const CATS = { avatar: ['avatars', D.AVATARS], pet: ['pets', D.PETS], weapon: ['weapons', D.WEAPONS] };
+  const CATS = { avatar: ['avatars', D.AVATARS], pet: ['pets', D.PETS], weapon: ['weapons', D.WEAPONS], magic: ['magic', D.MAGIC] };
   G.CATS = CATS;
-  G.CAT_LABEL = { avatar: 'Avatar', pet: 'Pet', weapon: 'Weapon' };
+  G.CAT_LABEL = { avatar: 'Avatar', pet: 'Pet', weapon: 'Weapon', magic: 'Magic item' };
   G.item = (cat, id) => CATS[cat][1].find((i) => i.id === id);
   G.owns = (cat, id) => S().owned[CATS[cat][0]].includes(id);
   G.potion = (id) => D.POTIONS.find((p) => p.id === id);
@@ -14,9 +14,9 @@
   G.hasFound = (art) => Object.entries(D.FINDS).some(([w, list]) => list.some((f, i) => f[0] === art && (S().enc.finds[w] || []).includes(i)));
 
   // ---------- hero ----------
-  // charms (worn magic items) were retired: no passive perks. Kept as stubs so the battle math stays unchanged.
-  G.charms = () => [];
-  G.perk = () => false;
+  // charms: worn magic items (up to D.CHARM_SLOTS), each with a passive perk
+  G.charms = () => (S().equip.charms || []).filter((id) => D.magicById[id] && D.magicById[id].kind === 'charm' && G.owns('magic', id));
+  G.perk = (perk) => G.charms().some((id) => D.magicById[id].perk === perk);
   G.maxHp = () => Math.round(D.heroMaxHp(S().level) * (G.perk && G.perk('hp') ? 1.1 : 1));
   G.heal = (n) => {
     const s = S(), before = s.hp; s.hp = Math.min(G.maxHp(), Math.max(0, s.hp + n));
@@ -61,6 +61,7 @@
   G.isEquipped = (cat, id) => {
     const s = S();
     if (cat === 'avatar') return s.avatar === id;
+    if (cat === 'magic') return G.charms().includes(id);
     if (cat === 'weapon') { const w = D.weaponById[id]; return !!w && s.equip[G.slotKey(w.slot)] === id; }
     return s.equip[cat] === id;
   };
@@ -414,7 +415,7 @@
   // ---------- encounters ----------
   G.makeEncounter = (forceType, opts = {}) => {
     const s = S(), w = opts.world ? D.worldById[opts.world] : G.world();
-    let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS).type;
+    let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS.map((x) => x.type === 'find' && G.perk('finds') ? { ...x, w: x.w * 1.5 } : x)).type;   // Explorer's Lantern: more finds
     if (type === 'druid' && s.level < D.BATTLE_LEVEL && !forceType) type = 'chest';   // a wrong answer means a fight, so he waits until battles unlock
     if (type === 'boss' && !G.battlesOpen() && !forceType) type = 'chest';
     if (type === 'creature' && !G.battlesOpen() && !opts.creature) type = WB.pick(['chest', 'find', 'traveler']);   // no creatures at all before battles unlock
@@ -609,10 +610,12 @@
       if (e.boss) {
         s.bosses[w.id] = Date.now(); s.enc.bossDue = null; out.boss = w;
         out.reward.potion = 'elixir';
-      } else if (Math.random() < 0.3) out.reward.potion = Math.random() < 0.8 ? 'tonic' : 'iron';
+      } else if (Math.random() < (G.perk('loot') ? 0.6 : 0.3)) out.reward.potion = Math.random() < 0.8 ? 'tonic' : 'iron';
+      if (G.perk('loot')) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }   // the backpack carries extra loot
+      charmRewards(out.reward);
       out.granted = G.grant(out.reward, true);
       // guardians always guard a Crystal Egg; a quarter of other creatures guard an egg too (into the nest, if there's room)
-      const egg = e.boss ? 'crystal' : Math.random() < 0.25 && e.creature !== 'druid' ? G.rollEgg(w.tier) : null;
+      const egg = e.boss ? 'crystal' : Math.random() < (G.perk('loot') ? 0.4 : 0.25) + (G.perk('eggs') ? 0.1 : 0) && e.creature !== 'druid' ? G.rollEgg(w.tier) : null;
       if (egg && G.merlinOpen() && G.giveEgg(egg)) out.egg = egg;
       s.enc.count++; s.today.encounters++;
     } else if (b.result === 'lose') {
@@ -632,6 +635,11 @@
     G.after();
     return out;
   };
+  // charm perks on a battle win: the Merchant's Purse (+20% coins) and the Scholar's Codex (+15% XP)
+  function charmRewards(r) {
+    if (G.perk('coins') && r.coins) r.coins = Math.round(r.coins * 1.2);
+    if (G.perk('xp') && r.xp) r.xp = Math.round(r.xp * 1.15);
+  }
   // a roaming boss: a big win (and an egg), or 2 levels lost. Eggs are never lost.
   function bossResult(b, out, w) {
     const s = S(), e = b.enc, n = (s.nemesis = s.nemesis || { beaten: {}, losses: 0 });
@@ -642,6 +650,8 @@
       n.beaten[e.creature] = (n.beaten[e.creature] || 0) + 1;
       s.enc.cards[e.creature] = (s.enc.cards[e.creature] || 0) + 1;
       if (first) { out.reward.coins += 250; out.newKind = e.creature; }
+      if (G.perk('loot')) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }
+      charmRewards(out.reward);
       out.granted = G.grant(out.reward, true);
       const egg = G.rollEgg(w.tier); if (G.giveEgg(egg)) out.egg = egg;
       out.nemesis = e.creature;
@@ -661,7 +671,7 @@
   G.buy = (cat, id) => {
     const s = S(), it = G.item(cat, id);
     if (!it || G.owns(cat, id)) return { ok: false };
-    if (cat === 'weapon' && !G.battlesOpen()) return { ok: false, msg: 'Weapons unlock with battle mode at level ' + D.BATTLE_LEVEL + '.' };
+    if ((cat === 'weapon' || cat === 'magic') && !G.battlesOpen()) return { ok: false, msg: 'Weapons and magic unlock with battle mode at level ' + D.BATTLE_LEVEL + '.' };
     const st = G.reqStatus(it.req);
     if (!st.buy) return { ok: false, msg: st.label };
     if (s.coins < it.req.cost) return { ok: false, msg: 'You need ' + WB.fmt(it.req.cost - s.coins) + ' more coins. Keep walking.' };
@@ -685,7 +695,7 @@
     const s = S(), p = G.potion(id);
     if (!p || p.kind !== 'heal' || !(s.potions[id] > 0)) return { ok: false };
     if (s.hp >= G.maxHp()) return { ok: false, msg: 'You’re already at full health.' };
-    s.potions[id]--; G.heal(Math.round(G.maxHp() * Math.min(1, p.amount)));
+    s.potions[id]--; G.heal(Math.round(G.maxHp() * Math.min(1, p.amount * (G.perk('potions') ? 1.25 : 1))));
     WB.Sfx.play('claim'); G.after();
     return { ok: true };
   };
@@ -698,11 +708,19 @@
     WB.Sfx.play('buy'); G.after();
     return { ok: true };
   };
+  G.unequipCharm = (id) => { const s = S(); s.equip.charms = G.charms().filter((x) => x !== id); WB.bus.emit('state'); WB.Save.queue(); };
   G.equip = (cat, id) => {
     const s = S();
     if (id && !G.owns(cat, id)) return;
-    if (id && cat === 'weapon' && !G.battlesOpen()) return;   // locked until battle mode (level D.BATTLE_LEVEL)
+    if (id && (cat === 'weapon' || cat === 'magic') && !G.battlesOpen()) return;   // locked until battle mode (level D.BATTLE_LEVEL)
     if (cat === 'avatar') s.avatar = id;
+    else if (cat === 'magic') {   // charms are worn (up to D.CHARM_SLOTS); battle magic is simply carried
+      const m = D.magicById[id]; if (!m || m.kind !== 'charm') return;
+      const worn = G.charms();
+      if (worn.includes(id)) return;
+      if (worn.length >= D.CHARM_SLOTS) return { full: true };
+      s.equip.charms = [...worn, id];
+    }
     else if (cat === 'weapon') { if (!id) return; s.equip[G.slotKey(D.weaponById[id].slot)] = id; }
     else if (cat === 'shield') s.equip.shield = id;   // shields can be taken off
     else s.equip[cat] = id;

@@ -191,7 +191,7 @@
   UI.flushToasts = pump;
   // open the Shop on one item (e.g. from a "New avatar" note): the right tab, scrolled to it, briefly highlighted
   UI.showItem = (cat, id) => {
-    UI.hub = 'shop'; UI.shopTab = { avatar: 'avatar', pet: 'pets', weapon: 'weapons' }[cat] || 'avatar';
+    UI.hub = 'shop'; UI.shopTab = cat === 'magic' || (cat === 'weapon' && D.weaponById[id] && D.weaponById[id].slot === 'ranged') ? 'ranged' : { avatar: 'avatar', pet: 'pets', weapon: 'weapons' }[cat] || 'avatar';
     if (cat === 'weapon' && D.weaponById[id]) UI.wpnSlot = D.weaponById[id].slot;
     UI.go('shop'); UI.render();
     setTimeout(() => {
@@ -226,11 +226,12 @@
       ...D.AVATARS.filter((a) => a.req.level && inRange(a.req.level)).map((a) => ({ n: a.name, sub: 'Walker · ' + price(a.req), thumb: { kind: 'av', id: a.id, head: true, face: 'right' }, cat: 'avatar', id: a.id })),
       ...D.PETS.filter((p) => p.req.level && inRange(p.req.level)).map((p) => ({ n: p.name, sub: 'Pet · ' + price(p.req), thumb: { kind: p.src, id: p.id, face: 'right' }, cat: 'pet', id: p.id })),
       ...D.WEAPONS.filter((w) => w.req.level && inRange(w.req.level)).map((w) => ({ n: w.name, sub: (w.slot === 'shield' ? 'Defense' : 'Weapon') + ' · ' + price(w.req), img: w.icon, cat: 'weapon', id: w.id })),
+      ...D.MAGIC.filter((m) => inRange(m.req.level)).map((m) => ({ n: m.name, sub: (m.kind === 'charm' ? 'Charm' : 'Battle magic') + ' · ' + price(m.req), img: 'mg/' + m.id + '.png', cat: 'magic', id: m.id })),
       ...D.POTIONS.filter((p) => p.base && p.req.level && inRange(p.req.level)).map((p) => ({ n: p.name, sub: (p.food ? 'Food' : 'Potion') + ' · ' + price(p.req), img: 'pot/' + p.id + '.png' })),
     ];
     const shown = items.slice(0, 4), more = items.length - shown.length;
     const s = S(), maxed = s.level >= D.LEVEL_CAP, need = D.xpToNext(s.level);
-    const hpFrom = D.heroMaxHp(L.from), hpTo = G.maxHp();
+    const mult = G.perk('hp') ? 1.1 : 1, hpFrom = Math.round(D.heroMaxHp(L.from) * mult), hpTo = G.maxHp();
     const jumps = L.level - L.from;
     const kicker = L.regained ? 'Level regained' : jumps > 1 ? jumps + ' levels up!' : 'Level up!';
     const shopItems = items.some((it) => it.sub.includes('Shop') || it.sub.includes('Yours'));
@@ -661,13 +662,15 @@
   UI.hub = 'shop'; UI.invHub = 'bag'; UI.bagTab = 'worldkey'; UI.artTab = 'finds';
   const SHOP_TABS = [
     ['avatar', 'Avatars', 'user', 'Holographic suits the walkers wear when they travel between worlds. Buy them here, then switch in Inventory.'],
-    ['weapons', 'Weapons', 'sword', 'Melee weapons power Strike, ranged weapons power Throw, Shoot or Cast, and defense powers Defend. Nothing wears out.'],
+    ['weapons', 'Weapons', 'sword', 'Melee weapons power Strike and defense powers Defend. Nothing wears out.'],
+    ['ranged', 'Ranged & Magic', 'img:mg/book.png', 'Everything you throw, shoot or cast: ranged weapons, battle magic (instant, once per battle) and charms (worn, always on). Bought once, kept forever.'],
     ['potions', 'Potions / Food', 'img:pot/tonic.png', 'Each one works once. Carry up to ' + D.POTION_MAX + ' of each.'],
     ['pets', 'Pets', 'paw', 'Pets take part of every hit aimed at you in battle. A knocked-out pet recovers over time.'],
   ];
   const BAG_TABS = [
     ['worldkey', 'Worldkey', 'key', () => !G.featOn('wk') ? 'Your guide between worlds.' : 'Tune your Worldkey to a world, charge it with artifacts, then open the way.'],
-    ['weapons', 'Weapons', 'sword', 'Equip the weapons you own.'],
+    ['weapons', 'Weapons', 'sword', 'Equip your melee weapon and your shield or belt.'],
+    ['ranged', 'Ranged & Magic', 'img:mg/book.png', 'Pick your ranged weapon, wear up to ' + D.CHARM_SLOTS + ' charms, and carry battle magic (cast from Gear & Magic in battle, once per battle each).'],
     ['potions', 'Potions', 'img:pot/tonic.png', 'Drink healing potions here, or use any potion in battle from Items.'],
     ['pets', 'Pets', 'paw', 'Pets heal over time, like you. A knocked-out pet rests until it recovers.'],
     ['avatar', 'Avatars', 'user', 'Pick who you walk as.'],
@@ -691,7 +694,7 @@
   });
   const priceTag = (cost) => { const short = cost - S().coins; return `<div class="price"><span class="cost">${WB.icon('coin', 2)}${WB.fmt(cost)}</span>${short > 0 ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>`; };
   const shortWhy = (cost, what) => { const short = cost - S().coins; return short > 0 ? 'You need ' + WB.fmt(short) + ' more coins for ' + what + '. Keep walking: 1 coin every ' + D.STEPS_PER_COIN + ' steps.' : ''; };
-  const bagSub = (cat) => (cat === 'weapon' ? 'weapons' : cat === 'pet' ? 'pets' : 'avatar');
+  const bagSub = (cat, it) => (cat === 'magic' || (cat === 'weapon' && it && it.slot === 'ranged') ? 'ranged' : cat === 'weapon' ? 'weapons' : cat === 'pet' ? 'pets' : 'avatar');
 
   // a Shop card: buy it (or see it in your inventory)
   function itemCard(cat, it, opts = {}) {
@@ -699,7 +702,7 @@
     let foot = '', tag = '';
     if (own) {
       tag = '<span class="tag">Owned</span>';
-      foot = `<button class="btn ghost sm block" type="button" data-hubgo="bag:${bagSub(cat)}">In inventory</button>`;
+      foot = `<button class="btn ghost sm block" type="button" data-hubgo="bag:${bagSub(cat, it)}">In inventory</button>`;
     } else if (st.buy) {
       foot = priceTag(it.req.cost) + `<button class="btn gold sm block" type="button" data-buy="${cat}:${it.id}" ${off(shortWhy(it.req.cost, it.name))}>Buy</button>`;
     }
@@ -712,12 +715,14 @@
       ${foot ? `<div class="foot">${foot}</div>` : ''}
     </div>`;
   }
-  // a Bag card: something you own: equip it
+  // a Bag card: something you own: equip it (charms are worn; battle magic is simply carried)
   function bagCard(cat, it, opts = {}) {
-    const eq = G.isEquipped(cat, it.id), canOff = cat === 'pet' || (cat === 'weapon' && it.slot === 'shield');
-    const btn = eq ? (canOff ? `<button class="btn ghost sm" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat}">Unequip</button>` : `<button class="btn ghost sm" type="button" ${off('Already equipped.')}>Equipped</button>`)
-      : `<button class="btn sm" type="button" data-equip="${cat}:${it.id}">${cat === 'avatar' ? 'Use' : 'Equip'}</button>`;
-    const tag = eq ? `<span class="tag eq">${cat === 'avatar' ? 'In use' : 'Equipped'}</span>` : '';
+    const eq = G.isEquipped(cat, it.id), canOff = cat === 'pet' || cat === 'magic' || (cat === 'weapon' && it.slot === 'shield');
+    const battleMagic = cat === 'magic' && it.kind === 'battle';
+    const btn = battleMagic ? `<button class="btn ghost sm" type="button" ${off(it.name + ' is cast from Gear & Magic in battle, once per battle.')}>Ready</button>`
+      : eq ? (canOff ? `<button class="btn ghost sm" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat === 'magic' ? 'magic:' + it.id : cat}">${cat === 'magic' ? 'Take off' : 'Unequip'}</button>` : `<button class="btn ghost sm" type="button" ${off('Already equipped.')}>Equipped</button>`)
+      : `<button class="btn sm" type="button" data-equip="${cat}:${it.id}">${cat === 'magic' ? 'Wear' : cat === 'avatar' ? 'Use' : 'Equip'}</button>`;
+    const tag = eq ? `<span class="tag eq">${cat === 'magic' ? 'Worn' : cat === 'avatar' ? 'In use' : 'Equipped'}</span>` : '';
     return `<div class="item pbox bag">
       <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
       <h3>${WB.esc(it.name)}</h3>
@@ -729,7 +734,7 @@
   const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Block ${Math.round(w.block * 100)}%` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
   const WGROUPS = { melee: [['sword', 'Swords'], ['dagger', 'Daggers'], ['axe', 'Axes'], ['mace', 'Maces'], ['spear', 'Spears'], ['staff', 'Staves']],
     ranged: [['throw', 'Throwing weapons'], ['knife', 'Throwing knives & gear'], ['bow', 'Bows'], ['gun', 'Firearms'], ['spell', 'Spells']], shield: [['shield', 'Shields']] };
-  const loadout = (slot) => `<div class="loadout">${['melee', 'ranged', 'shield'].map((k) => { const w = G.equipped(k); return `<button type="button" class="lslot pbox ${slot === k ? 'on' : ''}" data-wpnslot="${k}" aria-pressed="${slot === k}">
+  const loadout = (slot, slots = ['melee', 'shield']) => `<div class="loadout ${slots.length === 2 ? 'two' : slots.length === 1 ? 'one' : ''}">${slots.map((k) => { const w = G.equipped(k); return `<button type="button" class="lslot pbox ${slot === k ? 'on' : ''}" data-wpnslot="${k}" aria-pressed="${slot === k}">
       <canvas width="64" height="64" ${w ? `data-prev="weapon:${w.id}"` : ''}></canvas><span class="ws-t"><span class="lbl">${D.WEAPON_SLOTS[k]}</span><span class="ws-v">${w ? WB.esc(w.name) : '<span class="none">None</span>'}</span></span></button>`; }).join('')}</div>`;
   const hpCard = () => { const s = S(), hp = s.hp, max = G.maxHp(); return `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">${hp >= max ? 'Full health.' : 'Full in about ' + UI.dur(G.minsToFull()) + '.'} Walking doesn’t heal. HP refills on its own in ${D.HEAL_MINUTES} minutes, or drink a potion to heal now.</p></div>`; };
 
@@ -742,11 +747,17 @@
   // ----- Shop sections -----
   function shopBody(cat) {
     const s = S();
+    if (cat === 'ranged') {
+      if (!G.battlesOpen()) return gearLock('Ranged weapons and magic');
+      const rng = WGROUPS.ranged.map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('');
+      const mag = (kind, title, aside) => { const list = byUnlock(D.MAGIC.filter((m) => m.kind === kind)); return `<div class="sect"><h2>${title} <span class="aside">${list.filter((m) => G.owns('magic', m.id)).length} / ${list.length} · ${aside}</span></h2><div class="grid">${list.map((it) => itemCard('magic', it, { desc: it.desc, stat: it.tag })).join('')}</div></div>`; };
+      return `${loadout('ranged', ['ranged'])}<p class="fine wnote">Your ranged weapon powers Throw, Shoot or Cast and recharges between shots. Battle magic is instant and doesn’t use your turn. Charms are worn (up to ${D.CHARM_SLOTS}) and always on.</p>${rng}${mag('battle', 'Battle magic', 'once per battle')}${mag('charm', 'Charms', 'wear ' + D.CHARM_SLOTS)}`;
+    }
     if (cat === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
-      const slot = UI.wpnSlot || 'melee';
+      const slot = UI.wpnSlot === 'shield' ? 'shield' : 'melee';
       const all = (k) => D.WEAPONS.filter((w) => w.slot === k).length, own = (k) => D.WEAPONS.filter((w) => w.slot === k && G.owns('weapon', w.id)).length;
-      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : slot === 'ranged' ? 'Used by Throw, Shoot or Cast. It recharges between shots.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'} ${own(slot)} of ${all(slot)} owned.</p>
+      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'} ${own(slot)} of ${all(slot)} owned.</p>
         ${WGROUPS[slot].map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('')}`;
     }
     if (cat === 'potions') {
@@ -774,10 +785,19 @@
   function bagBody(tab) {
     const s = S();
     if (tab === 'worldkey') return G.featOn('wk') ? UI.wkSection() : UI.wkLocked();
+    if (tab === 'ranged') {
+      if (!G.battlesOpen()) return gearLock('Ranged weapons and magic');
+      const rng = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && G.owns('weapon', w.id)));
+      const charms = byUnlock(D.MAGIC.filter((m) => m.kind === 'charm' && G.owns('magic', m.id))), bm = byUnlock(D.MAGIC.filter((m) => m.kind === 'battle' && G.owns('magic', m.id)));
+      return `${loadout('ranged', ['ranged'])}
+        <div class="sect"><h2>Ranged weapons <span class="aside">${rng.length}</span></h2>${rng.length ? `<div class="grid">${rng.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag('ranged weapons', 'ranged')}</div>
+        <div class="sect"><h2>Charms <span class="aside">Wearing ${G.charms().length} / ${D.CHARM_SLOTS}</span></h2>${charms.length ? `<div class="grid">${charms.map((it) => bagCard('magic', it, { stat: it.tag })).join('')}</div>` : emptyBag('charms', 'ranged')}</div>
+        <div class="sect"><h2>Battle magic <span class="aside">${bm.length}</span></h2>${bm.length ? `<div class="grid">${bm.map((it) => bagCard('magic', it, { stat: it.tag })).join('')}</div>` : emptyBag('battle magic', 'ranged')}</div>`;
+    }
     if (tab === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
-      const slot = UI.wpnSlot || 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
-      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : slot === 'ranged' ? 'Used by Throw, Shoot or Cast.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
+      const slot = UI.wpnSlot === 'shield' ? 'shield' : 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
+      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
         ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields or belts' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
     }
     if (tab === 'potions') {
@@ -829,18 +849,18 @@
     if (!TABS.some((t) => t[0] === UI[key])) UI[key] = TABS[0][0];
     const cur = UI[key], def = TABS.find((t) => t[0] === cur);
     const body = hub === 'shop' ? shopBody(cur) : hub === 'bag' ? bagBody(cur) : artBody(cur);
-    const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: G.battlesOpen() ? s.owned.weapons.length : 'Lv ' + D.BATTLE_LEVEL, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
+    const bagCnt = { worldkey: G.featOn('wk') ? Math.floor(G.wk().e) + '%' : 'Locked', weapons: G.battlesOpen() ? s.owned.weapons.filter((id) => D.weaponById[id] && D.weaponById[id].slot !== 'ranged').length : 'Lv ' + D.BATTLE_LEVEL, ranged: G.battlesOpen() ? s.owned.weapons.filter((id) => D.weaponById[id] && D.weaponById[id].slot === 'ranged').length + (s.owned.magic || []).length : 'Lv ' + D.BATTLE_LEVEL, potions: Object.values(s.potions).reduce((a, b) => a + b, 0), pets: s.owned.pets.length, avatar: s.owned.avatars.length, art: G.artTotal() };
     const segBtn = (attr, id, l, ic, on, n) => `<button type="button" role="tab" data-${attr}="${id}" aria-selected="${on}" aria-pressed="${on}">${tabIcon(ic)}<span>${l}</span>${n != null ? `<span class="cnt">${n}</span>` : ''}</button>`;
     const INV_TABS = [...BAG_TABS, ['art', 'Artifacts', 'img:art/m30.png']], invCur = hub === 'art' ? 'art' : cur;
     const nav = !inv
-      ? `<div class="seg four sub-seg" role="tablist" aria-label="Shop sections">${SHOP_TABS.map(([id, l, ic]) => segBtn('shoptab', id, l, ic, id === cur)).join('')}</div>`
-      : `<div class="seg six sub-seg" role="tablist" aria-label="Inventory sections">${INV_TABS.map(([id, l, ic]) => segBtn('invtab', id, l, ic, id === invCur, bagCnt[id])).join('')}</div>
+      ? `<div class="seg five sub-seg" role="tablist" aria-label="Shop sections">${SHOP_TABS.map(([id, l, ic]) => segBtn('shoptab', id, l, ic, id === cur)).join('')}</div>`
+      : `<div class="seg seven sub-seg" role="tablist" aria-label="Inventory sections">${INV_TABS.map(([id, l, ic]) => segBtn('invtab', id, l, ic, id === invCur, bagCnt[id])).join('')}</div>
 `;
     const root = $(inv ? '#scr-inv' : '#scr-shop');
     const changed = UI.set(root, `<div class="scr-wrap">
       <div class="scr-head"><h1>${inv ? 'Inventory' : 'Shop'}</h1><span class="hud-chip coin">${WB.icon('coin', 2)}<b>${WB.fmt(s.coins)}</b></span></div>
       ${nav}
-      ${def[3] && !(hub !== 'art' && cur === 'weapons' && !G.battlesOpen()) ? `<p class="scr-note">${typeof def[3] === 'function' ? def[3]() : def[3]}</p>` : ''}
+      ${def[3] && !(hub !== 'art' && (cur === 'weapons' || cur === 'ranged') && !G.battlesOpen()) ? `<p class="scr-note">${typeof def[3] === 'function' ? def[3]() : def[3]}</p>` : ''}
       ${body}
     </div>`);
     if (changed) paintAll(root);
@@ -858,6 +878,7 @@
     else if (cat === 'pet') { const p = D.PETS.find((q) => q.id === id); WB.paintThumb(c, { kind: p.src, id, face: 'right' }); }
     else if (cat === 'weapon') UI.paintWeapon(c, id);
     else if (cat === 'potion') WB.paintImg(c, `pot/${id}.png`, 0.8);
+    else if (cat === 'magic') WB.paintImg(c, `mg/${id}.png`, 0.72);
   }
   UI.paintWeapon = (c, id) => {
     const w = D.weaponById[id];
@@ -921,7 +942,7 @@
     const s = S(), sv = G.streakView();
     const span = [7, 14, 30].includes(s.settings.chartDays) ? s.settings.chartDays : 14;   // the chart's range: 7, 14 or 30 days
     const days = []; for (let i = span - 1; i >= 0; i--) { const k = WB.addDays(WB.dayKey(), -i); days.push([k, s.days[k] || 0]); }
-    const tab = ['settings', 'ach'].includes(UI.pfTab) ? UI.pfTab : 'overview';
+    const tab = ['settings', 'ach', 'ranks'].includes(UI.pfTab) ? UI.pfTab : 'overview';
     // tapping a bar shows that day's steps (defaults to today); the pick sticks while it is still inside the range
     const selDay = days.some((d) => d[0] === UI.chartSel) ? UI.chartSel : days[days.length - 1][0];
     const chartRead = (k, plain) => { const v = s.days[k] || 0, d = WB.parseDay(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }), t = k === WB.dayKey() ? 'Today · ' : ''; return plain ? t + d + ': ' + WB.fmt(v) + ' steps' : `<span class="cr-d">${WB.esc(t + d)}</span><b>${WB.fmt(v)} steps</b><span class="cr-s ${v >= s.settings.streakMin ? 'ok' : ''}">${v >= s.settings.streakMin ? 'Streak day' : WB.fmt(s.settings.streakMin) + '+ for a streak'}</span>`; };
@@ -937,8 +958,8 @@
     const st = WB.Steps.status;
     const pf = $('#scr-profile'); pf._html = null; pf.innerHTML = `<div class="scr-wrap">
       <div class="scr-head pf-head"><h1>Profile</h1></div>
-      <div class="seg pf-tabs" role="tablist" aria-label="Profile sections">${[['overview', 'Overview', 'user'], ['ach', 'Achievements', 'trophy', 'Awards'], ['settings', 'Settings', 'gear']].map(([id, l, ic, short]) => `<button type="button" role="tab" data-pftab="${id}" aria-selected="${tab === id}" aria-pressed="${tab === id}"${short ? ` aria-label="${l}"` : ''}>${WB.icon(ic, 2)}${short ? `<span class="l-long" aria-hidden="true">${l}</span><span class="l-short" aria-hidden="true">${short}</span>` : `<span>${l}</span>`}</button>`).join('')}</div>
-      ${tab === 'ach' ? `<p class="scr-note">Milestones that pay coins and XP. ${Object.keys(s.ach).length} of ${D.ACHIEVEMENTS.length} earned.</p>${UI.achList()}` : tab === 'overview' ? `
+      <div class="seg pf-tabs" role="tablist" aria-label="Profile sections">${[['overview', 'Overview', 'user'], ['ranks', 'Ranks', 'flag'], ['ach', 'Achievements', 'trophy', 'Awards'], ['settings', 'Settings', 'gear']].map(([id, l, ic, short]) => `<button type="button" role="tab" data-pftab="${id}" aria-selected="${tab === id}" aria-pressed="${tab === id}"${short ? ` aria-label="${l}"` : ''}>${WB.icon(ic, 2)}${short ? `<span class="l-long" aria-hidden="true">${l}</span><span class="l-short" aria-hidden="true">${short}</span>` : `<span>${l}</span>`}</button>`).join('')}</div>
+      ${tab === 'ranks' ? UI.ranksSection() : tab === 'ach' ? `<p class="scr-note">Milestones that pay coins and XP. ${Object.keys(s.ach).length} of ${D.ACHIEVEMENTS.length} earned.</p>${UI.achList()}` : tab === 'overview' ? `
 
       <div class="hero pbox"><canvas width="144" height="144" id="pf-av"></canvas><div class="meta">
         <span class="title">${WB.esc(title())}</span>
@@ -1011,6 +1032,7 @@
       </div>
       <div class="sect"><h2>Privacy &amp; data</h2>
         <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : !WB.store.ok() ? '<b class="warn">Not saving:</b> this browser is blocking storage, so progress is lost when you close it.' : 'Saved on this device only. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
+        ${WB.LB.configured() ? `<div class="setting pbox"><div><div>Leaderboards</div><div class="sd">${WB.LB.joined() ? 'On: your name, walker, level, streak, steps and latest achievement are shown on the Ranks tab.' : 'Off. Join from Profile → Ranks.'}</div></div>${WB.LB.joined() ? '<button class="btn ghost sm" type="button" data-lb="leave">Leave</button>' : ''}</div>` : ''}
       </div>
       <details class="about pbox card"><summary><span class="lbl">About</span><span class="chev" aria-hidden="true">›</span></summary>
         <div class="about-b">
@@ -1021,6 +1043,7 @@
       `}
     </div>`;
     if ($('#pf-av')) UI.animate($('#pf-av'), 'av', s.avatar, 'idle', s.skin);   // only on the Overview tab
+    if (tab === 'ranks' && UI.ranksMount) UI.ranksMount(pf);
     WB.$$('[data-prev]', pf).forEach((c) => paintPreview(c, ...c.dataset.prev.split(':')));
     const sel = (id, k, num) => { const el = $(id); if (el) el.onchange = (e) => { s.settings[k] = num(e.target.value); WB.Save.queue(); G.after(); UI.renderProfile(); }; };
     WB.$$('[data-pftab]', pf).forEach((b) => (b.onclick = () => { UI.pfTab = b.dataset.pftab; WB.Sfx.play('tap'); UI.renderProfile(); window.scrollTo(0, 0); }));
@@ -1191,19 +1214,19 @@
     if (d.hubgo) { const [h, sub] = d.hubgo.split(':'); WB.Sfx.play('tap'); UI.goHub(h, sub); UI.hubRoot().scrollTop = 0; return; }
     if (d.mtab) { UI.missionTab = d.mtab; WB.Sfx.play('tap'); UI.renderTasks(); const sc = $('#scr-tasks'); if (sc) sc.scrollTop = 0; return; }
     if (d.suptab) { UI.supTab = d.suptab; return UI.go('collection'); }
-    if (d.wpnslot) { UI.wpnSlot = d.wpnslot; WB.Sfx.play('tap'); return UI.renderShop(); }
+    if (d.wpnslot) { UI.wpnSlot = d.wpnslot; WB.Sfx.play('tap'); if (d.wpnslot === 'ranged') { if (UI.hub === 'shop') UI.shopTab = 'ranged'; else UI.bagTab = 'ranged'; } return UI.renderShop(); }
     if (d.potionBuy) { const r = G.buyPotion(d.potionBuy); UI.toast(r.ok ? { kicker: 'Purchased', title: G.potion(d.potionBuy).name, img: `pot/${d.potionBuy}.png`, cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.drink) { const r = G.drink(d.drink); if (r.ok) WB.Sfx.play('potion'); if (r.ok) UI.toast({ kicker: 'Healed', title: WB.fmt(S().hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', img: `pot/${d.drink}.png`, cls: 'ok' }); else if (r.msg) UI.toast({ kicker: 'Not now', title: r.msg }); UI.updateHud(); return UI.render(); }
     if (d.boss) { WB.BattleUI.challenge(d.boss); return; }
     if (d.claim) { const [ty, id] = d.claim.split(':'); const r = G.claimTask(ty, id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); if (r && ty === 'daily') UI.missionAmbushRoll('daily', r.t.title); return; }
     if (d.buy) { const [c, id] = d.buy.split(':'); const r = G.buy(c, id); if (r.ok) UI.toast({ kicker: 'Purchased', title: G.item(c, id).name, icon: 'shop', cls: 'gold' }); else if (r.msg) UI.toast({ kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.supply) { const r = G.buySupply(d.supply); UI.toast(r.ok ? { kicker: 'Purchased', title: 'Streak Shield', sub: 'You hold ' + S().streak.rest + ' / ' + D.SHIELD_MAX + '.', icon: 'sshield', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
-    if (d.equip) { const [c, id] = d.equip.split(':'); G.equip(c, id); WB.Sfx.play('equip'); return UI.render(); }
-    if (d.unequip) { G.equip(d.unequip, null); return UI.render(); }
+    if (d.equip) { const [c, id] = d.equip.split(':'); const r = G.equip(c, id); if (r && r.full) UI.toast({ kicker: 'Charm slots full', title: 'Take one off first: you can wear ' + D.CHARM_SLOTS + '.', cls: 'msg' }); else WB.Sfx.play('equip'); return UI.render(); }
+    if (d.unequip) { const [c, id] = d.unequip.split(':'); if (c === 'magic') G.unequipCharm(id); else G.equip(c, null); return UI.render(); }
     if (d.travel) { if (!G.canTravel(d.travel)) return UI.toast({ kicker: 'Not yet', title: 'Finish ' + G.firstWorld().name + ' to wake your Worldkey. Then you can travel.', cls: 'msg' }); G.travel(d.travel); const tw = D.worldById[d.travel]; Promise.resolve(WB.Loading.world(tw)).then(() => WB.WK && WB.WK.say('back', { world: tw.name }, true)); return UI.go('world'); }
     if (d.wslot) {
       if (d.wsub) UI.wpnSlot = d.wsub;
-      return UI.goHub('bag', d.wslot === 'avatar' ? 'avatar' : d.wslot === 'weapon' ? 'weapons' : 'pets');
+      return UI.goHub('bag', d.wslot === 'avatar' ? 'avatar' : d.wslot === 'weapon' ? (d.wsub === 'ranged' ? 'ranged' : 'weapons') : 'pets');
     }
     if (d.toggle) { const s = S(); s.settings[d.toggle] = !(d.toggle === 'reducedMotion' ? WB.reducedMotion() : s.settings[d.toggle]); document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Sfx.applySession(); WB.Bgm.sync(); return UI.renderProfile(); }
     switch (d.act) {
