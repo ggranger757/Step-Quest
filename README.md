@@ -86,7 +86,6 @@ One loop: **walk → explore worlds → find things on the road → level up →
 - **Themes:** Night (violet and orange) and Lime (black, lime and yellow), in Profile → Settings.
 - **Shop:** Avatars, Weapons (melee and defense), **Ranged & Magic**, Potions / Food, Pets. **Inventory:** Worldkey, Weapons, Ranged & Magic, Potions, Pets, Avatars, Artifacts.
 - **Ranged & Magic** (one family: everything you throw, shoot or cast): ranged weapons; **battle magic** (32, instant, doesn't use your turn, once per battle each); **charms** (24, wear up to 3, passive perks such as +8% crit, more loot or +10% max HP). Bought once and kept forever; nothing runs out.
-- **Leaderboards** (Profile → Ranks): current streak, steps today, this week and this month, top 50 plus your own rank, with each player's latest achievement. Opt-in. See **Leaderboards** below.
 
 ### Merlin's Eggs: walk to hatch (`js/02d-merlin.js`, `js/05e-merlin.js`, `js/07h-merlin-ui.js`)
 
@@ -104,28 +103,15 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
-## Leaderboards (`js/00-config.js`, `js/05m-leaderboard.js`, `js/07m-leaderboard-ui.js`, `supabase/leaderboard.sql`)
+## Changes in 3.2.3
 
-Step Quest has no server of its own, so the leaderboards use a free [Supabase](https://supabase.com) project (a hosted Postgres database with a REST API). Until you set one up, the game runs fully offline and Profile → Ranks shows "Coming soon" with your own numbers.
-
-1. Create a project at supabase.com (the free tier is plenty to start).
-2. **SQL editor:** paste and run `supabase/leaderboard.sql`. It creates the `players` table, row-level security (each player can only write their own row; everyone can read), limits on impossible numbers, and a `hidden` flag for moderation.
-3. **Authentication → Sign In / Providers:** turn on **Allow anonymous sign-ins**. Players never need an email or password.
-4. **Project settings → API:** copy the project URL and the `anon` public key into `js/00-config.js`. The anon key is meant to be public; the database rules decide what each player can write.
-5. Deploy (stamp a new version first). The installed app picks it up after `npm run sync` in `native/`.
-
-How it behaves:
-
-- **Opt-in.** Nothing leaves the phone until the player taps **Join** on Profile → Ranks. Shown: name, walker, level, current and best streak, steps today, this week (Monday–Sunday) and this month, total steps, the latest achievement. **Leave** (Profile → Settings) deletes the row.
-- **Updates** go out when the app opens, at most once a minute after a change, and when it goes to the background. Offline changes go out next time.
-- **Boards** use each player's own local day, week and month. Streaks count only if they're still alive (last streak day today or yesterday).
-- **Moderation:** names pass a basic word filter, and you can hide anyone by setting `hidden = true` on their row in the Supabase table editor (players can't undo it). Apple's guideline 1.2 asks apps with user-generated content to filter, let users report, and block. Before submitting, add a Report button or a contact email.
-- **Cheating:** step counts come from the phone, so a determined player can fake them. The database rejects impossible values (more than 150,000 steps in a day). Server-side checks (for example Apple Health only) would be the next step if it matters.
+- Worldkeys show in full color once you reach their level.
+- Shorter instructional copy throughout.
+- Leaderboards and the Profile → Ranks tab were removed.
 
 ## Changes in 3.2
 
 - **Magic items are back:** 32 battle magic items and 24 charms, now in a merged **Ranged & Magic** section of the Shop and Inventory. In battle, **Gear & Magic** swaps weapons and casts magic from one menu. Nothing runs out.
-- **Leaderboards:** streak, today, this week and this month, with each player's latest achievement (Supabase, opt-in).
 - **Spark Bomb:** its sprite sheet was sliced as 9 frames of 35 px instead of 5 frames of 63 px, which cut it off in the Shop and in battle. Fixed in `js/assets.js`.
 - Profile tabs show "Awards" on phones so four tabs fit.
 
@@ -144,7 +130,6 @@ index.html               app shell
 manifest.webmanifest     PWA manifest
 sw.js                    service worker (offline cache)
 css/style.css            all styles
-js/00-config.js          deployment settings (leaderboard project URL and key)
 js/assets.js             sprite sheet sizes and frame counts (generated)
 js/00-util.js            helpers, storage, event bus
 js/01-icons.js           hand-drawn pixel icons
@@ -167,7 +152,6 @@ js/05i-artifacts.js      artifact collection and copies
 js/05j-unlocks.js        feature unlocks
 js/05k-quick.js          quick missions, the mission log, battles after missions
 js/05l-mood.js           mood check-ins
-js/05m-leaderboard.js    leaderboards: opt-in, anonymous account, publishing, reading boards
 js/06-engine.js          canvas renderer
 js/07-ui.js              screens, HUD, sheets, toasts
 js/07b-battle-ui.js      battle screen
@@ -179,8 +163,6 @@ js/07i-loading.js        loading screen
 js/07j-worldkey-ui.js    Worldkey screens
 js/07k-quick-ui.js       quick missions card
 js/07l-mood-ui.js        mood check-in card and Profile moods
-js/07m-leaderboard-ui.js Profile → Ranks
-supabase/leaderboard.sql leaderboard database (run once in Supabase)
 js/08-main.js            startup, onboarding, developer panel
 assets/                  art, sound, music, fonts, icons
 native/                  Capacitor project for the iPhone / Android app (step sync)
