@@ -440,7 +440,7 @@
       const e = { enc, pos, t: 0, f: 0, fade: 1, state: 'idle', done: false, reached: false };
       if (enc.creature) { e.kind = 'cr'; e.id = enc.creature; Assets.get(WB.sheet('cr', e.id, 'idle').path); }
       else if (enc.npc) { e.kind = 'npc'; e.id = enc.npc; Assets.get(WB.sheet('npc', enc.npc, 'idle').path); }
-      else { e.kind = enc.type; if (enc.egg) { e.id = enc.egg; Assets.get('egg/' + enc.egg + '.png'); } }
+      else { e.kind = enc.type; if (enc.egg) { e.id = WB.DATA.eggArt(enc.egg, enc.eggV); Assets.get('egg/' + e.id + '.png'); /* the egg's own color */ } }
       this.ents.push(e);
       return e;
     }
@@ -492,6 +492,7 @@
         if (amb === 'dust') p = P(Math.random() * W, 60 + Math.random() * (g - 60), -4 - Math.random() * 6, Math.random() * 2 - 1, 5 + Math.random() * 4, WB.pick(['#e0b88a', '#b08a62']), 1, 'amb');
         else if (amb === 'leaves') p = P(Math.random() * W, -4, -6 - Math.random() * 8, 10 + Math.random() * 10, 12, WB.pick(['#6ee7a0', '#3e9e5a', '#a8e070']), 1, 'amb');
         else if (amb === 'fireflies') p = P(Math.random() * W, 120 + Math.random() * (g - 130), Math.random() * 6 - 3, Math.random() * 4 - 2, 4 + Math.random() * 4, '#e8ff9a', 1, 'amb');
+        else if (amb === 'bubbles') { p = P(Math.random() * W, g - Math.random() * 20, 0, -14 - Math.random() * 14, 7, WB.pick(['#c9f6ff', '#8fdcff', '#ffffff']), Math.random() < 0.3 ? 2 : 1, 'amb'); p.wob = true; }   // the Sunken Ruins: bubbles rising from the seabed
         else if (amb === 'drips') p = P(Math.random() * W, 20 + Math.random() * 40, 0, 60, 3, '#59e3ff', 1, 'amb');
         else if (amb === 'ash') p = P(Math.random() * W, -4, -3 - Math.random() * 5, 8 + Math.random() * 8, 18, WB.pick(['#c7b8ff', '#8b6cff', '#e8e2ff']), 1, 'amb');
         else p = P(Math.random() * W, -4, -2 - Math.random() * 3, 6 + Math.random() * 6, 20, WB.pick(['#ffffff', '#c9f6ff']), 1, 'amb');
@@ -590,7 +591,7 @@
         if (e.state === 'idle' && Math.sin(this.t * 2.5) > 0.7) { x.fillStyle = '#fff2a8'; x.fillRect(sx + 6, g - 22, 1, 5); x.fillRect(sx + 4, g - 20, 5, 1); }
       } else if (e.kind === 'egg') {   // a little egg wobbling on the path
         const im = Assets.ok('egg/' + e.id + '.png');
-        if (im) { const fr = Math.floor(this.t * 9) % 8; x.drawImage(im, fr * 32, 0, 32, 32, Math.round(sx - 16), g - 31, 32, 32); }
+        if (im) { const fr = Math.floor(this.t * 9) % 8, fs = im.height; x.save(); x.imageSmoothingEnabled = fs > 32; x.drawImage(im, fr * fs, 0, fs, fs, Math.round(sx - 16), g - 31, 32, 32); x.restore(); }   // elemental eggs are drawn from 84px frames
         top = g - 30;
       } else if (e.kind === 'find') {
         const bob = Math.round(Math.sin(e.t * 3) * 2);

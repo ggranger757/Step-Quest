@@ -67,6 +67,9 @@
     sprites.hero = { anim: 'idle', f: 0, once: false, t: 0, adv: 0, advTo: 0, enter: 1.5 };
     sprites.enemy = { anim: 'idle', f: 0, once: false, fade: 1, adv: 0, advTo: 0, enter: 1.5, flash: 0 };
     sprites.pet = st.pet ? { anim: 'idle', f: 0, once: false, flash: 0 } : null;
+    // a mob: every creature has its own sprite; the first is drawn as sprites.enemy (front), the rest wait behind
+    sprites.foes = st.foes.map((f, i) => ({ id: f.id, anim: 'idle', f: Math.random() * 4, once: false, fade: 1, adv: 0, advTo: 0, enter: 1.5, flash: 0, gone: i === 0 }));
+    st.foes.slice(1).forEach((f) => ['idle', 'attack', 'hurt', 'death'].forEach((a) => WB.Assets.get(WB.sheet('cr', f.id, a).path)));
     fx = []; shake = 0; busy = false; tmr = null;
     const el = $('#battle');
     el.innerHTML = `
@@ -108,7 +111,7 @@
     BU.ro = new ResizeObserver(resize); BU.ro.observe($('#b-stage'));
     plates();
     const c = D.CREATURES[e.creature];
-    log((e.nemesis ? (e.cutOff ? `You try to slip away, but ${c.name} cuts you off! ` : '') + `Boss battle: ${c.name}. ${D.BOSSES[e.creature].abilityName}: ${D.BOSSES[e.creature].abilityDesc}` : e.boss ? `${c.name}, guardian of ${w.name}, blocks the way!` : e.creature === 'druid' ? 'Wrong answer! The Druid raises his blade. Beat him or he takes all your eggs.' : `${c.name} wants a fight!`) +
+    log((e.nemesis ? (e.cutOff ? `You try to slip away, but ${c.name} cuts you off! ` : '') + `Boss battle: ${c.name}. ${D.BOSSES[e.creature].abilityName}: ${D.BOSSES[e.creature].abilityDesc}` : e.boss ? `${c.name}, guardian of ${w.name}, blocks the way!` : e.creature === 'druid' ? 'Wrong answer! The Druid raises his blade. Beat him or he takes all your eggs.' : st.foes.length > 1 ? `A mob of ${st.foes.length}! ${st.foes.map((f) => f.name).join(', ')}. Beat them one by one.` : `${c.name} wants a fight!`) +
       (S().hints.battle ? '' : ` Tip: Strike uses your ${st.melee.name}. Your ${st.weapon.name} hits harder but needs to recharge. Defend while it does.`));
     actions();
     last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
@@ -129,7 +132,8 @@
   };
 
   function resize() {
-    const r = $('#b-stage').getBoundingClientRect();
+    const stg = $('#b-stage'); if (!stg || !view) return;   // the battle screen is already gone
+    const r = stg.getBoundingClientRect();
     if (!r.width) return;
     const g = view.world.ground;
     // show ~240 native px across so the fighters (and your pet) fit with room to breathe. On tall portrait
@@ -260,6 +264,28 @@
       ctx.globalAlpha = 1;
       view.heroTop = topOf(WB.sheet('av', s.avatar, 'idle'), dy, hsh.scale);
     }
+    // a mob: the creatures waiting behind the front one (smaller, a step back)
+    if (st && sprites.foes) {
+      let k = 0;
+      for (const sp of sprites.foes) {
+        if (sp.gone) continue;
+        const sh = WB.sheet('cr', sp.id, sp.anim), img = WB.Assets.ok(sh.path) || WB.Assets.ok(WB.sheet('cr', sp.id, 'idle').path);
+        const x = view.ex + 30 + k * 24; k++;
+        if (!img) continue;
+        const ish = WB.Assets.ok(sh.path) ? sh : WB.sheet('cr', sp.id, 'idle');
+        step(sp, ish, dt, sp.anim === 'idle' ? 7 : 11); ease(sp, dt);
+        const sc = (D.CREATURES[sp.id].scale || 1) * 0.8, sz = ish.fs * sc, f = Math.min(ish.n - 1, Math.floor(sp.f)), dy = g - sz + 1;
+        const dx = x - sz / 2 - Math.round(sp.adv) + Math.round(Math.pow(Math.min(1, sp.enter), 2) * view.W * 0.5);
+        if (sp.anim === 'death') { sp.fade = Math.max(0, sp.fade - dt * 1.2); if (sp.fade <= 0) sp.gone = true; }
+        ctx.fillStyle = 'rgba(5,4,15,0.3)'; ctx.beginPath(); ctx.ellipse(x, g, 18, 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.92 * sp.fade;
+        const flip = ish.face !== 'left';
+        if (sp.flash > 0 && Math.floor(sp.flash * 16) % 2 === 0) drawLit(img, ish, f, dx, dy, sc, flip, 0.9);
+        else WB.drawFrame(ctx, img, ish, f, dx, dy, sc, flip);
+        sp.flash = Math.max(0, (sp.flash || 0) - dt);
+        ctx.globalAlpha = 1;
+      }
+    }
     // creature
     const es = sprites.enemy, eid = es.id || enc.creature, cdef = D.CREATURES[eid];
     const esh = WB.sheet('cr', eid, es.anim), eimg = WB.Assets.ok(esh.path);
@@ -305,6 +331,14 @@
         ctx.globalAlpha = 0.25 + 0.45 * k; ctx.beginPath(); ctx.arc(e.x, e.y, 2 + 6 * k, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 0.9; ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(e.x - 1), Math.round(e.y - 1), 2, 2);
         ctx.restore();
+        if (k >= 1) e.done = true;
+        continue;
+      }
+      if (e.type === 'pixproj') {   // a pet's pixel projectile: drawn pixel by pixel from its pattern
+        const k = Math.min(1, e.t / e.dur), x = Math.round(WB.lerp(e.x0, e.x1, k)), y = Math.round(WB.lerp(e.y0, e.y1, k) - (e.p.arc ? Math.sin(k * Math.PI) * 14 : 0) + (e.p.wob ? Math.sin(e.t * 30) * 1.5 : 0));
+        const rows = e.p.px, hh = rows.length, ww = rows[0].length;
+        for (let j = 0; j < hh; j++) for (let i = 0; i < ww; i++) { const ch = rows[j][i]; if (ch === '.') continue; ctx.fillStyle = e.p.c[ch]; ctx.fillRect(x - ww + i * 2, y - hh + j * 2, 2, 2); }   // 2x pixels: chunky enough to read on a phone
+        if (!reducedFx && Math.random() < 0.6) fx.push({ type: 'spark', x: x - (ww >> 1), y: y + (Math.random() * 2 - 1), vx: -20, vy: 0, life: 0.25, t: 0, color: e.p.c[Object.keys(e.p.c)[0]], size: 1 });
         if (k >= 1) e.done = true;
         continue;
       }
@@ -362,6 +396,8 @@
     const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, h.guardPts < D.DEFEND_COST && 'Guard worn'].filter(Boolean);
     const plate = (name, lvl, cur, g, max, tags, cls) => `<div class="pl-main"><span class="pl-name">${WB.esc(name)}</span>${bar(cur, g, max, cls)}<div class="pl-bot"><span class="lbl">${lvl}</span><span class="lbl" data-hpn="1">${Math.max(0, Math.round(cur))} / ${max}</span></div></div><span class="lbl tags">${tags.join(' · ')}</span>`;
     $('#b-pe').innerHTML = plate(e.name, `Lv ${e.lvl}${e.boss ? ' · Guardian' : e.nemesis ? ' · Boss' : ''}`, disp.enemy, ghost.enemy, e.max, est, 'ehp');
+    const rest = (st.foes || []).filter((f) => f !== e && f.hp > 0);   // the rest of a mob, waiting their turn
+    if (rest.length) $('#b-pe').insertAdjacentHTML('beforeend', `<div class="pl-mob" aria-label="${rest.length} more in the mob">${rest.map((f) => `<span class="pm"><span class="lbl">${WB.esc(f.name)}</span>${bar(f.hp, f.hp, f.max, 'ehp thin')}</span>`).join('')}</div>`);
     $('#b-pe').classList.toggle('boss', !!e.nemesis);
     $('#b-ph').innerHTML = plate(S().name, `Lv ${h.lvl}`, disp.hero, ghost.hero, h.max, hst, 'hp') +
       (p ? `<div class="pl-pet ${shown.pet <= 0 ? 'ko' : ''}">${WB.icon('paw', 1)}<span class="lbl">${WB.esc(p.name)}</span>${bar(disp.pet, ghost.pet, p.max, 'hp thin')}<span class="lbl" data-hpn="pet">${shown.pet <= 0 ? 'KO' : Math.round(disp.pet)}</span></div>` : '');
@@ -387,7 +423,7 @@
     if (mode === 'gear') {
       el.className = 'b-actions items gear';
       const owned = (s.owned.weapons || []).map((id) => D.weaponById[id]).filter(Boolean);
-      const row = (w, on, why, ic, sub) => `<button class="btn ghost ${on ? 'on' : ''}" type="button" data-b="swap:${w.slot}/${w.id}" ${on ? 'aria-pressed="true"' : ''} ${WB.UI.off(why)} aria-label="${WB.esc(w.name)}">${ic}<span class="bt"><span>${WB.esc(clip(w.name, 18))}</span><small>${on ? 'In hand' : WB.esc(sub)}</small></span></button>`;
+      const row = (w, on, why, ic, sub) => `<button class="btn ghost ${on ? 'on' : ''}" type="button" data-b="swap:${w.slot}/${w.id}" ${on ? 'aria-pressed="true"' : ''} ${WB.UI.off(why)} aria-label="${WB.esc(w.name)}">${ic}<span class="bt"><span>${WB.esc(clip(w.name, 18))}</span><small>${on ? 'In hand' : WB.esc(sub)} · ${Math.round(G.cond(w.id))}%</small></span></button>`;   // condition shows on every piece of gear
       const melee = owned.filter((w) => w.slot === 'melee').map((w) => row(w, st.melee.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Strike'));
       const rng = owned.filter((w) => w.slot === 'ranged').map((w) => { const cd = st.weapon.id === w.id ? st.cooldown : st.cds[w.id] || 0; return row(w, st.weapon.id === w.id, '', `<canvas width="24" height="24" class="wp-ic" data-wid="${w.id}"></canvas>`, (VERB[w.type] || 'Throw') + (cd > 0 ? ' · in ' + cd : '')); });
       const shd = owned.filter((w) => w.slot === 'shield').map((w) => row(w, !!st.shield && st.shield.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Block ' + Math.round(w.block * 100) + '%'));
@@ -396,9 +432,9 @@
       const turnUsed = st.magicTurn === st.turn;
       const mag = st.magic.map((id) => {
         const m = D.magicById[id], used = st.mused[id];
-        const why = used ? m.name + ' was already used this battle.' : turnUsed ? 'You’ve used a magic item this turn. Try again next turn.' : m.fx.type === 'special' && !st.special.unlocked ? 'Your special attack unlocks at level ' + D.SPECIAL_LEVEL + '.' : '';
+        const why = !G.uses(id) && !used ? 'No ' + m.name + ' left. Restock it in the Shop.' : used ? m.name + ' was already used this battle.' : turnUsed ? 'You’ve used a magic item this turn. Try again next turn.' : m.fx.type === 'special' && !st.special.unlocked ? 'Your special attack unlocks at level ' + D.SPECIAL_LEVEL + '.' : '';
         if (id === 'clover' && !used) return `<button class="btn ghost" type="button" data-b="magic:clover/twice" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 24, 'b-ic')}<span class="bt"><span>Clover: strike twice</span><small>Next 2 attacks hit twice</small></span></button><button class="btn ghost" type="button" data-b="magic:clover/dodge" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 24, 'b-ic')}<span class="bt"><span>Clover: dodge</span><small>Dodge the next 2 attacks</small></span></button>`;
-        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 24, 'b-ic')}<span class="bt"><span>${WB.esc(clip(m.name, 18))}</span><small>${used ? 'Used' : WB.esc(m.tag)}</small></span></button>`;
+        return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 24, 'b-ic')}<span class="bt"><span>${WB.esc(clip(m.name, 18))}</span><small>${used ? 'Used · ' + G.uses(id) + ' left' : WB.esc(m.tag) + ' · ' + G.uses(id) + ' left'}</small></span></button>`;
       });
       el.innerHTML = sec('Ranged · Throw / Shoot / Cast', rng) + sec('Battle magic · instant, once per battle', mag) + sec('Melee · Strike', melee) + sec('Shield · Defend', shd) + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
       el.querySelectorAll('canvas[data-wid]').forEach((c) => WB.UI.paintWeapon(c, c.dataset.wid));
@@ -554,10 +590,39 @@
     if (ev.backlash) { bolt('enemy', 'hero', '#c58bff'); await sleep(260); floater('Reversed!', 'enemy', 'tag'); hurtHero(ev.backlash); await sleep(300); }
   }
 
+  // pets' pixel projectiles (flying right): each char is one pixel, '.' is empty
+  const PET_PROJ = {
+    feather: { px: ['......w.', '..gggww.', 'gggggwww', '..gggww.'], c: { g: '#9aa3b5', w: '#f2f4ff' }, sfx: 'bow_release' },
+    spit: { px: ['.gg..', 'gGGg.', 'gGGgg', '.gg..'], c: { g: '#4fbf4a', G: '#b6ff7a' }, arc: true, sfx: 'poison_leaf' },
+    ember: { px: ['..y...', '.yoo..', 'yooOr.', '.yoo..', '..y...'], c: { o: '#ff9a3d', y: '#ffe27a', O: '#fff3c4', r: '#e0482c' }, wob: true, sfx: 'fireball' },
+    stone: { px: ['.sss.', 'sSSss', 'sSsss', 'sssdd', '.ddd.'], c: { s: '#8c8a96', S: '#c4c2cc', d: '#55535e' }, arc: true, sfx: 'projectile_1' },
+    orb: { px: ['.ppp.', 'pPwPp', 'pwwwp', 'pPwPp', '.ppp.'], c: { p: '#8f72ff', P: '#c7b8ff', w: '#ffffff' }, wob: true, sfx: 'spell_cast' },
+    spark: { px: ['....y.', '...yy.', '.yyyy.', '.yy...', '.y....'], c: { y: '#ffe600' }, sfx: 'spark' },
+    water: { px: ['..bbb.', '.bBBbb', 'bBwwBb', '.bbbb.'], c: { b: '#3fa3e8', B: '#8fdcff', w: '#ffffff' }, arc: true, sfx: 'spell_frost' },
+  };
   async function play(ev) {
-    const st = WB.Battle.st, g = view.world.ground, hs = sprites.hero, es = sprites.enemy, ps = sprites.pet;
+    const st = WB.Battle.st, g = view.world.ground, hs = sprites.hero, ps = sprites.pet;
+    const back = ev.mob !== undefined && sprites.foes && sprites.foes[ev.mob] && !sprites.foes[ev.mob].gone ? sprites.foes[ev.mob] : null;   // a mob member waiting behind
+    const es = back || sprites.enemy;
     log(ev.text || '');
-    if (ev.who === 'pet') {   // an attacking pet darts in
+    if (ev.who === 'pet') {
+      const py = Math.round(((view.petTop || g - 20) + g) / 2);
+      if (ev.type === 'petShot') {   // a shooter fires a pixel projectile
+        const P = PET_PROJ[ev.proj] || PET_PROJ.orb, dur = P.arc ? 0.5 : 0.36;
+        if (ps) ps.flash = 0.15;
+        WB.Sfx.play(P.sfx); fx.push({ type: 'pixproj', p: P, x0: view.px + 6, y0: py, x1: view.ex - 8, y1: eY(), t: 0, dur });
+        await sleep(dur * 1000 + 20);
+        burst(view.ex - 4, eY(), P.c[Object.keys(P.c)[0]], 6);
+        if (ev.dmg) hurtEnemy(ev.dmg, false, P.c[Object.keys(P.c)[0]]); else floater('Miss', 'enemy', 'miss');
+        await sleep(300); return;
+      }
+      if (ev.type === 'petHeal') {   // a healer: green sparkles rise from your walker
+        if (ps) ps.flash = 0.3;
+        WB.Sfx.play('potion'); fx.push({ type: 'ring', x: view.px, y: py, color: '#6ee7a0', t: 0 });
+        for (let i = 0; i < 10; i++) fx.push({ type: 'spark', x: view.hx - 10 + Math.random() * 20, y: hY() + 10 - Math.random() * 20, vx: 0, vy: -28 - Math.random() * 20, life: 0.8, t: -i * 0.04, color: i % 2 ? '#6ee7a0' : '#c9ffd9', size: 2 });
+        await sleep(260); healHero(ev.heal); await sleep(420); return;
+      }
+      // an attacker darts in
       if (ps) { ps.lunge = 1; }
       WB.Sfx.play('hit_dagger'); await sleep(240);
       if (ev.dmg) hurtEnemy(ev.dmg, false, '#ffb347'); else floater('Miss', 'enemy', 'miss');
@@ -712,6 +777,7 @@
         if (ev.dodged) { floater('Dodged!', 'hero', 'miss'); hs.anim = 'walk'; hs.once = true; hs.f = 0; }
         else if (ev.clone) { floater('Hit the copy!', 'hero', 'tag'); fx.push({ type: 'ring', x: view.hx - 22, y: hY(), color: '#c7b8ff', t: 0 }); }
         else hurtHero(ev.dmg, ev.type === 'special');
+        if (ev.petGuard && ps) { floater('Guarded!', 'pet', 'tag'); fx.push({ type: 'ring', x: view.px, y: g - 14, color: '#59e3ff', t: 0 }); WB.Sfx.play('shield_block'); }
         if (ev.pet && ps) { ps.flash = 0.5; shown.pet -= ev.pet; floater(hpText(-ev.pet), 'pet', 'dmg'); if (ev.petKO) setTimeout(() => floater('KO', 'pet', 'tag'), 250); plates(); }
         if (ev.reversed) { await sleep(200); bolt('hero', 'enemy', '#59e3ff'); await sleep(260); floater('Reversed!', 'hero', 'tag'); hurtEnemy(ev.reversed, false, '#59e3ff'); }
         if (ev.countered) { await sleep(200); bolt('hero', 'enemy', '#ff9a3d'); await sleep(260); hurtEnemy(ev.countered, false, '#ff9a3d'); }
@@ -748,6 +814,12 @@
         plates(); await sleep(700);
       }
       else if (ev.type === 'druidRun') { WB.Bgm.stop(600); es.anim = 'flee'; es.once = false; es.f = 0; es.run = true; WB.Sfx.play('wind_blade'); floater('Flees!', 'enemy', 'tag'); await sleep(1100); }
+      else if (ev.type === 'mobNext') {   // the next creature in the mob steps up to the front
+        const nf = st.foes[ev.mob], sp = sprites.foes[ev.mob]; sp.gone = true;
+        Object.assign(sprites.enemy, { id: nf.id, anim: 'idle', f: 0, once: false, fade: 1, adv: 0, advTo: 0, enter: 0.6, flash: 0, run: false, runX: 0 });
+        shown.enemy = disp.enemy = ghost.enemy = nf.hp; floater('Next!', 'enemy', 'tag'); plates(); await sleep(700);
+      }
+      else if (ev.type === 'die' && ev.mobFall) { es.anim = 'death'; es.once = true; es.f = 0; es.flash = 0; WB.Sfx.play('hit'); flash(); await sleep(1000); }
       else if (ev.type === 'die') { es.anim = 'death'; es.once = true; es.f = 0; es.flash = 0; WB.Sfx.play('hit'); flash(); WB.Bgm.stop(350); await sleep(1100); WB.Sfx.play('victory'); await sleep(500); }
     }
   }
@@ -763,12 +835,12 @@
     const petNote = st.pet && st.pet.hp <= 0 ? ` ${WB.esc(st.pet.name)} was knocked out and is resting. It recovers over time.` : '';
     if (enc.nemesis) {
       const bd = D.BOSSES[enc.creature];
-      if (res.result === 'win') { title = 'Boss defeated!'; body = `<p>${WB.esc(c.name)} is beaten.${res.newKind ? ' First time: +250 bonus coins.' : ''}${res.egg ? ' It dropped a ' + D.eggById[res.egg].name + ': it’s in your nest.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`; }
+      if (res.result === 'win') { title = 'Boss defeated!'; body = `<p>${WB.esc(c.name)} is beaten.${res.newKind ? ' First time: +250 bonus coins.' : ''}${res.egg ? ' It dropped a ' + D.eggById[res.egg].name + ': it’s in your nest.' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.eggArt || res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`; }
       else if (res.result === 'lose') { title = 'Defeated by a boss'; body = `<p>${WB.esc(c.name)} knocks you back ${res.levelsLost} level${res.levelsLost === 1 ? '' : 's'}: you’re level ${S().level} now (was ${res.levelFrom}). Your worlds, weapons and items are safe, and levels you win back don’t pay level-up coins twice.${petNote}</p><div class="outcome"><span class="reward-pill lost">−${res.levelsLost} levels</span></div>`; }
       else { title = 'You got away'; body = `<p>You escaped ${WB.esc(c.name)}. ${bd ? '' : ''}It still roams the roads.${petNote}</p>`; }
     } else if (res.result === 'win') {
-      title = res.boss ? 'Guardian defeated!' : enc.creature === 'druid' ? 'The Druid flees' : 'Victory!';
-      body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${res.egg ? ' You got a ' + D.eggById[res.egg].name + ' (Missions → Merlin).' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`;
+      title = res.boss ? 'Guardian defeated!' : res.rematch ? 'Rematch won!' : enc.creature === 'druid' ? 'The Druid flees' : res.mob ? 'Mob defeated!' : 'Victory!';
+      body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : res.rematch ? WB.esc(c.name) + ' falls again. Rematches pay half.' : res.mob ? 'All ' + res.mob + ' creatures are beaten.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${res.egg ? ' You got a ' + D.eggById[res.egg].name + ' (Missions → Merlin).' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.eggArt || res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`;
     } else if (res.result === 'lose') {
       title = 'Knocked down';
       body = `<p>${res.lostCoins ? 'You dropped ' + WB.fmt(res.lostCoins) + ' coins as you fell. ' : ''}HP refills in ${WB.UI.dur(WB.Game.minsToFull())}, or drink a potion.${enc.boss ? ' The guardian waits on the world map.' : ''}${petNote}</p>${res.lostCoins || res.lostEggs ? `<div class="outcome">${res.lostCoins ? `<span class="reward-pill lost">${WB.icon('coin', 2)}-${WB.fmt(res.lostCoins)}</span>` : ''}</div>` : ''}`;
@@ -780,6 +852,9 @@
       title = 'You got away';
       body = `<p>No harm done.${enc.boss ? ' Challenge the guardian again from the world map.' : ''}${petNote}</p>`;
     }
+    // gear notes: charms that ran out, gear that needs a repair
+    const gearNote = [res.charmsOut && res.charmsOut.length ? WB.esc(res.charmsOut.join(', ')) + (res.charmsOut.length > 1 ? ' are' : ' is') + ' used up.' : '', res.worn && res.worn.length ? WB.esc(res.worn.join(', ')) + ' need' + (res.worn.length > 1 ? '' : 's') + ' a repair.' : ''].filter(Boolean).join(' ');
+    if (gearNote) body += `<p class="b-gear">${WB.icon('sword', 1)} ${gearNote}</p>`;
     ban.className = 'b-banner ' + res.result;
     ban.innerHTML = `<h3>${title}</h3>${body}<button class="btn block ${res.result === 'win' ? 'gold' : ''}" type="button" id="b-done">Continue walking</button>`;
     ban.hidden = false;

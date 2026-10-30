@@ -4,7 +4,7 @@
 
   function boot() {
     WB.Save.load();
-    if (S().onboarded) { G.wk(); G.merlin(); G.gear(); }   // repair/upgrade older saves now, so any refund notice shows in the welcome lines
+    if (S().onboarded) { G.wk(); G.merlin(); G.gear(); G.stock(); }   // repair/upgrade older saves now, so any refund notice shows in the welcome lines
     if (!S().onboarded || !S().hints.tour) WB.Bgm.play('app');   // first open (or after a reset): the theme song starts on the loading screen and plays until the tutorial ends
     const welcome = G.welcomeLines();
     G.rollDay(); G.checkUnlocks(); G.primeAnnounced();

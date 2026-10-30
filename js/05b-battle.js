@@ -1,8 +1,9 @@
 /* Step Quest — turn-based battle rules (1v1, plus your pet). Pure logic: every action returns a list of
    events that the battle screen animates in order.
 
-   Your moves:  Strike (melee weapon, wears down a little with every hit) · Throw / Shoot / Cast (ranged weapon, recharges,
-                uses one shot from level 7) · Defend (shield). Battle magic spends one of its uses from level 7. A knocked-out pet rests.
+   Your moves:  Strike (melee weapon) · Throw / Shoot / Cast (ranged weapon, recharges) · Defend (shield). Weapons and
+                shields wear down with use and hit (or block) softer until repaired (05n-gear.js). Battle magic spends one
+                cast from its pack; charms spend one battle each fight. A knocked-out pet rests.
                 · Items (potions) · Special (from level 10, when its gauge is full) · Run away
    Specials:    Arcane Nova (mage: big hit + 3-turn stun) · Life Drain (healer: 3 turns of draining that heal
                 you, more when you're low) · Scavenger's Raid (big hit + steals a potion you can use right away)
@@ -29,16 +30,26 @@
       enc, world: w, turn: 1, over: false, result: null,
       hero: { hp: Math.max(1, s.hp), max: G.maxHp(), atk: D.heroAtk(s.level), def: D.heroDef(s.level), lvl: s.level, guard: 0, guardF: 0.5, fury: 0, furyMult: 1.5, defend: false, reflect: false, poison: 0, venom: 0, burn: 0, weak: 0, stun: 0,
         clone: 0, tome: 0, twice: 0, dodge: 0, guardPts: 100, defended: false },
-      pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0), atk: pdef.atk || 0, verb: pdef.atkVerb } : null,
+      pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0), atk: pdef.atk || 0, verb: pdef.atkVerb,
+        role: pdef.role || 'guard', heal: pdef.heal || 0, healVerb: pdef.healVerb || '', block: pdef.block || 0, proj: pdef.proj || null } : null,   // pet roles: D.PET_ROLES
       enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, rival: !!D.CREATURES[enc.creature].rival, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
         poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false, fled: 0,
         moves: D.CREATURE_MOVES[enc.creature] || D.CREATURE_MOVES.hyena },
       weapon: G.equipped('ranged') || D.WEAPONS[0], melee: G.equipped('melee') || D.weaponById.sw_rusty, brokenMelee: null, shield: G.equipped('shield'),
       cooldown: 0, cds: {},   // cds: the recharge left on ranged weapons you switched away from (switching never skips a recharge)
       special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
-      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id)).map((m) => m.id), magicEmpty: [], mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn; it never runs out
-      perks: new Set(G.charms().map((id) => D.magicById[id].perk)),   // worn charms
+      magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.uses(m.id) > 0).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn, and each cast spends one from its pack
+      perks: new Set(G.charms().map((id) => D.magicById[id].perk)), charmIds: G.charms(),   // worn charms (each spends one battle when the fight ends)
     };
+    // a mob: up to D.MOB_MAX creatures. You fight the one in front; the others wait their turn and attack from behind.
+    B.st.foes = [B.st.enemy];
+    for (const id of (enc.mob || []).slice(0, D.MOB_MAX - 1)) {
+      const c2 = D.creatureStats(id, D.worldTier(w, s.level));
+      B.st.foes.push({ ...B.st.enemy, id, sprite: id, name: D.CREATURES[id].name, boss: false, nemesis: false, rival: false, ability: null, said: {}, wardF: 0.3,
+        hp: Math.max(1, Math.round(c2.hp * D.MOB_HP)), max: Math.max(1, Math.round(c2.hp * D.MOB_HP)), atk: Math.max(1, Math.round(c2.atk * D.MOB_ATK)), lvl: c2.lvl,
+        moves: D.CREATURE_MOVES[id] || D.CREATURE_MOVES.hyena });
+    }
+    enc.mobN = B.st.foes.length;
     // initiative: some creatures strike before your opening move (never in your very first battle)
     const e0 = B.st.enemy, A = D.AMBUSH;
     B.st.ambush = s.enc.battles > 0 && (Math.random() < (e0.nemesis || e0.rival ? A.boss : e0.boss ? A.guardian : A.creature));
@@ -123,7 +134,8 @@
       if (!m || !st.magic.includes(id) || st.mused[id] || st.magicTurn === st.turn) return events;
       if (m.fx.type === 'special' && !(st.special && st.special.unlocked)) return events;
       st.mused[id] = true; st.magicTurn = st.turn;
-      const ev = { who: 'hero', type: 'magic', item: id }, fx = m.fx, nm = m.name + ': ';
+      const left = G.spendMagic(id);
+      const ev = { who: 'hero', type: 'magic', item: id, left }, fx = m.fx, nm = m.name + ': ';
       const healBy = (frac) => { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * frac)); ev.heal = (ev.heal || 0) + h.hp - b0; return h.hp - b0; };
       switch (fx.type) {
         case 'ring': h.clone = 3; ev.text = nm + 'a copy of you shimmers into the fight for 3 turns. The creature will strike the copy.'; break;
@@ -159,6 +171,7 @@
         }
         case 'drain': { strikeEnemy(st, Math.max(1, Math.round(e.max * fx.power)), ev, true); healBy(ev.dmg / h.max); ev.text = nm + 'drains ' + ev.dmg + ' and heals you ' + ev.heal + '.'; break; }
       }
+      ev.text = (ev.text || '') + (left ? '' : ' That was your last ' + m.name + '.');
       events.push(ev);
       if (e.hp <= 0) return win(st, events);
       return finish(events);
@@ -173,7 +186,7 @@
       const magicMult = (h.tome > 0 && m.type === 'staff' ? 1 + D.BOOK_BONUS : 1);
       let extra = '';
       for (let i = 0; i < n && e.hp > 0; i++) {
-        let base = h.atk * m.power * mult * magicMult;
+        let base = h.atk * m.power * G.wearF(m.id) * mult * magicMult;
         if (m.effect === 'first' && st.turn === 1) base *= 1.5;
         if (m.effect === 'execute' && e.hp < e.max * 0.3) base *= 2;
         const crit = Math.random() < 0.12 + (m.effect === 'crit' ? m.chance : 0) + (P.has('crit') ? 0.08 : 0);
@@ -182,6 +195,7 @@
         strikeEnemy(st, hit(base), ev, !!m.pierce || (P.has('pierce') && Math.random() < 0.3));
         ev.hits.push({ dmg: ev.dmg - before, crit });
       }
+      wearOut(st, m, 'strike', ev);
       if (STATUS.includes(m.effect) && e.hp > 0 && Math.random() < m.chance) extra = inflict(st, m.effect);
       let heal = 0;
       if (m.effect === 'lifesteal') heal = Math.round(ev.dmg * m.chance);
@@ -193,6 +207,7 @@
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = m.name + ' passes straight through ' + e.name + '’s shadow!';
       echo(st, ev);
+      if (ev.worn) ev.text += ' ' + ev.worn;
       events.push(ev);
       chargeSpecial(st, 'strike');
     } else if (move === 'throw') {
@@ -203,7 +218,7 @@
       const magicMult = h.tome > 0 && wpn.type === 'spell' ? 1 + D.BOOK_BONUS : 1;
       const pierce = !!wpn.pierce || wpn.effect === 'pierce';
       for (let i = 0; i < n && e.hp > 0; i++) {
-        let base = h.atk * wpn.power * mult * magicMult;
+        let base = h.atk * wpn.power * G.wearF(wpn.id) * mult * magicMult;
         const crit = (wpn.effect === 'crit' && Math.random() < (wpn.chance || 0.4)) || (P.has('crit') && Math.random() < 0.08);
         if (crit) base *= 2 + (P.has('critdmg') ? 0.5 : 0);
         const before = ev.dmg || 0;
@@ -211,6 +226,7 @@
         ev.hits.push({ dmg: ev.dmg - before, crit });
       }
       let extra = '';
+      wearOut(st, wpn, 'throw', ev);
       if (STATUS.includes(wpn.effect) && e.hp > 0 && Math.random() < (wpn.effect === 'freeze' ? wpn.chance || 0.5 : 1)) extra = inflict(st, wpn.effect);
       if (wpn.effect === 'drain') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(ev.dmg / 2)); ev.heal = h.hp - b0; if (ev.heal) extra += ' You recover ' + ev.heal + ' HP.'; }
       const verb = wpn.type === 'bow' ? ' flies true' : wpn.type === 'spell' ? ' strikes' : ' hits';
@@ -219,6 +235,7 @@
       if (ev.phased && !ev.dmg) ev.text = wpn.name + ' passes straight through ' + e.name + '’s shadow!';
       st.cooldown = P.has('cooldown') ? Math.max(1, wpn.cd) : wpn.cd + 1;   // the Circlet of Focus: one turn faster
       echo(st, ev);
+      if (ev.worn) ev.text += ' ' + ev.worn;
       events.push(ev);
       chargeSpecial(st, 'throw');
     } else if (move === 'special') {
@@ -248,8 +265,10 @@
       h.defend = true;
       const sh = st.shield, b0 = h.hp;
       h.hp = Math.min(h.max, h.hp + Math.round(h.max * (sh && sh.regen ? sh.regen : 0.06)));
-      const heal = h.hp - b0;
-      events.push({ who: 'hero', type: 'defend', heal, text: (sh ? (sh.belt ? 'You cinch the ' + sh.name + ' tight.' : 'You raise the ' + sh.name + '.') : 'You brace yourself.') + (heal ? ' +' + heal + ' HP.' : '') });
+      const heal = h.hp - b0, dev = { who: 'hero', type: 'defend', heal };
+      if (sh) wearOut(st, sh, 'defend', dev);
+      dev.text = (sh ? (sh.belt ? 'You cinch the ' + sh.name + ' tight.' : 'You raise the ' + sh.name + '.') : 'You brace yourself.') + (heal ? ' +' + heal + ' HP.' : '') + (dev.worn ? ' ' + dev.worn : '');
+      events.push(dev);
     } else if (move === 'potion') {
       const onPet = /\/pet$/.test(arg || ''); if (onPet) arg = arg.slice(0, -4);
       const p = D.POTIONS.find((x) => x.id === arg), s = WB.state;
@@ -275,12 +294,17 @@
       if (ok) { st.over = true; st.result = 'fled'; if (e.nemesis || e.rival) say(st, events, 'victory'); return finish(events); }
     } else return events;
 
-    // an attacking pet joins in after your move
+    // your pet acts after your move: attackers dart in, shooters fire, healers heal you (guardians act when you're hit)
     const pet = st.pet;
-    if (pet && pet.atk && pet.hp > 0 && e.hp > 0 && ['strike', 'throw', 'special', 'defend', 'potion'].includes(move)) {
-      const ev = { who: 'pet', type: 'petAttack' }; strikeEnemy(st, hit(h.atk * pet.atk), ev, false);
-      ev.text = pet.name + ' ' + pet.verb.toLowerCase() + ' ' + e.name + (ev.dmg ? ' for ' + ev.dmg + '.' : ', but misses.');
-      events.push(ev);
+    if (pet && pet.hp > 0 && e.hp > 0 && ['strike', 'throw', 'special', 'defend', 'potion'].includes(move)) {
+      if ((pet.role === 'attack' || pet.role === 'shoot') && pet.atk) {
+        const ev = { who: 'pet', type: pet.role === 'shoot' ? 'petShot' : 'petAttack', proj: pet.proj }; strikeEnemy(st, hit(h.atk * pet.atk), ev, pet.role === 'shoot' && pet.proj === 'orb');   // magic orbs pierce guards
+        ev.text = pet.name + ' ' + pet.verb.toLowerCase() + ' ' + e.name + (ev.dmg ? ' for ' + ev.dmg + '.' : ', but misses.');
+        events.push(ev);
+      } else if (pet.role === 'heal' && h.hp > 0 && h.hp < h.max) {
+        const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.max(1, Math.round(h.max * pet.heal)));
+        events.push({ who: 'pet', type: 'petHeal', heal: h.hp - b0, text: pet.name + ' ' + pet.healVerb + ': +' + (h.hp - b0) + ' HP.' });
+      }
     }
     if (e.hp <= 0) return win(st, events);
     if (h.hp <= 0) return lose(st, events);       // a ward can bounce enough back to knock you down
@@ -311,7 +335,7 @@
       e.fled++;   // badly hurt: it tries to run (never in your very first battle)
       const ok = Math.random() < 0.6;
       events.push({ who: 'enemy', type: 'eflee', ok, text: ok ? e.name + ' turns tail and runs away!' : e.name + ' tries to run, but you cut it off!' });
-      if (ok) { st.over = true; st.result = 'escaped'; return finish(events); }
+      if (ok) { if (nextFoe(st, events)) return endRound(st, events); st.over = true; st.result = 'escaped'; return finish(events); }
     }
     else if (st.turn % every === every - 1) { e.charging = true; events.push({ who: 'enemy', type: 'charge', text: e.name + ' is gathering power for ' + mv.special[0] + '. Defend!' }); }
     else {
@@ -326,6 +350,7 @@
       else if (r > (e.nemesis ? 0.97 : 0.94)) events.push({ who: 'enemy', type: 'miss', text: e.name + ' attacks and misses.' });
       else events.push(enemyHit(st, 1, 'attack'));
     }
+    if (h.hp > 0) backline(st, events);        // the rest of a mob joins in
     if (e.hp <= 0) return win(st, events);     // reversed or countered to death
 
     // ---- end of round
@@ -406,9 +431,10 @@
     if (h.clone > 0) { ev.dmg = 0; ev.clone = true; ev.text = lead0 + ' It hits your copy instead. The copy flickers but holds.'; return ev; }
     if (e.ability === 'reaper' && h.hp < h.max * 0.35) { power *= 1.4; ev.reap = true; }
     let dmg = e.atk * power * (e.weaken > 0 ? 0.6 : 1) - h.def * 0.5;
-    if (sh) dmg *= 1 - sh.armor;
+    const shF = sh ? G.wearF(sh.id) : 1;   // a worn shield softens and blocks less
+    if (sh) { dmg *= 1 - sh.armor * shF; G.wear(sh.id, 'block'); }
     if (h.defend) {
-      const before = dmg; dmg *= 1 - (sh ? sh.block : 0.6) * (quake ? 0.5 : 1); ev.blocked = true;
+      const before = dmg; dmg *= 1 - (sh ? sh.block * shF : 0.6) * (quake ? 0.5 : 1); ev.blocked = true;
       if (sh && sh.reflect) { const back = Math.max(1, Math.round((before - dmg) * sh.reflect)); e.hp = Math.max(0, e.hp - back); ev.reversed = back; }
       if (sh && sh.counter) { const c = hit(h.atk * sh.counter); e.hp = Math.max(0, e.hp - c); ev.countered = c; }
     }
@@ -419,7 +445,9 @@
     dmg = hit(Math.max(1, dmg));
     if (h.reflect) { const back = Math.round(dmg / 2); dmg -= back; e.hp = Math.max(0, e.hp - back); h.reflect = false; ev.mirrored = back; }
     if (pet && pet.hp > 0 && dmg > 1) {
-      const take = Math.min(pet.hp, Math.round(dmg * pet.share));
+      const guard = pet.role === 'guard' && Math.random() < pet.block;   // a guardian jumps in front and takes most of the hit
+      if (guard) ev.petGuard = true;
+      const take = Math.min(pet.hp, Math.round(dmg * (guard ? Math.max(0.7, pet.share) : pet.share)));
       if (take > 0) { pet.hp -= take; dmg -= take; ev.pet = take; if (pet.hp <= 0) { ev.petKO = true; pet.fell = true; } }
     }
     h.hp = Math.max(0, h.hp - dmg);
@@ -432,12 +460,45 @@
       : ev.blocked ? ' ' + (sh ? 'Your ' + sh.name + ' blocks' : 'You block') + ' most of it: you take ' + dmg + ' damage.'
       : ' You take ' + dmg + ' damage.';
     ev.text = lead + took +
-      (ev.pet ? ' ' + pet.name + ' takes ' + ev.pet + (ev.petKO ? ' and is knocked out!' : '.') : '') +
+      (ev.pet ? ' ' + pet.name + (ev.petGuard ? ' jumps in front and takes ' : ' takes ') + ev.pet + (ev.petKO ? ' and is knocked out!' : '.') : '') +
       (ev.reversed ? ' Your ' + (sh && sh.belt ? 'belt' : 'shield') + ' reverses ' + ev.reversed + ' back at it!' : '') + (ev.countered ? ' Spikes hit back for ' + ev.countered + '.' : '') +
       (ev.mirrored ? ' The mirror throws back ' + ev.mirrored + '.' : '') + (ev.reap ? ' He smells weakness: +40% damage.' : '') + (ev.soul ? ' Soul Gem: halved.' : '') + (ev.thorns ? ' Thorns hit back for ' + ev.thorns + '.' : '');
     return ev;
   }
+  // the creatures behind the front one: each may attack (plain attacks only)
+  function backline(st, events) {
+    const front = st.enemy;
+    st.foes.forEach((f, i) => {
+      if (f === front || f.hp <= 0 || st.hero.hp <= 0 || Math.random() > D.MOB_ACT) return;
+      st.enemy = f;
+      const ev = enemyHit(st, 1, 'attack'); ev.mob = i; events.push(ev);
+      st.enemy = front;
+      if (f.hp <= 0) events.push({ who: 'enemy', type: 'die', mob: i, mobFall: true, text: f.name + ' is defeated!' });   // thorns or a mirror
+    });
+  }
+  // the front creature is down (or ran): the next one in the mob steps up. Returns false when none are left.
+  function nextFoe(st, events) {
+    const next = (st.foes || []).find((f) => f !== st.enemy && f.hp > 0);
+    if (!next) return false;
+    st.enemy = next; st.felled = (st.felled || 0) + 1;
+    events.push({ who: 'enemy', type: 'mobNext', mob: st.foes.indexOf(next), text: next.name + ' steps up!' });
+    return true;
+  }
+  // a short end of round after a mob member falls (your recharge and the turn count still move on)
+  function endRound(st, events) {
+    const h = st.hero;
+    h.defend = false; h.defended = false;
+    if (st.cooldown > 0) st.cooldown--;
+    for (const k of Object.keys(st.cds)) if (st.cds[k] > 0) st.cds[k]--;
+    st.turn++;
+    return finish(events);
+  }
   function win(st, events) {
+    if ((st.foes || []).some((f) => f !== st.enemy && f.hp > 0)) {   // a mob: one down, more to go
+      events.push({ who: 'enemy', type: 'die', mobFall: true, mob: st.foes.indexOf(st.enemy), text: st.enemy.name + ' is defeated!' });
+      nextFoe(st, events);
+      return endRound(st, events);
+    }
     st.over = true; st.result = 'win';
     if (st.enemy.nemesis || st.enemy.rival) say(st, events, 'defeat', 1);
     events.push({ who: 'enemy', type: 'die', text: st.enemy.name + ' is defeated!' });
@@ -490,6 +551,13 @@
     if (ev.armored) return ' Iron plating absorbs some of it.';
     return '';
   }
+  // gear wears a little with every use; the log says so once when it gets badly worn (05n-gear.js)
+  function wearOut(st, w, kind, ev) {
+    if (!w || !w.id) return;
+    const before = G.cond(w.id), after = G.wear(w.id, kind);
+    if (before >= D.WORN_AT && after < D.WORN_AT) { ev.worn = 'Your ' + w.name + ' is badly worn. Repair it in Inventory.'; if (ev.text !== undefined) ev.text += ' ' + ev.worn; }
+    st.wore = true;
+  }
   function finish(events) {
     if (B.st.over) B.active = false;
     return events;
@@ -498,6 +566,9 @@
     const st = B.st;
     B.active = false;
     if (st.pet) WB.Game.setPetHp(st.pet.id, st.pet.hp);   // a knocked-out pet rests and recovers over time
-    return WB.Game.battleResult(st);
+    const charmsOut = st.charmIds && st.charmIds.length ? WB.Game.spendCharms(st.charmIds) : [];   // every charm worn spends one battle
+    const res = WB.Game.battleResult(st);
+    res.charmsOut = charmsOut; res.worn = WB.Game.wornEquipped().map((w) => w.name);
+    return res;
   };
 })();

@@ -417,7 +417,7 @@
     const face = root.querySelector('canvas');
     if (enc.creature) WB.paintThumb(face, { kind: 'cr', id: enc.creature, face: 'left' });
     else if (enc.npc) WB.paintThumb(face, { kind: 'npc', id: enc.npc, face: 'left' });
-    else if (enc.egg) WB.Assets.load('egg/' + enc.egg + '.png').then((im) => { if (!im || !im._ok) return; const c = face.getContext('2d'); c.imageSmoothingEnabled = false; c.clearRect(0, 0, 64, 64); c.drawImage(im, 0, 0, 32, 32, 0, 0, 64, 64); });
+    else if (enc.egg) WB.Assets.load('egg/' + D.eggArt(enc.egg, enc.eggV) + '.png').then((im) => { if (!im || !im._ok) return; const c = face.getContext('2d'), fs = im.height; c.imageSmoothingEnabled = fs > 64; c.clearRect(0, 0, 64, 64); c.drawImage(im, 0, 0, fs, fs, 0, 0, 64, 64); });
     else { const c = face.getContext('2d'); c.imageSmoothingEnabled = false; const ic = WB.iconCanvas(enc.type === 'chest' ? 'chest' : 'spark'); const sc = Math.floor(48 / ic.width); c.drawImage(ic, (64 - ic.width * sc) / 2, (64 - ic.height * sc) / 2, ic.width * sc, ic.height * sc); }
     root.querySelectorAll('[data-choice]').forEach((b) => b.onclick = () => UI.resolve(enc, b.dataset.choice, root, where));
     const first = root.querySelector('[data-choice]'); if (first && where === 'stage') first.focus({ preventScroll: true });
@@ -442,7 +442,7 @@
       let dy = 0;
       out.granted.forEach((g) => { if (g.k === 'coins' || g.k === 'xp') { setTimeout(() => UI.floater(g.k === 'coins' ? WB.icon('coin', 2) + '+' + g.v : '+' + g.v + ' XP', pos.x, pos.y - dy, g.k === 'xp' ? 'xp big' : 'big'), 350 + dy * 4); dy += 26; } });
     }
-    const extra = out.newKind ? `<span class="reward-pill thing">New creature logged</span>` : out.find ? `<span class="reward-pill thing">${WB.pxImg('art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 20)}${D.FINDS[out.find.world][out.find.i][1]}</span>` : out.quest ? `<span class="reward-pill thing">New delivery mission</span>` : out.egg ? `<span class="reward-pill thing">${WB.eggImg(out.egg, 20)}${D.eggById[out.egg].name} · nest ${G.nest().length} / ${D.NEST_MAX}</span>` : '';
+    const extra = out.newKind ? `<span class="reward-pill thing">New creature logged</span>` : out.find ? `<span class="reward-pill thing">${WB.pxImg('art/' + D.FINDS[out.find.world][out.find.i][0] + '.png', 20)}${D.FINDS[out.find.world][out.find.i][1]}</span>` : out.quest ? `<span class="reward-pill thing">New delivery mission</span>` : out.egg ? `<span class="reward-pill thing">${WB.eggImg(out.eggArt || out.egg, 20)}${D.eggById[out.egg].name} · nest ${G.nest().length} / ${D.NEST_MAX}</span>` : '';
     const holder = where === 'stage' ? root : $('#encounter-sheet');
     holder.innerHTML = `<canvas width="64" height="64"></canvas><div class="etext"><div class="etitle">${out.anim === 'leave' ? 'Moving on' : out.egg ? (enc.type === 'merlin' ? 'An egg from Merlin' : 'Egg found') : out.find ? 'Artifact found' : enc.type === 'chest' ? 'Crate opened' : encTitle(enc)}</div><p>${WB.esc(out.text)}</p></div><div class="outcome">${pills(out.granted)}${extra}<button class="linkbtn push" type="button" data-close-enc>Continue</button></div>${discovery ? '<button class="enc-x" type="button" data-close-enc aria-label="Close">×</button>' : ''}`;
     const face = holder.querySelector('canvas');
@@ -719,7 +719,7 @@
     ['weapons', 'Weapons', 'sword', 'Melee powers Strike; defense powers Defend.'],
     ['ranged', 'Ranged & Magic', 'img:mg/book.png', 'Ranged weapons, battle magic and charms. Yours forever.'],
     ['potions', 'Potions / Food', 'img:pot/tonic.png', 'Single use. Carry up to ' + D.POTION_MAX + ' of each.'],
-    ['pets', 'Pets', 'paw', 'Pets absorb some damage in battle.'],
+    ['pets', 'Pets', 'paw', 'Attackers, shooters, healers and guardians.'],
   ];
   const BAG_TABS = [
     ['worldkey', 'Worldkey', 'key', () => !G.featOn('wk') ? 'Your guide between worlds.' : 'Tune, charge, then open a world.'],
@@ -752,13 +752,17 @@
 
   // a Shop card: buy it (or see it in your inventory)
   function itemCard(cat, it, opts = {}) {
-    const own = G.owns(cat, it.id), st = own ? null : G.reqStatus(it.req);
+    const own = G.owns(cat, it.id), st = own ? null : G.reqStatus(it.req), magic = cat === 'magic';
     let foot = '', tag = '';
-    if (own) {
+    if (own && magic) {   // magic runs out: restock it with another pack
+      const left = G.uses(it.id), full = !G.canRestock(it.id);
+      tag = `<span class="tag ${left ? '' : 'lock'}">${left ? G.usesLabel(it.id) : 'Used up'}</span>`;
+      foot = priceTag(it.req.cost) + `<button class="btn gold sm block" type="button" data-buy="magic:${it.id}" ${off(full ? 'Full: hold up to ' + G.usesMax(it.id) + '.' : shortWhy(it.req.cost, it.name))}>${full ? 'Full' : 'Restock +' + G.packSize(it.id)}</button>`;
+    } else if (own) {
       tag = '<span class="tag">Owned</span>';
       foot = `<button class="btn ghost sm block" type="button" data-hubgo="bag:${bagSub(cat, it)}">In inventory</button>`;
     } else if (st.buy) {
-      foot = priceTag(it.req.cost) + `<button class="btn gold sm block" type="button" data-buy="${cat}:${it.id}" ${off(shortWhy(it.req.cost, it.name))}>Buy</button>`;
+      foot = priceTag(it.req.cost) + `<button class="btn gold sm block" type="button" data-buy="${cat}:${it.id}" ${off(shortWhy(it.req.cost, it.name))}>${magic ? 'Buy ' + G.packSize(it.id) + (it.kind === 'battle' ? ' casts' : ' battles') : 'Buy'}</button>`;
     }
     const locked = !own && !(st && st.buy);
     if (locked) tag = `<span class="tag lock">${WB.icon('lock', 1)}Locked</span>`;
@@ -772,18 +776,29 @@
   // a Bag card: something you own: equip it (charms are worn; battle magic is simply carried)
   function bagCard(cat, it, opts = {}) {
     const eq = G.isEquipped(cat, it.id), canOff = cat === 'pet' || cat === 'magic' || (cat === 'weapon' && it.slot === 'shield');
-    const battleMagic = cat === 'magic' && it.kind === 'battle';
-    const btn = battleMagic ? `<button class="btn ghost sm" type="button" ${off(it.name + ' is cast from Gear & Magic in battle, once per battle.')}>Ready</button>`
+    const battleMagic = cat === 'magic' && it.kind === 'battle', left = cat === 'magic' ? G.uses(it.id) : null, empty = left === 0;
+    const restock = `<button class="btn gold sm" type="button" data-buy="magic:${it.id}" ${off(!G.canRestock(it.id) ? 'Full: hold up to ' + G.usesMax(it.id) + '.' : shortWhy(it.req.cost, it.name))}>Restock · ${WB.fmt(it.req.cost)}</button>`;
+    const btn = empty ? restock
+      : battleMagic ? `<button class="btn ghost sm" type="button" ${off('Cast it in battle from Gear & Magic.')}>Ready</button>`
       : eq ? (canOff ? `<button class="btn ghost sm" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat === 'magic' ? 'magic:' + it.id : cat}">${cat === 'magic' ? 'Take off' : 'Unequip'}</button>` : `<button class="btn ghost sm" type="button" ${off('Already equipped.')}>Equipped</button>`)
       : `<button class="btn sm" type="button" data-equip="${cat}:${it.id}">${cat === 'magic' ? 'Wear' : cat === 'avatar' ? 'Use' : 'Equip'}</button>`;
     const tag = eq ? `<span class="tag eq">${cat === 'magic' ? 'Worn' : cat === 'avatar' ? 'In use' : 'Equipped'}</span>` : '';
-    return `<div class="item pbox bag">
+    const gear = cat === 'weapon' && D.weaponById[it.id];
+    return `<div class="item pbox bag ${empty ? 'empty-uses' : ''}">
       <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
       <h3>${WB.esc(it.name)}</h3>
-      <div class="req">${opts.stat ? `<span class="stat">${opts.stat}</span>` : ''}${opts.desc ? `<span>${WB.esc(opts.desc)}</span>` : ''}</div>
-      <div class="foot stack">${btn}</div>
+      <div class="req">${opts.stat ? `<span class="stat">${opts.stat}</span>` : ''}${opts.desc ? `<span>${WB.esc(opts.desc)}</span>` : ''}${cat === 'magic' ? `<span class="uses ${empty ? 'out' : ''}">${empty ? 'Used up · restock to use' : G.usesLabel(it.id) + ' left'}</span>` : ''}${gear ? condLine(it.id) : ''}</div>
+      <div class="foot stack">${btn}${gear && G.repairCost(it.id) ? repairBtn(it.id) : ''}</div>
     </div>`;
   }
+  // condition of a weapon, shield or belt: a bar and a % (strength follows it, down to half)
+  function condLine(id) {
+    const c = Math.round(G.cond(id)), low = c < D.WORN_AT;
+    return `<span class="cond ${low ? 'low' : ''}"><span class="cond-t"><span>Condition</span><b>${c}%</b></span><span class="bar thin ${low ? 'low' : ''}" role="progressbar" aria-label="Condition" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${c}"><i style="width:${c}%"></i></span>${c < 100 ? `<small>${Math.round(G.wearF(id) * 100)}% strength</small>` : ''}</span>`;
+  }
+  const repairBtn = (id) => { const c = G.repairCost(id); return `<button class="btn ${G.cond(id) < D.WORN_AT ? 'gold' : 'ghost'} sm" type="button" data-repair="${id}" ${off(S().coins < c && 'You need ' + WB.fmt(c - S().coins) + ' more coins.')}>${WB.icon('coin', 1)}Repair · ${WB.fmt(c)}</button>`; };
+  // one button to fix everything you own
+  const repairAll = () => { const n = G.worn().length, c = G.repairAllCost(); return n ? `<div class="pbox card repair-all"><span><b>${n}</b> item${n === 1 ? '' : 's'} worn</span><button class="btn sm" type="button" data-repair="all" ${off(S().coins < c && 'You need ' + WB.fmt(c - S().coins) + ' more coins.')}>Repair all · ${WB.fmt(c)}</button></div>` : ''; };
   const emptyBag = (what, sub) => `<div class="pbox card empty-bag"><p class="fine">No ${what} yet.</p><button class="btn ghost sm" type="button" data-hubgo="shop:${sub}">Shop for ${what}</button></div>`;
   const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Block ${Math.round(w.block * 100)}%` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
   const WGROUPS = { melee: [['sword', 'Swords'], ['dagger', 'Daggers'], ['axe', 'Axes'], ['mace', 'Maces'], ['spear', 'Spears'], ['staff', 'Staves']],
@@ -805,7 +820,7 @@
       if (!G.battlesOpen()) return gearLock('Ranged weapons and magic');
       const rng = WGROUPS.ranged.map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('');
       const mag = (kind, title, aside) => { const list = byUnlock(D.MAGIC.filter((m) => m.kind === kind)); return `<div class="sect"><h2>${title} <span class="aside">${list.filter((m) => G.owns('magic', m.id)).length} / ${list.length} · ${aside}</span></h2><div class="grid">${list.map((it) => itemCard('magic', it, { desc: it.desc, stat: it.tag })).join('')}</div></div>`; };
-      return `${loadout('ranged', ['ranged'])}<p class="fine wnote">Ranged weapons recharge between shots. Battle magic is free to use. Wear up to ${D.CHARM_SLOTS} charms.</p>${rng}${mag('battle', 'Battle magic', 'once per battle')}${mag('charm', 'Charms', 'wear ' + D.CHARM_SLOTS)}`;
+      return `${loadout('ranged', ['ranged'])}<p class="fine wnote">Weapons wear with use. Magic: ${D.MAGIC_PACK} casts a pack. Charms: ${D.CHARM_BATTLES} battles each.</p>${rng}${mag('battle', 'Battle magic', D.MAGIC_PACK + ' casts a pack')}${mag('charm', 'Charms', 'wear ' + D.CHARM_SLOTS)}`;
     }
     if (cat === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
@@ -821,7 +836,7 @@
           <div class="prev"><canvas width="120" height="120" data-prev="potion:${p.id}"></canvas>${locked ? `<span class="tag lock">${WB.icon('lock', 1)}${p.world ? 'Undiscovered' : 'Locked'}</span>` : `<span class="tag">Have ${have}</span>`}</div>
           <h3>${locked && p.world ? 'Unknown potion' : WB.esc(p.name)}</h3>
           <div class="req"><span>${locked && p.world ? 'A potion hidden somewhere in ' + WB.esc(D.worldById[p.world].name) + '.' : p.desc}</span></div>${locked ? gauge(st) : ''}
-          ${locked ? '' : `<div class="foot">${priceTag(p.cost)}<button class="btn gold sm block" type="button" data-potion-buy="${p.id}" ${off(full ? 'Your bag is full: you can carry ' + D.POTION_MAX + ' ' + p.name + '.' : shortWhy(p.cost, p.name))}>${full ? 'Full' : 'Buy'}</button></div>`}
+          ${locked ? '' : `<div class="foot">${priceTag(p.cost)}<button class="btn gold sm block" type="button" data-potion-buy="${p.id}" ${off(full ? 'Bag full: carry up to ' + D.POTION_MAX + '.' : shortWhy(p.cost, p.name))}>${full ? 'Full' : 'Buy'}</button></div>`}
         </div>`;
       };
       const base = byUnlock(D.POTIONS.filter((p) => p.base && !p.food)), food = byUnlock(D.POTIONS.filter((p) => p.food)), found = D.POTIONS.filter((p) => !p.base && G.hasFound(p.id)), hidden = D.POTIONS.filter((p) => !p.base && !G.hasFound(p.id));
@@ -832,7 +847,7 @@
         <div class="sect"><h2>Streak</h2><div class="grid">${D.SUPPLIES.map((it) => { const full = s.streak.rest >= D.SHIELD_MAX; return `<div class="item pbox"><div class="prev"><canvas width="120" height="120" data-icon-canvas="sshield"></canvas><span class="tag">Have ${s.streak.rest}/${D.SHIELD_MAX}</span></div><h3>${it.name}</h3><div class="req"><span>${it.desc}</span></div>
           <div class="foot">${priceTag(it.cost)}<button class="btn gold sm block" type="button" data-supply="${it.id}" ${off(full ? 'You already carry the maximum of ' + D.SHIELD_MAX + ' Streak Shields.' : shortWhy(it.cost, it.name))}>${full ? 'Full' : 'Buy'}</button></div></div>`; }).join('')}</div></div>`;
     }
-    if (cat === 'pets') return `<div class="grid">${byUnlock(D.PETS).map((p) => itemCard('pet', p, { desc: p.atk ? p.kind + '. ' + p.atkVerb + ' the creature after each of your moves.' : p.kind, stat: 'HP ' + G.petMax(p.id) + ' · Guards ' + Math.round(p.share * 100) + '% of hits' })).join('')}</div>`;
+    if (cat === 'pets') return `<div class="grid">${byUnlock(D.PETS).map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: 'HP ' + G.petMax(p.id) + ' · Guards ' + Math.round(p.share * 100) + '% of hits' })).join('')}</div>`;
     return `<div class="grid">${byUnlock(D.AVATARS).map((it) => itemCard('avatar', it, { desc: it.role })).join('')}</div>`;
   }
   // ----- Bag sections -----
@@ -844,6 +859,7 @@
       const rng = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && G.owns('weapon', w.id)));
       const charms = byUnlock(D.MAGIC.filter((m) => m.kind === 'charm' && G.owns('magic', m.id))), bm = byUnlock(D.MAGIC.filter((m) => m.kind === 'battle' && G.owns('magic', m.id)));
       return `${loadout('ranged', ['ranged'])}
+        ${repairAll()}
         <div class="sect"><h2>Ranged weapons <span class="aside">${rng.length}</span></h2>${rng.length ? `<div class="grid">${rng.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag('ranged weapons', 'ranged')}</div>
         <div class="sect"><h2>Charms <span class="aside">Wearing ${G.charms().length} / ${D.CHARM_SLOTS}</span></h2>${charms.length ? `<div class="grid">${charms.map((it) => bagCard('magic', it, { stat: it.tag })).join('')}</div>` : emptyBag('charms', 'ranged')}</div>
         <div class="sect"><h2>Battle magic <span class="aside">${bm.length}</span></h2>${bm.length ? `<div class="grid">${bm.map((it) => bagCard('magic', it, { stat: it.tag })).join('')}</div>` : emptyBag('battle magic', 'ranged')}</div>`;
@@ -851,7 +867,7 @@
     if (tab === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
       const slot = UI.wpnSlot === 'shield' ? 'shield' : 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
-      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : 'Softens hits and powers Defend. Belts soften more, block less. Wear one.'}</p>
+      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike. Wears with use.' : 'Softens hits and powers Defend. Wears with use.'}</p>${repairAll()}
         ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields or belts' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
     }
     if (tab === 'potions') {
@@ -865,7 +881,7 @@
     }
     if (tab === 'pets') {
       const mine = byUnlock(D.PETS.filter((p) => G.owns('pet', p.id)));
-      return mine.length ? `<div class="grid">${mine.map((p) => { const hp = G.petHp(p.id), max = G.petMax(p.id); return bagCard('pet', p, { stat: (hp <= 0 ? 'Resting · ' : 'HP ' + hp + '/' + max + ' · ') + 'Guards ' + Math.round(p.share * 100) + '% of hits', desc: p.atk ? p.atkVerb + ' the creature after each of your moves.' : '' }); }).join('')}</div>` : emptyBag('pets', 'pets');
+      return mine.length ? `<div class="grid">${mine.map((p) => { const hp = G.petHp(p.id), max = G.petMax(p.id); return bagCard('pet', p, { stat: (hp <= 0 ? 'Resting · ' : 'HP ' + hp + '/' + max + ' · ') + 'Guards ' + Math.round(p.share * 100) + '% of hits', desc: D.petRoleText(p) }); }).join('')}</div>` : emptyBag('pets', 'pets');
     }
     return `<div class="grid">${byUnlock(D.AVATARS.filter((a) => G.owns('avatar', a.id))).map((it) => bagCard('avatar', it, { desc: it.role })).join('')}</div>`;
   }
@@ -985,9 +1001,11 @@
   }
   // ---------- color themes ----------
   // night = the original violet + orange; lime = black + yellow/green. Both pass WCAG AA. (The Field theme was retired.)
-  UI.THEMES = [['night', 'Night', 'Violet & orange', ['#15122e', '#8f72ff', '#ff9a3d']], ['lime', 'Lime', 'Black, lime & yellow', ['#000000', '#c6ff00', '#ecff3a']]];
+  UI.THEMES = [['night', 'Night', 'Violet & orange', ['#15122e', '#8f72ff', '#ff9a3d']], ['lime', 'Lime', 'Black, lime & yellow', ['#000000', '#c6ff00', '#ecff3a']],
+    ['ocean', 'Ocean', 'Navy, teal & coral', ['#0a2230', '#3fd1c7', '#ff8f70']], ['ember', 'Ember', 'Crimson & amber', ['#1f0f0e', '#ff6b4a', '#ffb020']],
+    ['contrast', 'High contrast', 'Black, white & yellow', ['#000000', '#ffffff', '#ffe600']]];
   UI.applyTheme = () => {
-    const t = ['night', 'lime'].includes(S().settings.theme) ? S().settings.theme : 'night', root = document.documentElement;
+    const t = UI.THEMES.some(([id]) => id === S().settings.theme) ? S().settings.theme : 'night', root = document.documentElement;
     if (t === 'night') delete root.dataset.theme; else root.dataset.theme = t;
     try { localStorage.setItem('stepquest.theme', t); } catch (e) {}
     const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = getComputedStyle(root).getPropertyValue('--bg').trim() || '#0b0a1a';
@@ -1236,7 +1254,7 @@
           <div class="wbody"><h3>${w.name}</h3><p class="wb">${w.blurb}</p>
           <div class="wcr"><span class="lbl">Creatures here</span><div class="crts">${w.pool.map((c) => `<span class="crt" title="${WB.esc(D.CREATURES[c].name)}"><canvas width="80" height="80" data-crthumb="${c}" aria-label="${WB.esc(D.CREATURES[c].name)}" role="img"></canvas></span>`).join('')}</div></div>
           ${open ? `<div class="wrow"><div class="bar seg cyan"><i style="width:${pct}%"></i></div><div class="wmeta"><span class="lbl">${Math.floor(pct)}% explored · ${(s.enc.finds[w.id] || []).length}/${D.FINDS[w.id].length} artifacts</span>${cur ? '<span class="lbl here">You are here</span>' : G.canTravel(w.id) ? `<button class="btn sm" type="button" data-travel="${w.id}">Travel</button>` : `<span class="lbl dim">Finish ${WB.esc(G.firstWorld().name)} to wake your Worldkey</span>`}</div>
-            <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${!s.bosses[w.id] && pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : !s.bosses[w.id] ? '<span class="lbl dim">Appears at 100%</span>' : ''}</div></div>`
+            <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${s.bosses[w.id] ? (G.battlesOpen() ? `<button class="btn ghost sm" type="button" data-boss="${w.id}" aria-label="Rematch ${WB.esc(D.CREATURES[w.boss].name)}">Rematch</button>` : '') : pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : '<span class="lbl dim">Appears at 100%</span>'}</div></div>`
           : G.wk().found.includes(w.id) ? `<div class="wrow"><div class="wmeta"><span class="lbl here">Discovered</span><button class="btn gold sm" type="button" data-wk="gate" data-wid="${w.id}">Use Worldkey</button></div></div>`
           : `<div class="wrow"><span class="lbl wreq-h">${WB.icon('lock', 2)} To open this world</span>
             <ul class="wreq"><li class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Reach level ${w.unlock.level}</li>${wp.prev ? `<li class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Explore ${G.gatePct(w)}% of ${WB.esc(wp.prev.name)}</li>` : ''}</ul>
@@ -1267,13 +1285,14 @@
     if (d.mtab) { UI.missionTab = d.mtab; WB.Sfx.play('tap'); UI.renderTasks(); const sc = $('#scr-tasks'); if (sc) sc.scrollTop = 0; return; }
     if (d.suptab) { UI.supTab = d.suptab; return UI.go('collection'); }
     if (d.wpnslot) { UI.wpnSlot = d.wpnslot; WB.Sfx.play('tap'); if (d.wpnslot === 'ranged') { if (UI.hub === 'shop') UI.shopTab = 'ranged'; else UI.bagTab = 'ranged'; } return UI.renderShop(); }
-    if (d.potionBuy) { const r = G.buyPotion(d.potionBuy); UI.toast(r.ok ? { kicker: 'Purchased', title: G.potion(d.potionBuy).name, img: `pot/${d.potionBuy}.png`, cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
+    if (d.repair) { const r = d.repair === 'all' ? G.repairAll() : G.repair(d.repair); UI.toast(r.ok ? { kicker: 'Repaired', title: d.repair === 'all' ? r.n + ' item' + (r.n === 1 ? '' : 's') + ' like new' : D.weaponById[d.repair].name + ' like new', sub: '−' + WB.fmt(r.cost) + ' coins', icon: 'sword', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); UI.updateHud(); return UI.render(); }
+    if (d.potionBuy) { const r = G.buyPotion(d.potionBuy); UI.toast(r.ok ? { kicker: 'Purchased', title: G.potion(d.potionBuy).name, sub: 'You have ' + S().potions[d.potionBuy] + '.', img: `pot/${d.potionBuy}.png`, cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.drink) { const r = G.drink(d.drink); if (r.ok) WB.Sfx.play('potion'); if (r.ok) UI.toast({ kicker: 'Healed', title: WB.fmt(S().hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', img: `pot/${d.drink}.png`, cls: 'ok' }); else if (r.msg) UI.toast({ kicker: 'Not now', title: r.msg }); UI.updateHud(); return UI.render(); }
     if (d.boss) { WB.BattleUI.challenge(d.boss); return; }
     if (d.claim) { const [ty, id] = d.claim.split(':'); const r = G.claimTask(ty, id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); if (r && ty === 'daily') UI.missionAmbushRoll('daily', r.t.title); return; }
-    if (d.buy) { const [c, id] = d.buy.split(':'); const r = G.buy(c, id); if (r.ok) UI.toast({ kicker: 'Purchased', title: G.item(c, id).name, icon: 'shop', cls: 'gold' }); else if (r.msg) UI.toast({ kicker: 'Not yet', title: r.msg }); return UI.render(); }
+    if (d.buy) { const [c, id] = d.buy.split(':'); const r = G.buy(c, id); if (r.ok) UI.toast({ kicker: r.restock ? 'Restocked' : 'Purchased', title: G.item(c, id).name, sub: c === 'magic' ? G.usesLabel(id) + ' left' : '', icon: 'shop', cls: 'gold' }); else if (r.msg) UI.toast({ kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.supply) { const r = G.buySupply(d.supply); UI.toast(r.ok ? { kicker: 'Purchased', title: 'Streak Shield', sub: 'You hold ' + S().streak.rest + ' / ' + D.SHIELD_MAX + '.', icon: 'sshield', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
-    if (d.equip) { const [c, id] = d.equip.split(':'); const r = G.equip(c, id); if (r && r.full) UI.toast({ kicker: 'Charm slots full', title: 'Take one off first: you can wear ' + D.CHARM_SLOTS + '.', cls: 'msg' }); else WB.Sfx.play('equip'); return UI.render(); }
+    if (d.equip) { const [c, id] = d.equip.split(':'); const r = G.equip(c, id); if (r && r.full) UI.toast({ kicker: 'Charm slots full', title: 'Take one off first: you can wear ' + D.CHARM_SLOTS + '.', cls: 'msg' }); else if (r && r.empty) UI.toast({ kicker: 'Used up', title: 'Restock it to wear it again.', cls: 'msg' }); else WB.Sfx.play('equip'); return UI.render(); }
     if (d.unequip) { const [c, id] = d.unequip.split(':'); if (c === 'magic') G.unequipCharm(id); else G.equip(c, null); return UI.render(); }
     if (d.travel) { if (!G.canTravel(d.travel)) return UI.toast({ kicker: 'Not yet', title: 'Finish ' + G.firstWorld().name + ' to wake your Worldkey. Then you can travel.', cls: 'msg' }); G.travel(d.travel); const tw = D.worldById[d.travel]; Promise.resolve(WB.Loading.world(tw)).then(() => WB.WK && WB.WK.say('back', { world: tw.name }, true)); return UI.go('world'); }
     if (d.wslot) {

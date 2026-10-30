@@ -51,6 +51,32 @@
   --c-goal: #9dff3a; --c-today: #38c8ff; --c-under: #6a6a5a;   /* step chart: lime, sky blue, grey */
   --shadow: #000000; --ink: #000000;
 }
+/* three more themes (3.3). Checked in code: every text pair >= 4.5:1, borders / gauges / focus >= 3:1 (WCAG 2.1 AA, Section 508) */
+:root[data-theme="ocean"] {   /* deep navy, teal and coral */
+  --bg: #04131c; --surface: #0a2230; --surface-2: #0f2d3f; --inset: #061a25; --line: #1d4459; --line-hi: #3fa3b8;
+  --text: #e8f6fa; --muted: #a6c8d3; --dim: #8fb4c0;
+  --violet: #3fd1c7; --violet-hi: #9af0e8; --cyan: #7fe3ff; --gold: #ff8f70; --ok: #6ee7a0; --danger: #ff8a96; --ehp: #ff5d73;
+  --primary: var(--violet); --xp: #ffd166; --xp-hi: #ffe39a;
+  --c-goal: #6ee7a0; --c-today: #ff8f70; --c-under: #3fa3b8;
+  --shadow: #020a10; --ink: #04131c;
+}
+:root[data-theme="ember"] {   /* charcoal, crimson and amber */
+  --bg: #120808; --surface: #1f0f0e; --surface-2: #2a1513; --inset: #170a09; --line: #4a2420; --line-hi: #c0503a;
+  --text: #fbeeea; --muted: #d4b3ab; --dim: #bf9a91;
+  --violet: #ff6b4a; --violet-hi: #ffb39f; --cyan: #ffcf5c; --gold: #ffb020; --ok: #7ee08a; --danger: #ff8fa3; --ehp: #ff4d4d;
+  --primary: var(--violet); --xp: #c58bff; --xp-hi: #dcb8ff;
+  --c-goal: #7ee08a; --c-today: #ffb020; --c-under: #8a4a3e;
+  --shadow: #060202; --ink: #120808;
+}
+:root[data-theme="contrast"] {   /* high contrast: pure black, white text, yellow and cyan */
+  --bg: #000000; --surface: #000000; --surface-2: #121212; --inset: #000000; --line: #8a8a8a; --line-hi: #ffffff;
+  --text: #ffffff; --muted: #ebebeb; --dim: #d0d0d0;
+  --violet: #ffe600; --violet-hi: #fff27a; --cyan: #00e5ff; --gold: #ffe600; --ok: #3dff8b; --danger: #ff7070; --ehp: #ff5050;
+  --primary: #ffffff; --xp: #00e5ff; --xp-hi: #7ff2ff;
+  --c-goal: #3dff8b; --c-today: #ffe600; --c-under: #8a8a8a;
+  --shadow: #000000; --ink: #000000;
+}
+:root[data-theme="contrast"] .pbox, :root[data-theme="contrast"] .btn.ghost { box-shadow: 0 0 0 2px var(--line); }
 :root[data-theme="field"] {   /* black with orange; yellow is the secondary accent */
   --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #b8651f;
   --text: #f7f2ec; --muted: #c4bbb2; --dim: #aaa197;
@@ -3531,3 +3557,34 @@ html.rm .forge.flash { animation: none; }
 .lb-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); margin-top: var(--s3); }
 .pf-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 520px) { .pf-tabs .l-long { display: none; } .pf-tabs .l-short { display: inline; } }
+/* ---------- gear that gets used up: condition, uses left, repairs (05n-gear.js) ---------- */
+.item .cond { display: grid; gap: 4px; }
+.item .cond-t { display: flex; justify-content: space-between; font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.item .cond-t b { font-weight: 400; color: var(--text); }
+.item .cond.low .cond-t b { color: var(--danger); }
+.item .cond .bar { height: 6px; }
+.item .cond .bar > i { background: var(--ok); }
+.item .cond .bar.low > i { background: var(--danger); }
+.item .cond small { font-size: 12px; color: var(--muted); }
+.item .uses { font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--cyan); }
+.item .uses.out { color: var(--danger); }
+.item.empty-uses .prev canvas { opacity: .45; }
+.item .foot.stack .btn + .btn { margin-top: 6px; }
+.item .foot .btn .px-icon { margin-right: 4px; }
+.repair-all { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s4); margin-bottom: var(--s3); }
+.repair-all span { font-size: 14px; color: var(--muted); }
+.repair-all b { color: var(--text); font-weight: 400; }
+.b-banner .b-gear { font-size: 13px; color: var(--muted); margin-top: 6px; display: flex; gap: 6px; align-items: center; }
+/* a mob: the creatures waiting behind the front one, under its plate */
+.pl-mob { display: grid; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 2px solid var(--line); }
+.pl-mob .pm { display: grid; grid-template-columns: minmax(0, 1fr) 46%; gap: 6px; align-items: center; }
+.pl-mob .pm .lbl { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-mob .bar { height: 5px; }
+/* Merlin's Egg collection: every elemental egg color; a dark silhouette until hatched */
+.egg-col { display: grid; gap: var(--s3); padding: var(--s3) var(--s4); }
+.ec-row { display: grid; gap: 6px; }
+.ec-eggs { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px; justify-items: center; }
+.ec-egg .egg-img { filter: brightness(0) opacity(.45); }
+.ec-egg.got .egg-img { filter: none; }
+.hatch .hatched { display: flex; align-items: center; justify-content: center; gap: var(--s3); }
+.hatch .new-color { color: var(--gold); }

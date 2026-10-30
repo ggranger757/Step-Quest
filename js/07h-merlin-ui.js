@@ -6,7 +6,7 @@
   const eggCard = (r) => {
     const e = D.eggById[r.egg], p = G.eggProgress(r);
     return `<div class="egg-card pbox ${p.ready ? 'ready' : ''}">
-      <span class="ek-img">${WB.eggImg(r.egg, 48, p.ready ? '' : 'still')}</span>
+      <span class="ek-img">${WB.eggImg(G.eggArt(r), 48, p.ready ? '' : 'still')}</span>
       <div class="ek-main">
         <div class="ek-top"><b>${esc(e.name)}</b><span class="lbl">${esc(e.rarity)}</span></div>
         ${p.ready ? `<p class="fine">Ready! Answer Merlin to hatch.</p>`
@@ -22,6 +22,12 @@
       ${gift ? `<button class="btn gold sm" type="button" data-merlin-gift>Get egg</button>` : ''}
     </div>`;
 
+  // the Egg collection: every elemental egg color, a silhouette until you've hatched it
+  const eggCollection = (m) => {
+    const fams = D.EGGS.filter((e) => e.variants);
+    return `<div class="sect"><h2>Egg collection <span class="aside">${m.colors.length} / ${D.EGG_COLORS}</span></h2>
+      <div class="pbox card egg-col">${fams.map((e) => `<div class="ec-row"><span class="lbl">${esc(e.name.replace(' Egg', ''))} · ${esc(e.rarity)}</span><div class="ec-eggs">${Array.from({ length: e.variants }, (_, i) => { const a = D.eggArt(e.id, i + 1), got = m.colors.includes(a); return `<span class="ec-egg ${got ? 'got' : ''}" role="img" aria-label="${esc(e.name)} color ${i + 1}${got ? '' : ', not hatched yet'}">${WB.eggImg(a, 28, 'still')}</span>`; }).join('')}</div></div>`).join('')}</div></div>`;
+  };
   // Missions → Merlin
   UI.merlinSection = () => {
     const m = G.merlin(), nest = G.nest(), gift = G.merlinGiftReady();
@@ -31,14 +37,14 @@
         <p class="fine">Every step warms all your eggs.</p>
         <div class="list nest" id="egg-strip">${slots.join('')}</div>
       </div>
+      ${eggCollection(m)}
       <div class="sect"><h2>How it works</h2>
         <ul class="m-lock-list pbox card">
           <li>${WB.eggImg('frost', 24, 'still')}<span><b>Get an egg</b><small>One daily, more on the road, a Crystal Egg per guardian. Holds ${D.NEST_MAX}.</small></span></li>
-          <li>${WB.icon('steps', 2)}<span><b>Walk to hatch</b><small>${D.EGGS.map((e) => e.name.replace(' Egg', '') + ' ' + e.short).join(' · ')}. Eggs never expire.</small></span></li>
-          <li>${WB.icon('cap', 2)}<span><b>Answer Merlin</b><small>Right: +${Math.round((D.QUIZ_BONUS - 1) * 100)}% reward. Crystal adds a weapon or pet. Wrong still hatches.</small></span></li>
+          <li>${WB.icon('steps', 2)}<span><b>Walk to hatch</b><small>${WB.fmt(Math.min(...D.EGGS.map((e) => e.steps)))}–${WB.fmt(Math.max(...D.EGGS.map((e) => e.steps)))} steps, by rarity. Eggs never expire.</small></span></li>
+          <li>${WB.icon('cap', 2)}<span><b>Answer Merlin</b><small>Right: +${Math.round((D.QUIZ_BONUS - 1) * 100)}% reward. Crystal and Shadow add a weapon or pet. Wrong still hatches.</small></span></li>
           <li>${WB.icon('note', 2)}<span><b>History Note</b><small>A real fact with every hatch.</small></span></li>
         </ul>
-        <p class="fine">Answered right: ${m.right} / ${m.taken}</p>
       </div>`;
   };
 
@@ -70,6 +76,7 @@
         <span class="lbl">${esc(e.name)} hatched</span>
         <h3 id="sheet-title">${res.right ? 'Correct!' : 'Not quite'}</h3>
         <div class="hatch-top"><canvas class="mer-face" width="64" height="64" aria-hidden="true"></canvas><p class="hatch-say">${esc(WB.pick(res.right ? D.MERLIN_RIGHT : D.MERLIN_WRONG))}${res.right ? '' : ` The answer was <b>${esc(res.answer)}</b>.`}</p></div>
+        <div class="hatched">${WB.eggImg(res.art || res.egg, 56)}${res.newColor ? `<span class="lbl new-color">New color · ${G.merlin().colors.length} / ${D.EGG_COLORS}</span>` : ''}</div>
         <div class="pbox card history"><span class="lbl">${WB.icon('note', 1)} Merlin’s History Note</span><p>${esc(res.fact)}</p></div>
         <div class="outcome">${UI.pills(res.granted)}</div>
         <button class="btn gold block" type="button" data-close data-autofocus>Collect</button>
@@ -88,13 +95,13 @@
     if (g) {
       const r = G.claimGift(); if (!r) return;
       WB.Sfx.play('quest');
-      UI.toast({ kicker: 'A gift from Merlin', title: D.eggById[r.egg].name, sub: WB.fmt(D.eggById[r.egg].steps) + ' steps to hatch.', egg: r.egg, cls: 'cyan' });
+      UI.toast({ kicker: 'A gift from Merlin', title: D.eggById[r.egg].name, sub: WB.fmt(D.eggById[r.egg].steps) + ' steps to hatch.', egg: G.eggArt(r), cls: 'cyan' });
       UI.render();
     }
   });
   WB.bus.on('eggReady', (r) => {
     const e = D.eggById[r.egg];
-    UI.toast({ kicker: 'Ready to hatch', title: e.name, sub: 'Answer Merlin to hatch.', egg: r.egg, cls: 'gold', action: { label: 'Hatch', fn: () => UI.hatch(r.id) } });
+    UI.toast({ kicker: 'Ready to hatch', title: e.name, sub: 'Answer Merlin to hatch.', egg: G.eggArt(r), cls: 'gold', action: { label: 'Hatch', fn: () => UI.hatch(r.id) } });
     UI.updateBadges && UI.updateBadges();
   });
 })();

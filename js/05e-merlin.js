@@ -11,7 +11,7 @@
     const s = S();
     let m = s.merlin;
     if (!m || typeof m !== 'object') m = s.merlin = { nest: [], seq: 0, hatched: 0, right: 0, taken: 0, asked: [], facts: [], gift: '', at: 0 };
-    for (const k of ['nest', 'asked', 'facts']) if (!Array.isArray(m[k])) m[k] = [];
+    for (const k of ['nest', 'asked', 'facts', 'colors']) if (!Array.isArray(m[k])) m[k] = [];   // colors: elemental egg colors you've hatched (the Egg collection)
     for (const k of ['seq', 'hatched', 'right', 'taken', 'at']) if (typeof m[k] !== 'number') m[k] = 0;
     // older saves (03-state.js stashes them): carried eggs move into the nest, rarest first
     const old = s._oldEggs;
@@ -33,10 +33,13 @@
 
   // which egg Merlin hands out: rarer ones get likelier in later worlds
   G.rollEgg = (tier = 0) => WB.weighted(D.EGGS.map((e) => ({ id: e.id, w: e.w * (e.id === 'frost' ? 1 : 1 + tier * 0.12) }))).id;
-  // put an egg in the nest (false when it's full)
-  G.giveEgg = (egg) => {
+  // an elemental egg's color: a random one of its 10 (the original eggs have none)
+  G.eggVariant = (egg) => { const e = D.eggById[egg]; return e && e.variants ? 1 + Math.floor(Math.random() * e.variants) : 0; };
+  G.eggArt = (r) => D.eggArt(r.egg, r.v);
+  // put an egg in the nest (false when it's full); v = its color, picked here if not given
+  G.giveEgg = (egg, v) => {
     if (G.nestFull() || !D.eggById[egg]) return null;
-    const m = G.merlin(), r = { id: 'n' + ++m.seq, egg, steps: 0, at: Date.now() };
+    const m = G.merlin(), r = { id: 'n' + ++m.seq, egg, v: v || G.eggVariant(egg), steps: 0, at: Date.now() };
     m.nest.push(r);
     WB.bus.emit('egg', { id: egg });
     WB.Save.queue();
@@ -118,9 +121,11 @@
       m.nest = m.nest.filter((x) => x !== r);
       m.hatched++; m.taken++; if (right) m.right++;
       const fact = nextFact();
+      const art = G.eggArt(r), newColor = !!e.variants && !m.colors.includes(art);
+      if (newColor) m.colors.push(art);   // a color you hadn't hatched yet joins the Egg collection
       const granted = G.grant(reward, true);
       G.after();
-      return { right, answer: qz.options[qz.answer], reward, granted, fact, egg: r.egg, item };
+      return { right, answer: qz.options[qz.answer], reward, granted, fact, egg: r.egg, art, newColor, item };
     } finally { hatching = false; }
   };
 })();

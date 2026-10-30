@@ -103,6 +103,36 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.3.3
+
+- **Elemental eggs for Merlin:** five new egg families, each laid in one of 10 colors (50 in all, animated): Sprout (common, 4,000 steps), Tide (uncommon, 5,000), Flame (uncommon, 7,000), Prism (rare, 10,000) and Shadow (epic, 15,000; a right answer adds a weapon or pet, like the Crystal Egg). The original Frost, Ember and Crystal eggs stay.
+- **Egg collection** on Missions → Merlin: every color, a silhouette until you hatch it. Hatching a new color says so.
+- Art: `assets/egg/<family><1-10>.png`, 8-frame strips at full resolution, built by `tools/add_eggs.py`.
+
+## Changes in 3.3.2
+
+- **Pet roles in battle** (`D.PET_ROLES` in `js/02-data.js`). Every pet still takes its share of each hit, and each now has a role:
+  - **Attackers** (26) dart in and hit the creature after your moves.
+  - **Shooters** (24) fire pixel projectiles: feathers, venom, fire, stones, magic orbs (they pierce guards), sparks and water.
+  - **Healers** (8) restore 5–9% of your HP each turn while you're hurt.
+  - **Guardians** (20) only defend, with a 15–32% chance to jump in front of a hit and take most of it.
+- Shop and Inventory pet cards say what each pet does.
+
+## Changes in 3.3.1
+
+- **New pet: Onyx**, a collared black cat (level 8, 1,600 coins). Swipes at the creature after each of your moves. Built by `tools/add_cat_pet.py`.
+- **One pet per level:** no two Shop pets unlock at the same level any more. Pets keep their old order and prices; the ones that shared a level move to the next free one, so a new pet now arrives at every level from 2 to 65.
+
+## Changes in 3.3.0
+
+- **Items run out:** battle magic comes in packs of 10 casts (hold up to 30) and charms last 20 battles; restock either from the Shop or Inventory. Potions and food are still bought one at a time and used once. Older saves get one free pack of everything already owned.
+- **Wear and repair:** melee weapons, ranged weapons, shields and belts lose condition as you use them; strength follows condition down to 50%. Repair one item or everything at once in Inventory (rules in `js/05n-gear.js`).
+- **Mobs:** from level 6, about 1 in 6 fights is a mob of 2–3 creatures. You fight the front one; the ones behind are weaker and attack 60% of rounds. Rewards scale with the mob's size.
+- **Guardian rematches:** beaten guardians show a Rematch button on the world map. Rematches pay half and a 25% chance of a Crystal Egg.
+- **Themes:** Ocean, Ember and High contrast (every text pair at least 4.5:1, borders and focus at least 3:1).
+- **Worlds:** Duskfall Range replaces Canopy Vale and Sunken Ruins replaces Leeward Shore (same ids, so progress carries over); Dusk Metropolis is new. Built by `tools/add_new_worlds.py`.
+- Missions → Merlin no longer shows a stray "Answered right" tally.
+
 ## Changes in 3.2.3
 
 - Worldkeys show in full color once you reach their level.

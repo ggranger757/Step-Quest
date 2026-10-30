@@ -18,7 +18,24 @@
     { id: 'crystal', name: 'Crystal Egg', rarity: 'Rare', steps: 12000, w: 10, reward: { coins: 300, xp: 400, potion: 'elixir' }, hoard: true,
       short: '12,000 steps', desc: 'Hatches in 12,000 steps. Answer right for a new weapon or pet.' },
   ];
+  // elemental eggs (3.3.3): five families, each laid in one of 10 colors (art: assets/egg/<id><1-10>.png, tools/add_eggs.py)
+  D.EGGS.push(
+    { id: 'sprout', name: 'Sprout Egg', rarity: 'Common', steps: 4000, w: 34, reward: { coins: 80, xp: 100, potion: 'fruit' }, variants: 10,
+      short: '4,000 steps', desc: 'Hatches in 4,000 steps.' },
+    { id: 'tide', name: 'Tide Egg', rarity: 'Uncommon', steps: 5000, w: 24, reward: { coins: 110, xp: 140, potion: 'fish' }, variants: 10,
+      short: '5,000 steps', desc: 'Hatches in 5,000 steps.' },
+    { id: 'flame', name: 'Flame Egg', rarity: 'Uncommon', steps: 7000, w: 16, reward: { coins: 160, xp: 210, potion: 'fury' }, variants: 10,
+      short: '7,000 steps', desc: 'Hatches in 7,000 steps.' },
+    { id: 'prism', name: 'Prism Egg', rarity: 'Rare', steps: 10000, w: 8, reward: { coins: 250, xp: 330, potion: 'cell' }, variants: 10,
+      short: '10,000 steps', desc: 'Hatches in 10,000 steps.' },
+    { id: 'shadow', name: 'Shadow Egg', rarity: 'Epic', steps: 15000, w: 3, reward: { coins: 400, xp: 520, potion: 'sundrop' }, hoard: true, variants: 10,
+      short: '15,000 steps', desc: 'Hatches in 15,000 steps. Answer right for a new weapon or pet.' },
+  );
+  D.EGGS.find((e) => e.id === 'frost').w = 40; D.EGGS.find((e) => e.id === 'ember').w = 20; D.EGGS.find((e) => e.id === 'crystal').w = 8;   // room for the new eggs
   D.eggById = Object.fromEntries(D.EGGS.map((e) => [e.id, e]));
+  // the picture for an egg: elemental eggs come in colors (v = 1..10); the original three have one look
+  D.eggArt = (egg, v) => { const e = D.eggById[egg]; return e && e.variants ? egg + Math.min(e.variants, Math.max(1, v || 1)) : egg; };
+  D.EGG_COLORS = D.EGGS.filter((e) => e.variants).reduce((n, e) => n + e.variants, 0);   // 50 to collect
   D.QUIZ_BONUS = 1.5;   // a right answer multiplies the coins and XP
 
   D.MERLIN_LINES = [

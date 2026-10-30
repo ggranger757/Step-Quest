@@ -104,10 +104,14 @@
     // More_Worlds (lower levels): Vista Ten's ten scenes and the Purple Lex forest
     { id: 'downs', name: 'Green Downs', scene: 'v_downs', ground: 206, length: 3200, unlock: 2, ambient: 'leaves', pool: ['orcscout', 'lazybat', 'hyena', 'fanglily'], boss: 'turtle', merchant: 'trader2', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
       blurb: 'Rolling green hills under a wide blue sky. Perfect walking weather.', landmarks: ['Hilltop Cairn', 'Sheep Track', 'Long Meadow', 'Windy Rise'] },
-    { id: 'canopy', name: 'Canopy Vale', scene: 'v_canopy', ground: 206, length: 3400, unlock: 2, ambient: 'leaves', pool: ['snapjaw', 'fanglily', 'treant', 'vulture'], boss: 'thornbeast', merchant: 'trader3', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
-      blurb: 'A misty valley of treetops that never seems to end.', landmarks: ['Mossy Gate', 'Green Arch', 'Fern Hollow', 'Treetop Ridge'] },
-    { id: 'leeward', name: 'Leeward Shore', scene: 'v_leeward', ground: 206, length: 3600, unlock: 3, ambient: 'frost', pool: ['slime', 'cthulhu', 'snake'], boss: 'turtle', merchant: 'trader1', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
-      blurb: 'Grey rocks by a calm, cold sea. The tide hums.', landmarks: ['Tide Pools', 'Stone Teeth', 'Driftwood Bay', 'Gull Rock'] },
+    // Duskfall Range replaced Canopy Vale in 3.3 (same id, so progress carries over)
+    { id: 'canopy', name: 'Duskfall Range', scene: 'dusk', ground: 232, length: 3400, unlock: 2, ambient: 'fireflies', pool: ['snapjaw', 'fanglily', 'treant', 'vulture'], boss: 'thornbeast', merchant: 'trader3',
+      layers: [['l1', 0, 0.6], ['l2', 0.04, 1.5], ['l3', 0.1, 3], ['l4', 0.18], ['l5', 0.4], ['l6', 1]], thumb: 'thumb',
+      blurb: 'Red peaks glow under a rising moon. The trail winds through the pines.', landmarks: ['Moonrise Point', 'Red Spire', 'Pine Switchback', 'Ember Ridge'] },
+    // Sunken Ruins replaced Leeward Shore in 3.3 (same id, so progress carries over)
+    { id: 'leeward', name: 'Sunken Ruins', scene: 'reef', ground: 216, length: 3600, unlock: 3, ambient: 'bubbles', pool: ['slime', 'cthulhu', 'snake'], boss: 'turtle', merchant: 'trader1',
+      layers: [['l1', 0.03, 1], ['l2', 0.2], ['l3', 0.5], ['l4', 1]], thumb: 'thumb',
+      blurb: 'Old arches sleep under the sea. Light ripples down through the water.', landmarks: ['Coral Gate', 'Broken Arches', 'Kelp Garden', 'Totem Deep'] },
     { id: 'hollow', name: 'Misty Hollow', scene: 'v_hollow', ground: 206, length: 3800, unlock: 3, ambient: 'fireflies', pool: ['nightshade', 'deceased', 'lazybat', 'vampbat'], boss: 'thornbeast', merchant: 'trader2', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
       blurb: 'Quiet woods in a soft grey fog. Something rustles nearby.', landmarks: ['Fog Bank', 'Old Stump', 'Whisper Path', 'Lantern Glade'] },
     { id: 'violet', name: 'Violet Wood', scene: 'violet', ground: 216, length: 4200, unlock: 4, ambient: 'leaves', pool: ['pitchermaw', 'vampbat', 'treant', 'twoface'], boss: 'bloater', merchant: 'trader3', layers: [['l1', 0.02, 1], ['l2', 0.05, 3], ['l3', 0.25], ['l4', 1], ['l5', 1], ['l6', 1]],
@@ -124,6 +128,10 @@
       blurb: 'Tall chimneys puff smoke over a sleepy factory town.', landmarks: ['Smokestacks', 'Rail Yard', 'Brick Row', 'Pipe Bridge'] },
     { id: 'sodium', name: 'Sodium City', scene: 'v_sodium', ground: 206, length: 6200, unlock: 9, ambient: 'fireflies', pool: ['selfdoubt', 'sentry', 'twoface'], boss: 'dragon', merchant: 'trader3', layers: [['l1', 0, 1], ['l2', 0.2], ['l3', 0.4], ['l4', 1]],
       blurb: 'A city skyline under orange streetlights at midnight.', landmarks: ['Night Market', 'Tower Block', 'Neon Alley', 'Rooftops'] },
+    // Dusk Metropolis (3.3): towers in a smoggy amber sunset, right after Neon Boulevard
+    { id: 'skyline', name: 'Dusk Metropolis', scene: 'skyline', ground: 306, length: 10000, unlock: 20, ambient: 'dust', pool: ['sentry', 'twoface', 'alien', 'procrastinator'], boss: 'brute', merchant: 'trader2',
+      layers: [['l1', 0.01], ['l2', 0.02], ['l3', 0.08], ['l4', 0.12, 2], ['l5', 0.2], ['l6', 0.4], ['l7', 0.6, 4], ['l8', 1]], thumb: 'thumb',
+      blurb: 'Towers fade into amber smog as the sun goes down. Streetlamps flicker on.', landmarks: ['Sun Plaza', 'Spire Tower', 'Smog Line', 'Lamp Row'] },
     // Neon City: a later world (about level 35). It sits in the Worldkey chain like every other world: unlock is only its place in the order (16 = right after Shrine of Pines)
     { id: 'neoncity', name: 'Neon City', scene: 'neoncity', ground: 206, length: 8000, unlock: 16, ambient: 'fireflies', pool: ['twoface', 'sentry', 'procrastinator', 'vampbat'], boss: 'brute', merchant: 'trader1',
       layers: [['l1', 0.04, 3], ['l2', 0.10], ['l3', 0.18], ['l4', 0.32], ['l5', 0.55], ['l6', 1]],
@@ -203,6 +211,7 @@
     sodium: [['i08', 'Hidden Door'], ['i39', 'Gold Bracelet'], ['i09', 'Golden Key']],
     // Neon City: three icons drawn for it (tools/add_neon_city_world.py has the world art)
     neoncity: [['y1', 'Neon Tube Sign'], ['y2', 'Data Chip'], ['y3', 'Skyline Snow Globe']],
+    skyline: [['z1', 'Sunset Lens'], ['z2', 'Tower Beacon'], ['z3', 'Smog Filter']],
   };
   D.FIND_TOTAL = Object.values(D.FINDS).reduce((n, a) => n + a.length, 0);
 
@@ -434,101 +443,137 @@
 
   // ---------- Pets (77) ----------
   // src 'pet' = animal sheets (face right), 'cr' = creature sheets (face left)
+  // One pet per level (3.3.1): no two shop pets unlock at the same level, from level 2 to 65.
   D.PETS = [
-    { id: 'dog', name: 'Rex', kind: 'Doberman', src: 'pet', req: { cost: 1200, level: 6 } },
-    { id: 'rat', name: 'Nibbles', kind: 'Rat', src: 'pet', req: { cost: 600, level: 3 } },
-    { id: 'pigeon', name: 'Coo', kind: 'Pigeon', src: 'pet', req: { cost: 800, level: 4 } },
-    { id: 'cat', name: 'Ginger', kind: 'Cat', src: 'pet', req: { cost: 1500, level: 8 } },
-    { id: 'dog2', name: 'Shiba', kind: 'Shiba', src: 'pet', req: { cost: 2500, level: 12 } },
-    { id: 'rat2', name: 'Dusty', kind: 'Rat', src: 'pet', req: { cost: 1000, level: 10 } },
+    { id: 'dog', name: 'Rex', kind: 'Doberman', src: 'pet', req: { cost: 1200, level: 16 } },
+    { id: 'rat', name: 'Nibbles', kind: 'Rat', src: 'pet', req: { cost: 600, level: 6 } },
+    { id: 'pigeon', name: 'Coo', kind: 'Pigeon', src: 'pet', req: { cost: 800, level: 10 } },
+    { id: 'cat', name: 'Ginger', kind: 'Cat', src: 'pet', req: { cost: 1500, level: 21 } },
+    { id: 'dog2', name: 'Shiba', kind: 'Shiba', src: 'pet', req: { cost: 2500, level: 32 } },
+    { id: 'rat2', name: 'Dusty', kind: 'Rat', src: 'pet', req: { cost: 1000, level: 23 } },
     { id: 'cat2', name: 'Shadow', kind: 'Black cat', src: 'pet', req: { streak: 5 } },
+    { id: 'onyx', name: 'Onyx', kind: 'Collared cat', src: 'pet', req: { cost: 1600, level: 8 } },
     { id: 'crow', name: 'Corvo', kind: 'Crow', src: 'pet', req: { daily: true } },
-    { id: 'hyena', name: 'Pup Hyena', kind: 'Hyena', src: 'cr', req: { cost: 2200, level: 11 } },
-    { id: 'scorpio', name: 'Glass Scorp', kind: 'Scorpion', src: 'cr', req: { cost: 3200, level: 15 } },
-    { id: 'snake', name: 'Pocket Viper', kind: 'Snake', src: 'cr', req: { cost: 1800, level: 14 } },
-    { id: 'vulture', name: 'Sky Buddy', kind: 'Vulture', src: 'cr', req: { cost: 4500, level: 18 }, fly: true },
+    { id: 'hyena', name: 'Pup Hyena', kind: 'Hyena', src: 'cr', req: { cost: 2200, level: 29 } },
+    { id: 'scorpio', name: 'Glass Scorp', kind: 'Scorpion', src: 'cr', req: { cost: 3200, level: 40 } },
+    { id: 'snake', name: 'Pocket Viper', kind: 'Snake', src: 'cr', req: { cost: 1800, level: 36 } },
+    { id: 'vulture', name: 'Sky Buddy', kind: 'Vulture', src: 'cr', req: { cost: 4500, level: 47 }, fly: true },
     { id: 'mummy', name: 'Little Mummy', kind: 'Mummy', src: 'cr', req: { streak: 30 } },
     { id: 'deceased', name: 'Ghoul Pal', kind: 'Ghoul', src: 'cr', req: { steps: 100000 } },
     // woodland animals
-    { id: 'hare', scale: 2, name: 'Clover', kind: 'Hare', src: 'pet', req: { cost: 1200, level: 7 } },
-    { id: 'fox', scale: 2, name: 'Rusty', kind: 'Fox', src: 'pet', req: { cost: 2000, level: 10 } },
-    { id: 'boar', scale: 2, name: 'Tusk', kind: 'Boar', src: 'pet', req: { cost: 5000, level: 20 } },
+    { id: 'hare', scale: 2, name: 'Clover', kind: 'Hare', src: 'pet', req: { cost: 1200, level: 18 } },
+    { id: 'fox', scale: 2, name: 'Rusty', kind: 'Fox', src: 'pet', req: { cost: 2000, level: 26 } },
+    { id: 'boar', scale: 2, name: 'Tusk', kind: 'Boar', src: 'pet', req: { cost: 5000, level: 50 } },
     { id: 'grouse', scale: 2, name: 'Ruffle', kind: 'Black grouse', src: 'pet', req: { streak: 10 } },
-    { id: 'deer', scale: 2, name: 'Fawn', kind: 'Deer', src: 'pet', req: { cost: 3800, level: 16 } },
+    { id: 'deer', scale: 2, name: 'Fawn', kind: 'Deer', src: 'pet', req: { cost: 3800, level: 42 } },
     // pet rocks: they hop along behind you
     { id: 'rock_lime', name: 'Pebble', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 400, level: 2 } },
-    { id: 'rock_sand', name: 'Sandy', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 500, level: 3 } },
-    { id: 'rock_moss', name: 'Mossy', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 700, level: 5 } },
-    { id: 'rock_rust', name: 'Clay', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 900, level: 6 } },
+    { id: 'rock_sand', name: 'Sandy', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 500, level: 4 } },
+    { id: 'rock_moss', name: 'Mossy', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 700, level: 11 } },
+    { id: 'rock_rust', name: 'Clay', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 900, level: 13 } },
     { id: 'rock_cobble', name: 'Cobble', kind: 'Pet rock', src: 'pet', hop: true, req: { steps: 15000 } },
-    { id: 'rock_marble', name: 'Marble', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 2500, level: 13 } },
-    { id: 'rock_frost', name: 'Frosty', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 3000, level: 18 } },
+    { id: 'rock_marble', name: 'Marble', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 2500, level: 34 } },
+    { id: 'rock_frost', name: 'Frosty', kind: 'Pet rock', src: 'pet', hop: true, req: { cost: 3000, level: 44 } },
     { id: 'rock_magma', name: 'Magma', kind: 'Pet rock', src: 'pet', hop: true, req: { bosses: 3 } },
     // Chaos Monsters: little fiends that hop (or hover) along behind you
-    { id: 'cm1', name: 'Glimmer', kind: 'Lantern mite', src: 'pet', hop: true, req: { cost: 450, level: 2 } },
-    { id: 'cm2', name: 'Skitter', kind: 'Bone spider', src: 'pet', hop: true, req: { cost: 550, level: 3 } },
-    { id: 'cm3', name: 'Haze', kind: 'Smoke wraith', src: 'pet', hop: true, req: { cost: 650, level: 4 } },
-    { id: 'cm4', name: 'Grub', kind: 'Bog beetle', src: 'pet', hop: true, req: { cost: 700, level: 4 } },
-    { id: 'cm5', name: 'Inky', kind: 'Ink crawler', src: 'pet', hop: true, req: { cost: 800, level: 5 } },
-    { id: 'cm6', name: 'Frostfang', kind: 'Frost beast', src: 'pet', hop: true, req: { cost: 4200, level: 22 } },
-    { id: 'cm7', name: 'Bristle', kind: 'Spine hound', src: 'pet', hop: true, req: { cost: 2400, level: 13 } },
-    { id: 'cm8', name: 'Murk', kind: 'Shade crab', src: 'pet', hop: true, req: { cost: 1100, level: 7 } },
-    { id: 'cm9', name: 'Ooze', kind: 'Magma slime', src: 'pet', hop: true, req: { cost: 1300, level: 8 } },
-    { id: 'cm10', name: 'Scamp', kind: 'Red imp', src: 'pet', hop: true, req: { cost: 900, level: 6 } },
-    { id: 'cm11', name: 'Pip', kind: 'Horned imp', src: 'pet', hop: true, req: { cost: 1400, level: 9 } },
-    { id: 'cm12', name: 'Snik', kind: 'Goblin squire', src: 'pet', hop: true, req: { cost: 2000, level: 12 } },
-    { id: 'cm13', name: 'Goldie', kind: 'Gold serpent', src: 'pet', hop: true, req: { cost: 2600, level: 14 } },
-    { id: 'cm14', name: 'Morwen', kind: 'Moth witch', src: 'pet', hop: true, req: { cost: 5200, level: 26 } },
-    { id: 'cm15', name: 'Peeper', kind: 'Eye cluster', src: 'pet', hop: true, req: { cost: 1600, level: 10 } },
-    { id: 'cm16', name: 'Wick', kind: 'Flame skull', src: 'pet', fly: true, req: { cost: 3400, level: 18 } },
-    { id: 'cm17', name: 'Crookbeak', kind: 'Plague vulture', src: 'pet', hop: true, req: { cost: 2800, level: 15 } },
-    { id: 'cm18', name: 'Mumble', kind: 'Skull rat', src: 'pet', hop: true, req: { cost: 1000, level: 6 } },
-    { id: 'cm19', name: 'Grumble', kind: 'Pit demon', src: 'pet', hop: true, req: { cost: 5800, level: 28 } },
-    { id: 'cm20', name: 'Bogmaw', kind: 'Swamp horror', src: 'pet', hop: true, req: { cost: 4600, level: 24 } },
+    { id: 'cm1', name: 'Glimmer', kind: 'Lantern mite', src: 'pet', hop: true, req: { cost: 450, level: 3 } },
+    { id: 'cm2', name: 'Skitter', kind: 'Bone spider', src: 'pet', hop: true, req: { cost: 550, level: 5 } },
+    { id: 'cm3', name: 'Haze', kind: 'Smoke wraith', src: 'pet', hop: true, req: { cost: 650, level: 7 } },
+    { id: 'cm4', name: 'Grub', kind: 'Bog beetle', src: 'pet', hop: true, req: { cost: 700, level: 9 } },
+    { id: 'cm5', name: 'Inky', kind: 'Ink crawler', src: 'pet', hop: true, req: { cost: 800, level: 12 } },
+    { id: 'cm6', name: 'Frostfang', kind: 'Frost beast', src: 'pet', hop: true, req: { cost: 4200, level: 52 } },
+    { id: 'cm7', name: 'Bristle', kind: 'Spine hound', src: 'pet', hop: true, req: { cost: 2400, level: 33 } },
+    { id: 'cm8', name: 'Murk', kind: 'Shade crab', src: 'pet', hop: true, req: { cost: 1100, level: 17 } },
+    { id: 'cm9', name: 'Ooze', kind: 'Magma slime', src: 'pet', hop: true, req: { cost: 1300, level: 20 } },
+    { id: 'cm10', name: 'Scamp', kind: 'Red imp', src: 'pet', hop: true, req: { cost: 900, level: 14 } },
+    { id: 'cm11', name: 'Pip', kind: 'Horned imp', src: 'pet', hop: true, req: { cost: 1400, level: 22 } },
+    { id: 'cm12', name: 'Snik', kind: 'Goblin squire', src: 'pet', hop: true, req: { cost: 2000, level: 30 } },
+    { id: 'cm13', name: 'Goldie', kind: 'Gold serpent', src: 'pet', hop: true, req: { cost: 2600, level: 37 } },
+    { id: 'cm14', name: 'Morwen', kind: 'Moth witch', src: 'pet', hop: true, req: { cost: 5200, level: 56 } },
+    { id: 'cm15', name: 'Peeper', kind: 'Eye cluster', src: 'pet', hop: true, req: { cost: 1600, level: 25 } },
+    { id: 'cm16', name: 'Wick', kind: 'Flame skull', src: 'pet', fly: true, req: { cost: 3400, level: 45 } },
+    { id: 'cm17', name: 'Crookbeak', kind: 'Plague vulture', src: 'pet', hop: true, req: { cost: 2800, level: 38 } },
+    { id: 'cm18', name: 'Mumble', kind: 'Skull rat', src: 'pet', hop: true, req: { cost: 1000, level: 15 } },
+    { id: 'cm19', name: 'Grumble', kind: 'Pit demon', src: 'pet', hop: true, req: { cost: 5800, level: 58 } },
+    { id: 'cm20', name: 'Bogmaw', kind: 'Swamp horror', src: 'pet', hop: true, req: { cost: 4600, level: 54 } },
     { id: 'cm21', name: 'Argus', kind: 'Eye mound', src: 'pet', hop: true, req: { steps: 200000 } },
-    { id: 'cm22', name: 'Flit', kind: 'Winged imp', src: 'pet', fly: true, req: { cost: 3000, level: 16 } },
-    { id: 'cm23', name: 'Sprout', kind: 'Thorn toad', src: 'pet', hop: true, req: { cost: 1200, level: 8 } },
-    { id: 'cm24', name: 'Gaunt', kind: 'Horned ghoul', src: 'pet', hop: true, req: { cost: 3600, level: 19 } },
-    { id: 'cm25', name: 'Creep', kind: 'Tick spider', src: 'pet', hop: true, req: { cost: 1500, level: 10 } },
-    { id: 'cm26', name: 'Jitter', kind: 'Mad monkey', src: 'pet', hop: true, req: { cost: 1800, level: 11 } },
+    { id: 'cm22', name: 'Flit', kind: 'Winged imp', src: 'pet', fly: true, req: { cost: 3000, level: 41 } },
+    { id: 'cm23', name: 'Sprout', kind: 'Thorn toad', src: 'pet', hop: true, req: { cost: 1200, level: 19 } },
+    { id: 'cm24', name: 'Gaunt', kind: 'Horned ghoul', src: 'pet', hop: true, req: { cost: 3600, level: 48 } },
+    { id: 'cm25', name: 'Creep', kind: 'Tick spider', src: 'pet', hop: true, req: { cost: 1500, level: 24 } },
+    { id: 'cm26', name: 'Jitter', kind: 'Mad monkey', src: 'pet', hop: true, req: { cost: 1800, level: 27 } },
     { id: 'cm27', name: 'Dusk', kind: 'Shadow hound', src: 'pet', hop: true, req: { streak: 21 } },
-    { id: 'cm28', name: 'Scorch', kind: 'Fire salamander', src: 'pet', hop: true, req: { cost: 3800, level: 20 } },
-    { id: 'cm29', name: 'Grasp', kind: 'Hand crawler', src: 'pet', hop: true, req: { cost: 2200, level: 12 } },
-    { id: 'cm30', name: 'Bramble', kind: 'Antlered beast', src: 'pet', hop: true, req: { cost: 6400, level: 30 } },
-    { id: 'cm31', name: 'Webby', kind: 'Void spider', src: 'pet', hop: true, req: { cost: 3200, level: 17 } },
-    { id: 'cm32', name: 'Fang', kind: 'Maw totem', src: 'pet', hop: true, req: { cost: 4400, level: 23 } },
-    { id: 'cm33', name: 'Snort', kind: 'Tusk crawler', src: 'pet', hop: true, req: { cost: 2500, level: 13 } },
+    { id: 'cm28', name: 'Scorch', kind: 'Fire salamander', src: 'pet', hop: true, req: { cost: 3800, level: 49 } },
+    { id: 'cm29', name: 'Grasp', kind: 'Hand crawler', src: 'pet', hop: true, req: { cost: 2200, level: 31 } },
+    { id: 'cm30', name: 'Bramble', kind: 'Antlered beast', src: 'pet', hop: true, req: { cost: 6400, level: 60 } },
+    { id: 'cm31', name: 'Webby', kind: 'Void spider', src: 'pet', hop: true, req: { cost: 3200, level: 43 } },
+    { id: 'cm32', name: 'Fang', kind: 'Maw totem', src: 'pet', hop: true, req: { cost: 4400, level: 53 } },
+    { id: 'cm33', name: 'Snort', kind: 'Tusk crawler', src: 'pet', hop: true, req: { cost: 2500, level: 35 } },
     { id: 'cm34', name: 'Willow', kind: 'Wild spirit', src: 'pet', hop: true, req: { explored: 'gulch' } },
-    { id: 'cm35', name: 'Smolder', kind: 'Ember golem', src: 'pet', hop: true, req: { cost: 5000, level: 25 } },
-    { id: 'cm36', name: 'Tumble', kind: 'Rock troll', src: 'pet', hop: true, req: { cost: 6000, level: 29 } },
+    { id: 'cm35', name: 'Smolder', kind: 'Ember golem', src: 'pet', hop: true, req: { cost: 5000, level: 55 } },
+    { id: 'cm36', name: 'Tumble', kind: 'Rock troll', src: 'pet', hop: true, req: { cost: 6000, level: 59 } },
     { id: 'cm37', name: 'Crimson', kind: 'Lesser demon', src: 'pet', hop: true, req: { bosses: 5 } },
-    { id: 'cm38', name: 'Horace', kind: 'Ram fiend', src: 'pet', hop: true, req: { cost: 7200, level: 33 } },
-    { id: 'cm39', name: 'Bellows', kind: 'Toad demon', src: 'pet', hop: true, req: { cost: 6800, level: 32 } },
-    { id: 'cm40', name: 'Lumpy', kind: 'Lava shell', src: 'pet', hop: true, req: { cost: 4000, level: 21 } },
-    { id: 'cm41', name: 'Stalker', kind: 'Bog stalker', src: 'pet', hop: true, req: { cost: 7600, level: 35 } },
-    { id: 'cm42', name: 'Blink', kind: 'Eye bat', src: 'pet', fly: true, req: { cost: 2000, level: 11 } },
-    { id: 'cm43', name: 'Hush', kind: 'Gloom beast', src: 'pet', hop: true, req: { cost: 5400, level: 27 } },
-    { id: 'cm44', name: 'Mystic', kind: 'Shell oracle', src: 'pet', hop: true, req: { cost: 8000, level: 37 } },
-    { id: 'cm45', name: 'Siren', kind: 'Tide witch', src: 'pet', hop: true, req: { cost: 8500, level: 40 } },
-    { id: 'cm46', name: 'Orbit', kind: 'Eye spider', src: 'pet', hop: true, req: { cost: 2900, level: 15 } },
+    { id: 'cm38', name: 'Horace', kind: 'Ram fiend', src: 'pet', hop: true, req: { cost: 7200, level: 62 } },
+    { id: 'cm39', name: 'Bellows', kind: 'Toad demon', src: 'pet', hop: true, req: { cost: 6800, level: 61 } },
+    { id: 'cm40', name: 'Lumpy', kind: 'Lava shell', src: 'pet', hop: true, req: { cost: 4000, level: 51 } },
+    { id: 'cm41', name: 'Stalker', kind: 'Bog stalker', src: 'pet', hop: true, req: { cost: 7600, level: 63 } },
+    { id: 'cm42', name: 'Blink', kind: 'Eye bat', src: 'pet', fly: true, req: { cost: 2000, level: 28 } },
+    { id: 'cm43', name: 'Hush', kind: 'Gloom beast', src: 'pet', hop: true, req: { cost: 5400, level: 57 } },
+    { id: 'cm44', name: 'Mystic', kind: 'Shell oracle', src: 'pet', hop: true, req: { cost: 8000, level: 64 } },
+    { id: 'cm45', name: 'Siren', kind: 'Tide witch', src: 'pet', hop: true, req: { cost: 8500, level: 65 } },
+    { id: 'cm46', name: 'Orbit', kind: 'Eye spider', src: 'pet', hop: true, req: { cost: 2900, level: 39 } },
     { id: 'cm47', name: 'Kindle', kind: 'Fire sprite', src: 'pet', hop: true, req: { daily: true } },
-    { id: 'cm48', name: 'Pinch', kind: 'Bog scorpion', src: 'pet', hop: true, req: { cost: 3500, level: 18 } },
+    { id: 'cm48', name: 'Pinch', kind: 'Bog scorpion', src: 'pet', hop: true, req: { cost: 3500, level: 46 } },
     { id: 'cm49', name: 'Plume', kind: 'Owl spirit', src: 'pet', hop: true, req: { streak: 45 } },
     { id: 'cm50', name: 'Ruckus', kind: 'Horned brute', src: 'pet', hop: true, req: { steps: 500000 } },
   ];
   // Pets have their own health and take part of every hit aimed at you in battle (share = 20% to 60%).
   // Bigger and tougher companions take more. A pet at 0 HP is knocked out until it heals: pets refill
   // slowly over time like you do (walking does not heal anyone).
-  const PET_STATS = { dog: [55, 0.4], dog2: [50, 0.35], cat: [40, 0.3], cat2: [42, 0.3], rat: [28, 0.2], rat2: [30, 0.2], crow: [30, 0.2], pigeon: [28, 0.2],
+  const PET_STATS = { dog: [55, 0.4], dog2: [50, 0.35], cat: [40, 0.3], cat2: [42, 0.3], onyx: [44, 0.3], rat: [28, 0.2], rat2: [30, 0.2], crow: [30, 0.2], pigeon: [28, 0.2],
     hyena: [55, 0.4], scorpio: [50, 0.35], snake: [40, 0.25], vulture: [45, 0.3], mummy: [70, 0.5], deceased: [75, 0.55],
     hare: [35, 0.25], fox: [50, 0.35], boar: [85, 0.55], grouse: [32, 0.2], deer: [70, 0.45],
     rock_lime: [60, 0.45], rock_sand: [60, 0.45], rock_moss: [70, 0.5], rock_rust: [75, 0.5], rock_cobble: [85, 0.55], rock_marble: [90, 0.55], rock_frost: [95, 0.6], rock_magma: [110, 0.6],
     cm1: [28, 0.2], cm2: [32, 0.2], cm3: [34, 0.25], cm4: [38, 0.25], cm5: [38, 0.25], cm6: [70, 0.45], cm7: [55, 0.4], cm8: [44, 0.3], cm9: [50, 0.35], cm10: [36, 0.25], cm11: [40, 0.3], cm12: [52, 0.35], cm13: [55, 0.35], cm14: [68, 0.45], cm15: [60, 0.4], cm16: [45, 0.3], cm17: [52, 0.35], cm18: [36, 0.25], cm19: [90, 0.55], cm20: [82, 0.5], cm21: [95, 0.6], cm22: [46, 0.3], cm23: [48, 0.35], cm24: [62, 0.4], cm25: [42, 0.3], cm26: [44, 0.3], cm27: [66, 0.45], cm28: [60, 0.4], cm29: [50, 0.35], cm30: [98, 0.6], cm31: [54, 0.35], cm32: [80, 0.5], cm33: [56, 0.4], cm34: [64, 0.4], cm35: [92, 0.55], cm36: [100, 0.6], cm37: [84, 0.5], cm38: [105, 0.6], cm39: [100, 0.6], cm40: [88, 0.55], cm41: [102, 0.6], cm42: [40, 0.25], cm43: [86, 0.55], cm44: [78, 0.5], cm45: [82, 0.5], cm46: [54, 0.35], cm47: [50, 0.35], cm48: [58, 0.4], cm49: [90, 0.55], cm50: [115, 0.6] };
   D.PETS.forEach((p) => { const [hp, share] = PET_STATS[p.id] || [40, 0.3]; p.hp = hp; p.share = share; });
-  // some pets also attack: after each of your moves they hit the creature for a share of your attack (it varies a little)
-  const PET_ATTACK = { dog: [0.12, 'Bites'], fox: [0.2, 'Nips'], hyena: [0.25, 'Pounces'], scorpio: [0.3, 'Stings'], boar: [0.38, 'Charges'],
-    cm6: [0.28, 'Bites'], cm16: [0.2, 'Scorches'], cm19: [0.32, 'Claws'], cm28: [0.25, 'Burns'], cm37: [0.35, 'Rends'], cm41: [0.34, 'Pounces'], cm47: [0.2, 'Singes'], cm48: [0.3, 'Stings'] };
-  D.PETS.forEach((p) => { if (PET_ATTACK[p.id]) { p.atk = PET_ATTACK[p.id][0]; p.atkVerb = PET_ATTACK[p.id][1]; } });
+  // ---------- pet roles in battle (3.3.2). Every pet still takes its share of each hit; on top of that each one has a role:
+  //   attack  darts in after each of your moves and hits the creature for `atk` × your attack
+  //   shoot   fires a pixel projectile (`proj`: feather, spit, ember, stone, orb, spark, water) for `atk` × your attack
+  //   heal    restores `heal` × your max HP after each of your moves, while you're hurt
+  //   guard   only defends: a `block` chance to jump in front of a hit and take most of it
+  const PA = (atk, verb) => ({ role: 'attack', atk, verb }), PS = (atk, verb, proj) => ({ role: 'shoot', atk, verb, proj }),
+    PH = (heal, verb) => ({ role: 'heal', heal, verb }), PG = (block) => ({ role: 'guard', block });
+  D.PET_ROLES = {
+    // attackers
+    dog: PA(0.14, 'Bites'), dog2: PA(0.16, 'Bites'), cat: PA(0.14, 'Scratches'), onyx: PA(0.15, 'Swipes at'), fox: PA(0.2, 'Nips'), hyena: PA(0.25, 'Pounces on'),
+    scorpio: PA(0.3, 'Stings'), boar: PA(0.38, 'Charges'), rat2: PA(0.12, 'Gnaws'), cm2: PA(0.14, 'Bites'), cm6: PA(0.28, 'Bites'), cm7: PA(0.24, 'Rams'),
+    cm12: PA(0.22, 'Slashes'), cm17: PA(0.24, 'Pecks'), cm19: PA(0.32, 'Claws'), cm25: PA(0.18, 'Bites'), cm26: PA(0.2, 'Pummels'), cm27: PA(0.3, 'Mauls'),
+    cm29: PA(0.22, 'Grabs'), cm31: PA(0.27, 'Bites'), cm33: PA(0.26, 'Gores'), cm37: PA(0.35, 'Rends'), cm38: PA(0.36, 'Rams'), cm41: PA(0.34, 'Pounces on'),
+    cm48: PA(0.3, 'Stings'), cm50: PA(0.42, 'Smashes'),
+    // shooters (pixel projectiles)
+    pigeon: PS(0.12, 'Flicks a feather at', 'feather'), crow: PS(0.16, 'Flings a feather at', 'feather'), grouse: PS(0.15, 'Flings a feather at', 'feather'),
+    vulture: PS(0.24, 'Dives a feather at', 'feather'), snake: PS(0.18, 'Spits venom at', 'spit'), cm5: PS(0.16, 'Squirts ink at', 'spit'),
+    cm13: PS(0.24, 'Spits venom at', 'spit'), cm9: PS(0.2, 'Spits lava at', 'ember'), cm10: PS(0.16, 'Hurls a fireball at', 'ember'),
+    cm16: PS(0.22, 'Spits fire at', 'ember'), cm28: PS(0.25, 'Breathes fire at', 'ember'), cm47: PS(0.2, 'Throws a spark at', 'ember'),
+    cm1: PS(0.12, 'Zaps', 'spark'), cm11: PS(0.18, 'Casts a hex at', 'orb'), cm14: PS(0.3, 'Casts moonlight at', 'orb'), cm15: PS(0.2, 'Fires a beam at', 'orb'),
+    cm21: PS(0.3, 'Fires a beam at', 'orb'), cm22: PS(0.24, 'Casts a bolt at', 'orb'), cm42: PS(0.2, 'Fires a beam at', 'orb'), cm46: PS(0.24, 'Fires a beam at', 'orb'),
+    cm45: PS(0.32, 'Hurls a wave at', 'water'), rock_magma: PS(0.26, 'Lobs a hot rock at', 'stone'), cm35: PS(0.3, 'Lobs a boulder at', 'stone'), cm36: PS(0.32, 'Lobs a boulder at', 'stone'),
+    // healers
+    hare: PH(0.05, 'nuzzles you'), cat2: PH(0.05, 'purrs'), deer: PH(0.07, 'glows softly'), cm3: PH(0.05, 'wraps you in warm smoke'),
+    cm30: PH(0.08, 'blooms with healing moss'), cm34: PH(0.07, 'sings a wild song'), cm44: PH(0.08, 'reads a healing omen'), cm49: PH(0.09, 'sheds a healing feather'),
+    // guardians (only defend)
+    rat: PG(0.15), mummy: PG(0.3), deceased: PG(0.3), rock_lime: PG(0.2), rock_sand: PG(0.2), rock_moss: PG(0.22), rock_rust: PG(0.24), rock_cobble: PG(0.26),
+    rock_marble: PG(0.28), rock_frost: PG(0.3), cm4: PG(0.22), cm8: PG(0.25), cm18: PG(0.18), cm20: PG(0.3), cm23: PG(0.22), cm24: PG(0.28), cm32: PG(0.32),
+    cm39: PG(0.32), cm40: PG(0.3), cm43: PG(0.3),
+  };
+  D.PETS.forEach((p) => {
+    const r = D.PET_ROLES[p.id] || PG(0.2);
+    p.role = r.role; p.block = r.block || 0; p.heal = r.heal || 0; p.proj = r.proj || null; p.healVerb = r.role === 'heal' ? r.verb : '';
+    if (r.atk) { p.atk = r.atk; p.atkVerb = r.verb; }
+  });
+  // how a pet helps, in a few words (Shop and Inventory cards)
+  D.petRoleText = (p) => p.role === 'attack' ? 'Attacker. ' + p.atkVerb + ' the creature after your moves.' : p.role === 'shoot' ? 'Shooter. ' + p.atkVerb + ' the creature after your moves.'
+    : p.role === 'heal' ? 'Healer. Restores ' + Math.round(p.heal * 100) + '% of your HP each turn.' : 'Guardian. Only defends: ' + Math.round(p.block * 100) + '% chance to take most of a hit.';
   D.petMaxHp = (p, lvl) => Math.round(p.hp + p.hp * 0.04 * (lvl - 1));
 
   // ---------- Skin tones ----------
@@ -1139,6 +1184,8 @@
   D.BATTLE_LEVEL = 3;    // creatures, battles, guardians and the Druid only appear from this level
   D.FIGHT_CHANCE = 0.4;
   D.RIVAL_CHANCE = 0.08;   // a fighting creature is Redhood Rival 8% of the time, in any world
+  // mobs: from level D.MOB_LEVEL a fight can be 2–3 creatures. The ones behind the front are weaker and attack 60% of rounds.
+  D.MOB_MAX = 3; D.MOB_LEVEL = 6; D.MOB_CHANCE = 0.18; D.MOB_HP = 0.6; D.MOB_ATK = 0.55; D.MOB_ACT = 0.6;
   // Redhood Rival's battle talk: her travels, and how you don't walk as much as she does.
   // {today} your steps today · {total} your lifetime steps · {streak} your streak · {world} where you are · {far} somewhere she's been
   D.RIVAL = { lines: {

@@ -15,7 +15,7 @@
 
   // ---------- hero ----------
   // charms: worn magic items (up to D.CHARM_SLOTS), each with a passive perk
-  G.charms = () => (S().equip.charms || []).filter((id) => D.magicById[id] && D.magicById[id].kind === 'charm' && G.owns('magic', id));
+  G.charms = () => (S().equip.charms || []).filter((id) => D.magicById[id] && D.magicById[id].kind === 'charm' && G.owns('magic', id) && (!G.uses || G.uses(id) > 0));   // a charm with no battles left stops working
   G.perk = (perk) => G.charms().some((id) => D.magicById[id].perk === perk);
   G.maxHp = () => Math.round(D.heroMaxHp(S().level) * (G.perk && G.perk('hp') ? 1.1 : 1));
   G.heal = (n) => {
@@ -103,7 +103,9 @@
   G.unlock = (cat, id, quiet) => {
     const list = S().owned[CATS[cat][0]];
     if (list.includes(id)) return false;
+    if (cat === 'magic' && G.stock) G.stock();   // set up item stock first, so an older save's one-time top-up never doubles this pack
     list.push(id);
+    if (cat === 'magic' && G.addUses) G.addUses(id, G.packSize(id));   // magic comes with a pack of casts (or battles, for charms)
     if (!quiet) WB.bus.emit('unlock', { cat, id });
     return true;
   };
@@ -424,7 +426,7 @@
     if ((type === 'merlin' || type === 'egg') && !forceType && !(type === 'merlin' ? G.merlinEligible() : G.merlinOpen() && !G.nestFull())) type = 'chest';   // eggs only when your nest has room
     const e = { id: 'e' + ++s.enc.seq, type, world: w.id };
     if (type === 'boss') {
-      e.creature = w.boss; e.boss = true;
+      e.creature = w.boss; e.boss = true; e.rematch = !!s.bosses[w.id];   // a guardian you've beaten can be challenged again
       const c = D.CREATURES[e.creature];
       e.text = 'The guardian of ' + w.name + ' appears. ' + c.name + ' ' + c.verb + '!';
       e.choices = [{ id: 'battle', label: 'Battle', hint: 'Guardian · guards a Crystal Egg' }, { id: 'avoid', label: 'Not yet', hint: 'Fight it from the map' }];
@@ -451,14 +453,20 @@
       } else if (c.aggressive) {
         e.aggressive = true;
         e.text = e.rival ? c.name + ' ' + c.verb + '. “Still walking? Prove it.”' : 'A ' + c.name + ' ' + c.verb + '!';
-        e.choices = [{ id: 'battle', label: 'Battle', hint: 'Lv ' + (e.rival ? D.rivalStats(s.level) : D.creatureStats(e.creature, D.worldTier(w, s.level))).lvl }, { id: 'avoid', label: e.rival ? 'Walk away' : 'Avoid it', hint: e.rival ? 'She’ll be back' : 'Walk on' }];
+        // a mob: 2–3 creatures from this world attack together (not before level D.MOB_LEVEL or your first five battles)
+        if (!e.rival && !opts.creature && s.level >= D.MOB_LEVEL && s.enc.battles >= 5 && hostile.length && Math.random() < D.MOB_CHANCE) {
+          const n = s.level >= 12 && Math.random() < 0.4 ? 3 : 2;
+          e.mob = Array.from({ length: n - 1 }, () => WB.pick(hostile));
+          e.text = 'A mob of ' + n + ' attacks! ' + [e.creature, ...e.mob].map((id) => D.CREATURES[id].name).join(', ') + '.';
+        }
+        e.choices = [{ id: 'battle', label: 'Battle', hint: (e.mob ? 'Mob of ' + (e.mob.length + 1) + ' · ' : '') + 'Lv ' + (e.rival ? D.rivalStats(s.level) : D.creatureStats(e.creature, D.worldTier(w, s.level))).lvl }, { id: 'avoid', label: e.rival ? 'Walk away' : 'Avoid it', hint: e.rival ? 'She’ll be back' : 'Walk on' }];
       } else {
         e.text = 'A ' + c.name + ' ' + c.verb + '.';
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
       }
     } else if (type === 'merlin') {   // Merlin swoops down with an egg for your nest
       G.merlin().at = Date.now();
-      e.npc = 'merlin'; e.egg = G.rollEgg(w.tier || 0);
+      e.npc = 'merlin'; e.egg = G.rollEgg(w.tier || 0); e.eggV = G.eggVariant(e.egg);
       const egg = D.eggById[e.egg];
       e.text = WB.pick(D.MERLIN_LINES) + ' ' + egg.name + ': ' + WB.fmt(egg.steps) + ' steps to hatch.';
       e.choices = [{ id: 'take', label: 'Take the egg', hint: egg.rarity + ' · nest ' + G.nest().length + ' / ' + D.NEST_MAX }, { id: 'decline', label: 'Not this time', hint: 'No penalty' }];
@@ -468,7 +476,7 @@
       const r = G.druidReward(w);
       e.choices = [{ id: 'quiz', label: 'Take the challenge', hint: '+' + r.xp + ' XP, +' + r.coins + ' coins · wrong = battle' }, { id: 'avoid', label: 'Walk away', hint: 'No reward' }];
     } else if (type === 'egg') {   // an egg by the road: it goes into Merlin's nest and hatches as you walk
-      e.egg = G.rollEgg(w.tier);
+      e.egg = G.rollEgg(w.tier); e.eggV = G.eggVariant(e.egg);
       const egg = D.eggById[e.egg];
       e.text = WB.pick(D.EGG_LINES) + ' ' + egg.name + ': ' + WB.fmt(egg.steps) + ' steps to hatch.';
       e.choices = [{ id: 'take', label: 'Put it in your nest', hint: 'Nest ' + G.nest().length + ' / ' + D.NEST_MAX }];
@@ -543,7 +551,8 @@
       case 'traveler:decline': out.text = '“Safe roads, then.”'; out.anim = 'talk'; break;
       case 'egg:take': {
         out.anim = 'take';
-        if (G.giveEgg(e.egg)) { out.reward = { xp: 8 + lvl }; out.egg = e.egg; out.text = 'Added to your nest. Walk to hatch it (Missions → Merlin).'; }
+        const gr = G.giveEgg(e.egg, e.eggV);
+        if (gr) { out.reward = { xp: 8 + lvl }; out.egg = e.egg; out.eggArt = G.eggArt(gr); out.text = 'Added to your nest. Walk to hatch it (Missions → Merlin).'; }
         else { out.reward = { coins: 20 }; out.text = 'Your nest is full. You leave it and find a few coins nearby.'; }
         break;
       }
@@ -579,8 +588,8 @@
       }
       case 'merlin:take': {
         out.anim = 'talk';
-        const r = G.giveEgg(e.egg);
-        if (r) { out.reward = { xp: 10 }; out.egg = e.egg; out.text = '“Hoo! Keep it warm.” Walk to hatch it (Missions → Merlin).'; }
+        const r = G.giveEgg(e.egg, e.eggV);
+        if (r) { out.reward = { xp: 10 }; out.egg = e.egg; out.eggArt = G.eggArt(r); out.text = '“Hoo! Keep it warm.” Walk to hatch it (Missions → Merlin).'; }
         else { out.reward = { xp: 5 }; out.text = '“Your nest is full, walker. Hatch one first.”'; }
         break;
       }
@@ -600,14 +609,17 @@
     const out = { result: b.result, reward: {}, granted: [] };
     if (e.nemesis) return bossResult(b, out, w);
     if (b.result === 'win') {
-      const mult = e.boss ? 4 : 1;
+      const re = e.boss && e.rematch, mult = e.boss ? (re ? 2 : 4) : 1;   // a rematch pays half a first win
       const tier = D.worldTier(w, s.level);   // the tier the creature fought at (it follows your level)
-      out.reward = { xp: Math.round((22 + tier * 9) * mult), coins: Math.round((12 + tier * 5) * (e.boss ? 5 : 1)) };
+      out.reward = { xp: Math.round((22 + tier * 9) * mult), coins: Math.round((12 + tier * 5) * (e.boss ? (re ? 2.5 : 5) : 1)) };
+      if (e.mobN > 1) { out.reward.xp = Math.round(out.reward.xp * (1 + 0.6 * (e.mobN - 1))); out.reward.coins = Math.round(out.reward.coins * (1 + 0.6 * (e.mobN - 1))); out.mob = e.mobN; }   // a mob pays for every creature in it
       s.enc.battles++; s.today.battles = (s.today.battles || 0) + 1; s.enc.fights++;
       const first = !s.enc.cards[e.creature];
       s.enc.cards[e.creature] = (s.enc.cards[e.creature] || 0) + 1;
       if (first) { out.reward.coins += 30; out.newKind = e.creature; }
-      if (e.boss) {
+      for (const f of (b.foes || []).slice(1)) { if (!s.enc.cards[f.id] && !out.newKind) out.newKind = f.id; s.enc.cards[f.id] = (s.enc.cards[f.id] || 0) + 1; s.enc.battles++; }   // every creature in a mob counts
+      if (e.boss && re) { s.enc.rematches = (s.enc.rematches || 0) + 1; out.rematch = w; if (Math.random() < 0.5) out.reward.potion = 'elixir'; }
+      else if (e.boss) {
         s.bosses[w.id] = Date.now(); s.enc.bossDue = null; out.boss = w;
         out.reward.potion = 'elixir';
       } else if (Math.random() < (G.perk('loot') ? 0.6 : 0.3)) out.reward.potion = Math.random() < 0.8 ? 'tonic' : 'iron';
@@ -615,8 +627,8 @@
       charmRewards(out.reward);
       out.granted = G.grant(out.reward, true);
       // guardians always guard a Crystal Egg; a quarter of other creatures guard an egg too (into the nest, if there's room)
-      const egg = e.boss ? 'crystal' : Math.random() < (G.perk('loot') ? 0.4 : 0.25) + (G.perk('eggs') ? 0.1 : 0) && e.creature !== 'druid' ? G.rollEgg(w.tier) : null;
-      if (egg && G.merlinOpen() && G.giveEgg(egg)) out.egg = egg;
+      const egg = e.boss && !re ? 'crystal' : e.boss ? (Math.random() < 0.25 ? 'crystal' : null) : Math.random() < (G.perk('loot') ? 0.4 : 0.25) + (G.perk('eggs') ? 0.1 : 0) && e.creature !== 'druid' ? G.rollEgg(w.tier) : null;
+      const er = egg && G.merlinOpen() && G.giveEgg(egg); if (er) { out.egg = egg; out.eggArt = G.eggArt(er); }
       s.enc.count++; s.today.encounters++;
     } else if (b.result === 'lose') {
       s.enc.losses++;
@@ -653,7 +665,7 @@
       if (G.perk('loot')) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }
       charmRewards(out.reward);
       out.granted = G.grant(out.reward, true);
-      const egg = G.rollEgg(w.tier); if (G.giveEgg(egg)) out.egg = egg;
+      const egg = G.rollEgg(w.tier), er = G.giveEgg(egg); if (er) { out.egg = egg; out.eggArt = G.eggArt(er); }
       out.nemesis = e.creature;
       s.enc.count++; s.today.encounters++;
     } else if (b.result === 'lose') {
@@ -670,6 +682,7 @@
   // ---------- shop & supplies ----------
   G.buy = (cat, id) => {
     const s = S(), it = G.item(cat, id);
+    if (it && cat === 'magic' && G.owns(cat, id)) return G.restock(id);
     if (!it || G.owns(cat, id)) return { ok: false };
     if ((cat === 'weapon' || cat === 'magic') && !G.battlesOpen()) return { ok: false, msg: 'Unlocks with battles at level ' + D.BATTLE_LEVEL + '.' };
     const st = G.reqStatus(it.req);
@@ -690,6 +703,17 @@
     s.coins -= p.cost; s.purchases++; G.addPotion(id, 1);
     WB.Sfx.play('buy'); G.after();
     return { ok: true };
+  };
+  // a magic item you own: buy another pack of casts (battle magic) or battles (charms)
+  G.restock = (id) => {
+    const s = S(), m = D.magicById[id];
+    if (!m || !G.owns('magic', id)) return { ok: false };
+    if (!G.battlesOpen()) return { ok: false, msg: 'Unlocks with battles at level ' + D.BATTLE_LEVEL + '.' };
+    if (!G.canRestock(id)) return { ok: false, msg: 'Full: hold up to ' + G.usesMax(id) + (m.kind === 'battle' ? ' casts.' : ' battles.') };
+    if (s.coins < m.req.cost) return { ok: false, msg: 'You need ' + WB.fmt(m.req.cost - s.coins) + ' more coins.' };
+    s.coins -= m.req.cost; s.purchases++; G.addUses(id, G.packSize(id));
+    WB.Sfx.play('buy'); G.after();
+    return { ok: true, restock: true };
   };
   G.drink = (id) => {
     const s = S(), p = G.potion(id);
@@ -718,6 +742,7 @@
       const m = D.magicById[id]; if (!m || m.kind !== 'charm') return;
       const worn = G.charms();
       if (worn.includes(id)) return;
+      if (G.uses && G.uses(id) <= 0) return { empty: true };
       if (worn.length >= D.CHARM_SLOTS) return { full: true };
       s.equip.charms = [...worn, id];
     }

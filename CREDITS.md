@@ -16,6 +16,10 @@ All pixel art comes from free asset packs by **CraftPix.net** and is used under 
   - Parallax Forest by Dawid Fornal (PixelFranek): Grey Pines (free for personal and commercial use, no redistribution as a standalone asset).
   - Pine Hills, Pixel Night Forest (Moonlit Forest), Night Forest (Teal Wood) and Parallax Cave (Crystal Cavern): no license file was included. Confirm their terms before you ship commercially.
   - Artifacts in the new worlds reuse the More Assets shields, potion flasks and pet-rock pebbles.
+- Worlds added in 3.3 (built by `tools/add_new_worlds.py`):
+  - Duskfall Range (replaces Canopy Vale): the Mountain Dusk parallax layers (supplied as a Godot project). No license file was included. Confirm its terms before you ship commercially.
+  - Sunken Ruins (replaces Leeward Shore): Underwater Diving by Luis Zuno (ansimuz): background, coral, ruins, seabed tiles and plants. Public domain.
+  - Dusk Metropolis: Futuristic City Parallax by Dawid Fornal (PixelFranek). Free for personal and commercial use, no redistribution as a standalone asset. Its three artifact icons (`art/z1-z3`) are original pixel art drawn for the game.
 - Desert enemy sprites (Snake, Hyena, Scorpio, Vulture, Mummy, Deceased): encounters, battles and pets.
 - Plant creature sprites (Snapjaw, Bulb Spitter, Grinbloom), Free Swamp Bosses (Centipede, Turtle, Bloater) and Free Forest Bosses (Thornbeast, Brute, Torchbearer): battles and guardians.
 - Character sprite sheets (avatars and traders):
@@ -28,6 +32,8 @@ All pixel art comes from free asset packs by **CraftPix.net** and is used under 
   - New walker packs: Biker, Punk and Cyborg; ten city walkers; two Satyrs
   - Knight & Ranger (human_knight, human_ranger GIF sprites): idle, attack and hurt come from the pack (the Ranger was replaced in 2.11 by the newer human_ranger upload, which adds a death animation; rebuild with `tools/replace_ranger.py`); their walk cycles were generated from the idle frames for Step Quest. No license file was included: confirm the terms before shipping commercially.
   - Animal sprites (dogs, cats, rats, birds): pets
+  - Elemental eggs (3.3.3): the supplied animated egg sheet (5 families × 10 colors). No license file was included. Confirm its terms before you ship commercially.
+  - Onyx (3.3.1): the cat pixel asset pack (walk, attack and hurt), scaled to 48px frames. No license file was included. Confirm its terms before you ship commercially.
 - More Assets pack: woodland animal sprites (Fox, Hare, Deer, Boar, Black Grouse) and Pet Rocks (pets), potion icons, and three icon sets used for the 108 artifacts and the 26 achievement badges.
 
 ## Pets and walkers 3
