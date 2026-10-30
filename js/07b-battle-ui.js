@@ -118,7 +118,7 @@
     // the battle intro: "BATTLE MODE" pops up over the stage for a moment, then the fight begins
     // the panel keeps one height for the whole fight (capped so the stage stays big), so the fighters never jump
     // when Items or gear open; the menu scrolls inside it
-    requestAnimationFrame(() => { const pn = $('#b-panel'); if (pn && innerWidth <= innerHeight) { pn.style.height = Math.min(pn.offsetHeight, Math.max(220, Math.round(innerHeight * 0.38))) + 'px'; pn.classList.add('fixed'); } });   // at most ~38% of the screen: the stage gets the rest, and the menu scrolls
+    requestAnimationFrame(() => { const pn = $('#b-panel'); if (pn && innerWidth <= innerHeight) { pn.style.height = Math.min(pn.offsetHeight, Math.max(260, Math.round(innerHeight * 0.44))) + 'px'; pn.classList.add('fixed'); } });   // at most ~44% of the screen: the stage gets the rest, and the menu scrolls
     setBusy(true);
     const intro = $('#b-intro');
     intro.classList.add('go');

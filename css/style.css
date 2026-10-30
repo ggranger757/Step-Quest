@@ -3611,3 +3611,19 @@ html.rm .forge.flash { animation: none; }
 /* battle move buttons: the top line uses the same font as the fighters' names (.pl-name) */
 .b-actions .bt > span { font-family: var(--display); font-weight: 400; font-size: 19px; line-height: 1; text-transform: none; letter-spacing: 0; }
 @media (max-width: 400px) { .b-actions .bt > span { font-size: 17px; } }
+
+/* ---------- 3.3.7: taller battle buttons, so the copy never touches or spills past the button edge ----------
+   Last in the file so it wins over the compact portrait/phone rules above. Buttons size to their copy
+   (height:auto) with a comfortable floor; Defend and the special leave room for their gauge strip. */
+.b-actions { --bbtn-h: 68px; }
+.b-actions .btn { height: auto; min-height: var(--bbtn-h); padding-top: 10px; padding-bottom: 10px; align-items: center; }
+.b-actions .btn.defend, .b-actions .btn.special { min-height: calc(var(--bbtn-h) + 4px); padding-bottom: 18px; }
+.b-actions .gear-btn, .b-actions .magic-btn { min-height: 60px; }
+.b-actions .bt { gap: 3px; }
+.b-actions .bt > span { line-height: 1.2; padding-bottom: 1px; }   /* 1.0 clipped descenders (g, y, p) against the overflow clip */
+.b-actions .bt small { line-height: 1.3; font-size: 11px; }
+.b-actions.items .back, .b-actions.gear .back { min-height: 48px; padding-top: 4px; padding-bottom: 4px; }
+@media (max-width: 400px) { .b-actions { --bbtn-h: 66px; } .b-actions .bt small { font-size: 10.5px; } }
+@media (orientation: portrait) { .b-actions .btn, .b-actions .btn.special { min-height: var(--bbtn-h); } .b-actions .btn.defend, .b-actions .btn.special { min-height: calc(var(--bbtn-h) + 4px); } .b-actions .bt small { font-size: 11px; } }
+@media (max-width: 400px) and (orientation: portrait) { .b-actions .bt small { font-size: 10.5px; } }
+@media (orientation: landscape) and (max-height: 500px) { .b-actions { --bbtn-h: 58px; } }

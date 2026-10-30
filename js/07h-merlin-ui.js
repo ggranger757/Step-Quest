@@ -34,16 +34,17 @@
     const slots = [...nest.map(eggCard), ...Array.from({ length: D.NEST_MAX - nest.length }, (_, i) => emptySlot(gift && i === 0))];
     return `<div class="sect merlin-sect" id="merlin-quest">
         <h2><canvas class="mer-face" width="40" height="40" aria-hidden="true"></canvas>Merlin’s Eggs <span class="aside">${m.hatched} hatched</span></h2>
-        <p class="fine">Every step warms all your eggs.</p>
+        <p class="fine">Walk to hatch. Every step you take warms all your eggs at once.</p>
         <div class="list nest" id="egg-strip">${slots.join('')}</div>
       </div>
       ${eggCollection(m)}
       <div class="sect"><h2>How it works</h2>
         <ul class="m-lock-list pbox card">
-          <li>${WB.eggImg('frost', 24, 'still')}<span><b>Get an egg</b><small>One daily, more on the road, a Crystal Egg per guardian. Holds ${D.NEST_MAX}.</small></span></li>
-          <li>${WB.icon('steps', 2)}<span><b>Walk to hatch</b><small>${WB.fmt(Math.min(...D.EGGS.map((e) => e.steps)))}–${WB.fmt(Math.max(...D.EGGS.map((e) => e.steps)))} steps, by rarity. Eggs never expire.</small></span></li>
-          <li>${WB.icon('cap', 2)}<span><b>Answer Merlin</b><small>Right: +${Math.round((D.QUIZ_BONUS - 1) * 100)}% reward. Crystal and Shadow add a weapon or pet. Wrong still hatches.</small></span></li>
-          <li>${WB.icon('note', 2)}<span><b>History Note</b><small>A real fact with every hatch.</small></span></li>
+          <li>${WB.eggImg('frost', 24, 'still')}<span><b>1. Collect eggs</b><small>Merlin gives you a free egg once a day. More turn up on the road and drop after battles, and every guardian drops a Crystal Egg. Your nest holds ${D.NEST_MAX} eggs. When it’s full, no new eggs can join.</small></span></li>
+          <li>${WB.icon('steps', 2)}<span><b>2. Walk to warm them</b><small>Every step you walk warms all your eggs at once. Each egg has a step goal, from ${WB.fmt(Math.min(...D.EGGS.map((e) => e.steps)))} steps (Frost) to ${WB.fmt(Math.max(...D.EGGS.map((e) => e.steps)))} (Shadow); rarer eggs take more. Eggs never expire.</small></span></li>
+          <li>${WB.icon('cap', 2)}<span><b>3. Hatch and answer Merlin</b><small>When an egg’s bar is full, tap Hatch. Merlin asks one question first. Get it right for +${Math.round((D.QUIZ_BONUS - 1) * 100)}% coins and XP, and a Crystal or Shadow egg also gives you a weapon or pet. Get it wrong and the egg still hatches, just without the bonus.</small></span></li>
+          <li>${WB.icon('note', 2)}<span><b>4. Your prize</b><small>Every hatch pays coins, XP and a potion, plus a real History Note from Merlin.</small></span></li>
+          <li>${WB.eggImg('sprout1', 24, 'still')}<span><b>5. Collect every color</b><small>Sprout, Tide, Flame, Prism and Shadow eggs each come in 10 colors. Hatch them all to fill the Egg collection above (${D.EGG_COLORS} colors).</small></span></li>
         </ul>
       </div>`;
   };

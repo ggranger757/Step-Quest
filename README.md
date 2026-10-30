@@ -103,6 +103,15 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.3.8
+
+- Merlin's Eggs: rewrote "How it works" as five numbered steps (collect, walk, hatch and answer, prize, colors) that say plainly where eggs come from, that every step warms all eggs at once, the step goals, and what a right or wrong answer does.
+
+## Changes in 3.3.7
+
+- Battle menu buttons are taller (about 66-68px, up from 46px on phones) and size to their copy, so the move name and sub-label no longer touch or spill past the button edges. Defend and the special leave room for their gauge strip.
+- The portrait battle menu may now use up to ~44% of the screen (was ~38%), so the taller buttons need less scrolling.
+
 ## Changes in 3.3.6
 
 - **Fix: potions drunk in battle were never used up** (only potions given to a pet were counted). Every potion now comes out of your bag; the battle log says how many are left, and Items turns off at 0.
