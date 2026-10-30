@@ -55,6 +55,7 @@
     if (s.equip && s.equip.backpack) { if (!s.equip.charms.includes('backpack')) s.equip.charms.push('backpack'); delete s.equip.backpack; }   // the backpack became a charm
     delete s.missions;
     if (s.settings && s.settings.theme === 'field') s.settings.theme = 'night';   // the Field theme was retired
+    if (s.settings && s.settings.theme === 'contrast') s.settings.theme = 'light';   // High contrast was replaced by Light (3.3.5)
     if (s.enc && Array.isArray(s.enc.pending)) s.enc.pending = s.enc.pending.filter((e) => e.type !== 'egg' || e.egg);
     for (const k of ['equip', 'owned', 'frac', 'today', 'enc', 'tasks', 'custom', 'quick', 'mx', 'mood', 'streak', 'daily', 'settings', 'seen', 'health'])
       for (const kk of Object.keys(f[k])) if (s[k][kk] === undefined) s[k][kk] = f[k][kk];

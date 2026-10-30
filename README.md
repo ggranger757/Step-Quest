@@ -103,6 +103,10 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.3.5
+
+- **Light theme** replaces High contrast (saves that used it switch to Light). Lavender paper, deep violet, teal and amber accents; filled buttons carry white text. Checked with `tools/contrast_audit.js`, which opens every screen in a headless browser and measures each visible text against its real background: 0 failures at WCAG 2.1 AA (Section 508). Panels over the game art are nearly solid in this theme.
+
 ## Changes in 3.3.4
 
 - **Green Downs:** the sky layer had five moons painted into every 384px tile, so a row of moons showed across the screen. They're painted out; the upper sky is rebuilt from a clean strip of the same dithered gradient, so it still tiles seamlessly.

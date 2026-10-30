@@ -68,15 +68,21 @@
   --c-goal: #7ee08a; --c-today: #ffb020; --c-under: #8a4a3e;
   --shadow: #060202; --ink: #120808;
 }
-:root[data-theme="contrast"] {   /* high contrast: pure black, white text, yellow and cyan */
-  --bg: #000000; --surface: #000000; --surface-2: #121212; --inset: #000000; --line: #8a8a8a; --line-hi: #ffffff;
-  --text: #ffffff; --muted: #ebebeb; --dim: #d0d0d0;
-  --violet: #ffe600; --violet-hi: #fff27a; --cyan: #00e5ff; --gold: #ffe600; --ok: #3dff8b; --danger: #ff7070; --ehp: #ff5050;
-  --primary: #ffffff; --xp: #00e5ff; --xp-hi: #7ff2ff;
-  --c-goal: #3dff8b; --c-today: #ffe600; --c-under: #8a8a8a;
-  --shadow: #000000; --ink: #000000;
+/* Light (3.3.5): lavender paper with deep accents. On a light page an accent is both text and a button fill, so
+   accents are dark and filled buttons carry WHITE text here (dark themes use black). Every text pair >= 4.5:1. */
+:root[data-theme="light"] {
+  --bg: #f3f0fa; --surface: #ffffff; --surface-2: #ebe6f7; --inset: #f8f6fd; --line: #c4bcdd; --line-hi: #5a48b8;
+  --text: #1b1630; --muted: #4b4566; --dim: #524c6d;
+  --violet: #5b3fd6; --violet-hi: #4527b8; --cyan: #0a6582; --gold: #a84300; --ok: #1a7240; --danger: #b0123a; --ehp: #c0213a;
+  --primary: var(--violet); --xp: #2c63c9; --xp-hi: #1f4fa6;
+  --c-goal: #1a7240; --c-today: #a84300; --c-under: #8e86b8;
+  --shadow: #2b2545; --ink: #ffffff; --gold-glow: color-mix(in srgb, var(--gold) 25%, transparent);
+  color-scheme: light;
 }
-:root[data-theme="contrast"] .pbox, :root[data-theme="contrast"] .btn.ghost { box-shadow: 0 0 0 2px var(--line); }
+:root[data-theme="light"] .btn:not(.ghost) { --t: #ffffff; }
+:root[data-theme="light"] .btn[disabled], :root[data-theme="light"] .btn[aria-disabled="true"] { --t: var(--dim); }
+:root[data-theme="light"] .btn.gold[aria-disabled="true"], :root[data-theme="light"] .btn.gold[disabled] { --t: #ffffff; color: #ffffff; }
+:root[data-theme="light"] .encounter .choices .btn.gold small, :root[data-theme="light"] .b-actions .btn.gold small { color: #ffffff !important; }
 :root[data-theme="field"] {   /* black with orange; yellow is the secondary accent */
   --bg: #000000; --surface: #0c0c0c; --surface-2: #151515; --inset: #060606; --line: #2b2b2b; --line-hi: #b8651f;
   --text: #f7f2ec; --muted: #c4bbb2; --dim: #aaa197;
@@ -3588,3 +3594,17 @@ html.rm .forge.flash { animation: none; }
 .ec-egg.got .egg-img { filter: none; }
 .hatch .hatched { display: flex; align-items: center; justify-content: center; gap: var(--s3); }
 .hatch .new-color { color: var(--gold); }
+/* ---------- Light theme fixes (3.3.5), last so they win over the black-on-orange rules above ---------- */
+:root[data-theme="light"] .btn.gold, :root[data-theme="light"] .b-actions .btn[data-b="strike"], :root[data-theme="light"] .b-actions .btn.special.ready,
+:root[data-theme="light"] .badge, :root[data-theme="light"] .cm-seg button[aria-checked="true"], :root[data-theme="light"] .item .prev .tag.leg { --t: #ffffff; color: #ffffff; }
+:root[data-theme="light"] .btn.gold *, :root[data-theme="light"] .b-actions .btn[data-b="strike"] *, :root[data-theme="light"] .b-actions .btn.special.ready *,
+:root[data-theme="light"] .item .prev .tag.leg *, :root[data-theme="light"] .encounter .choices .btn.gold small, :root[data-theme="light"] .b-actions .btn.gold small { color: #ffffff !important; }
+:root[data-theme="light"] .btn.gold[aria-disabled="true"], :root[data-theme="light"] .btn.gold[disabled] { --t: #ffffff; color: #ffffff; }
+/* battle moves sit on pale tiles: dark text (only Strike and a charged special are filled) */
+:root[data-theme="light"] .b-actions .btn:not([data-b="strike"]):not(.ready) { --t: var(--text); color: var(--text); }
+:root[data-theme="light"] .b-actions .btn:not([data-b="strike"]):not(.ready) small { color: var(--muted); opacity: 1; }
+:root[data-theme="light"] .hud-chip.streak b { color: var(--gold); }
+/* light panels over the (dark) game art: nearly solid, so dark text never sits on the scenery */
+:root[data-theme="light"] .world-chip, :root[data-theme="light"] .lore-shot figcaption { background: color-mix(in srgb, var(--surface) 95%, transparent); }
+:root[data-theme="light"] .first-steps span { background: color-mix(in srgb, var(--surface) 95%, transparent); text-shadow: none; box-shadow: 0 0 0 2px var(--line-hi); }
+:root[data-theme="light"] .welcome, :root[data-theme="light"] .wk-bubble, :root[data-theme="light"] .b-timer { background: color-mix(in srgb, var(--surface) 97%, transparent); }
