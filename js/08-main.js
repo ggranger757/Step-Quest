@@ -62,7 +62,7 @@
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
     G.markSeen();
-    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'This browser is blocking storage (maybe a private window). Open Step Quest normally to keep your progress.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
+    if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'Storage is blocked (private window?). Open normally to save.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
   }
 
   function showWelcome(lines) {
@@ -122,7 +122,7 @@
     });
     // worlds open through the Worldkey now (07j-worldkey-ui.js): it travels there and says hello itself
     WB.bus.on('loc', () => { if (UI.tab === 'profile') UI.renderProfile(); });
-    WB.bus.on('streak', (e) => { if (e.count >= 2 || e.usedRest) UI.toast({ kicker: e.usedRest ? 'Streak saved' : 'Streak extended', title: e.count + '-day streak', sub: e.usedRest ? (e.usedRest === 1 ? 'A Streak Shield covered the day you missed.' : e.usedRest + ' Streak Shields covered the days you missed.') : '', icon: e.usedRest ? 'sshield' : 'flame', cls: 'gold' }); });
+    WB.bus.on('streak', (e) => { if (e.count >= 2 || e.usedRest) UI.toast({ kicker: e.usedRest ? 'Streak saved' : 'Streak extended', title: e.count + '-day streak', sub: e.usedRest ? (e.usedRest === 1 ? 'A Shield covered your missed day.' : e.usedRest + ' Shields covered missed days.') : '', icon: e.usedRest ? 'sshield' : 'flame', cls: 'gold' }); });
     WB.bus.on('streakMilestone', (m) => UI.toast({ kicker: 'Streak milestone', title: m.days + ' days  +' + m.coins + ' coins', icon: 'flame', cls: 'big' }));
     WB.bus.on('dailyGoal', (e) => UI.toast({ kicker: 'Daily goal reached', title: '+' + e.coins + ' Walk Coins', icon: 'flag', cls: 'ok' }));
     WB.bus.on('fastTravel', (n) => UI.toast({ kicker: 'Fast travel', title: '+' + WB.fmt(n) + ' steps walked', icon: 'steps' }));
@@ -188,8 +188,8 @@
       const starters = D.STARTER_ORDER.map((id) => D.AVATARS.find((a) => a.id === id)), locked = D.AVATARS.length - 1;
       panel.innerHTML = `<div class="istep"><span class="lbl">Step 2 of 3</span><h2>Choose your walker</h2></div>
         <div class="pick" role="radiogroup" aria-label="Walker">${starters.map((a) => `<button type="button" role="radio" data-pick="${a.id}" aria-checked="${a.id === pick}"><canvas width="72" height="84"></canvas><span class="pn">${a.name}</span><span class="psp">${D.SPECIALS[D.STARTER_SPECIAL[a.id]].name}</span></button>`).join('')}</div>
-        <p class="lockedrow">${WB.icon('lock', 2)}<span>Pick one to start. The other two unlock at level ${starters[0].req.level || 5}. ${locked - 2} more walkers unlock as you walk, level up and explore.</span></p>
-        <p class="lockedrow">${WB.icon('spark', 2)}<span id="i-sp">Your pick also decides your special attack from level ${D.SPECIAL_LEVEL}: ${D.SPECIALS[D.STARTER_SPECIAL[pick] || 'raid'].desc}</span></p>
+        <p class="lockedrow">${WB.icon('lock', 2)}<span>The other two unlock at level ${starters[0].req.level || 5}. ${locked - 2} more to unlock later.</span></p>
+        <p class="lockedrow">${WB.icon('spark', 2)}<span id="i-sp">Special attack (level ${D.SPECIAL_LEVEL}+): ${D.SPECIALS[D.STARTER_SPECIAL[pick] || 'raid'].desc}</span></p>
         <div class="field" id="sk-field" ${WB.hasSkin(pick) ? '' : 'hidden'}><span class="lbl" id="sk-l">Skin tone · <span id="sk-n">${UI.skinName(S().skin, 'Olive')}</span></span><div id="sk-wrap">${UI.swatches(S().skin, pick, 'Olive')}</div></div>
         <div class="field"><label class="lbl" for="i-name">Your name</label><input id="i-name" type="text" maxlength="18" autocomplete="nickname" value="${WB.esc(S().name)}"></div>
         <button class="btn block xl" type="button" id="i-go">Continue</button>`;
@@ -202,7 +202,7 @@
       });
       WB.$$('[data-pick]', panel).forEach((b) => b.onclick = () => {
         pick = b.dataset.pick; S().avatar = pick; S().skin = skins[pick] === undefined ? S().skin : skins[pick];
-        const spEl = $('#i-sp'); if (spEl) spEl.textContent = 'Your pick also decides your special attack from level ' + D.SPECIAL_LEVEL + ': ' + D.SPECIALS[D.STARTER_SPECIAL[pick]].desc;
+        const spEl = $('#i-sp'); if (spEl) spEl.textContent = 'Special attack (level ' + D.SPECIAL_LEVEL + '+): ' + D.SPECIALS[D.STARTER_SPECIAL[pick]].desc;
         WB.$$('[data-pick]', panel).forEach((x) => x.setAttribute('aria-checked', x === b));
         $('#sk-wrap').innerHTML = UI.swatches(S().skin, pick, 'Olive'); bindSkins(); $('#sk-n').textContent = UI.skinName(S().skin, 'Olive'); $('#sk-field').hidden = !WB.hasSkin(pick);
         paintPicks();
@@ -220,7 +220,7 @@
           <li>${WB.icon('coin', 3)}<span>Earn Walk Coins.</span></li>
           <li>${WB.icon('world', 3)}<span>Open new worlds with your Worldkey.</span></li>
         </ul>
-        <p class="lead">Step Quest counts your steps with your phone’s motion sensor while it’s open. Walked with the app closed? Log those steps from your Health app.</p>
+        <p class="lead">Steps count while the app is open. Log the rest from your Health app.</p>
         <button class="btn block xl" type="button" id="i-go">Begin journey</button>`;
       $('#i-go').onclick = () => {
         S().onboarded = true;
@@ -238,7 +238,7 @@
   function devPanel() {
     if (!WB.isDev()) return;
     const s = S();
-    UI.sheet(`<h3 id="sheet-title">Developer mode</h3><p>Testing tools only. Steps added here are simulated and do not reflect real walking.</p>
+    UI.sheet(`<h3 id="sheet-title">Developer mode</h3><p>Testing only. Steps here are simulated.</p>
       <div class="devgrid">
         ${[100, 500, 1000, 5000].map((n) => `<button class="btn sm" type="button" data-dev="steps:${n}">+${WB.fmt(n)} steps</button>`).join('')}
         <button class="btn sm gold" type="button" data-dev="coins">+500 coins</button>

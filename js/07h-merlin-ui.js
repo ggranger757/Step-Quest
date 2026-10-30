@@ -9,16 +9,16 @@
       <span class="ek-img">${WB.eggImg(r.egg, 48, p.ready ? '' : 'still')}</span>
       <div class="ek-main">
         <div class="ek-top"><b>${esc(e.name)}</b><span class="lbl">${esc(e.rarity)}</span></div>
-        ${p.ready ? `<p class="fine">Ready to hatch. Merlin has a question for you first.</p>`
+        ${p.ready ? `<p class="fine">Ready! Answer Merlin to hatch.</p>`
           : `<div class="bar seg cyan" role="progressbar" aria-label="${esc(e.name)} warmth" aria-valuemin="0" aria-valuemax="${p.target}" aria-valuenow="${p.cur}"><i style="width:${p.pct}%"></i></div>
-             <p class="fine">${WB.fmt(p.cur)} / ${WB.fmt(p.target)} steps · ${WB.fmt(p.left)} to go</p>`}
+             <p class="fine">${WB.fmt(p.cur)} / ${WB.fmt(p.target)} steps</p>`}
       </div>
       ${p.ready ? `<button class="btn gold sm" type="button" data-hatch="${r.id}">Hatch</button>` : ''}
     </div>`;
   };
   const emptySlot = (gift) => `<div class="egg-card pbox empty">
       <span class="ek-img ek-none" aria-hidden="true">${WB.eggImg('frost', 48, 'still')}</span>
-      <div class="ek-main"><b>Empty spot</b><p class="fine">${gift ? 'Merlin has an egg for you today.' : 'Merlin brings more on the road, and a new one each day.'}</p></div>
+      <div class="ek-main"><b>Empty spot</b><p class="fine">${gift ? 'Today’s egg is ready.' : 'New egg daily.'}</p></div>
       ${gift ? `<button class="btn gold sm" type="button" data-merlin-gift>Get egg</button>` : ''}
     </div>`;
 
@@ -28,17 +28,17 @@
     const slots = [...nest.map(eggCard), ...Array.from({ length: D.NEST_MAX - nest.length }, (_, i) => emptySlot(gift && i === 0))];
     return `<div class="sect merlin-sect" id="merlin-quest">
         <h2><canvas class="mer-face" width="40" height="40" aria-hidden="true"></canvas>Merlin’s Eggs <span class="aside">${m.hatched} hatched</span></h2>
-        <p class="fine">Walk to warm your eggs. Every step counts for all of them at once.</p>
+        <p class="fine">Every step warms all your eggs.</p>
         <div class="list nest" id="egg-strip">${slots.join('')}</div>
       </div>
       <div class="sect"><h2>How it works</h2>
         <ul class="m-lock-list pbox card">
-          <li>${WB.eggImg('frost', 24, 'still')}<span><b>Get an egg</b><small>One a day here, more when Merlin finds you on the road, and a Crystal Egg from every guardian you beat. Your nest holds ${D.NEST_MAX}.</small></span></li>
-          <li>${WB.icon('steps', 2)}<span><b>Walk to hatch it</b><small>${D.EGGS.map((e) => e.name.replace(' Egg', '') + ' ' + e.short).join(' · ')}. Eggs never expire and are never lost.</small></span></li>
-          <li>${WB.icon('cap', 2)}<span><b>Knowledge Check</b><small>Answer Merlin’s question: a right answer pays ${Math.round((D.QUIZ_BONUS - 1) * 100)}% more, and a Crystal Egg adds a weapon or pet. Wrong still hatches.</small></span></li>
-          <li>${WB.icon('note', 2)}<span><b>History Note</b><small>Every egg comes with a true story from the past.</small></span></li>
+          <li>${WB.eggImg('frost', 24, 'still')}<span><b>Get an egg</b><small>One daily, more on the road, a Crystal Egg per guardian. Holds ${D.NEST_MAX}.</small></span></li>
+          <li>${WB.icon('steps', 2)}<span><b>Walk to hatch</b><small>${D.EGGS.map((e) => e.name.replace(' Egg', '') + ' ' + e.short).join(' · ')}. Eggs never expire.</small></span></li>
+          <li>${WB.icon('cap', 2)}<span><b>Answer Merlin</b><small>Right: +${Math.round((D.QUIZ_BONUS - 1) * 100)}% reward. Crystal adds a weapon or pet. Wrong still hatches.</small></span></li>
+          <li>${WB.icon('note', 2)}<span><b>History Note</b><small>A real fact with every hatch.</small></span></li>
         </ul>
-        <p class="fine">Knowledge Checks: ${m.right} right of ${m.taken}.</p>
+        <p class="fine">Answered right: ${m.right} / ${m.taken}</p>
       </div>`;
   };
 
@@ -53,7 +53,7 @@
         <div class="hatch-top"><canvas class="mer-face" width="64" height="64" aria-hidden="true"></canvas><p class="hatch-say">${esc(WB.pick(D.MERLIN_HATCH))}</p></div>
         <p class="dq">${esc(qz.q)}</p>
         <div class="choices quiz">${qz.options.map((o, i) => `<button class="btn ghost" type="button" data-ans="${i}">${esc(o)}</button>`).join('')}</div>
-        <p class="fine">A right answer pays ${Math.round((D.QUIZ_BONUS - 1) * 100)}% more${e.hoard ? ' and adds a weapon or pet' : ''}. The egg hatches either way.</p>
+        <p class="fine">Right: +${Math.round((D.QUIZ_BONUS - 1) * 100)}% reward${e.hoard ? ' and a weapon or pet' : ''}. Hatches either way.</p>
       </div>`, (root) => {
       WB.paintThumb(root.querySelector('.mer-face'), { kind: 'npc', id: 'merlin' });
       root.querySelectorAll('[data-ans]').forEach((b) => (b.onclick = () => {
@@ -88,13 +88,13 @@
     if (g) {
       const r = G.claimGift(); if (!r) return;
       WB.Sfx.play('quest');
-      UI.toast({ kicker: 'A gift from Merlin', title: D.eggById[r.egg].name, sub: 'Walk ' + WB.fmt(D.eggById[r.egg].steps) + ' steps to hatch it.', egg: r.egg, cls: 'cyan' });
+      UI.toast({ kicker: 'A gift from Merlin', title: D.eggById[r.egg].name, sub: WB.fmt(D.eggById[r.egg].steps) + ' steps to hatch.', egg: r.egg, cls: 'cyan' });
       UI.render();
     }
   });
   WB.bus.on('eggReady', (r) => {
     const e = D.eggById[r.egg];
-    UI.toast({ kicker: 'Ready to hatch', title: e.name, sub: 'Merlin has a question waiting.', egg: r.egg, cls: 'gold', action: { label: 'Hatch', fn: () => UI.hatch(r.id) } });
+    UI.toast({ kicker: 'Ready to hatch', title: e.name, sub: 'Answer Merlin to hatch.', egg: r.egg, cls: 'gold', action: { label: 'Hatch', fn: () => UI.hatch(r.id) } });
     UI.updateBadges && UI.updateBadges();
   });
 })();

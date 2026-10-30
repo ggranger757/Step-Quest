@@ -65,7 +65,7 @@
     const seg = `<div class="cm-seg chart-span" role="radiogroup" aria-label="Moods period">${[['week', '7 days'], ['month', '30 days'], ['all', 'All']].map(([id, l]) => `<button type="button" role="radio" aria-checked="${id === span}" data-moodspan="${id}">${l}</button>`).join('')}</div>`;
     let body;
     if (!list.length) {
-      body = `<p class="fine mx-empty">${all ? 'No moods logged in this period.' : G.moodOn() ? 'While you walk, a quick check-in asks how you’re feeling. Log one and it shows up here.' : 'Mood check-ins are off. Turn them on in Settings to log how your walks feel.'}</p>`;
+      body = `<p class="fine mx-empty">${all ? 'No moods logged in this period.' : G.moodOn() ? 'Moods you log while walking show here.' : 'Mood check-ins are off. Turn them on in Settings.'}</p>`;
     } else {
       const counts = Object.fromEntries(D.MOODS.map((m) => [m.id, 0])); list.forEach((e) => { if (counts[e.m] != null) counts[e.m]++; });
       const mx = Math.max(1, ...Object.values(counts)), avg = G.moodAvg(list), near = G.moodNearest(avg);

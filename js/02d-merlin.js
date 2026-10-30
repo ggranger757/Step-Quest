@@ -12,11 +12,11 @@
   // reward: coins / xp before the level bonus · bonus = what a right answer adds (×1.5 coins and XP, plus `extra`)
   D.EGGS = [
     { id: 'frost', name: 'Frost Egg', rarity: 'Common', steps: 3000, w: 62, reward: { coins: 60, xp: 80, potion: 'tonic' },
-      short: '3,000 steps', desc: 'Cool to the touch. Hatches after 3,000 steps.' },
+      short: '3,000 steps', desc: 'Hatches in 3,000 steps.' },
     { id: 'ember', name: 'Ember Egg', rarity: 'Uncommon', steps: 6000, w: 28, reward: { coins: 140, xp: 180, potion: 'iron' },
-      short: '6,000 steps', desc: 'Warm, and it ticks softly. Hatches after 6,000 steps.' },
+      short: '6,000 steps', desc: 'Hatches in 6,000 steps.' },
     { id: 'crystal', name: 'Crystal Egg', rarity: 'Rare', steps: 12000, w: 10, reward: { coins: 300, xp: 400, potion: 'elixir' }, hoard: true,
-      short: '12,000 steps', desc: 'Glows from the inside. Hatches after 12,000 steps. Answer Merlin right and it holds a weapon or pet you don’t own yet.' },
+      short: '12,000 steps', desc: 'Hatches in 12,000 steps. Answer right for a new weapon or pet.' },
   ];
   D.eggById = Object.fromEntries(D.EGGS.map((e) => [e.id, e]));
   D.QUIZ_BONUS = 1.5;   // a right answer multiplies the coins and XP

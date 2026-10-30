@@ -41,7 +41,7 @@
     const c = S().custom, list = C.list();
     const hist = c.history.slice(0, 5);
     return `<div class="sect" id="my-missions"><h2>My missions <span class="aside">${list.length} open · ${c.done || 0} completed</span></h2>
-      <p class="fine">Turn real-life goals into missions. Finish early to earn more; late pays half. Up to ${C.DAILY_COINS} coins a day (${C.leftToday().coins} left today).</p>
+      <p class="fine">Real goals, real rewards. Early pays more, late pays half. ${C.leftToday().coins} / ${C.DAILY_COINS} coins left today.</p>
       <button class="btn gold block" type="button" data-cnew="1">${WB.icon('pencil', 2)}New mission</button>
       ${UI.quickSection ? UI.quickSection() : ''}
       ${list.length ? `<div class="list">${list.map(card).join('')}</div>` : ''}
@@ -51,10 +51,10 @@
 
   // ---------- create / edit ----------
   function pickTemplate() {
-    UI.sheet(`<h3 id="sheet-title">New mission</h3><p>Pick a template or start from scratch. You can edit everything next.</p>
+    UI.sheet(`<h3 id="sheet-title">New mission</h3><p>Pick a template or start blank.</p>
       <div class="tpl-grid">${C.TEMPLATES.map((t) => `<button type="button" class="tpl pbox" data-ctpl="${t.id}">${WB.icon(t.icon, 3)}<b>${esc(t.name)}</b><span>${t.steps.length ? t.steps.length + ' sub-missions · ' : ''}${C.DIFF[t.diff].name}</span></button>`).join('')}</div>`);
   }
-  const seg = (name, obj, cur, locked) => `<div class="cm-seg" role="radiogroup" aria-label="${name}">${Object.entries(obj).map(([k, v]) => `<button type="button" role="radio" aria-checked="${k === cur}" data-${name}="${k}" ${locked ? UI.off('Difficulty and priority are locked once a mission is created. To change them, delete it and make a new one.') : ''}>${v.name}</button>`).join('')}</div>`;
+  const seg = (name, obj, cur, locked) => `<div class="cm-seg" role="radiogroup" aria-label="${name}">${Object.entries(obj).map(([k, v]) => `<button type="button" role="radio" aria-checked="${k === cur}" data-${name}="${k}" ${locked ? UI.off('Locked after creation. Make a new mission to change it.') : ''}>${v.name}</button>`).join('')}</div>`;
   // ---------- sub-mission rows: type in each, delete, or drag the handle (or use arrow keys on it) to reorder ----------
   const SUB_MAX = 20;
   const GRIP = '<svg viewBox="0 0 8 12" width="10" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h3v3H0zM5 0h3v3H5zM0 4.5h3v3H0zM5 4.5h3v3H5zM0 9h3v3H0zM5 9h3v3H5z"/></svg>';
@@ -136,7 +136,7 @@
           <div class="quick">${quick.map(([l], i) => `<button type="button" class="chipbtn" aria-pressed="false" data-cquick="${i}">${l}</button>`).join('')}</div></div>
         <div class="fl"><span>Difficulty${m ? ' <span class="opt">· set at creation</span>' : ''}</span>${seg('cdiff', C.DIFF, v.diff, !!m)}</div>
         <div class="fl"><span>Priority${m ? ' <span class="opt">· set at creation</span>' : ''}</span>${seg('cpri', C.PRI, v.pri, !!m)}</div>
-        ${m ? `<p class="fine">Changing the due date keeps the original reward deadline (${esc(when((m.lock || m).due))}).</p>` : ''}
+        ${m ? `<p class="fine">Reward deadline stays ${esc(when((m.lock || m).due))}.</p>` : ''}
         <div class="cm-prev pbox" id="cm-prev"></div>
         <p class="cm-err" id="cm-err" role="alert"></p>
         <button class="btn gold block" type="submit">${m ? 'Save changes' : 'Create mission'}</button>
@@ -145,7 +145,7 @@
       const pickQuick = (on) => f.querySelectorAll('[data-cquick]').forEach((x) => x.setAttribute('aria-pressed', x === on));
       f.due.addEventListener('input', () => pickQuick(null));
       subEditor($('#cm-subs', b), $('[data-subadd]', b));
-      const prev = () => { const r = C.preview(st.diff, st.pri), mx = C.reward({ diff: st.diff, pri: st.pri, due: 2, at: 1 }, 1); $('#cm-prev', b).innerHTML = `<span class="lbl">Reward if finished on time</span><b>+${r.coins} coins · +${r.xp} XP</b><span class="fine">Finish early for up to +${mx.coins} coins · +${mx.xp} XP. Finishing late pays half. Your own missions pay up to ${C.DAILY_COINS} coins and ${C.DAILY_XP} XP a day in total.</span>`; };
+      const prev = () => { const r = C.preview(st.diff, st.pri), mx = C.reward({ diff: st.diff, pri: st.pri, due: 2, at: 1 }, 1); $('#cm-prev', b).innerHTML = `<span class="lbl">Reward if finished on time</span><b>+${r.coins} coins · +${r.xp} XP</b><span class="fine">Early: up to +${mx.coins} coins · +${mx.xp} XP. Late: half. Daily cap ${C.DAILY_COINS} coins, ${C.DAILY_XP} XP.</span>`; };
       f.addEventListener('click', (e) => {
         const t = e.target.closest('[data-cdiff], [data-cpri], [data-cquick]'); if (!t || t.getAttribute('aria-disabled') === 'true') return;
         if (t.dataset.cquick) { f.due.value = toLocal(quick[+t.dataset.cquick][1]()); pickQuick(t); return; }

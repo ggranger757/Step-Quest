@@ -22,10 +22,10 @@
     const preview = `<div class="pbox card lb-mine"><span class="lbl">Your numbers</span>
         <div class="lb-nums"><span><b>${mine.streak}</b><small>streak</small></span><span><b>${WB.fmt(mine.steps_day)}</b><small>today</small></span><span><b>${WB.fmt(mine.steps_week)}</b><small>this week</small></span><span><b>${WB.fmt(mine.steps_month)}</b><small>this month</small></span></div>
         ${mine.ach_title ? `<p class="fine">${WB.pxImg('ach/' + mine.ach_id + '.png', 16)} Latest achievement: ${esc(mine.ach_title)}</p>` : ''}</div>`;
-    if (!LB.configured()) return `${preview}<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Coming soon</span><h3>Leaderboards</h3><p class="fine">Compare streaks and steps with other walkers. Leaderboards aren’t switched on in this version yet.</p></div>`;
+    if (!LB.configured()) return `${preview}<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Coming soon</span><h3>Leaderboards</h3><p class="fine">Compare streaks and steps with other walkers. Not available yet.</p></div>`;
     if (!LB.joined()) return `${preview}<div class="pbox card lb-join"><h3>Join the leaderboards</h3>
-        <p class="fine">See how your streak and your steps today, this week and this month stack up against other walkers.</p>
-        <ul class="lb-share"><li>${WB.icon('check', 1)} Shown: your name (${esc(LB.cleanName(s.name))}), walker, level, streak, steps and your latest achievement.</li><li>${WB.icon('check', 1)} No email or account needed. Leave any time and your entry is deleted.</li></ul>
+        <p class="fine">Compare your streak and steps with other walkers.</p>
+        <ul class="lb-share"><li>${WB.icon('check', 1)} Shows your name (${esc(LB.cleanName(s.name))}), level, streak and steps.</li><li>${WB.icon('check', 1)} No account needed. Leave any time.</li></ul>
         <button class="btn gold block" type="button" data-lb="join">Join</button></div>`;
     return `${picker}<div id="lb-list" class="lb-list" aria-live="polite"><p class="fine lb-wait">Loading the ${LABEL[b][0].toLowerCase()} board…</p></div>
       <div class="lb-foot"><button class="linkbtn" type="button" data-lb="refresh">Refresh</button><span class="fine">${b === 'streak' ? 'Current streaks.' : b === 'day' ? 'Steps today.' : b === 'week' ? 'Steps since Monday.' : 'Steps this month.'} Top 50.</span></div>`;
@@ -41,11 +41,11 @@
       if (my !== seq || !box.isConnected) return;
       const rows = res.rows.map((r, i) => row(board, r, i + 1, r.id === res.uid)).join('');
       const extra = res.me && res.me.rank > res.rows.length ? `<li class="lb-gap" aria-hidden="true">⋯</li>${row(board, Object.assign({}, res.me.row, { name: LB.cleanName(S().name) }), res.me.rank, true)}` : '';
-      box.innerHTML = rows || extra ? `<ol class="lb-ol">${rows}${extra}</ol>` : `<p class="fine lb-wait">Nobody is on this board yet. Walk a few steps and be the first!</p>`;
+      box.innerHTML = rows || extra ? `<ol class="lb-ol">${rows}${extra}</ol>` : `<p class="fine lb-wait">No one here yet. Be the first!</p>`;
       box.querySelectorAll('canvas[data-av]').forEach((c) => WB.paintThumb(c, { kind: 'av', id: c.dataset.av, skin: c.dataset.skin || null, head: true, face: 'right' }));
     } catch (e) {
       if (my !== seq || !box.isConnected) return;
-      box.innerHTML = `<div class="pbox card"><p class="fine">Can’t reach the leaderboards right now. Check your connection.</p><button class="btn ghost sm" type="button" data-lb="refresh">Try again</button></div>`;
+      box.innerHTML = `<div class="pbox card"><p class="fine">Can’t connect. Check your connection.</p><button class="btn ghost sm" type="button" data-lb="refresh">Try again</button></div>`;
     }
   };
 

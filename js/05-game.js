@@ -446,7 +446,7 @@
       if (D.CREATURES[e.creature].rival) e.rival = true;
       const c = D.CREATURES[e.creature];
       if (c.aggressive && !G.battlesOpen()) {   // too early to fight: it can only be shooed off or snuck past
-        e.text = 'A ' + c.name + ' ' + c.verb + '! You’re not ready to fight yet (battles unlock at level ' + D.BATTLE_LEVEL + ').';
+        e.text = 'A ' + c.name + ' ' + c.verb + '! Battles unlock at level ' + D.BATTLE_LEVEL + '.';
         e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
       } else if (c.aggressive) {
         e.aggressive = true;
@@ -460,8 +460,8 @@
       G.merlin().at = Date.now();
       e.npc = 'merlin'; e.egg = G.rollEgg(w.tier || 0);
       const egg = D.eggById[e.egg];
-      e.text = WB.pick(D.MERLIN_LINES) + ' A ' + egg.name + ': walk ' + WB.fmt(egg.steps) + ' steps to hatch it.';
-      e.choices = [{ id: 'take', label: 'Take the egg', hint: egg.rarity + ' · ' + G.nest().length + ' / ' + D.NEST_MAX + ' in your nest' }, { id: 'decline', label: 'Not this time', hint: 'No penalty' }];
+      e.text = WB.pick(D.MERLIN_LINES) + ' ' + egg.name + ': ' + WB.fmt(egg.steps) + ' steps to hatch.';
+      e.choices = [{ id: 'take', label: 'Take the egg', hint: egg.rarity + ' · nest ' + G.nest().length + ' / ' + D.NEST_MAX }, { id: 'decline', label: 'Not this time', hint: 'No penalty' }];
     } else if (type === 'druid') {   // a quick Knowledge Challenge on the road
       e.creature = 'druid'; e.druid = true;
       e.text = WB.pick(D.DRUID_LINES);
@@ -470,8 +470,8 @@
     } else if (type === 'egg') {   // an egg by the road: it goes into Merlin's nest and hatches as you walk
       e.egg = G.rollEgg(w.tier);
       const egg = D.eggById[e.egg];
-      e.text = WB.pick(D.EGG_LINES) + ' A ' + egg.name + '! Walk ' + WB.fmt(egg.steps) + ' steps to hatch it.';
-      e.choices = [{ id: 'take', label: 'Put it in your nest', hint: G.nest().length + ' / ' + D.NEST_MAX + ' in your nest' }];
+      e.text = WB.pick(D.EGG_LINES) + ' ' + egg.name + ': ' + WB.fmt(egg.steps) + ' steps to hatch.';
+      e.choices = [{ id: 'take', label: 'Put it in your nest', hint: 'Nest ' + G.nest().length + ' / ' + D.NEST_MAX }];
     } else if (type === 'chest') {
       e.text = WB.pick(D.CHEST_LINES);
       e.choices = [{ id: 'open', label: 'Open crate', hint: 'Coins, maybe a potion' }];
@@ -543,7 +543,7 @@
       case 'traveler:decline': out.text = '“Safe roads, then.”'; out.anim = 'talk'; break;
       case 'egg:take': {
         out.anim = 'take';
-        if (G.giveEgg(e.egg)) { out.reward = { xp: 8 + lvl }; out.egg = e.egg; out.text = 'Into your nest it goes. Every step you walk warms it (Missions → Merlin).'; }
+        if (G.giveEgg(e.egg)) { out.reward = { xp: 8 + lvl }; out.egg = e.egg; out.text = 'Added to your nest. Walk to hatch it (Missions → Merlin).'; }
         else { out.reward = { coins: 20 }; out.text = 'Your nest is full. You leave it and find a few coins nearby.'; }
         break;
       }
@@ -580,7 +580,7 @@
       case 'merlin:take': {
         out.anim = 'talk';
         const r = G.giveEgg(e.egg);
-        if (r) { out.reward = { xp: 10 }; out.egg = e.egg; out.text = '“Hoo! Keep it warm.” Find it under Missions → Merlin. Every step you walk warms it.'; }
+        if (r) { out.reward = { xp: 10 }; out.egg = e.egg; out.text = '“Hoo! Keep it warm.” Walk to hatch it (Missions → Merlin).'; }
         else { out.reward = { xp: 5 }; out.text = '“Your nest is full, walker. Hatch one first.”'; }
         break;
       }
@@ -671,7 +671,7 @@
   G.buy = (cat, id) => {
     const s = S(), it = G.item(cat, id);
     if (!it || G.owns(cat, id)) return { ok: false };
-    if ((cat === 'weapon' || cat === 'magic') && !G.battlesOpen()) return { ok: false, msg: 'Weapons and magic unlock with battle mode at level ' + D.BATTLE_LEVEL + '.' };
+    if ((cat === 'weapon' || cat === 'magic') && !G.battlesOpen()) return { ok: false, msg: 'Unlocks with battles at level ' + D.BATTLE_LEVEL + '.' };
     const st = G.reqStatus(it.req);
     if (!st.buy) return { ok: false, msg: st.label };
     if (s.coins < it.req.cost) return { ok: false, msg: 'You need ' + WB.fmt(it.req.cost - s.coins) + ' more coins. Keep walking.' };

@@ -11,30 +11,30 @@
   // each step: where to go, what to highlight, and what to say. Kept short on purpose: features that open later
   // (battles, Merlin, the Worldkey) teach themselves with a mini tutorial the moment they unlock.
   const ALL_STEPS = [
-    { go: tab('world'), title: 'Welcome to Step Quest', text: 'Every real step moves your walker through pixel worlds, earning coins and XP. This quick tour takes 30 seconds.' },
-    { go: tab('world'), sel: '#stage', page: 'World', title: 'Walk to explore', text: 'Your walker moves only when you do. Crates, artifacts, merchants, travelers and (later) creatures turn up along the road. Tap them as they appear.' },
-    { go: tab('world'), sel: '.today', page: 'World', title: 'Today', text: 'Today’s steps toward your goal. 1 coin every ' + D.STEPS_PER_COIN + ' steps, 1 XP every ' + D.STEPS_PER_XP + ', and a 100-coin bonus when you hit your goal.' },
-    { go: tab('world'), sel: '#hud-streak', page: 'World', title: 'Your streak', text: 'Walk your daily minimum to grow it. A Streak Shield saves it on a missed day.' },
-    { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Explore this world to open the next. There are ' + D.WORLDS.length + ' to discover.' },
-    { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'Today: a daily reward, three daily goals, deliveries and long-term milestones. My missions: your own to-dos, which pay coins and XP. Merlin and his eggs open at level ' + D.MERLIN_MIN_LEVEL + '.' },
-    { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'Turn goals into quests', text: 'Add a real-life task (or tap a quick mission), set when it’s due, and finish it for a reward. Early pays a bonus.' },
-    { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Shop', text: 'Spend coins on walkers, weapons, ranged weapons and magic, potions and pets. Tap anything locked to see what it needs.' },
-    { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Profile & settings', text: 'Your stats, moods, step chart, achievements and settings (theme, sound, mood check-ins). Replay this tour any time from Settings → Help.' },
-    { go: tab('world'), title: 'You’re ready', text: 'Start walking: every step counts. Good luck out there!' },
+    { go: tab('world'), title: 'Welcome to Step Quest', text: 'Real steps move your walker and earn coins and XP. A 30-second tour.' },
+    { go: tab('world'), sel: '#stage', page: 'World', title: 'Walk to explore', text: 'Your walker moves when you do. Tap things that appear on the road.' },
+    { go: tab('world'), sel: '.today', page: 'World', title: 'Today', text: '1 coin per ' + D.STEPS_PER_COIN + ' steps, 1 XP per ' + D.STEPS_PER_XP + '. Hit your goal for +100 coins.' },
+    { go: tab('world'), sel: '#hud-streak', page: 'World', title: 'Your streak', text: 'Walk your daily minimum to grow it. Shields cover missed days.' },
+    { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Explore this world to open the next. ' + D.WORLDS.length + ' in all.' },
+    { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'Daily goals, rewards and your own to-dos. Merlin opens at level ' + D.MERLIN_MIN_LEVEL + '.' },
+    { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'Turn goals into quests', text: 'Add a real task, set a due time, finish for a reward. Early pays more.' },
+    { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Shop', text: 'Spend coins on gear, potions and pets. Tap locked items to see why.' },
+    { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Profile & settings', text: 'Stats, achievements and settings. Replay this tour in Settings → Help.' },
+    { go: tab('world'), title: 'You’re ready', text: 'Start walking. Every step counts!' },
   ];
 
   // short tutorials that play by themselves when a feature unlocks (05j-unlocks.js)
   const MINI = {
     wk: [
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Worldkey', title: 'Your Worldkey is awake', text: 'You finished your first world, so your Worldkey can open the next one. Find it in Inventory → Worldkey.' },
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it once', text: 'Each world hums at its own frequency: repeat its symbol pattern to tune in. A tuning holds until you open that world.' },
-      { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Worldkey', title: 'Charge it with artifacts', text: 'Opening a world costs energy. Every artifact you find on the road charges it, and relics from far worlds hold more. Energy never fades.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Worldkey', title: 'Your Worldkey is awake', text: 'It opens new worlds. Find it in Inventory → Worldkey.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it once', text: 'Repeat a world’s symbol pattern to tune in. It stays tuned.' },
+      { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Worldkey', title: 'Charge it with artifacts', text: 'Opening a world costs energy. Artifacts charge it. Energy never fades.' },
     ],
     merlin: [
-      { go: mis('merlin'), sel: '#egg-strip', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Merlin’s Eggs', text: 'Merlin left you an egg. Every step you walk warms all the eggs in your nest. When one is warm enough, it hatches.' },
-      { go: mis('merlin'), sel: '#merlin-quest', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Knowledge Check', text: 'Hatching asks one trivia question. Get it right for a bigger reward. Either way you get the reward and a short History Note.' },
-      { go: tab('world'), sel: '#stage', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Battles are open too', text: 'Creatures now roam the road. Fight or walk around; when one is “Charging!”, Defend. Guardians wake when a world is 100% explored and guard a Crystal Egg. Finishing a mission can stir one up, too.' },
-      { go: tab('world'), sel: '#stage', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'The Druid and the bosses', text: 'The Druid may stop you with a quick trivia question: right pays XP and coins, wrong means a fight. From level ' + D.BOSS_LEVEL + ', rare roaming bosses and Redhood Rival appear. Losing to a boss costs ' + D.BOSS_LEVEL_LOSS + ' levels.' },
+      { go: mis('merlin'), sel: '#egg-strip', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Merlin’s Eggs', text: 'Walk to hatch eggs. Every step warms them all.' },
+      { go: mis('merlin'), sel: '#merlin-quest', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Knowledge Check', text: 'Each hatch asks one question. Right answers pay more.' },
+      { go: tab('world'), sel: '#stage', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Battles are open too', text: 'Fight or avoid creatures. When one is “Charging!”, Defend. Guardians appear at 100% explored.' },
+      { go: tab('world'), sel: '#stage', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'The Druid and the bosses', text: 'The Druid asks trivia: wrong means a fight. Bosses roam from level ' + D.BOSS_LEVEL + '; losing costs ' + D.BOSS_LEVEL_LOSS + ' levels.' },
     ],
   };
   const T = (WB.Tour = { active: false, i: 0 });
@@ -129,7 +129,7 @@
     if (!s || !s.onboarded || s.hints.lowHp || T.active) return;
     if (s.hp > G.maxHp() * 0.35) return;
     s.hints.lowHp = true; WB.Save.queue();
-    UI.toast({ kicker: 'Health low', title: WB.fmt(s.hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', sub: 'Refills on its own in about ' + D.HEAL_MINUTES + ' min, or drink a potion. Walking doesn’t heal.', icon: 'heart', cls: 'warn', action: { label: 'Potions', fn: () => UI.goHub('bag', 'potions') } });
+    UI.toast({ kicker: 'Health low', title: WB.fmt(s.hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', sub: 'Refills in ' + D.HEAL_MINUTES + ' min, or drink a potion.', icon: 'heart', cls: 'warn', action: { label: 'Potions', fn: () => UI.goHub('bag', 'potions') } });
   };
   WB.bus.on('state', () => setTimeout(UI.lowHpCheck, 300));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(UI.lowHpCheck, 1500); });   // coming back to the app
@@ -138,8 +138,8 @@
 
   // ---------- a feature just unlocked: congratulations, then its mini tutorial ----------
   const FEAT_CARD = {
-    wk: { kick: 'Unlocked', title: 'Your Worldkey is awake!', icon: 'key', text: 'You finished your first world, so your Worldkey can open the next one. Here’s how it works.' },
-    merlin: { kick: 'Level ' + D.MERLIN_MIN_LEVEL + ' unlock', title: 'Merlin and battles', egg: 'frost', text: 'Merlin the owl-mage left you a Frost Egg: walk to hatch it. Creatures, the Druid and milestones open now, too.' },
+    wk: { kick: 'Unlocked', title: 'Your Worldkey is awake!', icon: 'key', text: 'It can now open the next world.' },
+    merlin: { kick: 'Level ' + D.MERLIN_MIN_LEVEL + ' unlock', title: 'Merlin and battles', egg: 'frost', text: 'Merlin left you a Frost Egg. Walk to hatch it. Battles are open too.' },
   };
   setInterval(() => {
     const G = WB.Game;

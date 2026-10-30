@@ -99,10 +99,10 @@
         <section class="lore-page" aria-roledescription="slide" aria-label="3 of ${LORE_N}: How it works">
           <h3 class="lore-h">How it works</h3>
           <ul class="lore-steps">
-            <li>${WB.icon('lock', 2)}<span>It <b>wakes up</b> once you finish your first world.</span></li>
-            <li>${WB.icon('signal', 2)}<span><b>Tune</b> it to each world’s frequency, and it opens the door.</span></li>
-            <li>${WB.icon('bolt', 2)}<span><b>Charge</b> it with the artifacts you find on the road. Relics from far worlds hold more energy.</span></li>
-            <li>${WB.icon('key', 2)}<span>Opening a new world <b>spends energy</b>. <b>Seventeen more Worldkeys</b>, each with its own personality, wait to be earned.</span></li>
+            <li>${WB.icon('lock', 2)}<span><b>Wakes up</b> after your first world.</span></li>
+            <li>${WB.icon('signal', 2)}<span><b>Tune</b> it to a world.</span></li>
+            <li>${WB.icon('bolt', 2)}<span><b>Charge</b> it with artifacts.</span></li>
+            <li>${WB.icon('key', 2)}<span><b>Open</b> the world. 17 more keys to collect.</span></li>
           </ul>
         </section>
       </div>
@@ -148,12 +148,12 @@
           <span class="lbl">${esc(key.name)} · ${esc(v.name)}</span>
           <div class="wk-energy"><span class="lbl">Energy</span><b>${pctTxt(w.e)}</b></div>
           ${energyBar(w.e)}
-          ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: charge it with artifacts below' : 'Low: charge it with artifacts below'}</p>` : ''}
+          ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: charge it below' : 'Low: charge it below'}</p>` : ''}
           ${dest ? `<dl class="wk-dl">
             <div><dt>Next world</dt><dd>${esc(dest.name)}</dd></div>
             <div><dt>Energy</dt><dd>${check(st.energyOk)}${st.cost}% needed</dd></div>
             <div><dt>Tuning</dt><dd>${check(st.tuned)}${tuneTxt(st)}</dd></div>
-          </dl>` : '<p class="fine">Every world is open. Your Worldkey can rest.</p>'}
+          </dl>` : '<p class="fine">Every world is open.</p>'}
         </div>
         ${wp ? `<div class="wk-next">
             <div class="wk-next-h"><span class="lbl">Reach ${esc(dest.name)}</span><b>${pct}%</b></div>
@@ -170,8 +170,8 @@
     const left = Math.max(0, Math.ceil(first.length * D.FIRST_WORLD_PCT / 100 - (S().worldSteps[first.id] || 0)));
     return `<div class="pbox card feat-lock">${aboutBtn}<span class="lbl">${WB.icon('lock', 1)} Unlocks after your first world</span>
       <h3>Your Worldkey wakes up when you finish ${esc(first.name)}</h3>
-      <p class="fine">It opens the way to new worlds. Explore ${D.FIRST_WORLD_PCT}% of ${esc(first.name)} to wake it${S().world === first.id ? '' : ' (you can travel back to it from the World map)'}. Artifacts you find meanwhile are kept to charge it.</p>
-      <div class="bar seg cyan" role="progressbar" aria-label="Progress through ${esc(first.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · about ${WB.fmt(left)} steps to go</p>
+      <p class="fine">Explore ${D.FIRST_WORLD_PCT}% of ${esc(first.name)} to wake it${S().world === first.id ? '' : ' (travel there from the map)'}.</p>
+      <div class="bar seg cyan" role="progressbar" aria-label="Progress through ${esc(first.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><p class="fine">${pct}% · ~${WB.fmt(left)} steps to go</p>
     </div>`;
   };
   // right under the Worldkey: the artifacts you carry and what they're worth, with one Charge button
@@ -180,11 +180,11 @@
     const worth = `<span class="fr-cost">${Object.entries(K.ART_CHARGE).map(([t, v]) => `<span>${['', 'Worlds to Lv 15', 'Lv 16–40', 'Lv 41+'][t]} +${v}%</span>`).join('')}</span>`;
     return `<div class="sect forge" id="wk-forge">
       <h2>Charge <span class="aside">${n} artifact${n === 1 ? '' : 's'} in hand</span></h2>
-      <p class="fine">Every artifact you find holds energy for your Worldkey. Relics from farther worlds hold more.</p>
+      <p class="fine">Artifacts charge your Worldkey. Farther worlds’ relics hold more.</p>
       <div class="forge-list"><div class="forge-row pbox ${plan.used.length ? 'ready' : ''}">
         <span class="fr-ic">${WB.pxImg('art/m30.png', 32)}<b class="fr-n ${n ? '' : 'none'}">×${n}</b></span>
         <span class="fr-t"><b>${full ? 'Fully charged' : plan.used.length ? 'Up to ' + pctTxt(plan.to) + ' with ' + plan.used.length + ' artifact' + (plan.used.length === 1 ? '' : 's') : 'No artifacts in hand'}</b>${worth}
-          <small class="fr-why">${full ? 'Keep your artifacts for the next world.' : n ? 'The copies you hold most of are used first.' : 'Look for the glint on the road: artifacts turn up as you walk.'}</small></span>
+          <small class="fr-why">${full ? 'Keep your artifacts for the next world.' : n ? 'Uses your most-held copies first.' : 'Walk to find artifacts on the road.'}</small></span>
         <button class="btn ${plan.used.length ? 'gold' : 'ghost'} sm" type="button" data-wk="charge" ${UI.off(full ? 'Already fully charged.' : !plan.used.length ? 'No artifacts yet. Find them on the road.' : '')}>Charge</button>
       </div></div>
       <button class="linkbtn forge-arts" type="button" data-wk="arts">See your collection ›</button>
@@ -231,13 +231,13 @@
     let order = D.WK_SYMBOLS.slice(0, sp.syms).map((_, i) => i);
     const clear = () => { timers.forEach(clearTimeout); timers = []; };
     const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    const rules = [sp.lit ? '' : 'Only the Worldkey’s screen shows the pattern.', sp.shuffle ? 'The pad reshuffles every try.' : ''].filter(Boolean).join(' ');
+    const rules = [sp.lit ? '' : 'Watch the key’s screen.', sp.shuffle ? 'Pad reshuffles each try.' : ''].filter(Boolean).join(' ');
     const padHtml = () => order.map((i) => `<button type="button" class="wk-sym" data-sym="${i}" aria-label="${esc(D.WK_SYMBOLS[i].name)}" disabled><canvas width="36" height="36" aria-hidden="true"></canvas></button>`).join('');
     UI.sheet(`<div class="wk-tune">
       <span class="lbl wk-kick">Tune the Worldkey</span>
       <h3 id="sheet-title">${esc(world.name)}</h3>
       <div class="wk-tune-top"><canvas class="wk-canvas sm" width="256" height="399" aria-hidden="true"></canvas>
-        <div><p class="wk-msg" id="wk-msg" role="status" aria-live="polite">Watch the Worldkey’s screen, then tap the ${seq.length} symbols in the same order. ${rules}</p>
+        <div><p class="wk-msg" id="wk-msg" role="status" aria-live="polite">Watch, then tap the ${seq.length} symbols in order. ${rules}</p>
         <div class="wk-pips" aria-hidden="true">${seq.map(() => '<i></i>').join('')}</div></div></div>
       <div class="wk-pad ${sp.syms > 6 ? 'nine' : ''}" role="group" aria-label="Symbols">${padHtml()}</div>
       <div class="row" id="wk-tune-acts"><button class="btn gold" type="button" id="wk-start" data-autofocus>Start</button><button class="btn ghost" type="button" data-close>Not now</button></div>
@@ -258,7 +258,7 @@
         root.querySelector('.wk-pips').innerHTML = seq.map(() => '<i></i>').join(''); pips = [...root.querySelectorAll('.wk-pips i')];
         msg.textContent = 'Reading the frequency…'; root.querySelector('#wk-tune-acts').hidden = true;
         seq.forEach((k, i) => timers.push(setTimeout(() => light(k, null, sp.lit), 500 + i * spd)));
-        timers.push(setTimeout(() => { phase = 'input'; setPads(true); msg.textContent = 'Your turn: tap the symbols in the order they appeared.'; if (pads[0]) pads[0].focus({ preventScroll: true }); }, 500 + seq.length * spd + 150));
+        timers.push(setTimeout(() => { phase = 'input'; setPads(true); msg.textContent = 'Your turn: tap them in order.'; if (pads[0]) pads[0].focus({ preventScroll: true }); }, 500 + seq.length * spd + 150));
       };
       const tap = (b) => {
         if (phase !== 'input') return;   // taps during playback are ignored
@@ -330,7 +330,7 @@
     UI.sheet(view(), mount);
   };
 
-  // ---------- the Worldkey collection: 18 keys, each with its own personality; locked ones are silhouettes ----------
+  // ---------- the Worldkey collection: 18 keys, each with its own personality; keys above your level are silhouettes ----------
   WK.custom = (sel) => {
     const w = G.wk(); sel = sel || w.look;
     const detail = (id) => {
@@ -345,13 +345,17 @@
       </div>`;
     };
     UI.sheet(`<h3 id="sheet-title">Worldkeys</h3>
-      <p class="fine">Every Worldkey has its own personality. Level up and buy new ones; locked keys show as silhouettes.</p>
-      <div class="wk-looks" role="radiogroup" aria-label="Worldkeys">${D.WK_ORDER.map((l) => { const st = G.wkKeyState(l.id); return `<button type="button" role="radio" aria-checked="${sel === l.id}" aria-label="${esc(l.name)}${st.owned ? '' : ', locked'}" data-look="${l.id}" class="${st.owned ? '' : 'locked'} ${w.look === l.id ? 'inuse' : ''}"><canvas width="44" height="68" aria-hidden="true"></canvas><span class="lbl">${st.owned ? (w.look === l.id ? 'In use' : 'Owned') : 'Lv ' + l.req.level}</span></button>`; }).join('')}</div>
+      <p class="fine">Each key has its own personality. Level up to unlock more.</p>
+      <div class="wk-looks" role="radiogroup" aria-label="Worldkeys">${D.WK_ORDER.map((l) => {
+        // a key is a silhouette only until its level is reached; once unlocked (buyable or owned) it shows in full color
+        const st = G.wkKeyState(l.id), locked = !st.owned && !st.levelOk;
+        const lbl = st.owned ? (w.look === l.id ? 'In use' : 'Owned') : locked ? 'Lv ' + l.req.level : WB.fmt(l.req.cost);
+        return `<button type="button" role="radio" aria-checked="${sel === l.id}" aria-label="${esc(l.name)}${st.owned ? '' : locked ? ', locked' : ', for sale'}" data-look="${l.id}" class="${locked ? 'locked' : st.owned ? '' : 'buyable'} ${w.look === l.id ? 'inuse' : ''}"><canvas width="44" height="68" aria-hidden="true"></canvas><span class="lbl">${lbl}</span></button>`; }).join('')}</div>
       <div id="wk-kd">${detail(sel)}</div>
       <button class="btn block ghost" type="button" data-close>Done</button>`, (root) => {
       root.querySelectorAll('[data-look]').forEach((b) => {
         const cv = b.querySelector('canvas');
-        WK.thumb(cv, b.dataset.look).then(() => { if (b.classList.contains('locked')) WB.sil(cv); });
+        WK.thumb(cv, b.dataset.look).then(() => { if (b.isConnected && b.classList.contains('locked')) WB.sil(cv); });
         b.onclick = () => { WK.custom(b.dataset.look); };
       });
       const kd = root.querySelector('#wk-kd');

@@ -219,9 +219,9 @@
     const price = (r) => (r.cost ? WB.fmt(r.cost) + ' coins in the Shop' : 'Yours now');
     // everything this level opens: thumbnails are painted after the card mounts
     const items = [
-      ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures, guardians and the Druid now roam the road', icon: 'sword' }] : []),
-      ...(inRange(D.MERLIN_MIN_LEVEL) ? [{ n: 'Merlin’s Eggs', sub: 'Walk to hatch eggs, answer his Knowledge Check, learn some history', icon: 'feather' }] : []),
-      ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · open it with your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name + ' to open it', icon: 'map' })),
+      ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures and the Druid now roam', icon: 'sword' }] : []),
+      ...(inRange(D.MERLIN_MIN_LEVEL) ? [{ n: 'Merlin’s Eggs', sub: 'Walk to hatch eggs and answer quizzes', icon: 'feather' }] : []),
+      ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · use your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name, icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
       ...D.AVATARS.filter((a) => a.req.level && inRange(a.req.level)).map((a) => ({ n: a.name, sub: 'Walker · ' + price(a.req), thumb: { kind: 'av', id: a.id, head: true, face: 'right' }, cat: 'avatar', id: a.id })),
       ...D.PETS.filter((p) => p.req.level && inRange(p.req.level)).map((p) => ({ n: p.name, sub: 'Pet · ' + price(p.req), thumb: { kind: p.src, id: p.id, face: 'right' }, cat: 'pet', id: p.id })),
@@ -248,7 +248,7 @@
       </section>
       ${shown.length ? `<section class="lv-sec"><h4 class="lv-h">New for you</h4><ul class="lv-list">${shown.map((it, i) => `<li>${it.cat ? `<button type="button" class="lv-it tap" data-lv-cat="${it.cat}" data-lv-id="${it.id}">` : '<div class="lv-it">'}<span class="lv-thumb" data-lvt="${i}">${it.img ? WB.pxImg(it.img, 32) : it.thumb ? '<canvas width="40" height="40"></canvas>' : WB.icon(it.icon, 3)}</span><span class="lv-txt"><b>${WB.esc(it.n)}</b><small>${WB.esc(it.sub)}</small></span>${it.cat ? '</button>' : '</div>'}</li>`).join('')}</ul>${more > 0 ? `<p class="lv-more">And ${more} more in the Shop</p>` : ''}</section>` : ''}
       <section class="lv-sec lv-next">
-        ${maxed ? '<p>You’ve reached the top level. Legendary.</p>' : `<div class="lv-nexthead"><span>Next: level ${L.level + 1}</span><span>${WB.fmt(need - s.xp)} XP to go</span></div><div class="bar"><i style="width:${Math.min(100, (s.xp / need) * 100)}%"></i></div><small>${G.battlesOpen() ? 'Walk, finish missions and win battles to earn XP.' : 'Walk and finish missions to earn XP.'}</small>`}
+        ${maxed ? '<p>You’ve reached the top level. Legendary.</p>' : `<div class="lv-nexthead"><span>Next: level ${L.level + 1}</span><span>${WB.fmt(need - s.xp)} XP to go</span></div><div class="bar"><i style="width:${Math.min(100, (s.xp / need) * 100)}%"></i></div><small>${G.battlesOpen() ? 'Walk, do missions and win battles for XP.' : 'Walk and do missions for XP.'}</small>`}
       </section>
       <div class="lv-actions">${shopItems ? '<button class="btn ghost" type="button" data-act="lv-shop">Visit the Shop</button>' : ''}<button class="btn gold" type="button" data-close data-autofocus>Keep walking</button></div>
     </div>`, (root) => {
@@ -337,11 +337,11 @@
     const HL = WB.Health; S().hints.health = true; WB.Save.queue();
     UI.sheet(`
       <h3 id="sheet-title">Count steps automatically</h3>
-      <p>Connect ${HL.name()} and Step Quest reads your step count by itself. Walks you take with the app closed still move your hero, pay coins and keep your streak.</p>
+      <p>Connect ${HL.name()} to sync steps automatically, even with the app closed.</p>
       <ul class="rules compact">
-        <li>${WB.icon('steps', 3)}<span>Only step counts are read. Nothing is written to ${HL.name()}.</span></li>
-        <li>${WB.icon('flag', 3)}<span>Syncs when you open the app, and every minute while it’s open.</span></li>
-        <li>${WB.icon('gear', 3)}<span>You can turn it off any time in Profile.</span></li>
+        <li>${WB.icon('steps', 3)}<span>Reads step counts only. Writes nothing.</span></li>
+        <li>${WB.icon('flag', 3)}<span>Syncs on open and every minute.</span></li>
+        <li>${WB.icon('gear', 3)}<span>Turn it off any time in Profile.</span></li>
       </ul>
       <button class="btn block" type="button" id="hl-go">${WB.icon('steps', 2)}Connect ${HL.name()}</button>
       <button class="linkbtn" type="button" data-close>Not now</button>
@@ -357,8 +357,8 @@
     const pick = (off) => { S().settings.reducedMotion = off; document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Sfx.play('tap'); UI.closeSheet(); UI.render(); };
     UI.sheet(`
       <h3 id="sheet-title">Motion is turned off</h3>
-      <p>Your device is set to reduce motion, so Step Quest switched animations and particles off for you.</p>
-      <p class="fine">Allow motion to see walkers move, battle effects and celebrations. You can change this any time in Profile → Settings → Reduce motion.</p>
+      <p>Your device prefers reduced motion, so animations are off.</p>
+      <p class="fine">Change it any time in Settings.</p>
       <button class="btn block" type="button" id="mo-on" data-autofocus>Allow motion</button>
       <button class="linkbtn" type="button" id="mo-off">Keep motion off</button>
     `, () => { $('#mo-on').onclick = () => pick(false); $('#mo-off').onclick = () => pick(true); });
@@ -371,10 +371,10 @@
   UI.logSheet = () => {
     UI.sheet(`
       <h3 id="sheet-title">Log steps</h3>
-      <p>Your Health or Fit app counts steps all day, even with Step Quest closed. Enter today’s total and your hero walks the difference.</p>
+      <p>Enter today’s total from your Health app. Your hero walks the difference.</p>
       <div class="seg" role="group" aria-label="Log mode"><button type="button" data-mode="total" aria-pressed="true">Today’s total</button><button type="button" data-mode="add" aria-pressed="false">Add steps</button></div>
       <div class="field"><label class="lbl" for="log-n" id="log-lbl">Today’s total in your Health app</label><input id="log-n" type="number" inputmode="numeric" min="1" max="${D.MANUAL_DAY_MAX}" placeholder="0"></div>
-      <p class="fine">You can log up to ${WB.fmt(D.MANUAL_DAY_MAX)} steps by hand a day (${WB.fmt(WB.Steps.manualLeft())} left today). The step counter and Health sync have no limit.</p>
+      <p class="fine">Up to ${WB.fmt(D.MANUAL_DAY_MAX)} logged steps a day (${WB.fmt(WB.Steps.manualLeft())} left).</p>
       <p class="hint" id="log-hint">Step Quest has ${WB.fmt(S().today.day === WB.dayKey() ? S().today.steps : 0)} steps for today.</p>
       <button class="btn block" type="button" id="log-go">Walk it</button>
     `, (root) => {
@@ -608,14 +608,14 @@
   UI.missionLock = () => {
     const s = S(), L = D.MERLIN_MIN_LEVEL, need = D.xpToNext(s.level), pct = Math.min(100, ((s.level - 1) + Math.min(1, s.xp / need)) / (L - 1) * 100);
     const xpLeft = Math.max(0, need - s.xp) + Array.from({ length: Math.max(0, L - s.level - 1) }, (_, i) => D.xpToNext(s.level + 1 + i)).reduce((a, b) => a + b, 0);
-    const what = [['egg', 'Merlin’s Eggs', 'The owl-mage gives you eggs. Walk to hatch them.'], ['cap', 'Knowledge Check', 'Every hatch asks one question. Right answers pay more.'], ['note', 'History Notes', 'A true story from the past with every egg.']];
+    const what = [['egg', 'Merlin’s Eggs', 'Walk to hatch eggs.'], ['cap', 'Knowledge Check', 'Answer right for more.'], ['note', 'History Notes', 'A real fact per hatch.']];
     return `<div class="sect" id="merlin-quest">
       <div class="pbox card feat-lock m-lock">
         <span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${L}</span>
         <h3>Merlin’s Eggs</h3>
         <ul class="m-lock-list">${what.map(([ic, t, d]) => `<li>${ic === 'egg' ? WB.eggImg('ember', 24, 'still') : WB.icon(ic, 2)}<span><b>${t}</b><small>${d}</small></span></li>`).join('')}</ul>
         <div class="bar seg cyan" role="progressbar" aria-label="Progress to level ${L}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct}%"></i></div>
-        <p class="fine">Level ${s.level} of ${L} · about ${WB.fmt(xpLeft)} XP to go. Walking, quick missions and your own missions level you up.</p>
+        <p class="fine">${WB.fmt(xpLeft)} XP to go. Walk and do missions to level up.</p>
       </div>
     </div>`;
   };
@@ -715,18 +715,18 @@
   // artifact Collection. Inventory = the Bag sections plus Artifacts.
   UI.hub = 'shop'; UI.invHub = 'bag'; UI.bagTab = 'worldkey'; UI.artTab = 'finds';
   const SHOP_TABS = [
-    ['avatar', 'Avatars', 'user', 'Holographic suits the walkers wear when they travel between worlds. Buy them here, then switch in Inventory.'],
-    ['weapons', 'Weapons', 'sword', 'Melee weapons power Strike and defense powers Defend. Nothing wears out.'],
-    ['ranged', 'Ranged & Magic', 'img:mg/book.png', 'Everything you throw, shoot or cast: ranged weapons, battle magic (instant, once per battle) and charms (worn, always on). Bought once, kept forever.'],
-    ['potions', 'Potions / Food', 'img:pot/tonic.png', 'Each one works once. Carry up to ' + D.POTION_MAX + ' of each.'],
-    ['pets', 'Pets', 'paw', 'Pets take part of every hit aimed at you in battle. A knocked-out pet recovers over time.'],
+    ['avatar', 'Avatars', 'user', 'Walker suits. Buy here, switch in Inventory.'],
+    ['weapons', 'Weapons', 'sword', 'Melee powers Strike; defense powers Defend.'],
+    ['ranged', 'Ranged & Magic', 'img:mg/book.png', 'Ranged weapons, battle magic and charms. Yours forever.'],
+    ['potions', 'Potions / Food', 'img:pot/tonic.png', 'Single use. Carry up to ' + D.POTION_MAX + ' of each.'],
+    ['pets', 'Pets', 'paw', 'Pets absorb some damage in battle.'],
   ];
   const BAG_TABS = [
-    ['worldkey', 'Worldkey', 'key', () => !G.featOn('wk') ? 'Your guide between worlds.' : 'Tune your Worldkey to a world, charge it with artifacts, then open the way.'],
-    ['weapons', 'Weapons', 'sword', 'Equip your melee weapon and your shield or belt.'],
-    ['ranged', 'Ranged & Magic', 'img:mg/book.png', 'Pick your ranged weapon, wear up to ' + D.CHARM_SLOTS + ' charms, and carry battle magic (cast from Gear & Magic in battle, once per battle each).'],
-    ['potions', 'Potions', 'img:pot/tonic.png', 'Drink healing potions here, or use any potion in battle from Items.'],
-    ['pets', 'Pets', 'paw', 'Pets heal over time, like you. A knocked-out pet rests until it recovers.'],
+    ['worldkey', 'Worldkey', 'key', () => !G.featOn('wk') ? 'Your guide between worlds.' : 'Tune, charge, then open a world.'],
+    ['weapons', 'Weapons', 'sword', 'Equip a weapon and a shield or belt.'],
+    ['ranged', 'Ranged & Magic', 'img:mg/book.png', 'Pick a ranged weapon and up to ' + D.CHARM_SLOTS + ' charms.'],
+    ['potions', 'Potions', 'img:pot/tonic.png', 'Drink here or in battle.'],
+    ['pets', 'Pets', 'paw', 'Pets heal over time.'],
     ['avatar', 'Avatars', 'user', 'Pick who you walk as.'],
   ];
   // Artifacts is the Collection. The Forge lives on the Worldkey page, right under the Worldkey it fuels.
@@ -747,7 +747,7 @@
     const x = k(a), y = k(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
   });
   const priceTag = (cost) => { const short = cost - S().coins; return `<div class="price"><span class="cost">${WB.icon('coin', 2)}${WB.fmt(cost)}</span>${short > 0 ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>`; };
-  const shortWhy = (cost, what) => { const short = cost - S().coins; return short > 0 ? 'You need ' + WB.fmt(short) + ' more coins for ' + what + '. Keep walking: 1 coin every ' + D.STEPS_PER_COIN + ' steps.' : ''; };
+  const shortWhy = (cost, what) => { const short = cost - S().coins; return short > 0 ? 'Need ' + WB.fmt(short) + ' more coins. Keep walking!' : ''; };
   const bagSub = (cat, it) => (cat === 'magic' || (cat === 'weapon' && it && it.slot === 'ranged') ? 'ranged' : cat === 'weapon' ? 'weapons' : cat === 'pet' ? 'pets' : 'avatar');
 
   // a Shop card: buy it (or see it in your inventory)
@@ -790,12 +790,12 @@
     ranged: [['throw', 'Throwing weapons'], ['knife', 'Throwing knives & gear'], ['bow', 'Bows'], ['gun', 'Firearms'], ['spell', 'Spells']], shield: [['shield', 'Shields']] };
   const loadout = (slot, slots = ['melee', 'shield']) => `<div class="loadout ${slots.length === 2 ? 'two' : slots.length === 1 ? 'one' : ''}">${slots.map((k) => { const w = G.equipped(k); return `<button type="button" class="lslot pbox ${slot === k ? 'on' : ''}" data-wpnslot="${k}" aria-pressed="${slot === k}">
       <canvas width="64" height="64" ${w ? `data-prev="weapon:${w.id}"` : ''}></canvas><span class="ws-t"><span class="lbl">${D.WEAPON_SLOTS[k]}</span><span class="ws-v">${w ? WB.esc(w.name) : '<span class="none">None</span>'}</span></span></button>`; }).join('')}</div>`;
-  const hpCard = () => { const s = S(), hp = s.hp, max = G.maxHp(); return `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">${hp >= max ? 'Full health.' : 'Full in about ' + UI.dur(G.minsToFull()) + '.'} Walking doesn’t heal. HP refills on its own in ${D.HEAL_MINUTES} minutes, or drink a potion to heal now.</p></div>`; };
+  const hpCard = () => { const s = S(), hp = s.hp, max = G.maxHp(); return `<div class="pbox card hpcard"><div class="obj-head"><span class="lbl">Your health</span><span class="lbl">${WB.fmt(hp)} / ${WB.fmt(max)} HP</span></div><div class="bar hp"><i style="width:${(hp / max) * 100}%"></i></div><p class="fine">${hp >= max ? 'Full health.' : 'Full in about ' + UI.dur(G.minsToFull()) + '.'} HP refills in ${D.HEAL_MINUTES} min, or drink a potion.</p></div>`; };
 
   // Weapons stay locked until battle mode opens (D.BATTLE_LEVEL), in both the Shop and the Inventory
   const gearLock = (what) => `<div class="pbox card feat-lock"><span class="lbl">${WB.icon('lock', 1)} Unlocks at level ${D.BATTLE_LEVEL} · Battle mode</span>
       <h3>${what} are locked</h3>
-      <p class="fine">Weapons are only used in battle, and battles begin at level ${D.BATTLE_LEVEL}. Keep walking: you can buy and equip ${what.toLowerCase()} once you get there.</p>
+      <p class="fine">Battles start at level ${D.BATTLE_LEVEL}. Buy ${what.toLowerCase()} then.</p>
       <div class="bar seg cyan" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${D.BATTLE_LEVEL}" aria-valuenow="${Math.min(S().level, D.BATTLE_LEVEL)}"><i style="width:${Math.min(100, (S().level / D.BATTLE_LEVEL) * 100)}%"></i></div><p class="fine">Level ${S().level} of ${D.BATTLE_LEVEL}</p>
     </div>`;
   // ----- Shop sections -----
@@ -805,13 +805,13 @@
       if (!G.battlesOpen()) return gearLock('Ranged weapons and magic');
       const rng = WGROUPS.ranged.map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('');
       const mag = (kind, title, aside) => { const list = byUnlock(D.MAGIC.filter((m) => m.kind === kind)); return `<div class="sect"><h2>${title} <span class="aside">${list.filter((m) => G.owns('magic', m.id)).length} / ${list.length} · ${aside}</span></h2><div class="grid">${list.map((it) => itemCard('magic', it, { desc: it.desc, stat: it.tag })).join('')}</div></div>`; };
-      return `${loadout('ranged', ['ranged'])}<p class="fine wnote">Your ranged weapon powers Throw, Shoot or Cast and recharges between shots. Battle magic is instant and doesn’t use your turn. Charms are worn (up to ${D.CHARM_SLOTS}) and always on.</p>${rng}${mag('battle', 'Battle magic', 'once per battle')}${mag('charm', 'Charms', 'wear ' + D.CHARM_SLOTS)}`;
+      return `${loadout('ranged', ['ranged'])}<p class="fine wnote">Ranged weapons recharge between shots. Battle magic is free to use. Wear up to ${D.CHARM_SLOTS} charms.</p>${rng}${mag('battle', 'Battle magic', 'once per battle')}${mag('charm', 'Charms', 'wear ' + D.CHARM_SLOTS)}`;
     }
     if (cat === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
       const slot = UI.wpnSlot === 'shield' ? 'shield' : 'melee';
       const all = (k) => D.WEAPONS.filter((w) => w.slot === k).length, own = (k) => D.WEAPONS.filter((w) => w.slot === k && G.owns('weapon', w.id)).length;
-      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'} ${own(slot)} of ${all(slot)} owned.</p>
+      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : 'Softens hits and powers Defend. Belts soften more, block less. Wear one.'} ${own(slot)} of ${all(slot)} owned.</p>
         ${WGROUPS[slot].map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('')}`;
     }
     if (cat === 'potions') {
@@ -827,7 +827,7 @@
       const base = byUnlock(D.POTIONS.filter((p) => p.base && !p.food)), food = byUnlock(D.POTIONS.filter((p) => p.food)), found = D.POTIONS.filter((p) => !p.base && G.hasFound(p.id)), hidden = D.POTIONS.filter((p) => !p.base && !G.hasFound(p.id));
       return `<div class="sect"><h2>Everyday potions <span class="aside">${base.length}</span></h2><div class="grid">${base.map(card).join('')}</div></div>
         <div class="sect"><h2>Food <span class="aside">${food.length}</span></h2><div class="grid">${food.map(card).join('')}</div></div>
-        <div class="sect"><h2>Discovered <span class="aside">${found.length} / ${found.length + hidden.length}</span></h2>${found.length ? `<div class="grid">${found.map(card).join('')}</div>` : '<p class="fine">Rare potions hide in newer worlds as artifacts. Find one to add it to the Shop.</p>'}</div>
+        <div class="sect"><h2>Discovered <span class="aside">${found.length} / ${found.length + hidden.length}</span></h2>${found.length ? `<div class="grid">${found.map(card).join('')}</div>` : '<p class="fine">Find rare potions in new worlds to add them to the Shop.</p>'}</div>
         ${hidden.length ? `<div class="sect"><h2>Still out there <span class="aside">${hidden.length}</span></h2><div class="grid">${hidden.map(card).join('')}</div></div>` : ''}
         <div class="sect"><h2>Streak</h2><div class="grid">${D.SUPPLIES.map((it) => { const full = s.streak.rest >= D.SHIELD_MAX; return `<div class="item pbox"><div class="prev"><canvas width="120" height="120" data-icon-canvas="sshield"></canvas><span class="tag">Have ${s.streak.rest}/${D.SHIELD_MAX}</span></div><h3>${it.name}</h3><div class="req"><span>${it.desc}</span></div>
           <div class="foot">${priceTag(it.cost)}<button class="btn gold sm block" type="button" data-supply="${it.id}" ${off(full ? 'You already carry the maximum of ' + D.SHIELD_MAX + ' Streak Shields.' : shortWhy(it.cost, it.name))}>${full ? 'Full' : 'Buy'}</button></div></div>`; }).join('')}</div></div>`;
@@ -851,7 +851,7 @@
     if (tab === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
       const slot = UI.wpnSlot === 'shield' ? 'shield' : 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
-      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : 'Shields and belts soften every hit and power Defend. Belts soften hits a little more but block less when you Defend. Wear one at a time.'}</p>
+      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : 'Softens hits and powers Defend. Belts soften more, block less. Wear one.'}</p>
         ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields or belts' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
     }
     if (tab === 'potions') {
@@ -861,7 +861,7 @@
           <h3>${WB.esc(p.name)}</h3><div class="req"><span>${p.desc}</span></div>
           <div class="foot stack">${p.kind === 'heal' ? `<button class="btn sm" type="button" data-drink="${p.id}" ${off(hp >= max ? 'You’re already at full health.' : '')}>${p.food ? 'Eat' : 'Drink'}</button>` : `<button class="btn ghost sm" type="button" ${off('Use ' + p.name + ' in battle from Items.')}>Use in battle</button>`}</div>
         </div>`).join('')}</div>` : emptyBag('potions', 'potions')}
-        <p class="fine">Streak Shields: ${s.streak.rest} / ${D.SHIELD_MAX}. Each one saves your streak for one missed day.</p>`;
+        <p class="fine">Streak Shields: ${s.streak.rest} / ${D.SHIELD_MAX}. Each saves one missed day.</p>`;
     }
     if (tab === 'pets') {
       const mine = byUnlock(D.PETS.filter((p) => G.owns('pet', p.id)));
@@ -889,7 +889,7 @@
       </details>`;
     };
     return `<div class="sect" id="art-collection"><h2>Collection <span class="aside">${found} / ${D.FIND_TOTAL} discovered</span></h2>
-      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to charge your Worldkey</span><div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">Six artifacts hide along the road in every world. Walk a world again to find more copies of the ones you know.</p>${G.featOn('wk') ? `<button class="btn ghost sm" type="button" data-wk="forge">${WB.icon('bolt', 2)}Charge your Worldkey</button>` : ''}</div>
+      <div class="pbox card art-sum"><span><b>${inHand}</b> in hand to charge your Worldkey</span><div class="bar seg cyan" role="progressbar" aria-label="Artifacts discovered" aria-valuemin="0" aria-valuemax="${D.FIND_TOTAL}" aria-valuenow="${found}"><i style="width:${(found / D.FIND_TOTAL) * 100}%"></i></div><p class="fine">6 artifacts per world. Revisit worlds for more copies.</p>${G.featOn('wk') ? `<button class="btn ghost sm" type="button" data-wk="forge">${WB.icon('bolt', 2)}Charge your Worldkey</button>` : ''}</div>
       <div class="art-worlds">${open.map(row).join('')}</div>
       ${shut.length ? `<p class="fine art-locked">${WB.icon('lock', 1)} ${shut.length} more world${shut.length > 1 ? 's' : ''} to open · ${shut.reduce((n, w) => n + D.FINDS[w.id].length, 0)} artifacts waiting in them</p>` : ''}
     </div>`;
@@ -1024,27 +1024,27 @@
         <div class="bar hp"><i style="width:${(s.hp / G.maxHp()) * 100}%"></i></div>
         <div class="lbl">${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())} HP · ATK ${D.heroAtk(s.level)}</div>
       </div></div>
-      ${(() => { const sp = G.special(), on = G.specialUnlocked(); return `<div class="pbox card sp-card"><div class="obj-head"><span class="lbl">Special attack · ${WB.esc(sp.cls)}</span><span class="lbl">${on ? 'Unlocked' : 'Unlocks at level ' + D.SPECIAL_LEVEL}</span></div><div class="sp-name">${WB.icon(sp.id === 'raid' ? 'chest' : sp.id === 'drain' ? 'heart' : 'spark', 2)} ${WB.esc(sp.name)}</div><p class="fine">${WB.esc(sp.desc)} Its gauge fills as you strike and throw.</p></div>`; })()}
+      ${(() => { const sp = G.special(), on = G.specialUnlocked(); return `<div class="pbox card sp-card"><div class="obj-head"><span class="lbl">Special attack · ${WB.esc(sp.cls)}</span><span class="lbl">${on ? 'Unlocked' : 'Unlocks at level ' + D.SPECIAL_LEVEL}</span></div><div class="sp-name">${WB.icon(sp.id === 'raid' ? 'chest' : sp.id === 'drain' ? 'heart' : 'spark', 2)} ${WB.esc(sp.name)}</div><p class="fine">${WB.esc(sp.desc)} Charges as you attack.</p></div>`; })()}
       <div class="stats">
         ${(() => {
           // every stat explains itself when tapped (dashed border = tap for info)
           const quickN = (s.quick || {}).total || 0, mineN = (s.custom || {}).done || 0, km = WB.fmtKm(s.meters), mer = G.merlin();
           return [
-            ['Total steps', WB.fmt(s.totalSteps), 'Every step Step Quest has counted since you started: motion sensor, Health sync and logged steps.'],
-            ['Distance', km, 'Your steps turned into distance with your stride length (' + (WB.miles() ? Math.round(s.settings.stride * 39.37) + ' in' : s.settings.stride.toFixed(2) + ' m') + '). Change it in Settings → Steps & goals.'],
-            ['Walk Coins', WB.fmt(s.coins), 'Coins you hold right now. Walking pays 1 coin every 40 steps; missions, battles and Merlin’s eggs pay more. Spend them in the Shop.'],
-            ['Streak', sv.count + ' <small>best ' + s.streak.best + '</small>', 'Days in a row you walked at least ' + WB.fmt(s.settings.streakMin) + ' steps. Your best run so far: ' + s.streak.best + ' day' + (s.streak.best === 1 ? '' : 's') + '.'],
-            ['Battles won', WB.fmt(s.enc.battles), 'Fights you won against creatures, guardians, bosses and the Druid. Battles start at level ' + D.BATTLE_LEVEL + '.'],
-            ['Missions done', WB.fmt(quickN + mineN), quickN + ' quick missions and ' + mineN + ' of your own missions, from Missions → My missions.'],
-            ['Milestones', WB.fmt(s.tasks.advDone.filter((id) => D.milestoneById[id]).length) + ' <small>of ' + D.MILESTONES.length + '</small>', 'Long-term goals on Missions → Today: win battles, beat guardians, find artifacts and walk far.'],
-            ['Guardians beaten', G.bossCount() + '/' + D.WORLDS.length, 'Every world has a guardian. It appears when the world is 100% explored; challenge it from the world map.'],
-            ['Eggs hatched', WB.fmt(mer.hatched), 'Merlin’s eggs you walked to hatch (Missions → Merlin, from level ' + D.MERLIN_MIN_LEVEL + ').'],
+            ['Total steps', WB.fmt(s.totalSteps), 'All steps counted since you started.'],
+            ['Distance', km, 'Steps × stride (' + (WB.miles() ? Math.round(s.settings.stride * 39.37) + ' in' : s.settings.stride.toFixed(2) + ' m') + '). Edit in Settings.'],
+            ['Walk Coins', WB.fmt(s.coins), '1 coin per 40 steps, plus rewards. Spend in the Shop.'],
+            ['Streak', sv.count + ' <small>best ' + s.streak.best + '</small>', 'Days in a row with ' + WB.fmt(s.settings.streakMin) + '+ steps. Best: ' + s.streak.best + '.'],
+            ['Battles won', WB.fmt(s.enc.battles), 'All battle wins. Battles start at level ' + D.BATTLE_LEVEL + '.'],
+            ['Missions done', WB.fmt(quickN + mineN), quickN + ' quick · ' + mineN + ' your own.'],
+            ['Milestones', WB.fmt(s.tasks.advDone.filter((id) => D.milestoneById[id]).length) + ' <small>of ' + D.MILESTONES.length + '</small>', 'Long-term goals in Missions → Today.'],
+            ['Guardians beaten', G.bossCount() + '/' + D.WORLDS.length, 'Each appears at 100% explored. Fight from the map.'],
+            ['Eggs hatched', WB.fmt(mer.hatched), 'Merlin’s eggs hatched (from level ' + D.MERLIN_MIN_LEVEL + ').'],
             ['Bosses beaten', Object.values((s.nemesis || {}).beaten || {}).reduce((a, b) => a + b, 0), 'Rare roaming bosses (from level ' + D.BOSS_LEVEL + ').'],
-            ['Knowledge Checks', mer.right + ' <small>right of ' + mer.taken + '</small>', 'Merlin’s questions, asked every time an egg hatches.'],
-            ['Knowledge Challenges', ((s.druid || {}).wins || 0) + ' <small>right of ' + ((s.druid || {}).taken || 0) + '</small>', 'Trivia questions from the Druid on the road.'],
-            ['Worlds', s.unlocked.length + '/' + D.WORLDS.length, 'Worlds you’ve opened. Each new one needs a level, the world before it explored, and your Worldkey.'],
-            ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL, 'Different artifacts you’ve discovered (6 hide in each world). Every copy you find can charge your Worldkey.'],
-            ['Best day', WB.fmt(s.bestDay), 'The most steps you’ve walked in a single day.'],
+            ['Knowledge Checks', mer.right + ' <small>right of ' + mer.taken + '</small>', 'Merlin’s egg questions.'],
+            ['Knowledge Challenges', ((s.druid || {}).wins || 0) + ' <small>right of ' + ((s.druid || {}).taken || 0) + '</small>', 'The Druid’s road trivia.'],
+            ['Worlds', s.unlocked.length + '/' + D.WORLDS.length, 'Open new ones with level, exploring and your Worldkey.'],
+            ['Artifacts', G.findCount() + '/' + D.FIND_TOTAL, '6 per world. Copies charge your Worldkey.'],
+            ['Best day', WB.fmt(s.bestDay), 'Most steps in one day.'],
           ];
         })().map(([l, v, why]) => `<div class="stat pbox" data-info="${WB.esc(why)}" data-info-k="${WB.esc(l)}" role="button" tabindex="0"><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}
       </div>
@@ -1062,7 +1062,7 @@
       ` : `
       <div class="sect"><h2>Steps &amp; goals</h2>
         ${WB.Health.native ? `<div class="setting pbox"><div><div>${WB.Health.name()}</div><div class="sd">${WB.Health.status === 'on' ? 'Steps sync automatically, even with the app closed.' : WB.esc(WB.Health.msg || 'Sync your steps automatically.')}</div></div><div class="acts">${WB.Health.status === 'on' ? '<button class="btn ghost sm" type="button" data-act="health-off">Turn off</button>' : WB.Health.status !== 'unavailable' ? '<button class="btn sm" type="button" data-act="health-connect">Connect</button>' : ''}</div></div>` : ''}
-        <div class="setting pbox"><div><div>Step counter</div><div class="sd">${st === 'on' ? 'Counting steps while the app is open.' : WB.esc(WB.Steps.msg || 'Counts steps with your motion sensor while the app is open.')}</div></div>
+        <div class="setting pbox"><div><div>Step counter</div><div class="sd">${st === 'on' ? 'Counting steps while the app is open.' : WB.esc(WB.Steps.msg || 'Counts steps while the app is open.')}</div></div>
           <div class="acts">${st === 'on' ? '<button class="btn ghost sm" type="button" data-act="sensor-stop">Pause</button>' : WB.Steps.motion.supported() && st !== 'unavailable' ? '<button class="btn sm" type="button" data-act="sensor-start">Start</button>' : ''}<button class="btn ghost sm" type="button" data-act="log">Log steps</button></div></div>
         <div class="setting pbox"><div><label for="set-goal">Daily goal</label><div class="sd">Hit it for a 100-coin bonus.</div></div><select id="set-goal">${opt(D.DAILY_GOALS.includes(s.settings.dailyGoal) ? D.DAILY_GOALS : [...D.DAILY_GOALS, s.settings.dailyGoal].sort((a, b) => a - b), s.settings.dailyGoal, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-streak">Streak minimum</label><div class="sd">Steps a day to keep your streak.</div></div><select id="set-streak">${opt(D.STREAK_GOALS.includes(s.settings.streakMin) ? D.STREAK_GOALS : [...D.STREAK_GOALS, s.settings.streakMin].sort((a, b) => a - b), s.settings.streakMin, WB.fmt)}</select></div>
@@ -1071,26 +1071,26 @@
       </div>
       <div class="sect"><h2>Notifications</h2>
         <div class="setting pbox"><div><div id="lbl-notify">Mission reminders</div><div class="sd">${WB.Remind.desc()}</div></div><div class="acts">${s.settings.notify && WB.Remind.canAsk() ? '<button class="btn sm" type="button" data-act="notify-allow">Allow</button>' : ''}<button class="toggle" type="button" role="switch" aria-labelledby="lbl-notify" aria-checked="${!!s.settings.notify}" data-act="notify-toggle"></button></div></div>
-        <div class="setting pbox"><div><div id="lbl-mood">Mood check-ins</div><div class="sd">While you walk, now and then ask how you’re feeling. Your moods show on Profile → Overview.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-mood" aria-checked="${s.settings.moodAsk !== false}" data-toggle="moodAsk"></button></div>
+        <div class="setting pbox"><div><div id="lbl-mood">Mood check-ins</div><div class="sd">Ask how you feel while you walk.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-mood" aria-checked="${s.settings.moodAsk !== false}" data-toggle="moodAsk"></button></div>
       </div>
       <div class="sect"><h2>Appearance &amp; sound</h2>
-        <div class="setting pbox theme-set"><div><div id="lbl-theme">Theme</div><div class="sd">Colors for the whole app. Every theme meets WCAG AA contrast.</div></div>
+        <div class="setting pbox theme-set"><div><div id="lbl-theme">Theme</div><div class="sd">App colors. All meet WCAG AA.</div></div>
           <div class="theme-pick" role="radiogroup" aria-labelledby="lbl-theme">${UI.THEMES.map(([id, name, sub, sw]) => `<button type="button" role="radio" aria-checked="${(s.settings.theme || 'night') === id}" data-theme-pick="${id}"><span class="th-sw" aria-hidden="true">${sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span><span class="tn">${name}</span><span class="ts">${sub}</span></button>`).join('')}</div></div>
-        <div class="setting pbox"><div><div id="lbl-music">Game music</div><div class="sd">Theme and battle music. Turn it off to play your own music: game sounds then play along with it instead of pausing it.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-music" aria-checked="${s.settings.gameMusic !== false}" data-toggle="gameMusic"></button></div>
-        <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Hits, coins, fanfares and other game sounds.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
-        <div class="setting pbox"><div><div id="lbl-timer">Battle turn timer</div><div class="sd">A short clock to pick each move. When it runs out, the creature takes its turn.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-timer" aria-checked="${s.settings.turnTimer !== false}" data-toggle="turnTimer"></button></div>
+        <div class="setting pbox"><div><div id="lbl-music">Game music</div><div class="sd">Turn off to play your own music.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-music" aria-checked="${s.settings.gameMusic !== false}" data-toggle="gameMusic"></button></div>
+        <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Game sounds.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
+        <div class="setting pbox"><div><div id="lbl-timer">Battle turn timer</div><div class="sd">Pick a move before time runs out.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-timer" aria-checked="${s.settings.turnTimer !== false}" data-toggle="turnTimer"></button></div>
         <div class="setting pbox"><div><div id="lbl-rm">Reduce motion</div><div class="sd">Fewer particles and animations.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-rm" aria-checked="${!!WB.reducedMotion()}" data-toggle="reducedMotion"></button></div>
       </div>
       <div class="sect"><h2>Help</h2>
-        <div class="setting pbox"><div><div>Tutorial</div><div class="sd">Watch the guided tour of Step Quest again whenever you need it.</div></div><div class="acts"><button class="btn sm" type="button" data-act="tour">${WB.icon('flag', 2)} Watch tutorial</button></div></div>
+        <div class="setting pbox"><div><div>Tutorial</div><div class="sd">Replay the guided tour.</div></div><div class="acts"><button class="btn sm" type="button" data-act="tour">${WB.icon('flag', 2)} Watch tutorial</button></div></div>
       </div>
       <div class="sect"><h2>Privacy &amp; data</h2>
-        <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : !WB.store.ok() ? '<b class="warn">Not saving:</b> this browser is blocking storage, so progress is lost when you close it.' : 'Saved on this device only. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
-        ${WB.LB.configured() ? `<div class="setting pbox"><div><div>Leaderboards</div><div class="sd">${WB.LB.joined() ? 'On: your name, walker, level, streak, steps and latest achievement are shown on the Ranks tab.' : 'Off. Join from Profile → Ranks.'}</div></div>${WB.LB.joined() ? '<button class="btn ghost sm" type="button" data-lb="leave">Leave</button>' : ''}</div>` : ''}
+        <div class="setting pbox"><div><div>Save</div><div class="sd">${WB.Cloud.status === 'cloud' ? 'Saved to your account and on this device.' : !WB.store.ok() ? '<b class="warn">Not saving:</b> storage is blocked. Progress is lost on close.' : 'This device only. Clearing browser data erases it.'}</div></div><button class="btn ghost sm" type="button" data-act="reset">Reset progress</button></div>
+        ${WB.LB.configured() ? `<div class="setting pbox"><div><div>Leaderboards</div><div class="sd">${WB.LB.joined() ? 'On: your profile shows on the Ranks tab.' : 'Off. Join from Profile → Ranks.'}</div></div>${WB.LB.joined() ? '<button class="btn ghost sm" type="button" data-lb="leave">Leave</button>' : ''}</div>` : ''}
       </div>
       <details class="about pbox card"><summary><span class="lbl">About</span><span class="chev" aria-hidden="true">›</span></summary>
         <div class="about-b">
-          <div>Step Quest turns your real steps into an adventure. Your phone’s motion sensor counts them while the app is open, and your Health app covers the rest.</div>
+          <div>Step Quest turns your real steps into an adventure.</div>
           <button class="linkbtn ver" type="button" id="ver">Version ${WB.esc(WB.VERSION || '2.7.0')}</button>
         </div>
       </details>

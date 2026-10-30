@@ -32,12 +32,12 @@
     f: 9.8, base: 9.8, above: false, lastPeak: 0, peakAvg: 2.2, buffer: [], walking: false,
     async start(opts = {}) {
       if (this.running) return true;
-      if (!this.supported()) { Steps.setStatus('unavailable', 'This device or browser can’t read the motion sensor.'); return false; }
+      if (!this.supported()) { Steps.setStatus('unavailable', 'Motion sensor not supported here.'); return false; }
       Steps.setStatus('starting');
       if (!opts.noPrompt) try {
         if (typeof DeviceMotionEvent.requestPermission === 'function') {
           const r = await DeviceMotionEvent.requestPermission();
-          if (r !== 'granted') { Steps.setStatus('denied', 'Motion access was declined. You can allow it in your browser settings.'); return false; }
+          if (r !== 'granted') { Steps.setStatus('denied', 'Motion access denied. Allow it in browser settings.'); return false; }
         }
       } catch (e) { Steps.setStatus('denied', 'Motion access is blocked here.'); return false; }
       this.listen();
@@ -68,7 +68,7 @@
         if (this.lastEvent >= t0 || Motion.seen()) return;
         if (shown < 2500) { this.check = setTimeout(look, 500); return; }
         this.stop(true);
-        Steps.setStatus('nodata', 'No step sensor on this device. Open Step Quest on your phone, or log steps from your Health app.');
+        Steps.setStatus('nodata', 'No step sensor here. Use your phone or log steps.');
       };
       this.check = setTimeout(look, 500);
     },
@@ -129,7 +129,7 @@
   Motion.arm = function () {
     if (this.running || this.armed || this.paused()) return;
     this.armed = true;
-    Steps.setStatus('armed', 'Tap anywhere to start counting your steps.');
+    Steps.setStatus('armed', 'Tap anywhere to start counting.');
     const go = () => {
       document.removeEventListener('touchend', go, true); document.removeEventListener('click', go, true);
       if (!this.armed) return;

@@ -94,7 +94,7 @@
       const w = G.wk(), s = S();
       if (w.e >= K.MAX) return { ok: false, why: 'Already fully charged.' };
       const plan = G.wkChargePlan(Math.max(1, Math.floor(n) || 1));
-      if (!plan.used.length) return { ok: false, why: 'No artifacts to use. Find them on the road (look for the glint).' };
+      if (!plan.used.length) return { ok: false, why: 'No artifacts yet. Find them on the road.' };
       for (const k of plan.used) { s.arts[k]--; if (s.arts[k] <= 0) delete s.arts[k]; }
       w.e = plan.to; G.tally('charged', plan.used.length);
       WB.Save.queue(); G.after && G.after();

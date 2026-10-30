@@ -98,7 +98,7 @@
   R.openAlerts = () => {
     R.seen();
     WB.UI.sheet(`<h3 id="sheet-title">${WB.icon('bell', 2)} Mission alerts</h3>
-      <p class="fine">Reminders stay here until the mission is done or you clear them.</p>
+      <p class="fine">Reminders stay until done or cleared.</p>
       <div class="list alerts-list" id="alerts-list">${rows()}</div>
       <div class="sheet-acts"><button class="btn ghost" type="button" data-alert-clear="1">Clear all</button><button class="btn" type="button" data-close>Close</button></div>`);
   };
@@ -142,11 +142,11 @@
     return perm;
   };
   R.desc = () => {
-    if (!on()) return 'Off. Turn on to be reminded 20, 15, 10, 5 and 2 minutes before a mission is due.';
-    if (perm === 'granted') return native() ? 'On: in the app and as phone notifications, even when Step Quest is closed.' : 'On: in the app and as notifications while Step Quest is open or in the background.';
-    if (perm === 'denied') return 'On in the app. Phone notifications are blocked in your settings.';
-    if (perm === 'unsupported') return 'On in the app. This browser can’t show phone notifications.';
-    return 'On in the app. Tap Allow to get phone notifications too.';
+    if (!on()) return 'Get alerts before missions are due.';
+    if (perm === 'granted') return native() ? 'On: in-app and phone alerts.' : 'On: in-app and while the app runs.';
+    if (perm === 'denied') return 'In-app only. Phone alerts are blocked.';
+    if (perm === 'unsupported') return 'In-app only. Browser can’t notify.';
+    return 'In-app. Tap Allow for phone alerts.';
   };
   R.toggle = () => { const s = S(); s.settings.notify = !s.settings.notify; WB.Save.queue(); sig = ''; R.schedule(); return s.settings.notify; };
 
