@@ -750,11 +750,20 @@
   const shortWhy = (cost, what) => { const short = cost - S().coins; return short > 0 ? 'Need ' + WB.fmt(short) + ' more coins. Keep walking!' : ''; };
   const bagSub = (cat, it) => (cat === 'magic' || (cat === 'weapon' && it && it.slot === 'ranged') ? 'ranged' : cat === 'weapon' ? 'weapons' : cat === 'pet' ? 'pets' : 'avatar');
 
+  // ranged weapons and battle magic: buy in bulk, x10 and up (a row of sizes that fit what you can still hold)
+  const bulkRow = (cat, it) => {
+    const room = G.bulkRoom(cat, it.id), kind = G.bulkKind(cat, it.id), sizes = D.BULK.filter((n) => n <= room), unit = Math.round(G.bulkUnit(cat, it.id) * 10) / 10;
+    if (!sizes.length) return `<button class="btn ghost sm block" type="button" ${off('Full: hold up to ' + G.bulkMax(cat, it.id) + ' ' + kind + '.')}>Full</button>`;
+    return `<div class="bulk-cap">${WB.icon('coin', 1)}${unit} each · buy in bulk</div><div class="bulk" role="group" aria-label="Buy ${kind} in bulk">${sizes.map((n) => { const c = G.bulkCost(cat, it.id, n); return `<button class="btn gold sm" type="button" data-bulk="${cat}:${it.id}:${n}" aria-label="Buy ${n} ${kind} for ${c} coins" ${off(S().coins < c && 'Need ' + WB.fmt(c - S().coins) + ' more coins. Keep walking!')}><b>×${n}</b><small>${WB.fmt(c)}</small></button>`; }).join('')}</div>`;
+  };
   // a Shop card: buy it (or see it in your inventory)
   function itemCard(cat, it, opts = {}) {
     const own = G.owns(cat, it.id), st = own ? null : G.reqStatus(it.req), magic = cat === 'magic';
     let foot = '', tag = '';
-    if (own && magic) {   // magic runs out: restock it with another pack
+    if (G.bulkKind(cat, it.id) && (own || (st && st.buy))) {   // ranged weapons and battle magic run out: buy them in bulk
+      if (own) { const left = G.bulkHave(cat, it.id); tag = `<span class="tag ${left ? '' : 'lock'}">${left ? left + ' ' + G.bulkKind(cat, it.id) : 'Used up'}</span>`; }
+      foot = bulkRow(cat, it);
+    } else if (own && magic) {   // magic runs out: restock it with another pack
       const left = G.uses(it.id), full = !G.canRestock(it.id);
       tag = `<span class="tag ${left ? '' : 'lock'}">${left ? G.usesLabel(it.id) : 'Used up'}</span>`;
       foot = priceTag(it.req.cost) + `<button class="btn gold sm block" type="button" data-buy="magic:${it.id}" ${off(full ? 'Full: hold up to ' + G.usesMax(it.id) + '.' : shortWhy(it.req.cost, it.name))}>${full ? 'Full' : 'Restock +' + G.packSize(it.id)}</button>`;
@@ -777,18 +786,19 @@
   function bagCard(cat, it, opts = {}) {
     const eq = G.isEquipped(cat, it.id), canOff = cat === 'pet' || cat === 'magic' || (cat === 'weapon' && it.slot === 'shield');
     const battleMagic = cat === 'magic' && it.kind === 'battle', left = cat === 'magic' ? G.uses(it.id) : null, empty = left === 0;
-    const restock = `<button class="btn gold sm" type="button" data-buy="magic:${it.id}" ${off(!G.canRestock(it.id) ? 'Full: hold up to ' + G.usesMax(it.id) + '.' : shortWhy(it.req.cost, it.name))}>Restock · ${WB.fmt(it.req.cost)}</button>`;
+    const restock = battleMagic ? bulkRow('magic', it) : `<button class="btn gold sm" type="button" data-buy="magic:${it.id}" ${off(!G.canRestock(it.id) ? 'Full: hold up to ' + G.usesMax(it.id) + '.' : shortWhy(it.req.cost, it.name))}>Restock · ${WB.fmt(it.req.cost)}</button>`;
     const btn = empty ? restock
       : battleMagic ? `<button class="btn ghost sm" type="button" ${off('Cast it in battle from Gear & Magic.')}>Ready</button>`
       : eq ? (canOff ? `<button class="btn ghost sm" type="button" data-unequip="${cat === 'weapon' ? 'shield' : cat === 'magic' ? 'magic:' + it.id : cat}">${cat === 'magic' ? 'Take off' : 'Unequip'}</button>` : `<button class="btn ghost sm" type="button" ${off('Already equipped.')}>Equipped</button>`)
       : `<button class="btn sm" type="button" data-equip="${cat}:${it.id}">${cat === 'magic' ? 'Wear' : cat === 'avatar' ? 'Use' : 'Equip'}</button>`;
     const tag = eq ? `<span class="tag eq">${cat === 'magic' ? 'Worn' : cat === 'avatar' ? 'In use' : 'Equipped'}</span>` : '';
-    const gear = cat === 'weapon' && D.weaponById[it.id];
-    return `<div class="item pbox bag ${empty ? 'empty-uses' : ''}">
+    const gear = cat === 'weapon' && D.weaponById[it.id] && ['melee', 'shield'].includes(D.weaponById[it.id].slot);   // only melee weapons and shields wear down and can be repaired
+    const rng = G.bulkKind(cat, it.id) === 'shots', bulk = G.bulkKind(cat, it.id), have = bulk ? G.bulkHave(cat, it.id) : 0;
+    return `<div class="item pbox bag ${empty || (rng && !have) ? 'empty-uses' : ''}">
       <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
       <h3>${WB.esc(it.name)}</h3>
-      <div class="req">${opts.stat ? `<span class="stat">${opts.stat}</span>` : ''}${opts.desc ? `<span>${WB.esc(opts.desc)}</span>` : ''}${cat === 'magic' ? `<span class="uses ${empty ? 'out' : ''}">${empty ? 'Used up · restock to use' : G.usesLabel(it.id) + ' left'}</span>` : ''}${gear ? condLine(it.id) : ''}</div>
-      <div class="foot stack">${btn}${gear && G.repairCost(it.id) ? repairBtn(it.id) : ''}</div>
+      <div class="req">${opts.stat ? `<span class="stat">${opts.stat}</span>` : ''}${opts.desc ? `<span>${WB.esc(opts.desc)}</span>` : ''}${cat === 'magic' ? `<span class="uses ${empty ? 'out' : ''}">${empty ? 'Used up · restock to use' : G.usesLabel(it.id) + ' left'}</span>` : ''}${rng ? `<span class="uses ${have ? '' : 'out'}">${have ? have + (have === 1 ? ' shot' : ' shots') + ' left' : 'Out of shots · restock to throw'}</span>` : ''}${gear ? condLine(it.id) : ''}</div>
+      <div class="foot stack">${btn}${gear && G.repairCost(it.id) ? repairBtn(it.id) : ''}${rng ? bulkRow(cat, it) : ''}</div>
     </div>`;
   }
   // condition of a weapon, shield or belt: a bar and a % (strength follows it, down to half)
@@ -820,7 +830,7 @@
       if (!G.battlesOpen()) return gearLock('Ranged weapons and magic');
       const rng = WGROUPS.ranged.map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('');
       const mag = (kind, title, aside) => { const list = byUnlock(D.MAGIC.filter((m) => m.kind === kind)); return `<div class="sect"><h2>${title} <span class="aside">${list.filter((m) => G.owns('magic', m.id)).length} / ${list.length} · ${aside}</span></h2><div class="grid">${list.map((it) => itemCard('magic', it, { desc: it.desc, stat: it.tag })).join('')}</div></div>`; };
-      return `${loadout('ranged', ['ranged'])}<p class="fine wnote">Weapons wear with use. Magic: ${D.MAGIC_PACK} casts a pack. Charms: ${D.CHARM_BATTLES} battles each.</p>${rng}${mag('battle', 'Battle magic', D.MAGIC_PACK + ' casts a pack')}${mag('charm', 'Charms', 'wear ' + D.CHARM_SLOTS)}`;
+      return `${loadout('ranged', ['ranged'])}<p class="fine wnote">Ranged weapons and battle magic run out: buy them in bulk (×${D.BULK[0]} and up) and restock when empty. Only melee weapons and shields wear down and need repair. Charms: ${D.CHARM_BATTLES} battles each.</p>${rng}${mag('battle', 'Battle magic', D.MAGIC_PACK + ' casts a pack')}${mag('charm', 'Charms', 'wear ' + D.CHARM_SLOTS)}`;
     }
     if (cat === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
@@ -859,7 +869,7 @@
       const rng = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && G.owns('weapon', w.id)));
       const charms = byUnlock(D.MAGIC.filter((m) => m.kind === 'charm' && G.owns('magic', m.id))), bm = byUnlock(D.MAGIC.filter((m) => m.kind === 'battle' && G.owns('magic', m.id)));
       return `${loadout('ranged', ['ranged'])}
-        ${repairAll()}
+        <p class="fine wnote">Ranged weapons and magic run out when used. Restock them in bulk (×${D.BULK[0]} and up).</p>
         <div class="sect"><h2>Ranged weapons <span class="aside">${rng.length}</span></h2>${rng.length ? `<div class="grid">${rng.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag('ranged weapons', 'ranged')}</div>
         <div class="sect"><h2>Charms <span class="aside">Wearing ${G.charms().length} / ${D.CHARM_SLOTS}</span></h2>${charms.length ? `<div class="grid">${charms.map((it) => bagCard('magic', it, { stat: it.tag })).join('')}</div>` : emptyBag('charms', 'ranged')}</div>
         <div class="sect"><h2>Battle magic <span class="aside">${bm.length}</span></h2>${bm.length ? `<div class="grid">${bm.map((it) => bagCard('magic', it, { stat: it.tag })).join('')}</div>` : emptyBag('battle magic', 'ranged')}</div>`;
@@ -867,7 +877,7 @@
     if (tab === 'weapons') {
       if (!G.battlesOpen()) return gearLock('Weapons');
       const slot = UI.wpnSlot === 'shield' ? 'shield' : 'melee', mine = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && G.owns('weapon', w.id)));
-      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike. Wears with use.' : 'Softens hits and powers Defend. Wears with use.'}</p>${repairAll()}
+      return `${loadout(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike. Wears with use. Repair it here.' : 'Softens hits and powers Defend. Wears with use. Repair it here.'}</p>${repairAll()}
         ${mine.length ? `<div class="grid">${mine.map((w) => bagCard('weapon', w, { stat: statLine(w) })).join('')}</div>` : emptyBag(slot === 'shield' ? 'shields or belts' : D.WEAPON_SLOTS[slot].toLowerCase() + ' weapons', 'weapons')}`;
     }
     if (tab === 'potions') {
@@ -1290,6 +1300,7 @@
     if (d.drink) { const r = G.drink(d.drink); if (r.ok) WB.Sfx.play('potion'); if (r.ok) UI.toast({ kicker: 'Healed', title: WB.fmt(S().hp) + ' / ' + WB.fmt(G.maxHp()) + ' HP', img: `pot/${d.drink}.png`, cls: 'ok' }); else if (r.msg) UI.toast({ kicker: 'Not now', title: r.msg }); UI.updateHud(); return UI.render(); }
     if (d.boss) { WB.BattleUI.challenge(d.boss); return; }
     if (d.claim) { const [ty, id] = d.claim.split(':'); const r = G.claimTask(ty, id); if (r) UI.toast({ kicker: 'Reward claimed', title: G.rewardText(r.reward), icon: 'coin', cls: 'gold' }); UI.render(); if (r && ty === 'daily') UI.missionAmbushRoll('daily', r.t.title); return; }
+    if (d.bulk) { const [c, id, n] = d.bulk.split(':'), r = G.buyBulk(c, id, +n); if (r.ok) UI.toast({ kicker: r.restock ? 'Restocked' : 'Purchased', title: G.item(c, id).name, sub: '+' + r.n + ' · ' + G.bulkHave(c, id) + ' ' + r.kind + ' now', icon: 'shop', cls: 'gold' }); else if (r.msg) UI.toast({ kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.buy) { const [c, id] = d.buy.split(':'); const r = G.buy(c, id); if (r.ok) UI.toast({ kicker: r.restock ? 'Restocked' : 'Purchased', title: G.item(c, id).name, sub: c === 'magic' ? G.usesLabel(id) + ' left' : '', icon: 'shop', cls: 'gold' }); else if (r.msg) UI.toast({ kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.supply) { const r = G.buySupply(d.supply); UI.toast(r.ok ? { kicker: 'Purchased', title: 'Streak Shield', sub: 'You hold ' + S().streak.rest + ' / ' + D.SHIELD_MAX + '.', icon: 'sshield', cls: 'gold' } : { kicker: 'Not yet', title: r.msg }); return UI.render(); }
     if (d.equip) { const [c, id] = d.equip.split(':'); const r = G.equip(c, id); if (r && r.full) UI.toast({ kicker: 'Charm slots full', title: 'Take one off first: you can wear ' + D.CHARM_SLOTS + '.', cls: 'msg' }); else if (r && r.empty) UI.toast({ kicker: 'Used up', title: 'Restock it to wear it again.', cls: 'msg' }); else WB.Sfx.play('equip'); return UI.render(); }

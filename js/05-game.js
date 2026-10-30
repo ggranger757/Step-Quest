@@ -103,8 +103,9 @@
   G.unlock = (cat, id, quiet) => {
     const list = S().owned[CATS[cat][0]];
     if (list.includes(id)) return false;
-    if (cat === 'magic' && G.stock) G.stock();   // set up item stock first, so an older save's one-time top-up never doubles this pack
+    if ((cat === 'magic' || cat === 'weapon') && G.stock) G.stock();   // set up item stock first, so an older save's one-time top-up never doubles this pack
     list.push(id);
+    if (cat === 'weapon' && G.addShots && D.weaponById[id] && D.weaponById[id].slot === 'ranged') G.addShots(id, D.SHOT_START);   // a ranged weapon comes with a stack of shots
     if (cat === 'magic' && G.addUses) G.addUses(id, G.packSize(id));   // magic comes with a pack of casts (or battles, for charms)
     if (!quiet) WB.bus.emit('unlock', { cat, id });
     return true;
@@ -683,6 +684,7 @@
   G.buy = (cat, id) => {
     const s = S(), it = G.item(cat, id);
     if (it && cat === 'magic' && G.owns(cat, id)) return G.restock(id);
+    if (it && G.bulkKind(cat, id)) return G.buyBulk(cat, id, D.BULK[0]);   // ranged weapons and battle magic are bought in bulk
     if (!it || G.owns(cat, id)) return { ok: false };
     if ((cat === 'weapon' || cat === 'magic') && !G.battlesOpen()) return { ok: false, msg: 'Unlocks with battles at level ' + D.BATTLE_LEVEL + '.' };
     const st = G.reqStatus(it.req);
@@ -708,6 +710,7 @@
   G.restock = (id) => {
     const s = S(), m = D.magicById[id];
     if (!m || !G.owns('magic', id)) return { ok: false };
+    if (m.kind === 'battle') return G.buyBulk('magic', id, D.BULK[0]);
     if (!G.battlesOpen()) return { ok: false, msg: 'Unlocks with battles at level ' + D.BATTLE_LEVEL + '.' };
     if (!G.canRestock(id)) return { ok: false, msg: 'Full: hold up to ' + G.usesMax(id) + (m.kind === 'battle' ? ' casts.' : ' battles.') };
     if (s.coins < m.req.cost) return { ok: false, msg: 'You need ' + WB.fmt(m.req.cost - s.coins) + ' more coins.' };

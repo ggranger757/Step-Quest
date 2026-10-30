@@ -3627,3 +3627,11 @@ html.rm .forge.flash { animation: none; }
 @media (orientation: portrait) { .b-actions .btn, .b-actions .btn.special { min-height: var(--bbtn-h); } .b-actions .btn.defend, .b-actions .btn.special { min-height: calc(var(--bbtn-h) + 4px); } .b-actions .bt small { font-size: 11px; } }
 @media (max-width: 400px) and (orientation: portrait) { .b-actions .bt small { font-size: 10.5px; } }
 @media (orientation: landscape) and (max-height: 500px) { .b-actions { --bbtn-h: 58px; } }
+
+/* ---------- 3.4.0: bulk buy rows (ranged weapons and battle magic: x10 and up) ---------- */
+.bulk-cap { display: flex; align-items: center; gap: 4px; font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.bulk { display: flex; gap: 4px; }
+.item .foot .bulk .btn, .item .foot.stack .bulk .btn { flex: 1 1 0; min-width: 0; width: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 2px; line-height: 1.1; }
+.bulk .btn b { font-weight: 400; }
+.bulk .btn small { font-size: 11px; }
+.item.empty-uses .uses.out { color: var(--danger, #ff6b6b); }

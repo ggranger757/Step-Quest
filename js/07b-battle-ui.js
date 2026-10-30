@@ -417,16 +417,17 @@
   }
   const clip = (t, n) => { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };   // keeps a name inside its button
   const potionTag = (p) => (p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
+  const PET_TAG = { attack: 'Attacker', shoot: 'Shooter', heal: 'Healer', guard: 'Guardian' };   // a pet's job, for the swap list
   function actions(mode = 'main') {
     const st = WB.Battle.st, el = $('#b-actions'), s = S();
     if (!el) return;
     if (mode === 'gear') {
       el.className = 'b-actions items gear';
       const owned = (s.owned.weapons || []).map((id) => D.weaponById[id]).filter(Boolean);
-      const row = (w, on, why, ic, sub) => `<button class="btn ghost ${on ? 'on' : ''}" type="button" data-b="swap:${w.slot}/${w.id}" ${on ? 'aria-pressed="true"' : ''} ${WB.UI.off(why)} aria-label="${WB.esc(w.name)}">${ic}<span class="bt"><span>${WB.esc(clip(w.name, 18))}</span><small>${on ? 'In hand' : WB.esc(sub)} · ${Math.round(G.cond(w.id))}%</small></span></button>`;   // condition shows on every piece of gear
-      const melee = owned.filter((w) => w.slot === 'melee').map((w) => row(w, st.melee.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Strike'));
-      const rng = owned.filter((w) => w.slot === 'ranged').map((w) => { const cd = st.weapon.id === w.id ? st.cooldown : st.cds[w.id] || 0; return row(w, st.weapon.id === w.id, '', `<canvas width="24" height="24" class="wp-ic" data-wid="${w.id}"></canvas>`, (VERB[w.type] || 'Throw') + (cd > 0 ? ' · in ' + cd : '')); });
-      const shd = owned.filter((w) => w.slot === 'shield').map((w) => row(w, !!st.shield && st.shield.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Block ' + Math.round(w.block * 100) + '%'));
+      const row = (w, on, why, ic, sub, tail) => `<button class="btn ghost ${on ? 'on' : ''}" type="button" data-b="swap:${w.slot}/${w.id}" ${on ? 'aria-pressed="true"' : ''} ${WB.UI.off(why)} aria-label="${WB.esc(w.name)}">${ic}<span class="bt"><span>${WB.esc(clip(w.name, 18))}</span><small>${WB.esc([on ? 'In hand' : sub, tail].filter(Boolean).join(' · '))}</small></span></button>`;   // condition shows on every piece of gear
+      const melee = owned.filter((w) => w.slot === 'melee').map((w) => row(w, st.melee.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Strike', Math.round(G.cond(w.id)) + '%'));
+      const rng = owned.filter((w) => w.slot === 'ranged').map((w) => { const cd = st.weapon.id === w.id ? st.cooldown : st.cds[w.id] || 0; return row(w, st.weapon.id === w.id, st.weapon.id !== w.id && !G.shots(w.id) ? 'Out of ' + w.name + '. Restock it in the Shop.' : '', `<canvas width="24" height="24" class="wp-ic" data-wid="${w.id}"></canvas>`, (VERB[w.type] || 'Throw') + (cd > 0 ? ' · in ' + cd : ''), G.shots(w.id) + ' left'); });
+      const shd = owned.filter((w) => w.slot === 'shield').map((w) => row(w, !!st.shield && st.shield.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Block ' + Math.round(w.block * 100) + '%', Math.round(G.cond(w.id)) + '%'));
       const sec = (t, list) => list.length ? `<p class="b-sub">${t}</p>${list.join('')}` : '';
       // ranged weapons and battle magic are one family: everything you throw, shoot or cast
       const turnUsed = st.magicTurn === st.turn;
@@ -436,8 +437,15 @@
         if (id === 'clover' && !used) return `<button class="btn ghost" type="button" data-b="magic:clover/twice" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 24, 'b-ic')}<span class="bt"><span>Clover: strike twice</span><small>Next 2 attacks hit twice</small></span></button><button class="btn ghost" type="button" data-b="magic:clover/dodge" ${WB.UI.off(why)}>${WB.pxImg('mg/clover.png', 24, 'b-ic')}<span class="bt"><span>Clover: dodge</span><small>Dodge the next 2 attacks</small></span></button>`;
         return `<button class="btn ghost" type="button" data-b="magic:${id}" ${WB.UI.off(why)}>${WB.pxImg('mg/' + id + '.png', 24, 'b-ic')}<span class="bt"><span>${WB.esc(clip(m.name, 18))}</span><small>${used ? 'Used · ' + G.uses(id) + ' left' : WB.esc(m.tag) + ' · ' + G.uses(id) + ' left'}</small></span></button>`;
       });
-      el.innerHTML = sec('Ranged · Throw / Shoot / Cast', rng) + sec('Battle magic · instant, once per battle', mag) + sec('Melee · Strike', melee) + sec('Shield · Defend', shd) + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
+      // pets: swap your partner (free, this battle only). A resting pet can't be called; one that was knocked out can be replaced.
+      const pets = (s.owned.pets || []).map((id) => G.pet(id)).filter(Boolean).map((p) => {
+        const on = !!st.pet && st.pet.id === p.id, hp = on ? st.pet.hp : G.petHp(p.id), max = G.petMax(p.id), rest = hp <= 0;
+        return `<button class="btn ghost ${on ? 'on' : ''}" type="button" data-b="petswap:${p.id}" ${on ? 'aria-pressed="true"' : ''} ${WB.UI.off(on ? '' : rest ? p.name + ' is resting. It recovers over time.' : '')} aria-label="${WB.esc(p.name)}"><canvas width="24" height="24" class="wp-ic" data-pid="${p.id}"></canvas><span class="bt"><span>${WB.esc(clip(p.name, 18))}</span><small>${on ? 'With you' : rest ? 'Resting' : PET_TAG[p.role || 'guard'] || 'Guardian'} · ${rest ? 'KO' : 'HP ' + Math.round(hp) + '/' + max}</small></span></button>`;
+      });
+      const petSec = pets.length > (st.pet ? 1 : 0) ? sec('Pets · swapping is free', pets) : '';
+      el.innerHTML = sec('Ranged · Throw / Shoot / Cast', rng) + sec('Battle magic · instant, once per battle', mag) + sec('Melee · Strike', melee) + sec('Shield · Defend', shd) + petSec + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
       el.querySelectorAll('canvas[data-wid]').forEach((c) => WB.UI.paintWeapon(c, c.dataset.wid));
+      el.querySelectorAll('canvas[data-pid]').forEach((c) => WB.paintThumb(c, { kind: 'pet', id: c.dataset.pid }));
     } else if (mode === 'items') {
       el.className = 'b-actions items';
       const mine = D.POTIONS.filter((p) => s.potions[p.id] > 0);
@@ -445,14 +453,14 @@
       el.innerHTML = mine.map((p) => `<button class="btn ghost" type="button" data-b="potion:${p.id}">${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(p.name)}</span><small>${potionTag(p)} · x${s.potions[p.id]}</small></span></button>`
         + (pt && p.kind === 'heal' ? `<button class="btn ghost pet-use" type="button" data-b="potion:${p.id}/pet" ${WB.UI.off(!petHurt && pt.name + ' is already at full health.')}>${WB.potionImg(p.id, 32)}<span class="bt"><span>${WB.esc(clip(p.name, 12))} → ${WB.esc(clip(pt.name, 10))}</span><small>${pt.hp <= 0 ? 'Revive + heal ' : 'Heal '}${Math.round(p.amount * (WB.Game.perk('potions') ? 1.25 : 1) * 100)}% · x${s.potions[p.id]}</small></span></button>` : '')).join('') + `<button class="btn ghost back" type="button" data-b="back">Back</button>`;
     } else {
-      const wpn = st.weapon, m = st.melee, sh = st.shield, ready = st.cooldown === 0, nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
+      const wpn = st.weapon, m = st.melee, sh = st.shield, ready = st.cooldown === 0, shotsLeft = G.shots(wpn.id), nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
       el.className = 'b-actions';
       el.innerHTML = `
         <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(clip(m.name, 16))}</small></span></button>
-        <button class="btn" type="button" data-b="throw" ${WB.UI.off(!ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(clip(wpn.name, 16))} · ${ready ? 'ready' : 'in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
+        <button class="btn" type="button" data-b="throw" ${WB.UI.off(shotsLeft <= 0 ? 'Out of ' + wpn.name + '. Swap weapons in Gear & Magic, or restock in the Shop.' : !ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(clip(wpn.name, 14))} · ${shotsLeft <= 0 ? 'empty' : ready ? shotsLeft + ' left' : 'in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
         <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(st.hero.guardPts < D.DEFEND_COST && 'Your guard is worn down (' + st.hero.guardPts + '%). Each Defend uses ' + D.DEFEND_COST + '%; it recovers ' + D.DEFEND_REGEN + '% every turn you don’t defend.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${sh ? 'Block ' + Math.round(sh.block * 100) + '%' + (sh.reflect ? ' + reverse' : '') + (sh.counter ? ' + counter' : '') : 'Block 60% + heal'}<span class="sr-only">, guard ${st.hero.guardPts}%</span></small></span><span class="sp-gauge df-gauge ${st.hero.guardPts < D.DEFEND_COST ? 'low' : ''}" aria-hidden="true"><i style="width:${st.hero.guardPts}%"></i></span></button>
         <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'No potions. Buy some in the Shop later.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
-        <button class="btn ghost gear-btn" type="button" data-b="gearmenu">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Gear &amp; Magic</span><small>${st.magic.length ? 'Swap weapons · cast magic' : 'Weapons, bows, shield'}</small></span></button>
+        <button class="btn ghost gear-btn" type="button" data-b="gearmenu">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Gear &amp; Magic</span><small>${st.magic.length ? 'Swap gear and pets · cast magic' : 'Weapons, shield, pets'}</small></span></button>
         ${specialBtn(st)}
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
       const ic = el.querySelector('.wp-ic'); if (ic) WB.UI.paintWeapon(ic, wpn.id);
@@ -547,6 +555,17 @@
       if (w.slot === 'ranged' && (w.type === 'spell' || w.id === 'freeze' || w.id === 'luna')) ['wp/fx_blast.png', 'wp/fx_shatter.png'].forEach((p) => WB.Assets.get(p));
       WB.Sfx.play('equip'); actions('main');
       log(w.slot === 'melee' ? 'You ready your ' + w.name + '.' : w.slot === 'ranged' ? 'You take up your ' + w.name + '.' : 'You raise your ' + w.name + '.');
+      return;
+    }
+    if (a.startsWith('petswap:')) {   // calling a different pet is free too: it doesn't use your turn
+      const stB = WB.Battle.st, had = !!stB.pet, p = WB.Battle.swapPet(a.slice(8));
+      if (!p) { actions('gear'); return; }
+      WB.Assets.get(WB.sheet(G.pet(p.id).src, p.id, 'idle').path); WB.Assets.get(WB.sheet(G.pet(p.id).src, p.id, 'hurt').path);
+      sprites.pet = { anim: 'idle', f: 0, once: false, flash: 0 };
+      shown.pet = disp.pet = ghost.pet = p.hp;
+      if (!had) resize();   // the hero steps over to make room when a pet joins a fight that started without one
+      WB.Sfx.play('equip'); plates(); actions('main');
+      log(p.name + ' comes to your side.');
       return;
     }
     if (a === 'back') return actions('main');

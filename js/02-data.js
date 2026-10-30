@@ -338,8 +338,8 @@
   D.DEFEND_COST = 35; D.DEFEND_REGEN = 15;   // the Defend gauge: each Defend uses 35%, every turn you don't defend restores 15%
   // Initiative: the chance a creature strikes first, before your opening move (never in your very first battle; the Druid always does)
   D.AMBUSH = { creature: 0.3, guardian: 0.4, boss: 0.5 };
-  // Turn timer (seconds) to pick a move; when it runs out you hesitate and the creature acts. Tougher foes give you less time.
-  D.TURN_TIME = { creature: 10, guardian: 8, boss: 7 };
+  // Turn timer (seconds) to pick a move; when it runs out you hesitate and the creature acts. 13 seconds against every foe.
+  D.TURN_TIME = { creature: 13, guardian: 13, boss: 13 };
   D.BOSS_LEVEL = 20; D.BOSS_COOLDOWN_H = 1.5; D.BOSS_LEVEL_LOSS = 2;
   D.BOSSES = {
     demonlord: { ability: 'enrage', abilityName: 'Hellborn Rage', abilityDesc: 'Below half HP he enrages: his attacks hit 35% harder.',
