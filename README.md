@@ -103,6 +103,10 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.3.4
+
+- **Green Downs:** the sky layer had five moons painted into every 384px tile, so a row of moons showed across the screen. They're painted out; the upper sky is rebuilt from a clean strip of the same dithered gradient, so it still tiles seamlessly.
+
 ## Changes in 3.3.3
 
 - **Elemental eggs for Merlin:** five new egg families, each laid in one of 10 colors (50 in all, animated): Sprout (common, 4,000 steps), Tide (uncommon, 5,000), Flame (uncommon, 7,000), Prism (rare, 10,000) and Shadow (epic, 15,000; a right answer adds a weapon or pet, like the Crystal Egg). The original Frost, Ember and Crystal eggs stay.
