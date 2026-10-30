@@ -278,14 +278,16 @@
         s.potions[arg]--;
         const b0 = pt.hp; pt.hp = Math.min(pt.max, pt.hp + Math.round(pt.max * p.amount * (WB.Game.perk('potions') ? 1.25 : 1)));
         const heal = pt.hp - b0; pt.fell = false;
-        events.push({ who: 'hero', type: 'potion', potion: arg, petHeal: heal, revived: b0 <= 0, text: p.name + ' on ' + pt.name + ': +' + heal + ' HP.' + (b0 <= 0 ? ' ' + pt.name + ' is back on its feet!' : '') });
+        events.push({ who: 'hero', type: 'potion', potion: arg, petHeal: heal, revived: b0 <= 0, text: p.name + ' on ' + pt.name + ': +' + heal + ' HP.' + (b0 <= 0 ? ' ' + pt.name + ' is back on its feet!' : '') + (s.potions[arg] ? ' ' + s.potions[arg] + ' left.' : ' That was your last one.') });
       } else {
-      const ev = { who: 'hero', type: 'potion', potion: arg };
+      s.potions[arg]--;   // every potion is used up when you drink it (it was only counted when given to a pet)
+      const ev = { who: 'hero', type: 'potion', potion: arg, left: s.potions[arg] };
       if (p.kind === 'heal') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * p.amount)); ev.heal = h.hp - b0; ev.text = p.name + ': +' + ev.heal + ' HP.'; if (p.guardTurns) { h.guard = p.guardTurns; h.guardF = p.guardF || 0.5; ev.text += ' Damage taken halved for ' + p.guardTurns + ' turns.'; } }
       if (p.kind === 'guard') { h.guard = p.turns; h.guardF = p.factor || 0.5; ev.text = p.name + ': damage taken cut by ' + pct(1 - h.guardF) + ' for ' + p.turns + ' turns.'; }
       if (p.kind === 'fury') { h.fury = p.turns + 1; h.furyMult = p.mult || 1.5; ev.text = p.name + ': +' + pct(h.furyMult - 1) + ' damage for ' + p.turns + ' turns.'; }
       if (p.kind === 'swift') { st.cooldown = 0; const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * (p.amount || 0.1))); ev.heal = h.hp - b0; ev.text = p.name + ': your weapon is ready again' + (ev.heal ? ' (+' + ev.heal + ' HP).' : '.'); }
       if (p.kind === 'blast') { strikeEnemy(st, Math.max(1, Math.round(e.max * p.power)), ev, true); ev.text = p.name + ' explodes for ' + ev.dmg + '!'; }
+      ev.text = (ev.text || p.name + '.') + (ev.left ? ' ' + ev.left + ' left.' : ' That was your last one.');
       events.push(ev);
       }
     } else if (move === 'flee') {

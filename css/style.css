@@ -3608,3 +3608,6 @@ html.rm .forge.flash { animation: none; }
 :root[data-theme="light"] .world-chip, :root[data-theme="light"] .lore-shot figcaption { background: color-mix(in srgb, var(--surface) 95%, transparent); }
 :root[data-theme="light"] .first-steps span { background: color-mix(in srgb, var(--surface) 95%, transparent); text-shadow: none; box-shadow: 0 0 0 2px var(--line-hi); }
 :root[data-theme="light"] .welcome, :root[data-theme="light"] .wk-bubble, :root[data-theme="light"] .b-timer { background: color-mix(in srgb, var(--surface) 97%, transparent); }
+/* battle move buttons: the top line uses the same font as the fighters' names (.pl-name) */
+.b-actions .bt > span { font-family: var(--display); font-weight: 400; font-size: 19px; line-height: 1; text-transform: none; letter-spacing: 0; }
+@media (max-width: 400px) { .b-actions .bt > span { font-size: 17px; } }
