@@ -66,12 +66,13 @@
   // ---------- small shared pieces ----------
   const energyBar = (e) => `<div class="wk-bar ${e <= K.LOW ? 'low' : ''}" role="progressbar" aria-label="Worldkey energy" aria-valuemin="0" aria-valuemax="${K.MAX}" aria-valuenow="${Math.floor(e)}"><i style="width:${Math.min(100, (e / K.MAX) * 100)}%"></i></div>`;
   const check = (ok) => (ok ? `<span class="wk-ok">${WB.icon('check', 1)}</span>` : '<span class="wk-no" aria-hidden="true">•</span>');
-  const tuneTxt = (st) => (st.tuned ? 'Tuned' : 'Not tuned yet');
+  const left = (st) => { const m = Math.max(1, Math.ceil(st.tuneLeft / 60000)); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60 ? (m % 60) + ' min' : '').trim(); };
+  const tuneTxt = (st) => (st.tuned ? 'Tuned · fades in ' + left(st).trim() : st.lapsed ? 'Out of tune' : 'Not tuned yet');
   const hasFuel = () => G.wkChargeMax() > 0;
   // the one next step for a destination
   function nextStep(st) {
     if (!st.found) return st.tuned ? null : { act: 'tune', label: 'Tune ahead', cls: 'ghost' };
-    if (!st.tuned) return { act: 'tune', label: 'Tune to ' + st.world.name, cls: 'gold' };
+    if (!st.tuned) return { act: 'tune', label: (st.lapsed ? 'Retune to ' : 'Tune to ') + st.world.name, cls: 'gold' };
     if (!st.energyOk) return hasFuel() ? { act: 'charge', label: 'Charge with artifacts', cls: 'gold' } : { act: 'arts', label: 'Find artifacts', cls: 'ghost' };
     return { act: 'open', label: 'Open ' + st.world.name, cls: 'gold' };
   }

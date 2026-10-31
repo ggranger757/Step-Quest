@@ -1,9 +1,10 @@
-/* Step Quest — mission reminders: 20, 15, 10, 5 and 2 minutes before any of your own missions is due. Each reminder shows in the app (a toast) and, when allowed, as a phone
+/* Step Quest — mission reminders for your own missions: every 45 minutes through the last 3 hours (3 h, 2.25 h, 1.5 h, 45 min), then 20, 10, 5 and 2 minutes, at the due time, and
+   every 45 minutes while it is still overdue (up to 3 hours). Each reminder shows in the app (a toast) and, when allowed, as a phone
    notification. Installed app: reminders are scheduled with the system, so they arrive even when Step Quest is
    closed. Web app: they arrive while the app is open or in the background (there is no push server). */
 (() => {
   const S = () => WB.state;
-  const MINS = [20, 15, 10, 5, 2];
+  const MINS = [180, 135, 90, 45, 20, 10, 5, 2, 0, -45, -90, -135, -180];   // minutes before the due time (negative = overdue)
   const R = (WB.Remind = { MINS });
   const native = () => { const P = window.Capacitor && window.Capacitor.Plugins; return P && P.LocalNotifications && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() ? P.LocalNotifications : null; };
   const webOk = () => 'Notification' in window;
@@ -13,10 +14,12 @@
   // every open mission with a due time: { key, title, due }
   R.list = () => {
     const s = S(), out = [];
-    for (const m of (s.custom && s.custom.list) || []) if (m.due > Date.now()) out.push({ key: 'c:' + m.id + ':' + m.due, title: m.title, due: m.due });
+    for (const m of (s.custom && s.custom.list) || []) if (m.due > Date.now() - 181 * 60000) out.push({ key: 'c:' + m.id + ':' + m.due, title: m.title, due: m.due, at: m.at });   // overdue ones keep nudging for 3 hours
     return out;
   };
-  const when = (mins) => (mins <= 1 ? 'in about a minute' : 'in ' + mins + ' minutes');
+  const hrs = (m) => { const h = Math.round(m / 30) / 2; return h + (h === 1 ? ' hour' : ' hours'); };
+  const when = (mins) => (mins <= 1 ? 'in about a minute' : mins < 60 ? 'in ' + mins + ' minutes' : 'in about ' + hrs(mins));
+  const phrase = (left) => (left > 1 ? 'is due ' + when(Math.round(left)) : left > -1 ? 'is due now' : 'is overdue by ' + (-left < 60 ? Math.round(-left) + ' minutes' : hrs(Math.round(-left))));
 
   // a phone notification (web: through the service worker when there is one)
   async function systemNote(title, body, tag) {
@@ -40,13 +43,14 @@
       const left = (x.due - Date.now()) / 60000, done = (sent[x.key] = sent[x.key] || []);
       const mark = MINS.filter((t) => left <= t);            // every window it has entered
       if (!mark.length || mark.every((t) => done.includes(t))) continue;
+      if (!done.length && x.at && Date.now() - x.at < 120000) { mark.forEach((m) => done.push(m)); continue; }   // just made: don't announce the windows it starts inside
       const t = Math.min(...mark);                            // only the latest one (no burst after reopening the app)
       mark.forEach((m) => { if (!done.includes(m)) done.push(m); });
-      const mins = Math.max(1, Math.round(left)), body = x.title + ' is due ' + when(mins) + '.';
+      const body = x.title + ' ' + phrase(left) + '.';
       R.addAlert(x, t);   // the bell in the HUD keeps it until you've dealt with it
-      if (WB.UI && WB.UI.toast) WB.UI.toast({ kicker: 'Mission due soon', title: x.title, sub: 'Due ' + when(mins) + '.', icon: 'bell', cls: t <= 5 ? 'warn' : 'gold', action: { label: 'Open', fn: () => { R.seen(x.key); openMission(x.key); } } });
+      if (WB.UI && WB.UI.toast) WB.UI.toast({ kicker: left < -1 ? 'Mission overdue' : 'Mission due soon', title: x.title, sub: phrase(left).replace(/^is /, '').replace(/^./, (c) => c.toUpperCase()) + '.', icon: 'bell', cls: t <= 5 ? 'warn' : 'gold', action: { label: 'Open', fn: () => { R.seen(x.key); openMission(x.key); } } });
       if (WB.Sfx) WB.Sfx.play('tap');
-      systemNote('Step Quest · mission due soon', body, x.key + ':' + t);
+      systemNote(left < -1 ? 'Step Quest · mission overdue' : 'Step Quest · mission due soon', body, x.key + ':' + t);
       WB.Save.queue();
     }
     R.paintBell();
@@ -124,8 +128,9 @@
       const notes = [];
       list.forEach((x, i) => MINS.forEach((t, j) => {
         const at = x.due - t * 60000; if (at <= Date.now() + 5000) return;
-        notes.push({ id: 1000 + i * 10 + j, title: 'Mission due soon', body: x.title + ' is due ' + when(t) + '.', schedule: { at: new Date(at), allowWhileIdle: true } });
+        notes.push({ id: 1000 + i * 20 + j, title: t < 0 ? 'Mission overdue' : 'Mission due soon', body: x.title + ' ' + phrase(t) + '.', schedule: { at: new Date(at), allowWhileIdle: true } });
       }));
+      notes.sort((a, b) => a.schedule.at - b.schedule.at);   // the system keeps a limited number: the soonest ones win
       if (notes.length) await LN.schedule({ notifications: notes.slice(0, 60) });
     } catch (e) { sig = ''; }
   };

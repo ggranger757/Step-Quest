@@ -80,7 +80,7 @@ One loop: **walk → explore worlds → find things on the road → level up →
 - **Battles** (from level 3): Strike, Throw/Shoot/Cast, Defend, Items, **Gear & Magic** (swap weapons and cast battle magic in one menu), Special attack (level 10), Run. Gear never runs out or wears down. On phones the menu is capped at about 38% of the screen and scrolls, so the stage stays big.
 - **Missions:** three tabs.
   - **Today:** daily reward, three daily missions, **deliveries**, two **milestones** at a time (long-term goals, `D.MILESTONES`, from level 3) and the walking streak with Streak Shields.
-  - **My missions:** your own to-dos plus one-tap quick missions. Finishing one (or a daily mission) can stir up a battle (`G.missionBattle`: at most 3 a day, never when HP is under 25%). Reminders 20/15/10/5/2 minutes before a due time.
+  - **My missions:** your own to-dos plus one-tap quick missions. Finishing one (or a daily mission) can stir up a battle (`G.missionBattle`: at most 3 a day, never when HP is under 25%). Reminders every 45 min in the last 3 hours, then 20/10/5/2 min, at the due time, and every 45 min while overdue.
   - **Merlin** (level 3): Merlin's Eggs, below.
 - **Mood check-ins** (`js/05l-mood.js`): now and then while you walk, up to 3 a day; moods show on Profile. Switch off in Settings.
 - **Themes:** Night (violet and orange) and Lime (black, lime and yellow), in Profile → Settings.
@@ -99,7 +99,7 @@ One loop: **walk → explore worlds → find things on the road → level up →
 Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs:
 
 - **Destination:** the world is discovered (level + previous world explored).
-- **Resonance:** repeat the world's symbol pattern once (gets longer and faster with your level; unlimited tries). It holds until that world is open.
+- **Resonance:** repeat the world's symbol pattern once (gets longer and faster with your level; unlimited tries). It fades after 6 hours (`K.TUNE_HOURS`), so you replay it often.
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
@@ -110,6 +110,13 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - Every ranged weapon and battle magic card shows a count badge (for example 7/10). Full items say **Full**; empty ones are marked in red.
 - Only melee weapons and shields wear and need repair. Ranged weapons no longer wear. In battle, an empty ranged weapon can't be used (Throw is disabled and the Gear list says Refill it in the Shop).
 - Removed the pictures of the currently equipped weapon and magic from the Shop and Inventory pages. Melee and Shields now switch with plain text tabs.
+- Mission reminders: every 45 minutes through the last 3 hours before a mission is due (3 h, 1.5 h, 45 min), then 20, 10, 5 and 2 minutes, at the due time, and every 45 minutes while it is overdue (up to 3 hours). A mission you just made doesn't announce windows it starts inside.
+- Ranged weapons and magic cost 30% less (`D.GEAR_PRICE` 0.7, rounded to 10 coins). A full refill of 10 never costs more than 900 (`D.REFILL_FULL_MAX`).
+- The Worldkey drifts out of tune 6 hours after you tune it (`K.TUNE_HOURS` in `js/05g-worldkey.js`). The Worldkey screen shows time left, "Out of tune" and a Retune button.
+- Profile → Overview has a Mission types card again: finished missions by type (Body, Mind, Learning, Home, Work & money, Creative, Social, Outdoors, Other) for 7 days, 30 days or all time.
+- The missions page no longer lists Recently completed (finished missions are tracked in Profile → Mission types).
+- Merlin's eggs: "How it works" is now three short steps inside a collapsible section (closed by default; it remembers if you open it).
+- Battle turn timer: hidden for the first 8 seconds of each turn (`D.TURN_GRACE`), then the usual countdown appears and runs.
 - Tuning: refill price per shot is the weapon's price / `D.AMMO_DIV` (25), per cast the item's price / `D.MAGIC_DIV` (10), minimum 1 coin (`js/05n-gear.js`). Older saves are upgraded automatically: owned ranged weapons start full and any magic over 10 is trimmed to 10.
 
 ## Changes in 3.3.8
@@ -178,7 +185,7 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 
 ## Changes in 3.1
 
-- Removed in 3.0 and still gone: field missions, Merlin's walking quests, egg trades, the Darkmatter Forge (artifacts charge the Worldkey directly), Worldkey fading and tuning drift, shots / magic uses / weapon wear / repairs, the mission mix card and the Field theme.
+- Removed in 3.0 and still gone: field missions, Merlin's walking quests, egg trades, the Darkmatter Forge (artifacts charge the Worldkey directly), Worldkey energy fading, field missions' wear and repairs, and the Field theme. (Tuning fade, ranged shots / magic counts and the mission types card came back in 3.3.9.)
 - Brought back in 3.1: the 17 extra Worldkeys, the Druid, roaming bosses, Redhood Rival, merchants, travelers and deliveries, milestones (now on Missions → Today), battles after finishing missions, mood check-ins and the Lime theme.
 - Battle screen: bigger stage, shorter scrollable menu.
 - Profile step chart: streak days, today and other days now use three clearly different colors in every theme, and today's bar is striped.

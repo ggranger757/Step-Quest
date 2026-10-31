@@ -8,8 +8,15 @@
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
 
   D.STACK_MAX = 10;            // most shots (ranged) or casts (battle magic) you can hold of each item
+  D.GEAR_PRICE = 0.7;          // ranged weapons and magic cost 30% less than the old price list
+  D.REFILL_FULL_MAX = 900;     // a full refill (10) never costs more than this
   D.AMMO_DIV = 25;             // a refilled shot costs the weapon's price / 25 (min 1 coin)
   D.MAGIC_DIV = 10;            // a refilled cast costs the item's price / 10 (min 1 coin)
+  if (!D.gearPriced) {   // one-time price cut, rounded to the nearest 10 coins
+    D.gearPriced = true;
+    const cut = (it) => { if (it && it.req && it.req.cost) it.req.cost = Math.max(50, Math.round(it.req.cost * D.GEAR_PRICE / 10) * 10); };
+    D.WEAPONS.filter((w) => w.slot === 'ranged').forEach(cut); D.MAGIC.forEach(cut);
+  }
   D.MAGIC_PACK = D.STACK_MAX;  // what the first buy comes with
   D.MAGIC_MAX = D.STACK_MAX;
   D.CHARM_BATTLES = 20;        // one purchase = a charm that lasts 20 battles
@@ -59,7 +66,7 @@
   G.ammo = (id) => Math.max(0, st().ammo[id] || 0);
   G.count = (cat, id) => (cat === 'weapon' ? G.ammo(id) : G.uses(id));
   G.stackRoom = (cat, id) => Math.max(0, D.STACK_MAX - G.count(cat, id));
-  G.unitPrice = (cat, id) => Math.max(1, Math.ceil(G.price(G.item(cat, id)) / (cat === 'weapon' ? D.AMMO_DIV : D.MAGIC_DIV)));
+  G.unitPrice = (cat, id) => Math.min(Math.floor(D.REFILL_FULL_MAX / D.STACK_MAX), Math.max(1, Math.ceil(G.price(G.item(cat, id)) / (cat === 'weapon' ? D.AMMO_DIV : D.MAGIC_DIV))));
   G.addAmmo = (id, n) => { const k = st(), have = k.ammo[id] || 0, add = Math.max(0, Math.min(n, D.STACK_MAX - have)); k.ammo[id] = have + add; return add; };
   G.spendAmmo = (id) => { const k = st(); k.ammo[id] = Math.max(0, (k.ammo[id] || 0) - 1); WB.Save.queue(); return k.ammo[id]; };
   // buy n more of something you already own (any number, up to the cap)

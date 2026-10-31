@@ -38,16 +38,18 @@
         <div class="list nest" id="egg-strip">${slots.join('')}</div>
       </div>
       ${eggCollection(m)}
-      <div class="sect"><h2>How it works</h2>
+      <details class="sect how" id="merlin-how" ${UI.merlinHow ? 'open' : ''}>
+        <summary><h2>How it works</h2><span class="chev" aria-hidden="true">›</span></summary>
         <ul class="m-lock-list pbox card">
-          <li>${WB.eggImg('frost', 24, 'still')}<span><b>1. Collect eggs</b><small>Merlin gives you a free egg once a day. More turn up on the road and drop after battles, and every guardian drops a Crystal Egg. Your nest holds ${D.NEST_MAX} eggs. When it’s full, no new eggs can join.</small></span></li>
-          <li>${WB.icon('steps', 2)}<span><b>2. Walk to warm them</b><small>Every step you walk warms all your eggs at once. Each egg has a step goal, from ${WB.fmt(Math.min(...D.EGGS.map((e) => e.steps)))} steps (Frost) to ${WB.fmt(Math.max(...D.EGGS.map((e) => e.steps)))} (Shadow); rarer eggs take more. Eggs never expire.</small></span></li>
-          <li>${WB.icon('cap', 2)}<span><b>3. Hatch and answer Merlin</b><small>When an egg’s bar is full, tap Hatch. Merlin asks one question first. Get it right for +${Math.round((D.QUIZ_BONUS - 1) * 100)}% coins and XP, and a Crystal or Shadow egg also gives you a weapon or pet. Get it wrong and the egg still hatches, just without the bonus.</small></span></li>
-          <li>${WB.icon('note', 2)}<span><b>4. Your prize</b><small>Every hatch pays coins, XP and a potion, plus a real History Note from Merlin.</small></span></li>
-          <li>${WB.eggImg('sprout1', 24, 'still')}<span><b>5. Collect every color</b><small>Sprout, Tide, Flame, Prism and Shadow eggs each come in 10 colors. Hatch them all to fill the Egg collection above (${D.EGG_COLORS} colors).</small></span></li>
+          <li>${WB.eggImg('frost', 24, 'still')}<span><b>Collect</b><small>Merlin gives a free egg daily. Others turn up on the road and after battles. The nest holds ${D.NEST_MAX}.</small></span></li>
+          <li>${WB.icon('steps', 2)}<span><b>Walk</b><small>Every step warms all your eggs. Rarer eggs need more steps.</small></span></li>
+          <li>${WB.icon('cap', 2)}<span><b>Hatch</b><small>Tap Hatch when the bar is full and answer Merlin’s question. Right answer: +${Math.round((D.QUIZ_BONUS - 1) * 100)}% coins and XP. Every hatch pays coins, XP, a potion and a History Note.</small></span></li>
         </ul>
-      </div>`;
+      </details>`;
   };
+
+  // remember whether How it works is open (the screen redraws as eggs warm)
+  document.addEventListener('toggle', (e) => { if (e.target && e.target.id === 'merlin-how') UI.merlinHow = e.target.open; }, true);
 
   // ---------- hatching: Knowledge Check → History Note → reward ----------
   UI.hatch = (nid) => {

@@ -1098,6 +1098,7 @@
         })().map(([l, v, why]) => `<div class="stat pbox" data-info="${WB.esc(why)}" data-info-k="${WB.esc(l)}" role="button" tabindex="0"><span class="lbl">${l}</span><b>${v}</b></div>`).join('')}
       </div>
       ${UI.moodSection ? UI.moodSection() : ''}
+      ${UI.missionMixSection ? UI.missionMixSection() : ''}
       <div class="sect"><div class="chart-h"><h2>Last ${span} days</h2><div class="cm-seg chart-span" role="radiogroup" aria-label="Chart range">${[7, 14, 30].map((d) => `<button type="button" role="radio" aria-checked="${d === span}" data-span="${d}">${d} days</button>`).join('')}</div></div><div class="chart pbox card span-${span}">
         <p class="chart-read" id="chart-read" role="status" aria-live="polite">${chartRead(selDay)}</p>
         ${(span === 30 ? [days.slice(0, 10), days.slice(10, 20), days.slice(20)] : [days]).map((row, r, rows) => `<div class="chart-row">
@@ -1127,7 +1128,7 @@
           <div class="theme-pick" role="radiogroup" aria-labelledby="lbl-theme">${UI.THEMES.map(([id, name, sub, sw]) => `<button type="button" role="radio" aria-checked="${(s.settings.theme || 'night') === id}" data-theme-pick="${id}"><span class="th-sw" aria-hidden="true">${sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span><span class="tn">${name}</span><span class="ts">${sub}</span></button>`).join('')}</div></div>
         <div class="setting pbox"><div><div id="lbl-music">Game music</div><div class="sd">Turn off to play your own music.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-music" aria-checked="${s.settings.gameMusic !== false}" data-toggle="gameMusic"></button></div>
         <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Game sounds.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
-        <div class="setting pbox"><div><div id="lbl-timer">Battle turn timer</div><div class="sd">Pick a move before time runs out.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-timer" aria-checked="${s.settings.turnTimer !== false}" data-toggle="turnTimer"></button></div>
+        <div class="setting pbox"><div><div id="lbl-timer">Battle turn timer</div><div class="sd">Appears after ${D.TURN_GRACE} seconds of waiting, then counts down.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-timer" aria-checked="${s.settings.turnTimer !== false}" data-toggle="turnTimer"></button></div>
         <div class="setting pbox"><div><div id="lbl-rm">Reduce motion</div><div class="sd">Fewer particles and animations.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-rm" aria-checked="${!!WB.reducedMotion()}" data-toggle="reducedMotion"></button></div>
       </div>
       <div class="sect"><h2>Help</h2>

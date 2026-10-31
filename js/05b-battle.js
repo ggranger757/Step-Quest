@@ -11,7 +11,7 @@
                 your next hit, guardians raise a reversing ward; heals a little) · flee (when badly hurt)
                 · special (charged a turn ahead, every 4th turn, every 3rd for guardians; Defend!)
    Initiative:  some creatures strike first, before your opening move (B.ambush, chances in D.AMBUSH)
-   Turn timer:  the battle screen gives you D.TURN_TIME seconds per turn; when it runs out B.timeout() passes your turn
+   Turn timer:  after D.TURN_GRACE seconds of thinking the battle screen shows a D.TURN_TIME countdown; when it runs out B.timeout() passes your turn
                 Moves and effects per creature: D.CREATURE_MOVES (02-data.js)
    Statuses on you: poison, burn, venom (damage each turn, never below 1 HP; venom is the plants' slow poison: 3% for 6 turns) · weak (-30% damage) · stun (lose a turn)
    Statuses on the creature: poison, burn, bleed — shown to the player as a curse (damage each turn) · freeze, stun (skips a turn)

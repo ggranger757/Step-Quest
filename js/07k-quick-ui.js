@@ -65,4 +65,25 @@
       return;
     }
   });
+  // ---------- Mission types tracker: how many missions you finished in each type (Profile → Overview) ----------
+  UI.mixSpan = UI.mixSpan || 'week';
+  UI.missionMixSection = () => {
+    const today = WB.dayKey(), span = UI.mixSpan;
+    const from = span === 'week' ? WB.addDays(today, -6) : span === 'month' ? WB.addDays(today, -29) : null;
+    const raw = WB.MStats.range(from, today), counts = {};
+    for (const [k, v] of Object.entries(raw)) { const id = D.mcatById[k] ? k : 'other'; counts[id] = (counts[id] || 0) + v; }
+    const types = [...D.MCATS, D.MCAT_OTHER].filter((c) => c.id !== 'other' || counts.other);
+    const total = types.reduce((n, c) => n + (counts[c.id] || 0), 0), top = Math.max(1, ...types.map((c) => counts[c.id] || 0));
+    const best = types.reduce((b, c) => ((counts[c.id] || 0) > (counts[b.id] || 0) ? c : b), types[0]);
+    const seg = `<div class="cm-seg chart-span" role="radiogroup" aria-label="Mission types period">${[['week', '7 days'], ['month', '30 days'], ['all', 'All']].map(([id, l]) => `<button type="button" role="radio" aria-checked="${id === span}" data-mixspan="${id}">${l}</button>`).join('')}</div>`;
+    const rows = types.map((c) => `<div class="mx-row ${counts[c.id] ? '' : 'zero'}"><span class="mx-ic">${WB.icon(c.icon, 2)}</span><span class="mx-n">${WB.esc(c.name)}</span><span class="bar seg cyan"><i style="width:${counts[c.id] ? Math.max(6, (counts[c.id] / top) * 100) : 0}%"></i></span><b class="mx-c">${counts[c.id] || 0}</b></div>`).join('');
+    const body = total
+      ? `<div class="mood-sum">${WB.icon(best.icon, 4)}<div><b>Mostly ${WB.esc(best.name.toLowerCase())}</b><span class="fine">${total} mission${total === 1 ? '' : 's'} finished</span></div></div>${rows}`
+      : '<p class="fine mx-empty">Finish a mission and it shows up here by type.</p>';
+    return `<div class="sect" id="mission-types"><h2>Mission types <span class="aside">${total} done</span></h2><div class="pbox card mx-card mood-sect">${seg}${body}</div></div>`;
+  };
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-mixspan]'); if (!t) return;
+    UI.mixSpan = t.dataset.mixspan; WB.Sfx.play('tap'); UI.renderProfile();
+  });
 })();

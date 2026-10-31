@@ -1,6 +1,6 @@
 /* Step Quest — Worldkey rules: energy, charging with artifacts, resonance, the travel gate and what it says.
    Every change of state happens here, once, and only after its checks pass; screens only call these functions.
-   Energy only goes down when a world opens (it never fades), and a tuning holds until that world is open. */
+   Energy only goes down when a world opens (it never fades). A tuning fades after K.TUNE_HOURS, so the symbol game comes back often. */
 (() => {
   const D = WB.DATA, G = WB.Game, K = D.WK, S = () => WB.state;
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
@@ -54,10 +54,14 @@
   // A discovered world (its level and gate are met) is a legitimate destination; otherwise it points at the
   // next locked world, which can be tuned in advance but not opened yet.
   G.wkDest = () => { const w = G.wk(); return D.worldById[w.found[0]] || G.nextWorld() || null; };
+  // a tuning fades: after K.TUNE_HOURS the Worldkey drifts out of tune and the symbol game has to be played again
+  K.TUNE_HOURS = 6;
+  G.wkTuneLeft = (id) => { const t = G.wk().tuned[id]; if (!t) return 0; const span = K.TUNE_HOURS * 3600000; return typeof t === 'number' ? Math.max(0, t + span - Date.now()) : span; };
+  G.wkTuned = (id) => G.wkTuneLeft(id) > 0;
   G.wkStatus = (world) => {
     const w = G.wk(), cost = K.cost(world), found = w.found.includes(world.id);
-    const energyOk = w.e >= cost, tuned = !!w.tuned[world.id];
-    return { world, cost, found, energy: w.e, energyOk, tuned, ready: found && energyOk && tuned, tier: K.tier(world), unlocked: S().unlocked.includes(world.id) };
+    const energyOk = w.e >= cost, tuned = G.wkTuned(world.id), lapsed = !!w.tuned[world.id] && !tuned;
+    return { world, cost, found, energy: w.e, energyOk, tuned, lapsed, tuneLeft: G.wkTuneLeft(world.id), ready: found && energyOk && tuned, tier: K.tier(world), unlocked: S().unlocked.includes(world.id) };
   };
   // called by the world-progress check: requirements met = discovered, not entered
   G.wkDiscover = (world) => {
@@ -119,7 +123,7 @@
       if (st.unlocked) { G.travel(wid); return { ok: true, free: true }; }
       if (!st.found) return { ok: false, why: 'Not discovered yet: ' + G.worldReq(world) + '.' };
       if (!st.energyOk) return { ok: false, why: 'Needs ' + st.cost + '% energy. You have ' + Math.floor(w.e) + '%.' };
-      if (!st.tuned) return { ok: false, why: 'Tune the Worldkey to ' + world.name + ' first.' };
+      if (!st.tuned) return { ok: false, why: st.lapsed ? 'The Worldkey drifted out of tune. Play the symbol game again to tune to ' + world.name + '.' : 'Tune the Worldkey to ' + world.name + ' first.' };
       w.e = Math.max(0, w.e - st.cost);                       // everything checked: spend once, open, go
       w.found = w.found.filter((id) => id !== wid); w.last = wid;
       delete w.tuned[wid];

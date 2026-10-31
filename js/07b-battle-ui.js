@@ -485,12 +485,20 @@
   function startTurn() {
     const st = WB.Battle.st, el = $('#b-timer');
     if (!el || !st || st.over || !timerOn()) { tmr = null; if (el) el.hidden = true; return; }
-    if (!tmr || tmr.turn !== st.turn) { const full = WB.Battle.turnTime() * 1000; tmr = { full, left: full, turn: st.turn, sec: 0 }; }
-    tmr.run = true; el.hidden = false; paintTimer();
+    if (!tmr || tmr.turn !== st.turn) { const full = WB.Battle.turnTime() * 1000; tmr = { full, left: full, turn: st.turn, sec: 0, wait: D.TURN_GRACE * 1000 }; }
+    tmr.run = true; el.hidden = tmr.wait > 0;   // hidden until you've been thinking for D.TURN_GRACE seconds
+    if (!el.hidden) paintTimer();
   }
   function stopTimer() { if (tmr) tmr.run = false; const el = $('#b-timer'); if (el) el.hidden = true; }
   function tickTimer(ms) {
     if (!tmr || !tmr.run || busy) return;
+    if (tmr.wait > 0) {   // quiet thinking time: no clock yet
+      tmr.wait = Math.max(0, tmr.wait - Math.min(ms, 250));
+      if (tmr.wait > 0) return;
+      const el = $('#b-timer'); if (el) el.hidden = false;
+      WB.Sfx.tone(520, 0.07);   // a soft cue that the clock has started
+      paintTimer(); return;
+    }
     tmr.left = Math.max(0, tmr.left - Math.min(ms, 250));   // a long gap (app in the background) doesn't burn the clock
     paintTimer();
     if (tmr.left <= 0) timeUp();
