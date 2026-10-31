@@ -103,7 +103,7 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
-## Changes in 3.3.9
+## Changes in 3.3.10 (includes 3.3.9)
 
 - Shop and Inventory simplified. Ranged weapons and battle magic are now used up: you hold at most 10 of each (`D.STACK_MAX`). One throw, shot or cast uses one.
 - First buy unlocks the item with a full 10. After that, one **Refill** button opens a sheet with a − / + stepper, a **Fill to 10** shortcut, the price per shot or cast, and a live total. The old "[number] each - buy in bulk" and pack text is gone.
