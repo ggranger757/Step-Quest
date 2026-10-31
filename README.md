@@ -103,6 +103,11 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.3.11 (includes 3.3.10 and 3.3.9)
+
+- Worldkey memory game: the pad now lights up each shape as the pattern plays, at every level (before, the pad stayed dark from level 6, so nothing showed which shapes to memorize). The lit shape is brighter and larger, and the message reads "Memorize the lit shapes…".
+- The memory game is offered while you walk: when a discovered world has enough energy but the Worldkey is out of tune, a "Tune now" card pops up (at most every 30 minutes per world, never during a battle, sheet, card or the tour). It opens the game directly. See `WK.tuneTick` in `js/07j-worldkey-ui.js`.
+
 ## Changes in 3.3.10 (includes 3.3.9)
 
 - Shop and Inventory simplified. Ranged weapons and battle magic are now used up: you hold at most 10 of each (`D.STACK_MAX`). One throw, shot or cast uses one.

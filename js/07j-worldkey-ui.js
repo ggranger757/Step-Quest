@@ -224,15 +224,15 @@
 
   // ---------- tuning: the symbol memory game ----------
   // Harder as you level up (K.tuneSpec): a longer, faster pattern; a new pattern on every attempt; more symbols on the pad;
-  // from level 6 the pad no longer lights up while the pattern plays (read it from the Worldkey's screen); from level 18
-  // the pad is shuffled before each attempt. Tries are unlimited, and a tuning holds until the world is open.
+  // the pad lights up shape by shape while the pattern plays; from level 18 the pad is shuffled before each attempt.
+  // Tries are unlimited. A tuning fades after K.TUNE_HOURS, and while you walk the app offers the game when it's due (tuneTick below).
   WK.tune = (world) => {
     const sp = G.wkTuneSpec(), spd = sp.ms;
     let dev, phase = 'intro', pos = 0, timers = [], seq = G.wkSequence();
     let order = D.WK_SYMBOLS.slice(0, sp.syms).map((_, i) => i);
     const clear = () => { timers.forEach(clearTimeout); timers = []; };
     const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    const rules = [sp.lit ? '' : 'Watch the key’s screen.', sp.shuffle ? 'Pad reshuffles each try.' : ''].filter(Boolean).join(' ');
+    const rules = [sp.shuffle ? 'Pad reshuffles each try.' : ''].filter(Boolean).join(' ');
     const padHtml = () => order.map((i) => `<button type="button" class="wk-sym" data-sym="${i}" aria-label="${esc(D.WK_SYMBOLS[i].name)}" disabled><canvas width="36" height="36" aria-hidden="true"></canvas></button>`).join('');
     UI.sheet(`<div class="wk-tune">
       <span class="lbl wk-kick">Tune the Worldkey</span>
@@ -250,15 +250,15 @@
       const paintPad = () => { padEl.innerHTML = padHtml(); pads = [...padEl.querySelectorAll('.wk-sym')]; pads.forEach((b) => { glyphCanvas(b.querySelector('canvas'), +b.dataset.sym); b.onclick = () => tap(b); }); };
       const setPads = (on) => pads.forEach((b) => (b.disabled = !on));
       // during playback only the Worldkey's screen shows the symbol (plus the pad, for beginners); taps always light their pad
-      const light = (k, ok, showPad) => { dev.glyph = k; dev.glyphOk = ok; const b = byK(k); if (b && showPad) b.classList.add('on'); WB.Sfx.tone(D.WK_SYMBOLS[k].tone, 0.2); timers.push(setTimeout(() => { if (b) b.classList.remove('on'); if (dev.glyph === k) dev.glyph = null; }, Math.min(420, spd - 100))); };
+      const light = (k, ok, showPad) => { dev.glyph = k; dev.glyphOk = ok; const b = byK(k); if (b && showPad) b.classList.add('on'); WB.Sfx.tone(D.WK_SYMBOLS[k].tone, 0.2); timers.push(setTimeout(() => { if (b) b.classList.remove('on'); if (dev.glyph === k) dev.glyph = null; }, Math.min(480, spd - 60))); };
       const play = () => {
         clear(); phase = 'watch'; pos = 0;
         seq = G.wkSequence();   // a new pattern every attempt
         if (sp.shuffle) { shuffle(order); paintPad(); }
         setPads(false);
         root.querySelector('.wk-pips').innerHTML = seq.map(() => '<i></i>').join(''); pips = [...root.querySelectorAll('.wk-pips i')];
-        msg.textContent = 'Reading the frequency…'; root.querySelector('#wk-tune-acts').hidden = true;
-        seq.forEach((k, i) => timers.push(setTimeout(() => light(k, null, sp.lit), 500 + i * spd)));
+        msg.textContent = 'Memorize the lit shapes…'; root.querySelector('#wk-tune-acts').hidden = true;
+        seq.forEach((k, i) => timers.push(setTimeout(() => light(k, null, true), 500 + i * spd)));   // the pad shows each shape as it plays
         timers.push(setTimeout(() => { phase = 'input'; setPads(true); msg.textContent = 'Your turn: tap them in order.'; if (pads[0]) pads[0].focus({ preventScroll: true }); }, 500 + seq.length * spd + 150));
       };
       const tap = (b) => {
@@ -451,6 +451,25 @@
     showNote(n);
   };
   setInterval(noteTick, 20000);
+
+  // ---------- the memory game, offered while you walk ----------
+  // When the Worldkey has a discovered world, enough energy and is out of tune, a card pops up while you're walking
+  // (at most every 30 minutes per world) with a Tune now button. Never over a battle, sheet, card or the tour.
+  const TUNE_NAG_MS = 30 * 60000;
+  WK.tuneTick = () => {
+    const s = S(); if (!s || !s.onboarded || !G.featOn || !G.featOn('wk')) return false;
+    if (document.visibilityState !== 'visible' || noteBusy() || !(UI.walkingNow && UI.walkingNow())) return false;
+    const dest = G.wkDest(); if (!dest) return false;
+    const st = G.wkStatus(dest);
+    if (!st.found || st.unlocked || st.tuned || !st.energyOk) return false;
+    const p = ping(), k = 'tune:' + dest.id;
+    if (Date.now() - (typeof p[k] === 'number' ? p[k] : 0) < TUNE_NAG_MS) return false;
+    p[k] = Date.now(); WB.Save.queue();
+    WB.Sfx.play('wk_chat');
+    UI.toast({ kicker: st.lapsed ? 'Worldkey out of tune' : dest.name + ' is waiting', title: 'Play the symbol game to tune in', sub: G.wkLine('notTuned', { world: dest.name }), icon: 'key', cls: 'gold', ms: 15000, action: { label: 'Tune now', fn: () => WK.tune(dest) } });
+    return true;
+  };
+  setInterval(WK.tuneTick, 20000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(noteTick, 1500); });
 
   WB.bus.on('world', () => { hide(); });

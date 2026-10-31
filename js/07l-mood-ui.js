@@ -13,6 +13,8 @@
     return recent.length > 0 && Date.now() - recent[recent.length - 1][0] < 60000 && recent.reduce((a, r) => a + r[1], 0) >= 30;
   };
 
+  UI.walkingNow = walking;   // the Worldkey also checks this before offering its memory game
+
   // ---------- the card on the road ----------
   const busy = () => {
     const sh = $('#sheet'), enc = $('#encounter'), intro = $('#intro'), bub = $('#wk-bubble');

@@ -22,13 +22,13 @@
   //   len     the pattern: 5 symbols at level 1, one more every 6 levels, up to 12
   //   ms      time per symbol: 680 ms at level 1, 8 ms faster per level, never under 300 ms
   //   syms    how many symbols are on the pad: 6, then all 9 from level 8
-  //   lit     the pad lights up along with the Worldkey's screen while it plays (a crutch for beginners, gone from level 6)
+  //   lit     the pad lights up along with the Worldkey's screen while the pattern plays (always on: it is the only way to see which shapes to memorize)
   //   shuffle the pad is rearranged before every attempt, so only the shapes can be remembered (from level 18)
   K.tuneSpec = (level) => ({
     len: Math.min(12, 5 + Math.floor((level - 1) / 6)),
     ms: Math.max(300, 680 - (level - 1) * 8),
     syms: level >= 8 ? 9 : 6,
-    lit: level < 6,
+    lit: true,
     shuffle: level >= 18,
   });
 
