@@ -103,20 +103,14 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
-## Changes in 3.4.1
-
-- Shields (and belts) are repairable again, like melee weapons. Only ranged weapons and magic skip wear and repair.
-
-## Changes in 3.4.0
-
-- Only melee weapons and shields wear down and can be repaired. Ranged weapons and magic no longer wear or need repair (Repair buttons and condition bars only appear on melee weapons and shields).
-- Ranged weapons now run out: each throw uses one shot, and at 0 you can't throw until you restock (the Throw button says "empty"; swap weapons in Gear & Magic). Ranged weapons and battle magic are bought in bulk: x10, x25 or x50 at a time, in the Shop and the Inventory. Holds up to 100 shots per ranged weapon and 50 casts per magic item. Weapons you already own start with 30 shots.
-- Sound: if a sound file can't load, the game now plays it through a plain audio element instead of staying silent.
-
 ## Changes in 3.3.9
 
-- Battle: you can now swap pets mid-fight. Open Gear & Magic and pick a partner under "Pets". Swapping is free (it doesn't use your turn) and only lasts for that battle, like swapping weapons. Pets that are resting (knocked out) can't be called, but you can replace a knocked-out pet right away. The pet you swap out keeps the HP it had.
-- Battle: your turn timer is now 13 seconds against every creature, guardian and boss (it was 10 / 8 / 7).
+- Shop and Inventory simplified. Ranged weapons and battle magic are now used up: you hold at most 10 of each (`D.STACK_MAX`). One throw, shot or cast uses one.
+- First buy unlocks the item with a full 10. After that, one **Refill** button opens a sheet with a − / + stepper, a **Fill to 10** shortcut, the price per shot or cast, and a live total. The old "[number] each - buy in bulk" and pack text is gone.
+- Every ranged weapon and battle magic card shows a count badge (for example 7/10). Full items say **Full**; empty ones are marked in red.
+- Only melee weapons and shields wear and need repair. Ranged weapons no longer wear. In battle, an empty ranged weapon can't be used (Throw is disabled and the Gear list says Refill it in the Shop).
+- Removed the pictures of the currently equipped weapon and magic from the Shop and Inventory pages. Melee and Shields now switch with plain text tabs.
+- Tuning: refill price per shot is the weapon's price / `D.AMMO_DIV` (25), per cast the item's price / `D.MAGIC_DIV` (10), minimum 1 coin (`js/05n-gear.js`). Older saves are upgraded automatically: owned ranged weapons start full and any magic over 10 is trimmed to 10.
 
 ## Changes in 3.3.8
 

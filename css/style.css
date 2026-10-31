@@ -3628,10 +3628,21 @@ html.rm .forge.flash { animation: none; }
 @media (max-width: 400px) and (orientation: portrait) { .b-actions .bt small { font-size: 10.5px; } }
 @media (orientation: landscape) and (max-height: 500px) { .b-actions { --bbtn-h: 58px; } }
 
-/* ---------- 3.4.0: bulk buy rows (ranged weapons and battle magic: x10 and up) ---------- */
-.bulk-cap { display: flex; align-items: center; gap: 4px; font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
-.bulk { display: flex; gap: 4px; }
-.item .foot .bulk .btn, .item .foot.stack .bulk .btn { flex: 1 1 0; min-width: 0; width: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 2px; line-height: 1.1; }
-.bulk .btn b { font-weight: 400; }
-.bulk .btn small { font-size: 11px; }
-.item.empty-uses .uses.out { color: var(--danger, #ff6b6b); }
+/* Shop / Inventory simplification: count badge, Melee-Shield switch, refill sheet */
+.item .prev .count.out { background: var(--danger); color: #fff; }
+.wslots { margin-bottom: var(--s3); }
+.wslots button { min-height: 44px; }
+.rf { display: grid; gap: var(--s3); }
+.rf-top { display: flex; align-items: center; gap: var(--s3); padding-right: 36px; }
+.rf-top canvas { width: 64px; height: 64px; image-rendering: pixelated; flex: none; }
+.rf-top h3 { margin: 0; }
+.rf-have { margin: 2px 0 0; color: var(--muted); }
+.rf-have b { color: var(--text); font-weight: 400; }
+.rf-note { margin: 0; color: var(--ok); font-size: 14px; }
+.rf-step { display: grid; grid-template-columns: 64px 1fr 64px; gap: var(--s3); align-items: center; }
+.rf-step .btn { min-height: 56px; font-size: 28px; line-height: 1; padding: 0; }
+.rf-step output { display: grid; justify-items: center; gap: 2px; }
+.rf-step output b { font: 400 40px/1 var(--display); font-variant-numeric: tabular-nums; }
+.rf-step output small { font: 400 11px/1 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.rf-unit { display: flex; gap: 6px; align-items: center; justify-content: center; margin: 0; }
+.rf .btn.block { width: 100%; }

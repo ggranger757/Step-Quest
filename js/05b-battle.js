@@ -11,8 +11,7 @@
                 your next hit, guardians raise a reversing ward; heals a little) · flee (when badly hurt)
                 · special (charged a turn ahead, every 4th turn, every 3rd for guardians; Defend!)
    Initiative:  some creatures strike first, before your opening move (B.ambush, chances in D.AMBUSH)
-   Swap pets:   B.swapPet(id) calls another owned pet (not resting) to your side for this battle; free, no turn used
-   Turn timer:  the battle screen gives you D.TURN_TIME (13) seconds per turn; when it runs out B.timeout() passes your turn
+   Turn timer:  the battle screen gives you D.TURN_TIME seconds per turn; when it runs out B.timeout() passes your turn
                 Moves and effects per creature: D.CREATURE_MOVES (02-data.js)
    Statuses on you: poison, burn, venom (damage each turn, never below 1 HP; venom is the plants' slow poison: 3% for 6 turns) · weak (-30% damage) · stun (lose a turn)
    Statuses on the creature: poison, burn, bleed — shown to the player as a curse (damage each turn) · freeze, stun (skips a turn)
@@ -23,10 +22,6 @@
   const rnd = (a, b) => a + Math.random() * (b - a);
   const B = (WB.Battle = { active: false, st: null });
 
-  // a pet as it fights: its own HP, and the share of every hit it takes (also used when you swap pets mid-battle)
-  const petState = (pdef) => ({ id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0), atk: pdef.atk || 0, verb: pdef.atkVerb,
-    role: pdef.role || 'guard', heal: pdef.heal || 0, healVerb: pdef.healVerb || '', block: pdef.block || 0, proj: pdef.proj || null });
-
   B.start = (enc) => {
     const s = WB.state, G = WB.Game, w = D.worldById[enc.world] || G.world();
     const cs = enc.nemesis ? D.bossStats(enc.creature, s.level) : D.CREATURES[enc.creature].rival ? D.rivalStats(s.level) : D.creatureStats(enc.creature, D.worldTier(w, s.level), !!enc.boss), bd = enc.nemesis ? D.BOSSES[enc.creature] : null;
@@ -35,11 +30,12 @@
       enc, world: w, turn: 1, over: false, result: null,
       hero: { hp: Math.max(1, s.hp), max: G.maxHp(), atk: D.heroAtk(s.level), def: D.heroDef(s.level), lvl: s.level, guard: 0, guardF: 0.5, fury: 0, furyMult: 1.5, defend: false, reflect: false, poison: 0, venom: 0, burn: 0, weak: 0, stun: 0,
         clone: 0, tome: 0, twice: 0, dodge: 0, guardPts: 100, defended: false },
-      pet: pdef ? petState(pdef) : null,   // pet roles: D.PET_ROLES
+      pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0), atk: pdef.atk || 0, verb: pdef.atkVerb,
+        role: pdef.role || 'guard', heal: pdef.heal || 0, healVerb: pdef.healVerb || '', block: pdef.block || 0, proj: pdef.proj || null } : null,   // pet roles: D.PET_ROLES
       enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, rival: !!D.CREATURES[enc.creature].rival, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
         poison: 0, burn: 0, bleed: 0, freeze: 0, stun: 0, weaken: 0, sunder: 0, drain: 0, brace: false, ward: false, charging: false, fled: 0,
         moves: D.CREATURE_MOVES[enc.creature] || D.CREATURE_MOVES.hyena },
-      weapon: G.equipped('ranged') || D.WEAPONS[0], melee: G.equipped('melee') || D.weaponById.sw_rusty, brokenMelee: null, shield: G.equipped('shield'),
+      weapon: (() => { const eq = G.equipped('ranged') || D.WEAPONS[0]; return G.ammo(eq.id) > 0 ? eq : (s.owned.weapons || []).map((id) => D.weaponById[id]).find((w) => w && w.slot === 'ranged' && G.ammo(w.id) > 0) || eq; })(), melee: G.equipped('melee') || D.weaponById.sw_rusty, brokenMelee: null, shield: G.equipped('shield'),
       cooldown: 0, cds: {},   // cds: the recharge left on ranged weapons you switched away from (switching never skips a recharge)
       special: { ...G.special(), charge: 0, unlocked: G.specialUnlocked() },
       magic: D.MAGIC.filter((m) => m.kind === 'battle' && (s.owned.magic || []).includes(m.id) && G.uses(m.id) > 0).map((m) => m.id), mused: {}, magicTurn: 0,   // battle magic: once per battle each, one per turn, and each cast spends one from its pack
@@ -215,7 +211,7 @@
       events.push(ev);
       chargeSpecial(st, 'strike');
     } else if (move === 'throw') {
-      if (st.cooldown > 0 || G.shots(st.weapon.id) <= 0) return events;   // recharging, or out of shots
+      if (st.cooldown > 0 || G.ammo(st.weapon.id) <= 0) return events;   // out of shots: swap to another ranged weapon, or strike
       const wpn = st.weapon, ev = { who: 'hero', type: 'throw', weapon: wpn.id, hits: [] };
       const lucky = h.twice > 0; if (lucky) { h.twice--; ev.lucky = true; }
       const n = (wpn.effect === 'multi' ? 3 : wpn.hits || 1) * (lucky ? 2 : 1);
@@ -230,16 +226,17 @@
         ev.hits.push({ dmg: ev.dmg - before, crit });
       }
       let extra = '';
-      if (!G.spendShot(wpn.id)) ev.empty = wpn.name;   // every throw uses up one shot
+      ev.left = G.spendAmmo(wpn.id);   // every throw, shot or cast of a ranged weapon uses one up
       if (STATUS.includes(wpn.effect) && e.hp > 0 && Math.random() < (wpn.effect === 'freeze' ? wpn.chance || 0.5 : 1)) extra = inflict(st, wpn.effect);
       if (wpn.effect === 'drain') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(ev.dmg / 2)); ev.heal = h.hp - b0; if (ev.heal) extra += ' You recover ' + ev.heal + ' HP.'; }
       const verb = wpn.type === 'bow' ? ' flies true' : wpn.type === 'spell' ? ' strikes' : ' hits';
       ev.text = wpn.name + (ev.hits.some((x) => x.crit) ? ' crits' : ev.hits.length > 1 ? ' hits ' + ev.hits.length + ' times' : verb) + ' for ' + ev.dmg + '.' +
         (ev.braced ? ' It was defending and took half.' : '') + (ev.pierced ? ' Pierced its guard!' : '') + (ev.backlash ? ' Its ward bounced ' + ev.backlash + ' back at you.' : '') + bossNote(st, ev) + extra;
       if (ev.phased && !ev.dmg) ev.text = wpn.name + ' passes straight through ' + e.name + '’s shadow!';
+      if (ev.left === 0) ev.text += ' That was your last ' + wpn.name + '.';
       st.cooldown = P.has('cooldown') ? Math.max(1, wpn.cd) : wpn.cd + 1;   // the Circlet of Focus: one turn faster
       echo(st, ev);
-      if (ev.empty) ev.text += ' That was your last ' + ev.empty + '. Restock it in the Shop.';
+      if (ev.worn) ev.text += ' ' + ev.worn;
       events.push(ev);
       chargeSpecial(st, 'throw');
     } else if (move === 'special') {
@@ -535,6 +532,7 @@
   B.swap = (slot, id) => {
     const st = B.st, s = WB.state, w = D.weaponById[id];
     if (!st || st.over || !w || w.slot !== slot || !(s.owned.weapons || []).includes(id)) return null;
+    if (slot === 'ranged' && G.ammo(id) <= 0) return null;   // nothing left to throw
     if (slot === 'melee') { if (st.melee.id === id) return null; st.melee = w; }
     else if (slot === 'ranged') {
       if (st.weapon.id === id) return null;
@@ -542,15 +540,6 @@
     } else if (slot === 'shield') { if (st.shield && st.shield.id === id) return null; st.shield = w; }
     else return null;
     return w;
-  };
-  // call a different pet to your side: any pet you own that isn't resting. Instant (it doesn't use your turn) and only for this
-  // battle. The pet you swap out keeps the HP it had, and a pet that was knocked out can be replaced right away.
-  B.swapPet = (id) => {
-    const st = B.st, s = WB.state, pdef = G.pet(id);
-    if (!st || st.over || !pdef || !(s.owned.pets || []).includes(id) || (st.pet && st.pet.id === id) || G.petHp(id) <= 0) return null;
-    if (st.pet) G.setPetHp(st.pet.id, st.pet.hp);   // the pet leaving the fight keeps its HP
-    st.pet = petState(pdef);
-    return st.pet;
   };
   B.say = say;
   // fill in Redhood Rival's lines with your own numbers and somewhere she's been
@@ -568,7 +557,7 @@
   }
   // gear wears a little with every use; the log says so once when it gets badly worn (05n-gear.js)
   function wearOut(st, w, kind, ev) {
-    if (!w || !w.id) return;
+    if (!w || !w.id || w.slot === 'ranged') return;   // only melee weapons and shields wear
     const before = G.cond(w.id), after = G.wear(w.id, kind);
     if (before >= D.WORN_AT && after < D.WORN_AT) { ev.worn = 'Your ' + w.name + ' is badly worn. Repair it in Inventory.'; if (ev.text !== undefined) ev.text += ' ' + ev.worn; }
     st.wore = true;

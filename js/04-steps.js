@@ -309,11 +309,7 @@
           const buf = await buffers[path];
           const src = ctx.createBufferSource(), g = ctx.createGain();
           g.gain.value = vol; src.buffer = buf; src.connect(g).connect(ctx.destination); src.start();
-        } catch (e) {
-          delete buffers[path];
-          // the sound file couldn't be fetched or decoded (opened straight from a folder, or an older phone): play it through a plain audio element instead
-          try { if (!muted() && path) { const a = new Audio(WB.Assets.base + path); a.volume = Math.min(1, vol); const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); } } catch (e2) {}
-        }
+        } catch (e) { delete buffers[path]; }
       },
       // one note (the Worldkey's symbols each have their own)
       tone(freq, dur = 0.22) {
