@@ -71,8 +71,9 @@
   const hasFuel = () => G.wkChargeMax() > 0;
   // the one next step for a destination
   function nextStep(st) {
-    if (!st.found) return st.tuned ? null : { act: 'tune', label: 'Tune ahead', cls: 'ghost' };
-    if (!st.tuned) return { act: 'tune', label: (st.lapsed ? 'Retune to ' : 'Tune to ') + st.world.name, cls: 'gold' };
+    // tuning buttons are tertiary everywhere (Worldkey card, gate, pop-ups)
+    if (!st.found) return st.tuned ? null : { act: 'tune', label: 'Tune ahead', cls: 'tertiary' };
+    if (!st.tuned) return { act: 'tune', label: (st.lapsed ? 'Retune to ' : 'Tune to ') + st.world.name, cls: 'tertiary' };
     if (!st.energyOk) return hasFuel() ? { act: 'charge', label: 'Charge with artifacts', cls: 'gold' } : { act: 'arts', label: 'Find artifacts', cls: 'ghost' };
     return { act: 'open', label: 'Open ' + st.world.name, cls: 'gold' };
   }
@@ -208,6 +209,7 @@
   WK.gate = (world, opts = {}) => {
     if (!G.featOn('wk')) return UI.toast({ kicker: 'Worldkey asleep', title: 'It wakes up when you finish ' + G.firstWorld().name + '.', icon: 'lock' });
     const st = G.wkStatus(world), step = nextStep(st), w = G.wk();
+    if (step && step.act === 'tune' && world === G.wkDest()) { const n = WK.tuneNeed(); if (n) { ping().tuneEv = n.ev; WB.Save.queue(); } }   // this sheet already says it
     UI.sheet(`<div class="wk-gate">
       <span class="lbl wk-kick">${st.found ? 'New world discovered' : 'Next world'}</span>
       <h3 id="sheet-title">${esc(world.name)}</h3>
@@ -218,7 +220,7 @@
         <li class="${st.tuned ? 'ok' : ''}">${check(st.tuned)}<span>Resonance</span><b>${tuneTxt(st)}</b></li>
         ${st.found ? '' : `<li>${check(false)}<span>Discover</span><b>${esc(G.worldReq(world))}</b></li>`}
       </ul>
-      <div class="row">${step ? `<button class="btn ${step.cls === 'ghost' ? 'ghost' : 'gold'}" type="button" data-wk="${step.act}" data-wid="${world.id}" data-autofocus>${esc(step.label)}</button>` : ''}<button class="btn ghost" type="button" data-close>Not now</button></div>
+      <div class="row">${step ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${world.id}" data-autofocus>${esc(step.label)}</button>` : ''}<button class="btn ghost" type="button" data-close>Not now</button></div>
     </div>`, (root) => { const cv = root.querySelector('canvas'); WK.device(cv); });
   };
 
@@ -267,7 +269,7 @@
         if (k === seq[pos]) {
           light(k, true, true); pips[pos].className = 'ok'; pos++;
           if (pos >= seq.length) {
-            phase = 'done'; setPads(false); G.wkLearn(world);
+            phase = 'done'; setPads(false); G.wkLearn(world); if (WB.Remind && WB.Remind.schedule) WB.Remind.schedule();   // re-arm the phone's "out of tune" alert
             timers.push(setTimeout(() => {
               dev.mode = 'lock'; dev.t = 0; WB.Sfx.play('wk_tuned');   // the recorded "Worldkey tuned" sound
               msg.textContent = 'Frequency locked. “' + G.wkLine('tuneOk') + '”';
@@ -432,7 +434,9 @@
   // it goes out as a phone notification (when allowed) and the same pop-up waits in the app for when you come back.
   const ping = () => { const w = G.wk(); if (!w.ping || typeof w.ping !== 'object' || Array.isArray(w.ping)) w.ping = {}; return w.ping; };
   const noteBusy = () => document.documentElement.classList.contains('battling') || !$('#sheet').hidden || !$('#encounter').hidden || !$('#intro').hidden || (WB.Tour && WB.Tour.active) || (G.featPending && G.featPending());
-  const showNote = (n) => UI.toast({ kicker: n.kicker, title: n.title, sub: n.sub, icon: 'key', cls: n.cls || 'cyan', action: { label: n.btn, fn: () => WK.toCharge() } });
+  // a note's button: Tune now (tertiary, like every tune button) or Charge; held notes are saved, so they keep data, not functions
+  const showNote = (n) => UI.toast({ kicker: n.kicker, title: n.title, sub: n.sub, icon: 'key', cls: n.cls || 'cyan', ms: n.ms,
+    action: n.act === 'tune' ? { label: n.btn, cls: 'tertiary', fn: () => { const wd = D.worldById[n.wid]; if (wd) WK.tune(wd); } } : { label: n.btn, fn: () => WK.toCharge() } });
   WK.notes = () => {
     const p = ping(), day = WB.dayKey(), dest = G.wkDest(), st = dest && G.wkStatus(dest), out = [];
     if (st && st.found && !st.energyOk && p['need:' + dest.id] !== day)
@@ -442,7 +446,11 @@
   const noteTick = () => {
     const s = S(); if (!s || !s.onboarded || !G.featOn || !G.featOn('wk')) return;
     const p = ping(), hidden = document.visibilityState !== 'visible';
-    if (!hidden && p.held && !noteBusy()) { const n = p.held; delete p.held; WB.Save.queue(); return showNote(n); }
+    if (!hidden && p.held && !noteBusy()) {
+      const n = p.held; delete p.held; WB.Save.queue();
+      if (n.act === 'tune' && !WK.tuneNeed()) return;   // tuned some other way while you were gone
+      return showNote(n);
+    }
     if (!hidden && noteBusy()) return;
     const n = WK.notes()[0]; if (!n) return;
     p[n.key] = n.val; WB.Save.queue();
@@ -452,25 +460,55 @@
   };
   setInterval(noteTick, 20000);
 
-  // ---------- the memory game, offered while you walk ----------
-  // When the Worldkey has a discovered world, enough energy and is out of tune, a card pops up while you're walking
-  // (at most every 30 minutes per world) with a Tune now button. Never over a battle, sheet, card or the tour.
+  // ---------- tuning pop-ups: whenever the Worldkey needs tuning ----------
+  // It needs tuning when the next world is discovered and not tuned yet, or when its tuning faded (K.TUNE_HOURS after you
+  // tuned it, even if you tuned ahead). Each of those moments gets one pop-up right away, whether or not you are walking
+  // or the key has energy (tuning and charging are separate jobs). In the background it goes out as a phone notification
+  // and the pop-up waits in the app for when you come back. After that, while you walk, it reminds you at most every
+  // 30 minutes. Never over a battle, sheet, card or the tour (it waits and shows once they're gone).
   const TUNE_NAG_MS = 30 * 60000;
-  WK.tuneTick = () => {
-    const s = S(); if (!s || !s.onboarded || !G.featOn || !G.featOn('wk')) return false;
-    if (document.visibilityState !== 'visible' || noteBusy() || !(UI.walkingNow && UI.walkingNow())) return false;
-    const dest = G.wkDest(); if (!dest) return false;
+  WK.tuneNeed = () => {
+    if (!G.featOn || !G.featOn('wk')) return null;
+    const dest = G.wkDest(); if (!dest) return null;
     const st = G.wkStatus(dest);
-    if (!st.found || st.unlocked || st.tuned || !st.energyOk) return false;
-    const p = ping(), k = 'tune:' + dest.id;
-    if (Date.now() - (typeof p[k] === 'number' ? p[k] : 0) < TUNE_NAG_MS) return false;
-    p[k] = Date.now(); WB.Save.queue();
+    if (st.unlocked || st.tuned || (!st.found && !st.lapsed)) return null;
+    const t = G.wk().tuned[dest.id];
+    return { dest, st, ev: 'tune:' + dest.id + ':' + (st.lapsed ? t : 'new') };   // one id per moment it started needing it
+  };
+  // the voice's "not tuned" lines assume the key has energy, so they only show when it does
+  const tuneNote = ({ dest, st }) => {
+    const say = st.energyOk ? G.wkLine('notTuned', { world: dest.name }) : 'Play the symbol game to tune in. You can charge it after.';
+    return st.lapsed
+      ? { act: 'tune', wid: dest.id, kicker: 'Worldkey out of tune', title: 'Retune to ' + dest.name, sub: 'Your tuning faded after ' + K.TUNE_HOURS + ' hours. ' + say, btn: 'Tune now', cls: 'gold', ms: 15000 }
+      : { act: 'tune', wid: dest.id, kicker: 'Worldkey needs tuning', title: 'Tune to ' + dest.name, sub: say, btn: 'Tune now', cls: 'gold', ms: 15000 };
+  };
+  WK.tuneTick = () => {
+    const s = S(); if (!s || !s.onboarded) return false;
+    if (gateQ.length) return false;   // a newly found world's gate goes first (it has its own Tune button)
+    const need = WK.tuneNeed(); if (!need) return false;
+    const p = ping(), hidden = document.visibilityState !== 'visible', k = 'tune:' + need.dest.id;
+    const fresh = p.tuneEv !== need.ev;
+    const nag = !fresh && !hidden && UI.walkingNow && UI.walkingNow() && Date.now() - (typeof p[k] === 'number' ? p[k] : 0) >= TUNE_NAG_MS;
+    if (!fresh && !nag) return false;
+    if (!hidden && noteBusy()) return false;   // try again on the next tick
+    p.tuneEv = need.ev; p[k] = Date.now(); WB.Save.queue();
+    const n = tuneNote(need);
+    if (hidden) { if (WB.Remind && WB.Remind.note) WB.Remind.note('Step Quest · ' + n.kicker, n.title + '. Play the symbol game to tune in.', 'wk-tune'); p.held = n; return true; }
     WB.Sfx.play('wk_chat');
-    UI.toast({ kicker: st.lapsed ? 'Worldkey out of tune' : dest.name + ' is waiting', title: 'Play the symbol game to tune in', sub: G.wkLine('notTuned', { world: dest.name }), icon: 'key', cls: 'gold', ms: 15000, action: { label: 'Tune now', fn: () => WK.tune(dest) } });
+    showNote(n);
     return true;
   };
+  // installed app: the moment the current tuning will fade, so the phone can say so even when Step Quest is closed
+  WK.lapseAt = () => {
+    if (!G.featOn || !G.featOn('wk')) return null;
+    const dest = G.wkDest(); if (!dest) return null;
+    const st = G.wkStatus(dest), t = G.wk().tuned[dest.id];
+    if (st.unlocked || !st.tuned || typeof t !== 'number') return null;
+    return { at: t + K.TUNE_HOURS * 3600000, key: dest.id + ':' + t, title: 'Worldkey out of tune', body: 'Your tuning to ' + dest.name + ' faded. Play the symbol game to retune.' };
+  };
   setInterval(WK.tuneTick, 20000);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(noteTick, 1500); });
+  WB.bus.on('worldFound', () => setTimeout(WK.tuneTick, 3000));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { setTimeout(noteTick, 1500); setTimeout(WK.tuneTick, 2500); } });
 
   WB.bus.on('world', () => { hide(); });
 })();

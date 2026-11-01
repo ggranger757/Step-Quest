@@ -3658,3 +3658,26 @@ details.how > ul { margin-top: var(--s2); }
 /* Worldkey memory game: the shape that is playing is clearly lit */
 .wk-sym.on { background: var(--surface-2); box-shadow: 0 0 0 3px var(--gold), 0 0 0 6px var(--shadow), 0 0 22px var(--gold); }
 .wk-sym.on canvas { opacity: 1; transform: scale(1.25); }
+
+/* ---------- 3.3.12: tertiary buttons ----------
+   The quietest action: no fill and no pixel frame, just accent text with an underline, at the full 48px touch size.
+   Hierarchy: plain .btn / .btn.gold (primary) → .btn.ghost (secondary) → .btn.tertiary.
+   Written against :root[data-theme] too so it beats the light theme's white-on-fill text rule. */
+:root .btn.tertiary, :root[data-theme] .btn.tertiary {
+  --b: transparent; --t: var(--cyan); background: transparent; color: var(--t); box-shadow: none;
+  text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; text-decoration-color: color-mix(in srgb, var(--t) 45%, transparent);
+}
+:root .btn.tertiary:hover:not([disabled]):not([aria-disabled="true"]), :root[data-theme] .btn.tertiary:hover:not([disabled]):not([aria-disabled="true"]) { text-decoration-color: var(--t); background: color-mix(in srgb, var(--t) 10%, transparent); }
+:root .btn.tertiary:active:not([disabled]):not([aria-disabled="true"]), :root[data-theme] .btn.tertiary:active:not([disabled]):not([aria-disabled="true"]) { transform: translateY(1px); box-shadow: none; background: color-mix(in srgb, var(--t) 16%, transparent); }
+:root .btn.tertiary[disabled], :root .btn.tertiary[aria-disabled="true"], :root[data-theme] .btn.tertiary[disabled], :root[data-theme] .btn.tertiary[aria-disabled="true"] { --t: var(--dim); background: transparent; box-shadow: none; }
+.btn.tertiary * { color: inherit !important; }
+.toast .btn.tertiary { padding: 0 var(--s2); }
+
+/* 3.3.12: the Defend gauge on your battle plate: your shield's or belt's own HP (it takes hits while you defend) */
+.pl-guard { display: grid; grid-template-columns: auto minmax(0, auto) minmax(24px, 1fr) auto; gap: 6px; align-items: center; color: var(--cyan); }
+.pl-guard .lbl { overflow: hidden; text-overflow: ellipsis; }
+.pl-guard .bar { height: 5px; }
+.pl-guard .bar.guard > i { background: var(--cyan); }
+.pl-guard .bar.guard > b { display: none; }
+.pl-guard.broken { color: var(--danger); }
+.pl-guard.broken .bar.guard > i { background: var(--danger); }

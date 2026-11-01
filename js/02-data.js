@@ -335,7 +335,13 @@
      Ability: enrage (hits 35% harder below half HP) · shadow (25% of non-piercing hits pass through) ·
      rebirth (at half HP turns into a second form, heals and changes moves) · armor (non-piercing hits do 30% less)
      · reaper (hits 40% harder while you're under 35% HP) · ward (raises a ward that reverses 45% often). */
-  D.DEFEND_COST = 35; D.DEFEND_REGEN = 15;   // the Defend gauge: each Defend uses 35%, every turn you don't defend restores 15%
+  // The Defend gauge (3.3.12) is your shield's or belt's own HP. While you defend, hits land on it instead of you.
+  // Its size is the shield's `block` as a share of your max HP (no shield: D.GUARD_BARE). A fresh shield takes the whole
+  // hit; a worn one takes less (G.wearF: down to 50%) and the rest reaches you, and so does anything past an empty gauge.
+  // Each Defend also costs D.DEFEND_UPKEEP% of the gauge; it refills D.DEFEND_REGEN% a turn you don't defend.
+  // When it hits 0 it breaks: no Defend until it has refilled to D.GUARD_RECOVER%.
+  D.GUARD_BARE = 0.4; D.GUARD_BARE_ABSORB = 0.6;   // bare-handed brace: a smaller gauge that catches 60% of a hit
+  D.DEFEND_UPKEEP = 8; D.DEFEND_REGEN = 15; D.GUARD_RECOVER = 40;
   // Initiative: the chance a creature strikes first, before your opening move (never in your very first battle; the Druid always does)
   D.AMBUSH = { creature: 0.3, guardian: 0.4, boss: 0.5 };
   // Turn timer (seconds) to pick a move; when it runs out you hesitate and the creature acts. Tougher foes give you less time.
@@ -729,7 +735,7 @@
     B('windboots', 'Wind Boots', 4, 700, { type: 'recharge' }, 'Weapon ready now', 'Your ranged weapon recharges instantly.'),
     B('chalice', 'Chalice of Vigor', 4, 750, { type: 'heal', amount: 0.3 }, '+30% HP', 'Restores 30% of your HP.'),
     B('venom', 'Venom Crystal', 5, 900, { type: 'status', effect: 'poison', turns: 3 }, 'Poison 3 turns', 'Poisons the creature for 3 turns.'),
-    B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill' }, 'Guard to 100%', 'Refills your Defend gauge to 100%.'),
+    B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill' }, 'Guard to 100%', 'Refills your shield’s Defend gauge to full.'),
     B('stoneskin', 'Stoneskin Rune', 7, 1100, { type: 'guard', turns: 4, factor: 0.65 }, '−35% damage, 4 turns', 'You take 35% less damage for 4 turns.'),
     B('holyrelic', 'Holy Relic', 8, 1250, { type: 'cleanse', amount: 0.15 }, 'Cure + 15% HP', 'Cures poison, burn, weakness and stun, and restores 15% HP.'),
     B('stormorb', 'Storm Orb', 8, 1350, { type: 'blast', power: 0.15 }, '15% of its HP', 'A lightning blast for 15% of the creature’s max HP. Ignores guards.'),
@@ -771,7 +777,7 @@
     C('might', 'Ring of Might', 12, 3000, 'dmg', '+8% damage', 'All your attacks do 8% more damage.'),
     C('alchemist', 'Alchemist’s Orb', 13, 2600, 'potions', 'Potions +25%', 'Healing potions and food heal 25% more.'),
     C('warding', 'Ring of Warding', 14, 3200, 'armor', '−8% damage taken', 'You take 8% less damage from every hit.'),
-    C('bulwark', 'Bulwark Sigil', 15, 3000, 'guard', 'Guard refills faster', 'Your Defend gauge refills 25% a turn instead of 15%.'),
+    C('bulwark', 'Bulwark Sigil', 15, 3000, 'guard', 'Guard refills faster', 'Your shield’s Defend gauge refills 25% a turn instead of 15%.'),
     C('archat', 'Arcane Hat', 16, 3500, 'charge', 'Special charges +30%', 'Your special attack gauge fills 30% faster.'),
     C('soulgem', 'Soul Gem', 18, 3800, 'firsthit', 'First hit halved', 'The first hit you take in each battle does half damage.'),
     C('druidtoken', 'Druid’s Token', 19, 3600, 'druid', 'Druid pays +30%', 'The Druid’s Knowledge Challenge pays 30% more XP and coins.'),
@@ -901,24 +907,24 @@
       { fx: shape + '_' + pal, boom: 'boom_' + pal, hits: shape === 'wave' ? 2 : 1, pierce: shape === 'javelin', chance: eff === 'freeze' ? 0.5 : 1 }));
     si++;
   }
-  // ---- shields: armor = share of every hit you shrug off; block = share stopped while defending
+  // ---- shields: armor = share of every hit you shrug off; block = size of the Defend gauge, as a share of your max HP
   D.WEAPONS.push(
-    SH('sh_buckler', 'Round Buckler', 0.05, 0.65, {}, 'Blocks 65% while defending. 5% armor.', { cost: 200, level: 2 }),
-    SH('sh_heater', 'Heater Shield', 0.08, 0.7, {}, 'Blocks 70% while defending. 8% armor.', { cost: 600, level: 6 }),
+    SH('sh_buckler', 'Round Buckler', 0.05, 0.65, {}, 'Defend gauge holds 65% of your HP. 5% armor.', { cost: 200, level: 2 }),
+    SH('sh_heater', 'Heater Shield', 0.08, 0.7, {}, 'Defend gauge holds 70% of your HP. 8% armor.', { cost: 600, level: 6 }),
     SH('sh_spiked', 'Spiked Targe', 0.08, 0.7, { counter: 0.6 }, 'Hits back for 60% of your attack whenever you defend against a hit.', { cost: 1100, level: 11 }),
-    SH('sh_steel', 'Steel Heart', 0.12, 0.75, {}, 'Blocks 75%. 12% armor.', { cost: 1600, level: 16 }),
-    SH('sh_mirror', 'Mirror Buckler', 0.08, 0.7, { reflect: 0.5 }, 'Reverses 50% of a blocked hit back at the attacker.', { cost: 2200, level: 21 }),
+    SH('sh_steel', 'Steel Heart', 0.12, 0.75, {}, 'Defend gauge holds 75% of your HP. 12% armor.', { cost: 1600, level: 16 }),
+    SH('sh_mirror', 'Mirror Buckler', 0.08, 0.7, { reflect: 0.5 }, 'Reverses 50% of what it absorbs back at the attacker.', { cost: 2200, level: 21 }),
     SH('sh_crystal', 'Crystal Kite', 0.1, 0.75, { regen: 0.12 }, 'Defending restores 12% HP instead of 6%.', { cost: 2800, level: 26 }),
-    SH('sh_ruby', 'Ruby Crest', 0.14, 0.8, {}, 'Blocks 80%. 14% armor.', { cost: 3400, level: 31 }),
-    SH('sh_gilded', 'Gilded Kite', 0.15, 0.8, { reflect: 0.35, counter: 0.4 }, 'Blocks 80%, reverses 35% and hits back.', { cost: 4200, level: 38 }),
-    SH('sh_gold', 'Aegis of Kings', 0.2, 0.85, { reflect: 0.5, regen: 0.1, legendary: true }, 'Legendary. 20% armor, blocks 85%, reverses half and heals.', { bosses: 16 }),
-    SH('sh_last', 'Aegis of the Last Road', 0.24, 0.88, { reflect: 0.4, counter: 0.5, regen: 0.1 }, '24% armor, blocks 88%, reverses 40%, hits back and heals when you defend.', { cost: 30000, level: 79 }),
+    SH('sh_ruby', 'Ruby Crest', 0.14, 0.8, {}, 'Defend gauge holds 80% of your HP. 14% armor.', { cost: 3400, level: 31 }),
+    SH('sh_gilded', 'Gilded Kite', 0.15, 0.8, { reflect: 0.35, counter: 0.4 }, 'Gauge 80% of your HP, reverses 35% and hits back.', { cost: 4200, level: 38 }),
+    SH('sh_gold', 'Aegis of Kings', 0.2, 0.85, { reflect: 0.5, regen: 0.1, legendary: true }, 'Legendary. 20% armor, gauge 85% of your HP, reverses half and heals.', { bosses: 16 }),
+    SH('sh_last', 'Aegis of the Last Road', 0.24, 0.88, { reflect: 0.4, counter: 0.5, regen: 0.1 }, '24% armor, gauge 88% of your HP, reverses 40%, hits back and heals when you defend.', { cost: 30000, level: 79 }),
   );
   // ---- belts (CraftPix belt icons): shields you wear at the waist. They are ordinary shields in the Defense
-  // slot (you wear one at a time), but trade block for armor: a belt shaves a bit more off EVERY hit, and
-  // blocks a bit less than a shield when you Defend. 45 are bought one per level (1-45); 3 are legendary.
+  // slot (you wear one at a time), but trade gauge for armor: a belt shaves a bit more off EVERY hit, and
+  // its Defend gauge is a bit smaller than a shield's. 45 are bought one per level (1-45); 3 are legendary.
   const pc = (v) => Math.round(v * 100) + '%';
-  const beltDesc = (flavor, x) => [flavor, x.reflect && 'Reverses ' + pc(x.reflect) + ' of a blocked hit back at the attacker.',
+  const beltDesc = (flavor, x) => [flavor, x.reflect && 'Reverses ' + pc(x.reflect) + ' of what it absorbs back at the attacker.',
     x.counter && 'Hits back for ' + pc(x.counter) + ' of your attack whenever you defend against a hit.', x.regen && 'Defending restores ' + pc(x.regen) + ' HP instead of 6%.'].filter(Boolean).join(' ');
   const BELT = (id, name, armor, block, extra, flavor, req) => ({ id, name, slot: 'shield', type: 'shield', belt: true, armor, block, ...extra, desc: beltDesc(flavor, extra), req, icon: 'wi/' + id + '.png' });
   [

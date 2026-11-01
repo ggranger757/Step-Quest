@@ -32,7 +32,15 @@
   }
 
   // other parts of the game (the Worldkey) can send a phone notification too, under the same switch and permission
-  R.note = (title, body, tag) => { if (on()) systemNote(title, body, tag); };
+  // (installed app: sent through the system right away; the web app uses the service worker)
+  R.note = (title, body, tag) => {
+    if (!on()) return;
+    const LN = native();
+    if (!LN) return systemNote(title, body, tag);
+    if (perm !== 'granted') return;
+    let h = 0; for (const c of String(tag || title)) h = (h * 31 + c.charCodeAt(0)) % 400;
+    LN.schedule({ notifications: [{ id: 3000 + h, title, body, schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true } }] }).catch(() => {});
+  };
 
   // check every 20 s: send the reminder for the window the mission is in, once
   R.tick = () => {
@@ -121,7 +129,8 @@
   R.schedule = async () => {
     const LN = native(); if (!LN) return;
     const list = on() && perm === 'granted' ? R.list() : [];
-    const next = list.map((x) => x.key).join('|');
+    const wk = on() && perm === 'granted' && WB.WK && WB.WK.lapseAt ? WB.WK.lapseAt() : null;   // when the Worldkey's tuning fades
+    const next = list.map((x) => x.key).join('|') + (wk ? '|wk:' + wk.key : '');
     if (next === sig) return; sig = next;
     try {
       const pend = await LN.getPending(); if (pend && pend.notifications && pend.notifications.length) await LN.cancel({ notifications: pend.notifications.map((n) => ({ id: n.id })) });
@@ -130,7 +139,8 @@
         const at = x.due - t * 60000; if (at <= Date.now() + 5000) return;
         notes.push({ id: 1000 + i * 20 + j, title: t < 0 ? 'Mission overdue' : 'Mission due soon', body: x.title + ' ' + phrase(t) + '.', schedule: { at: new Date(at), allowWhileIdle: true } });
       }));
-      notes.sort((a, b) => a.schedule.at - b.schedule.at);   // the system keeps a limited number: the soonest ones win
+      notes.sort((a, b) => a.schedule.at - b.schedule.at);
+      if (wk && wk.at > Date.now() + 5000) notes.unshift({ id: 2900, title: wk.title, body: wk.body, schedule: { at: new Date(wk.at), allowWhileIdle: true } });   // always kept   // the system keeps a limited number: the soonest ones win
       if (notes.length) await LN.schedule({ notifications: notes.slice(0, 60) });
     } catch (e) { sig = ''; }
   };

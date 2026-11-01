@@ -166,7 +166,7 @@
     if (act) pinned++; else tShown++;
     const el = document.createElement('div');
     el.className = 'toast ' + (o.cls || '') + (act ? ' has-act' : '');
-    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${act ? `<button class="btn sm t-act" type="button">${WB.esc(o.action.label)}</button><button class="t-x" type="button" aria-label="Close">×</button>` : ''}`;
+    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${act ? `<button class="btn sm t-act ${WB.esc(o.action.cls || '')}" type="button">${WB.esc(o.action.label)}</button><button class="t-x" type="button" aria-label="Close">×</button>` : ''}`;
     $('#toasts').appendChild(el);
     let gone = false;
     const done = (fast) => {
@@ -812,7 +812,7 @@
   // one button to fix everything you own
   const repairAll = () => { const n = G.worn().length, c = G.repairAllCost(); return n ? `<div class="pbox card repair-all"><span><b>${n}</b> item${n === 1 ? '' : 's'} worn</span><button class="btn sm" type="button" data-repair="all" ${off(S().coins < c && 'You need ' + WB.fmt(c - S().coins) + ' more coins.')}>Repair all · ${WB.fmt(c)}</button></div>` : ''; };
   const emptyBag = (what, sub) => `<div class="pbox card empty-bag"><p class="fine">No ${what} yet.</p><button class="btn ghost sm" type="button" data-hubgo="shop:${sub}">Shop for ${what}</button></div>`;
-  const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Block ${Math.round(w.block * 100)}%` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
+  const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Defend gauge ${Math.round(w.block * 100)}% HP` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
   const WGROUPS = { melee: [['sword', 'Swords'], ['dagger', 'Daggers'], ['axe', 'Axes'], ['mace', 'Maces'], ['spear', 'Spears'], ['staff', 'Staves']],
     ranged: [['throw', 'Throwing weapons'], ['knife', 'Throwing knives & gear'], ['bow', 'Bows'], ['gun', 'Firearms'], ['spell', 'Spells']], shield: [['shield', 'Shields']] };
   // Melee / Shield switch: text only (the gear itself is in the lists below)
