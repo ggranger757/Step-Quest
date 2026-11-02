@@ -405,6 +405,7 @@
   const PRIMARY = ['battle', 'shoo', 'open', 'take', 'accept', 'buy', 'quiz'];
   UI.showEncounter = (enc, where = 'stage') => {
     encCur = enc;
+    enc._resolved = false;   // a card on screen is live (a flag saved with a waiting encounter used to leave its buttons dead)
     clearTimeout(encTimer);
     const html = `
       <canvas width="64" height="64" id="enc-face"></canvas>
@@ -476,8 +477,14 @@
     WB.paintThumb(holder.querySelector('canvas'), { kind: 'cr', id: 'druid', face: 'left' });
     const first = holder.querySelector('[data-ans]'); if (first && where === 'stage') first.focus({ preventScroll: true });
     holder.querySelectorAll('[data-ans]').forEach((b) => (b.onclick = () => {
-      const r = G.answerDruid(enc, +b.dataset.ans); if (!r) return;
-      enc._resolved = true;
+      const r = G.answerDruid(enc, +b.dataset.ans);
+      if (!r) {   // already answered somewhere else: never leave buttons that do nothing
+        holder.querySelectorAll('[data-ans]').forEach((x) => (x.disabled = true));
+        holder.querySelector('.dq').textContent = 'The Druid has already gone into the trees.';
+        encTimer = setTimeout(() => { if (where === 'stage') { root.hidden = true; root.innerHTML = ''; } else UI.closeSheet(); encCur = null; UI.render(); }, 2500);
+        return;
+      }
+      if (r.ok) enc._resolved = true;
       holder.querySelectorAll('[data-ans]').forEach((x, i) => { x.disabled = true; x.classList.toggle('right', i === qz.answer); x.classList.toggle('wrong', i === +b.dataset.ans && !r.ok); });
       const close = () => { clearTimeout(encTimer); if (where === 'stage') { root.hidden = true; root.innerHTML = ''; } else UI.closeSheet(); encCur = null; UI.render(); };
       setTimeout(() => {

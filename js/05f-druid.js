@@ -25,7 +25,14 @@
     e._answered = true; d.taken = (d.taken || 0) + 1;
     const ok = pick === qz.answer, right = qz.options[qz.answer];
     s.enc.count++; s.today.encounters++;
-    if (!ok) { G.after(); return { ok, right }; }
+    // 3.3.13: an answered Druid leaves the road's waiting list. (Before, if the walker passed him while you read the
+    // question, he stayed on the list already answered, and reopening him gave buttons that did nothing.)
+    G.removePending(e);
+    if (!ok) {   // wrong: he only offers a fight now, even if you meet him again from the waiting list
+      e.mustFight = true; e.text = '“You answered wrong, walker. We settle it the old way.” Beat the Druid to send him off.';
+      e.choices = [{ id: 'battle', label: 'Battle the Druid', hint: 'Your eggs are safe either way' }];
+      G.after(); return { ok, right };
+    }
     d.wins++;
     const reward = G.druidReward(D.worldById[e.world]);
     const granted = G.grant(reward, true);

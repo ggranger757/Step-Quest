@@ -209,7 +209,7 @@
   WK.gate = (world, opts = {}) => {
     if (!G.featOn('wk')) return UI.toast({ kicker: 'Worldkey asleep', title: 'It wakes up when you finish ' + G.firstWorld().name + '.', icon: 'lock' });
     const st = G.wkStatus(world), step = nextStep(st), w = G.wk();
-    if (step && step.act === 'tune' && world === G.wkDest()) { const n = WK.tuneNeed(); if (n) { ping().tuneEv = n.ev; WB.Save.queue(); } }   // this sheet already says it
+    if (step && step.act === 'tune' && world === G.wkDest()) { const n = WK.tuneNeed(); if (n) { ping().tuneEv = n.ev; tuneSeen.add(n.ev); WB.Save.queue(); } }   // this sheet already says it
     UI.sheet(`<div class="wk-gate">
       <span class="lbl wk-kick">${st.found ? 'New world discovered' : 'Next world'}</span>
       <h3 id="sheet-title">${esc(world.name)}</h3>
@@ -464,9 +464,10 @@
   // It needs tuning when the next world is discovered and not tuned yet, or when its tuning faded (K.TUNE_HOURS after you
   // tuned it, even if you tuned ahead). Each of those moments gets one pop-up right away, whether or not you are walking
   // or the key has energy (tuning and charging are separate jobs). In the background it goes out as a phone notification
-  // and the pop-up waits in the app for when you come back. After that, while you walk, it reminds you at most every
-  // 30 minutes. Never over a battle, sheet, card or the tour (it waits and shows once they're gone).
+  // and the pop-up waits in the app for when you come back. While it stays out of tune it shows again every time you
+  // open the app and every 30 minutes while the app is open (3.3.13). Never over a battle, sheet, card or the tour (it waits and shows once they're gone).
   const TUNE_NAG_MS = 30 * 60000;
+  const tuneSeen = new Set();   // out-of-tune moments already shown since the app opened (so every launch reminds you once)
   WK.tuneNeed = () => {
     if (!G.featOn || !G.featOn('wk')) return null;
     const dest = G.wkDest(); if (!dest) return null;
@@ -487,11 +488,11 @@
     if (gateQ.length) return false;   // a newly found world's gate goes first (it has its own Tune button)
     const need = WK.tuneNeed(); if (!need) return false;
     const p = ping(), hidden = document.visibilityState !== 'visible', k = 'tune:' + need.dest.id;
-    const fresh = p.tuneEv !== need.ev;
-    const nag = !fresh && !hidden && UI.walkingNow && UI.walkingNow() && Date.now() - (typeof p[k] === 'number' ? p[k] : 0) >= TUNE_NAG_MS;
+    const fresh = p.tuneEv !== need.ev || !tuneSeen.has(need.ev);   // a new moment, or the first check since you opened the app
+    const nag = !fresh && !hidden && Date.now() - (typeof p[k] === 'number' ? p[k] : 0) >= TUNE_NAG_MS;
     if (!fresh && !nag) return false;
     if (!hidden && noteBusy()) return false;   // try again on the next tick
-    p.tuneEv = need.ev; p[k] = Date.now(); WB.Save.queue();
+    p.tuneEv = need.ev; p[k] = Date.now(); tuneSeen.add(need.ev); WB.Save.queue();
     const n = tuneNote(need);
     if (hidden) { if (WB.Remind && WB.Remind.note) WB.Remind.note('Step Quest · ' + n.kicker, n.title + '. Play the symbol game to tune in.', 'wk-tune'); p.held = n; return true; }
     WB.Sfx.play('wk_chat');
@@ -507,6 +508,7 @@
     return { at: t + K.TUNE_HOURS * 3600000, key: dest.id + ':' + t, title: 'Worldkey out of tune', body: 'Your tuning to ' + dest.name + ' faded. Play the symbol game to retune.' };
   };
   setInterval(WK.tuneTick, 20000);
+  setTimeout(WK.tuneTick, 4000);
   WB.bus.on('worldFound', () => setTimeout(WK.tuneTick, 3000));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { setTimeout(noteTick, 1500); setTimeout(WK.tuneTick, 2500); } });
 

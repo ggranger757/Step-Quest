@@ -515,6 +515,7 @@
     const s = S();
     if (e.type === 'boss') { s.enc.bossDue = null; return; } // guardians wait on the map instead
     if (s.enc.pending.some((p) => p.id === e.id)) return;
+    if (e.type === 'druid' && e._answered && !e.mustFight) return;   // answered right: nothing left to wait for
     s.enc.pending.push(e);
     if (s.enc.pending.length > 3) s.enc.pending.shift();
     WB.bus.emit('pending');
@@ -531,6 +532,10 @@
     if (e.type === 'merchant' && choice === 'buy') {
       if (s.coins < e.cost) { out.text = 'You need ' + e.cost + ' coins for that. Keep walking.'; return out; }
       if ((s.potions.tonic || 0) >= D.POTION_MAX) { out.text = 'Your bag already holds ' + D.POTION_MAX + ' tonics.'; return out; }
+    }
+    if (e.type === 'druid' && e._answered) {   // a Druid you've already answered: a fight if you got it wrong, otherwise he's gone
+      if (e.mustFight) { out.battle = true; return out; }
+      G.removePending(e); out.text = 'The Druid has already gone into the trees.'; out.anim = 'leave'; out.granted = []; return out;
     }
     if (e.type === 'druid' && choice === 'quiz') { out.quiz = e.quiz = e.quiz || G.druidQuestion(); return out; }   // the UI asks it; G.answerDruid settles it
     G.removePending(e);

@@ -104,6 +104,8 @@
     // retired creatures (the Mushroom Guard and Naughty Nova): drop them from the log and the road
     for (const id of ['mushroom', 'nova']) delete s.enc.cards[id];
     s.enc.pending = s.enc.pending.filter((e) => !e.creature || D.CREATURES[e.creature]);
+    // 3.3.13: Druids left on the waiting list after you'd already answered them (their buttons did nothing): drop them
+    s.enc.pending = s.enc.pending.filter((e) => !(e.type === 'druid' && e._answered && !e.mustFight));
     // drop references to content that no longer exists
     const ok = (list, id) => list.some((x) => x.id === id);
     s.owned.avatars = s.owned.avatars.filter((id) => ok(D.AVATARS, id));

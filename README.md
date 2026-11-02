@@ -103,6 +103,11 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.3.13
+
+- **Fixed: the Druid's Knowledge Challenge buttons did nothing.** Answering him never took him off the road's waiting list. If the walker passed him while you read the question (the road only holds for 10 seconds), or you answered wrong and didn't fight, he stayed on the list already answered, and reopening him gave a card whose buttons were dead. Now an answered Druid leaves the list (`G.answerDruid`); a wrong answer you didn't fight comes back as a Battle the Druid card; an encounter card always clears its old "already resolved" flag when shown; if an answer can't count, the card says so and closes instead of sitting there. Saves with a stuck Druid are cleaned up on load. Merlin's Knowledge Check was checked too and works.
+- **Out-of-tune pop-up shows reliably.** While the Worldkey is out of tune (or the next world is discovered and untuned), the Tune now pop-up appears about 4 seconds after you open the app, every time you open it, and every 30 minutes while it stays open, walking or not. Before, after the first pop-up it only reminded you while walking.
+
 ## Changes in 3.3.12
 
 - **Tuning pop-up:** when the Worldkey needs tuning (the next world is discovered but not tuned, or its tuning faded after `K.TUNE_HOURS`), a pop-up with **Tune now** appears right away, whether or not you are walking or the key has energy. Before, it only showed while walking and only once the key was fully charged, so most players never saw it. After the first pop-up it still reminds you every 30 minutes while you walk. It waits for battles, sheets and the tour to finish, and skips the moment a new world's gate already asks you to tune (`WK.tuneTick` in `js/07j-worldkey-ui.js`).
