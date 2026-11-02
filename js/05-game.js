@@ -106,7 +106,7 @@
     if (cat === 'magic' && G.stock) G.stock();   // set up item stock first, so an older save's one-time top-up never doubles this pack
     list.push(id);
     if (cat === 'magic' && G.addUses) G.addUses(id, G.packSize(id));   // magic comes with a full stack of casts (or battles, for charms)
-    if (cat === 'weapon' && G.addAmmo && G.isStack('weapon', id)) G.addAmmo(id, D.STACK_MAX);   // a ranged weapon comes with a full stack of shots
+    if (cat === 'weapon' && G.addAmmo && G.isStack('weapon', id)) G.addAmmo(id, D.FIRST_PACK);   // a ranged weapon comes with its first pack of shots
     if (!quiet) WB.bus.emit('unlock', { cat, id });
     return true;
   };

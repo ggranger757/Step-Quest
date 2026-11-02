@@ -3681,3 +3681,16 @@ details.how > ul { margin-top: var(--s2); }
 .pl-guard .bar.guard > b { display: none; }
 .pl-guard.broken { color: var(--danger); }
 .pl-guard.broken .bar.guard > i { background: var(--danger); }
+
+/* 3.3.14: buy-more sheet quick amounts (there's no 10 cap any more) */
+.rf-quick { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: var(--s2); }
+.rf-quick .btn { padding: 0 var(--s3); }
+.prev .count { white-space: nowrap; }
+
+/* 3.3.14: egg thumbnails are all the same size (WB.eggImg scales each egg from its measured body box) */
+.egg-img.fit { position: relative; overflow: hidden; background: none; animation: none; }
+.egg-img.fit > i { position: absolute; display: block; background-repeat: no-repeat; background-size: calc(100% * 8) 100%; image-rendering: pixelated; animation: egg-wobble-fit 0.8s steps(8) infinite; }
+@keyframes egg-wobble-fit { to { background-position: calc(var(--fw) * -8) 0; } }
+.egg-img.fit.still > i { animation: none; }
+@media (prefers-reduced-motion: reduce) { .egg-img.fit > i { animation: none; } }
+html.reduce-motion .egg-img.fit > i, html.rm .egg-img.fit > i { animation: none; }

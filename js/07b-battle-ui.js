@@ -393,7 +393,7 @@
     const st = WB.Battle.st, h = st.hero, e = st.enemy, p = st.pet;
     const est = [e.poison > 0 && 'Poisoned', e.burn > 0 && 'Burning', e.bleed > 0 && 'Cursed', e.freeze > 0 && 'Frozen', e.stun > 0 && 'Stunned',
       e.drain > 0 && 'Drained', e.weaken > 0 && 'Weakened', e.sunder > 0 && 'Sundered', e.brace && 'Bracing', e.ward && 'Ward up', e.charging && 'Charging!', e.nemesis && e.halved && e.ability === 'enrage' && 'Enraged'].filter(Boolean);
-    const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, !WB.Battle.canDefend(st) && 'Guard broken'].filter(Boolean);
+    const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.harden > 0 && 'Hard shield', h.spikes > 0 && 'Spiked shield', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, !WB.Battle.canDefend(st) && 'Guard broken'].filter(Boolean);
     const plate = (name, lvl, cur, g, max, tags, cls) => `<div class="pl-main"><span class="pl-name">${WB.esc(name)}</span>${bar(cur, g, max, cls)}<div class="pl-bot"><span class="lbl">${lvl}</span><span class="lbl" data-hpn="1">${Math.max(0, Math.round(cur))} / ${max}</span></div></div><span class="lbl tags">${tags.join(' · ')}</span>`;
     $('#b-pe').innerHTML = plate(e.name, `Lv ${e.lvl}${e.boss ? ' · Guardian' : e.nemesis ? ' · Boss' : ''}`, disp.enemy, ghost.enemy, e.max, est, 'ehp');
     const rest = (st.foes || []).filter((f) => f !== e && f.hp > 0);   // the rest of a mob, waiting their turn
@@ -418,7 +418,7 @@
     l.onclick = () => { clearInterval(typeT); l.textContent = text; };
   }
   const clip = (t, n) => { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };   // keeps a name inside its button
-  const potionTag = (p) => (p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
+  const potionTag = (p) => (p.kind === 'guardhp' ? 'Gauge +' + Math.round(p.amount * 100) + '%' : p.kind === 'guardup' ? 'Gauge +' + Math.round(p.amount * 100) + '% bigger' : p.kind === 'mend' ? 'Repair +' + p.amount + '%' : p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
   function actions(mode = 'main') {
     const st = WB.Battle.st, el = $('#b-actions'), s = S();
     if (!el) return;
@@ -743,13 +743,14 @@
         if (heals || ev.heal) for (let i = 0; i < 6; i++) fx.push({ type: 'boom', path: POT_FX.pop, info: POT_FX.popInfo, x: hx + Math.round(Math.cos(i * 1.05) * 16), y: top + 4 + Math.round(Math.sin(i * 1.05) * 12), t: -i * 0.06, scale: 1, fps: 10 });
         else fx.push({ type: 'boom', path: POT_FX.burst, info: POT_FX.burstInfo, x: hx, y: top, t: 0, scale: 1, fps: 12 });
         await sleep(180);
-        fx.push({ type: 'ring', x: hx, y: g - 30, color: ev.heal ? '#6ee7a0' : '#ff9a3d', t: 0 });
+        fx.push({ type: 'ring', x: hx, y: g - 30, color: ev.heal ? '#6ee7a0' : ev.guardGain != null ? '#59e3ff' : '#ff9a3d', t: 0 });
         healHero(ev.heal);
+        if (ev.guardGain) floater((st.shield ? (st.shield.belt ? 'Belt' : 'Shield') : 'Guard') + ' +' + ev.guardGain, 'hero', 'tag');
         if (ev.dmg) { await sleep(250); hurtEnemy(ev.dmg, true, '#c58bff'); fx.push({ type: 'ring', x: view.ex, y: eY(), color: '#c58bff', t: 0 }); }
         plates(); await sleep(650);
       } else if (ev.type === 'magic') {
         const m = D.magicById[ev.item], t = m.fx.type;
-        const col = { ring: '#c7b8ff', book: '#b07cff', clover: '#6ee7a0', heal: '#6ee7a0', cleanse: '#fff3a0', dragon: '#ff8a3d', guard: '#59e3ff', valor: '#ffb347', fury: '#ff6b3d', blast: '#9fe8ff', drain: '#ff6bd5', status: '#c58bff', break: '#ffb347', seer: '#b07cff', reflect: '#9fe8ff', dodge: '#7a6cff' }[t] || '#c7b8ff';
+        const col = { ring: '#c7b8ff', book: '#b07cff', clover: '#6ee7a0', heal: '#6ee7a0', cleanse: '#fff3a0', dragon: '#ff8a3d', guard: '#59e3ff', harden: '#59e3ff', spikes: '#ff9a3d', valor: '#ffb347', fury: '#ff6b3d', blast: '#9fe8ff', drain: '#ff6bd5', status: '#c58bff', break: '#ffb347', seer: '#b07cff', reflect: '#9fe8ff', dodge: '#7a6cff' }[t] || '#c7b8ff';
         WB.Sfx.play(t === 'heal' || t === 'cleanse' || t === 'dragon' ? 'potion' : t === 'ring' || t === 'blast' ? 'special_nova' : t === 'clover' ? 'level' : 'spell_cast');
         const onEnemy = ['blast', 'drain', 'status', 'break', 'seer'].includes(t);
         fx.push({ type: 'ring', x: view.hx, y: hY(), color: col, t: 0 }); burst(view.hx, hY(), col, 12);
@@ -791,6 +792,7 @@
         if (ev.petGuard && ps) { floater('Guarded!', 'pet', 'tag'); fx.push({ type: 'ring', x: view.px, y: g - 14, color: '#59e3ff', t: 0 }); WB.Sfx.play('shield_block'); }
         if (ev.pet && ps) { ps.flash = 0.5; shown.pet -= ev.pet; floater(hpText(-ev.pet), 'pet', 'dmg'); if (ev.petKO) setTimeout(() => floater('KO', 'pet', 'tag'), 250); plates(); }
         if (ev.reversed) { await sleep(200); bolt('hero', 'enemy', '#59e3ff'); await sleep(260); floater('Reversed!', 'hero', 'tag'); hurtEnemy(ev.reversed, false, '#59e3ff'); }
+        if (ev.spiked) { await sleep(200); bolt('hero', 'enemy', '#ff9a3d'); await sleep(260); floater('Thorns!', 'hero', 'tag'); hurtEnemy(ev.spiked, false, '#ff9a3d'); }
         if (ev.countered) { await sleep(200); bolt('hero', 'enemy', '#ff9a3d'); await sleep(260); hurtEnemy(ev.countered, false, '#ff9a3d'); }
         if (ev.mirrored) { await sleep(200); bolt('hero', 'enemy', '#9fe8ff'); await sleep(260); hurtEnemy(ev.mirrored, false, '#9fe8ff'); }
         if (ev.thorns) { await sleep(160); floater('Thorns', 'hero', 'tag'); hurtEnemy(ev.thorns, false, '#7ee06a'); }

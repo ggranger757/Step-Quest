@@ -103,6 +103,18 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.3.14
+
+- **Shield items.** New things that work on the Defend gauge (your shield's or belt's HP in battle):
+  - Potions, in a new Shop → Potions → **For your shield** section (battle only): **Shield Polish** (level 3, 90 coins) refills half the gauge and mends a broken guard; **Smith's Oil** (level 6, 150) repairs your shield or belt by 30% condition mid-fight, so a worn shield catches more of each hit, and refills 20% of the gauge; **Bulwark Brew** (level 12, 240) makes the gauge 50% bigger for the rest of the battle, with the extra full.
+  - Battle magic: **Tempered Ward** (level 9) for 3 turns your shield catches every hit in full, even worn, and the gauge loses only half of it; **Thorned Bulwark** (level 13) for 3 turns 60% of what your shield absorbs is thrown back at the creature.
+  - Charm: **Tower Sigil** (level 11) makes your Defend gauge 30% bigger in every battle.
+  - The battle plate shows "Hard shield" and "Spiked shield" while they last; potions show "Shield +N", Thorned Bulwark shows "Thorns!". Icons are recolors of existing art (`/assets/pot/polish|smithoil|bulwarkbrew.png`, `/assets/mg/tempered|thornwall|tower.png`).
+- **No more 10 cap** on ranged weapons and battle magic: buy as many as you like. The first buy still comes with 10 (`D.FIRST_PACK`); `D.STACK_MAX` is now 999, only a sanity limit. Cards show a count (×45) and a **Buy more** button; the buy-more sheet has −/+, **+10**, **+25** and **Max you can afford**, and starts at 10. A shot never costs more than 90 coins (`D.UNIT_MAX`), a cast never more than 50 (`D.MAGIC_UNIT_MAX`).
+- **Magic is cheaper:** every battle magic item and charm costs 40% less (`D.MAGIC_PRICE` 0.6, e.g. Guard Rune 950 → 400, Book of Magic 2,500 → 1,050), and a refilled cast is the price / 12 instead of / 10.
+- **Merlin's egg thumbnails are all the same size.** The two egg art packs use different frame sizes and padding (a shadow egg filled 70% of its frame, a sprout egg 94%, classic eggs 100%). `tools/egg_boxes.py` measures each egg's body (ignoring sparkles) into `js/02i-eggbox.js`, and `WB.eggImg` scales every egg so its body fills 86% of the thumbnail. This applies everywhere eggs show (nest, collection, hatching, toasts).
+- Fixed: a brand-new save could start with 999 Throwing Stars (an old upgrade step filled ranged weapons "to the cap").
+
 ## Changes in 3.3.13
 
 - **Fixed: the Druid's Knowledge Challenge buttons did nothing.** Answering him never took him off the road's waiting list. If the walker passed him while you read the question (the road only holds for 10 seconds), or you answered wrong and didn't fight, he stayed on the list already answered, and reopening him gave a card whose buttons were dead. Now an answered Druid leaves the list (`G.answerDruid`); a wrong answer you didn't fight comes back as a Battle the Druid card; an encounter card always clears its old "already resolved" flag when shown; if an answer can't count, the card says so and closes instead of sitting there. Saves with a stuck Druid are cleaned up on load. Merlin's Knowledge Check was checked too and works.

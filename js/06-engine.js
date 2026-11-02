@@ -26,7 +26,18 @@
   WB.pxImg = (path, size, cls = '') => `<img class="px-img ${cls}" src="${Assets.url(path)}" width="${size}" height="${size}" alt="" aria-hidden="true" draggable="false" decoding="async">`;
   WB.potionImg = (id, size = 24, cls = '') => WB.pxImg(`pot/${id}.png`, size, cls);
   // an egg, gently animated (its 8-frame strip, stepped with CSS; still with reduced motion)
-  WB.eggImg = (id, size = 32, cls = '') => `<span class="egg-img ${cls}" style="--s:${size}px;background-image:url('${Assets.url('egg/' + id + '.png')}')" aria-hidden="true"></span>`;
+  // An egg thumbnail. The art comes in different frame sizes and paddings, so (3.3.14) each egg is scaled from its
+  // measured body box (D.EGG_BOX, tools/egg_boxes.py) to fill EGG_FILL of the thumbnail: every egg reads the same size.
+  // The outer box clips; the inner layer is exactly one frame, so the wobble never shows a neighbouring frame.
+  const EGG_FILL = 0.86;
+  WB.eggImg = (id, size = 32, cls = '') => {
+    const url = Assets.url('egg/' + id + '.png'), b = WB.DATA.EGG_BOX && WB.DATA.EGG_BOX[id];
+    if (!b) return `<span class="egg-img ${cls}" style="--s:${size}px;background-image:url('${url}')" aria-hidden="true"></span>`;
+    const [x, y, w, h, fw, fh] = b, k = EGG_FILL / Math.max(w, h);   // thumbnail sizes per art pixel, as a share of --s
+    const v = (n) => `calc(var(--s) * ${+n.toFixed(4)})`;
+    const left = (1 - w * k) / 2 - x * k, top = (1 - h * k) / 2 - y * k;
+    return `<span class="egg-img fit ${cls}" style="--s:${size}px" aria-hidden="true"><i style="--fw:${v(fw * k)};left:${v(left)};top:${v(top)};width:${v(fw * k)};height:${v(fh * k)};background-image:url('${url}')"></i></span>`;
+  };
   // draw a single-image asset into a canvas, integer-scaled and centred
   WB.paintImg = (canvas, path, fill = 0.8) => Assets.load(path).then((im) => {
     if (!im._ok) return;

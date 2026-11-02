@@ -736,6 +736,9 @@
     B('chalice', 'Chalice of Vigor', 4, 750, { type: 'heal', amount: 0.3 }, '+30% HP', 'Restores 30% of your HP.'),
     B('venom', 'Venom Crystal', 5, 900, { type: 'status', effect: 'poison', turns: 3 }, 'Poison 3 turns', 'Poisons the creature for 3 turns.'),
     B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill' }, 'Guard to 100%', 'Refills your shield’s Defend gauge to full.'),
+    // shield magic (3.3.14): works on the Defend gauge (your shield's or belt's HP in battle)
+    B('tempered', 'Tempered Ward', 9, 1400, { type: 'harden', turns: 3 }, 'Hard shield, 3 turns', 'For 3 turns your shield catches every hit in full, even when worn, and its Defend gauge loses only half of what it catches.'),
+    B('thornwall', 'Thorned Bulwark', 13, 2300, { type: 'spikes', turns: 3, power: 0.6 }, 'Spiked shield, 3 turns', 'For 3 turns, 60% of every hit your shield absorbs is thrown back at the creature.'),
     B('stoneskin', 'Stoneskin Rune', 7, 1100, { type: 'guard', turns: 4, factor: 0.65 }, '−35% damage, 4 turns', 'You take 35% less damage for 4 turns.'),
     B('holyrelic', 'Holy Relic', 8, 1250, { type: 'cleanse', amount: 0.15 }, 'Cure + 15% HP', 'Cures poison, burn, weakness and stun, and restores 15% HP.'),
     B('stormorb', 'Storm Orb', 8, 1350, { type: 'blast', power: 0.15 }, '15% of its HP', 'A lightning blast for 15% of the creature’s max HP. Ignores guards.'),
@@ -778,6 +781,7 @@
     C('alchemist', 'Alchemist’s Orb', 13, 2600, 'potions', 'Potions +25%', 'Healing potions and food heal 25% more.'),
     C('warding', 'Ring of Warding', 14, 3200, 'armor', '−8% damage taken', 'You take 8% less damage from every hit.'),
     C('bulwark', 'Bulwark Sigil', 15, 3000, 'guard', 'Guard refills faster', 'Your shield’s Defend gauge refills 25% a turn instead of 15%.'),
+    C('tower', 'Tower Sigil', 11, 2400, 'guardmax', '+30% Defend gauge', 'Your shield’s or belt’s Defend gauge is 30% bigger in every battle.'),
     C('archat', 'Arcane Hat', 16, 3500, 'charge', 'Special charges +30%', 'Your special attack gauge fills 30% faster.'),
     C('soulgem', 'Soul Gem', 18, 3800, 'firsthit', 'First hit halved', 'The first hit you take in each battle does half damage.'),
     C('druidtoken', 'Druid’s Token', 19, 3600, 'druid', 'Druid pays +30%', 'The Druid’s Knowledge Challenge pays 30% more XP and coins.'),
@@ -992,6 +996,10 @@
     { id: 'elixir', name: 'Grand Elixir', kind: 'heal', amount: 0.8, cost: 180, pal: 'cyan', desc: 'Restores 80% of your HP.', req: { level: 4 }, base: true },
     // brewed specials from the item pack
     { id: 'storm', name: 'Storm in a Bottle', kind: 'swift', amount: 0.2, cost: 160, pal: 'cyan', desc: 'Recharges your weapon instantly and restores 20% HP.', req: { level: 8 }, base: true },
+    // shield potions (3.3.14): battle only, they work on the Defend gauge and on the shield itself
+    { id: 'polish', name: 'Shield Polish', kind: 'guardhp', amount: 0.5, cost: 90, pal: 'cyan', desc: 'Refills half of your shield’s Defend gauge, and mends a broken guard so you can defend again.', req: { level: 3 }, base: true, shield: true },
+    { id: 'smithoil', name: 'Smith’s Oil', kind: 'mend', amount: 30, refill: 0.2, cost: 150, pal: 'brass', desc: 'Repairs your shield or belt by 30% condition (a worn shield catches more of each hit) and refills 20% of its gauge.', req: { level: 6 }, base: true, shield: true },
+    { id: 'bulwarkbrew', name: 'Bulwark Brew', kind: 'guardup', amount: 0.5, cost: 240, pal: 'ash', desc: 'For the rest of the battle your Defend gauge is 50% bigger, and the extra starts full.', req: { level: 12 }, base: true, shield: true },
     { id: 'cell', name: 'Ward Cell', kind: 'guard', turns: 4, factor: 0.4, cost: 210, pal: 'ash', desc: 'Cuts the damage you take by 60% for 4 turns.', req: { level: 10 }, base: true },
     { id: 'eye', name: 'Shadow Eye', kind: 'blast', power: 0.2, cost: 230, pal: 'violet', desc: 'Bursts for 20% of the enemy’s max HP.', req: { level: 12 }, base: true },
     { id: 'sundrop', name: 'Sundrop', kind: 'heal', amount: 1, cost: 320, pal: 'brass', desc: 'Restores all of your HP.', req: { level: 15 }, base: true },
