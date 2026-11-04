@@ -41,6 +41,11 @@ edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) =
   return s.includes('<queries>') ? s.replace('<queries>', '<queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE" />\n        </intent>') : s.replace(/(\s*)<application/, `\n${q}$1<application`);
 });
 
+// ---- Android: duels nearby (3.6.0) scan the other phone's code with the live camera inside the app's web view;
+// Capacitor's web view asks for the camera at that moment, which Android only allows when the app declares it.
+edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) => s.includes('android.permission.CAMERA"') ? s
+  : s.replace(/(\s*)<application/, `\n    <uses-permission android:name="android.permission.CAMERA" />$1<application`));
+
 // ---- Android: Health Connect needs minSdk 26
 edit(join(native, 'android', 'variables.gradle'), (s) => s.replace(/minSdkVersion\s*=\s*(\d+)/, (m, n) => (Number(n) < 26 ? 'minSdkVersion = 26' : m)));
 

@@ -23,7 +23,7 @@ p = os.path.join(APP, 'sw.js'); s = open(p, encoding='utf-8').read()
 s = re.sub(r"const CACHE = '[^']*';", f"const CACHE = 'stepquest-{VER}';", s)
 m = re.search(r'const PRECACHE = (\[.*?\]);', s, re.S)
 lst = json.loads(m.group(1))
-lst = [re.sub(r'\?v=.*$', '', u) + (f'?v={VER}' if re.match(r'(js/[^/]+\.js|css/style\.css)(\?|$)', u) else '') for u in lst]
+lst = [re.sub(r'\?v=.*$', '', u) + (f'?v={VER}' if re.match(r'(js/(?:vendor/)?[^/]+\.js|css/style\.css)(\?|$)', u) else '') for u in lst]
 s = s[:m.start(1)] + json.dumps(lst, ensure_ascii=False) + s[m.end(1):]
 open(p, 'w', encoding='utf-8').write(s)
 n = len(re.findall(r'\?v=' + re.escape(VER), h))

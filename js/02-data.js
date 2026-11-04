@@ -249,7 +249,7 @@
     treant: { name: 'Treant', verb: 'tears its roots from the ground', hp: 44, atk: 9, aggressive: true, scale: 0.55 },
     // orc warband (top-down orc pack): a scout, a cutthroat and a heavy reaver
     // Redhood Rival: a walker who has been everywhere and never lets you forget it. Turns up in every world, always at your level.
-    redhood: { name: 'Redhood Rival', verb: 'skids to a stop in front of you, barely out of breath', hp: 46, atk: 10, aggressive: true, scale: 1.75, rival: true },
+    redhood: { name: 'Redhood Rival', verb: 'skids to a stop in front of you, barely out of breath', hp: 46, atk: 10, aggressive: true, scale: 1, rival: true },   // 3.5.6: drawn like the walkers (tools/make_redhood.py)
     orcscout: { name: 'Orc Scout', verb: 'jabs its spear and grunts', hp: 32, atk: 8, aggressive: true, scale: 1.45 },
     orccutthroat: { name: 'Orc Cutthroat', verb: 'twirls a curved knife and grins', hp: 36, atk: 9, aggressive: true, scale: 1.45 },
     orcreaver: { name: 'Orc Reaver', verb: 'draws two blades and charges', hp: 42, atk: 10, aggressive: true, scale: 1.45 },
@@ -335,13 +335,11 @@
      Ability: enrage (hits 35% harder below half HP) · shadow (25% of non-piercing hits pass through) ·
      rebirth (at half HP turns into a second form, heals and changes moves) · armor (non-piercing hits do 30% less)
      · reaper (hits 40% harder while you're under 35% HP) · ward (raises a ward that reverses 45% often). */
-  // The Defend gauge (3.3.12) is your shield's or belt's own HP. While you defend, the shield takes every hit in full and
-  // you take nothing (3.5.0); defending never restores your HP. Its size is the shield's `block` as a share of your max HP
-  // (no shield: D.GUARD_BARE). A worn shield (G.wearF, down to 50%) or bare hands lose more of the gauge per hit.
-  // Each Defend also costs D.DEFEND_UPKEEP% of the gauge; it refills D.DEFEND_REGEN% a turn you don't defend.
-  // When it hits 0 it breaks: no Defend until it has refilled to D.GUARD_RECOVER%.
-  D.GUARD_BARE = 0.4; D.GUARD_BARE_ABSORB = 0.6;   // bare-handed brace: a smaller gauge, and each hit costs it 1/0.6 as much
-  D.DEFEND_UPKEEP = 8; D.DEFEND_REGEN = 15; D.GUARD_RECOVER = 40;
+  // Defend (3.5.3) works like most RPGs: defend, and until your next turn every hit is cut by your Block %.
+  // Block % = your shield's or belt's `block` (no shield: D.GUARD_BARE), lower when it's worn (G.wearF, down to half),
+  // never above D.BLOCK_MAX. Shields also shave their `armor` off every hit, defending or not. Defending never heals.
+  // Rules: B.blockPct and enemyHit in 05b-battle.js.
+  D.GUARD_BARE = 0.35; D.BLOCK_MAX = 0.9;
   // Initiative: the chance a creature strikes first, before your opening move (never in your very first battle; the Druid always does)
   D.AMBUSH = { creature: 0.3, guardian: 0.4, boss: 0.5 };
   // Turn timer (seconds) to pick a move; when it runs out you hesitate and the creature acts. Tougher foes give you less time.
@@ -604,7 +602,7 @@
   D.petSpecial = (p) => p.role === 'attack' ? { id: 'frenzy', name: 'Frenzy', desc: 'Three fast hits in a row.' }
     : p.role === 'shoot' ? { id: 'volley', name: SP_SHOT[p.proj] || 'Volley', desc: 'Three shots that pierce guards.' }
     : p.role === 'heal' ? { id: 'renewal', name: 'Renewal', desc: 'A big heal for you (20%) and itself (40%), and clears poison and burns.' }
-    : { id: 'wall', name: /^rock_/.test(p.id) ? 'Stone Wall' : 'Shield Wall', desc: 'Takes the next 2 hits for you completely.' };
+    : { id: 'rally', name: /^rock_/.test(p.id) ? 'Stone Skin' : 'Rally', desc: 'You take 30% less damage for 3 turns.' };
   // how a pet helps, in a few words (Shop and Inventory cards)
   D.petRoleText = (p) => (p.role === 'attack' ? 'Attacker: only attacks. ' + p.atkVerb + ' the creature after your moves.' : p.role === 'shoot' ? 'Shooter: only attacks. ' + p.atkVerb + ' the creature after your moves.'
     : p.role === 'heal' ? 'Healer: only heals. Restores ' + Math.round(p.heal * 100) + '% of your HP and ' + Math.round(p.heal * 150) + '% of its own each turn.' : 'Guardian: only defends. Takes part of every hit, with a ' + Math.round(p.block * 100) + '% chance to jump in front and take most of it.')
@@ -763,10 +761,10 @@
     B('windboots', 'Wind Boots', 4, 700, { type: 'recharge' }, 'Weapon ready now', 'Your ranged weapon recharges instantly.'),
     B('chalice', 'Chalice of Vigor', 4, 750, { type: 'heal', amount: 0.3 }, '+30% HP', 'Restores 30% of your HP.'),
     B('venom', 'Venom Crystal', 5, 900, { type: 'status', effect: 'poison', turns: 3 }, 'Poison 3 turns', 'Poisons the creature for 3 turns.'),
-    B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill' }, 'Guard to 100%', 'Refills your shield’s Defend gauge to full.'),
-    // shield magic (3.3.14): works on the Defend gauge (your shield's or belt's HP in battle)
-    B('tempered', 'Tempered Ward', 9, 1400, { type: 'harden', turns: 3 }, 'Hard shield, 3 turns', 'Shield only: for 3 turns your shield’s Defend gauge loses only half of each hit it takes, even when worn.'),
-    B('thornwall', 'Thorned Bulwark', 13, 2300, { type: 'spikes', turns: 3, power: 0.6 }, 'Spiked shield, 3 turns', 'For 3 turns, 60% of every hit your shield absorbs is thrown back at the creature.'),
+    B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill', turns: 3 }, 'On guard, 3 turns', 'For 3 turns you stay on guard even while you attack: every hit is blocked as if you had defended.'),
+    // shield magic: makes Defend stronger
+    B('tempered', 'Tempered Ward', 9, 1400, { type: 'harden', turns: 3 }, 'Perfect block, 3 turns', 'For 3 turns, Defend blocks every hit completely.'),
+    B('thornwall', 'Thorned Bulwark', 13, 2300, { type: 'spikes', turns: 3, power: 0.6 }, 'Spiked shield, 3 turns', 'For 3 turns, 60% of every hit you block is thrown back at the creature.'),
     B('stoneskin', 'Stoneskin Rune', 7, 1100, { type: 'guard', turns: 4, factor: 0.65 }, '−35% damage, 4 turns', 'You take 35% less damage for 4 turns.'),
     B('holyrelic', 'Holy Relic', 8, 1250, { type: 'cleanse', amount: 0.15 }, 'Cure + 15% HP', 'Cures poison, burn, weakness and stun, and restores 15% HP.'),
     B('stormorb', 'Storm Orb', 8, 1350, { type: 'blast', power: 0.15 }, '15% of its HP', 'A lightning blast for 15% of the creature’s max HP. Ignores guards.'),
@@ -808,8 +806,8 @@
     C('might', 'Ring of Might', 12, 3000, 'dmg', '+8% damage', 'All your attacks do 8% more damage.'),
     C('alchemist', 'Alchemist’s Orb', 13, 2600, 'potions', 'Potions +25%', 'Healing potions and food heal 25% more.'),
     C('warding', 'Ring of Warding', 14, 3200, 'armor', '−8% damage taken', 'You take 8% less damage from every hit.'),
-    C('bulwark', 'Bulwark Sigil', 15, 3000, 'guard', 'Guard refills faster', 'Your shield’s Defend gauge refills 25% a turn instead of 15%.'),
-    C('tower', 'Tower Sigil', 11, 2400, 'guardmax', '+30% Defend gauge', 'Your shield’s or belt’s Defend gauge is 30% bigger in every battle.'),
+    C('bulwark', 'Bulwark Sigil', 15, 3000, 'guard', 'Riposte after Defend', 'After you defend, your next attack does 30% more damage.'),
+    C('tower', 'Tower Sigil', 11, 2400, 'guardmax', '+10% block', 'You block 10% more of every hit when you defend, in every battle.'),
     C('archat', 'Arcane Hat', 16, 3500, 'charge', 'Special charges +30%', 'Your special attack gauge fills 30% faster.'),
     C('soulgem', 'Soul Gem', 18, 3800, 'firsthit', 'First hit halved', 'The first hit you take in each battle does half damage.'),
     C('druidtoken', 'Druid’s Token', 19, 3600, 'druid', 'Druid pays +30%', 'The Druid’s Knowledge Challenge pays 30% more XP and coins.'),
@@ -939,25 +937,25 @@
       { fx: shape + '_' + pal, boom: 'boom_' + pal, hits: shape === 'wave' ? 2 : 1, pierce: shape === 'javelin', chance: eff === 'freeze' ? 0.5 : 1 }));
     si++;
   }
-  // ---- shields: armor = share of every hit you shrug off; block = size of the Defend gauge, as a share of your max HP
+  // ---- shields: armor = share of every hit you shrug off; block = share of a hit you block when you defend
   D.WEAPONS.push(
-    SH('sh_buckler', 'Round Buckler', 0.05, 0.65, {}, 'Defend gauge holds 65% of your HP. 5% armor.', { cost: 200, level: 2 }),
-    SH('sh_heater', 'Heater Shield', 0.08, 0.7, {}, 'Defend gauge holds 70% of your HP. 8% armor.', { cost: 600, level: 6 }),
-    SH('sh_spiked', 'Spiked Targe', 0.08, 0.7, { counter: 0.6 }, 'Hits back for 60% of your attack whenever you defend against a hit.', { cost: 1100, level: 11 }),
-    SH('sh_steel', 'Steel Heart', 0.12, 0.75, {}, 'Defend gauge holds 75% of your HP. 12% armor.', { cost: 1600, level: 16 }),
-    SH('sh_mirror', 'Mirror Buckler', 0.08, 0.7, { reflect: 0.5 }, 'Reverses 50% of what it absorbs back at the attacker.', { cost: 2200, level: 21 }),
-    SH('sh_crystal', 'Crystal Kite', 0.1, 0.75, { regen: 0.12 }, 'Defending restores 12% HP instead of 6%.', { cost: 2800, level: 26 }),
-    SH('sh_ruby', 'Ruby Crest', 0.14, 0.8, {}, 'Defend gauge holds 80% of your HP. 14% armor.', { cost: 3400, level: 31 }),
-    SH('sh_gilded', 'Gilded Kite', 0.15, 0.8, { reflect: 0.35, counter: 0.4 }, 'Gauge 80% of your HP, reverses 35% and hits back.', { cost: 4200, level: 38 }),
-    SH('sh_gold', 'Aegis of Kings', 0.2, 0.85, { reflect: 0.5, regen: 0.1, legendary: true }, 'Legendary. 20% armor, gauge 85% of your HP, reverses half and heals.', { bosses: 16 }),
-    SH('sh_last', 'Aegis of the Last Road', 0.24, 0.88, { reflect: 0.4, counter: 0.5, regen: 0.1 }, '24% armor, gauge 88% of your HP, reverses 40%, hits back and refills its gauge when you defend.', { cost: 30000, level: 79 }),
+    SH('sh_buckler', 'Round Buckler', 0.05, 0.65, {}, 'Blocks 65% of a hit when you defend. 5% armor.', { cost: 200, level: 2 }),
+    SH('sh_heater', 'Heater Shield', 0.08, 0.7, {}, 'Blocks 70% of a hit when you defend. 8% armor.', { cost: 600, level: 6 }),
+    SH('sh_spiked', 'Spiked Targe', 0.08, 0.7, { counter: 0.6 }, 'Blocks 70% when you defend, and hits back for 60% of your attack.', { cost: 1100, level: 11 }),
+    SH('sh_steel', 'Steel Heart', 0.12, 0.75, {}, 'Blocks 75% of a hit when you defend. 12% armor.', { cost: 1600, level: 16 }),
+    SH('sh_mirror', 'Mirror Buckler', 0.08, 0.7, { reflect: 0.5 }, 'Blocks 70% when you defend, and reverses half of what it blocks back at the attacker.', { cost: 2200, level: 21 }),
+    SH('sh_crystal', 'Crystal Kite', 0.1, 0.75, { regen: 0.12 }, 'Blocks 87% when you defend (a crystal edge catches more).', { cost: 2800, level: 26 }),
+    SH('sh_ruby', 'Ruby Crest', 0.14, 0.8, {}, 'Blocks 80% of a hit when you defend. 14% armor.', { cost: 3400, level: 31 }),
+    SH('sh_gilded', 'Gilded Kite', 0.15, 0.8, { reflect: 0.35, counter: 0.4 }, 'Blocks 80% when you defend, reverses 35% and hits back.', { cost: 4200, level: 38 }),
+    SH('sh_gold', 'Aegis of Kings', 0.2, 0.85, { reflect: 0.5, regen: 0.1, legendary: true }, 'Legendary. 20% armor, blocks 90% when you defend and reverses half.', { bosses: 16 }),
+    SH('sh_last', 'Aegis of the Last Road', 0.24, 0.88, { reflect: 0.4, counter: 0.5, regen: 0.1 }, '24% armor, blocks 90% when you defend, reverses 40% and hits back.', { cost: 30000, level: 79 }),
   );
   // ---- belts (CraftPix belt icons): shields you wear at the waist. They are ordinary shields in the Defense
-  // slot (you wear one at a time), but trade gauge for armor: a belt shaves a bit more off EVERY hit, and
-  // its Defend gauge is a bit smaller than a shield's. 45 are bought one per level (1-45); 3 are legendary.
+  // slot (you wear one at a time), but trade block for armor: a belt shaves a bit more off EVERY hit, and
+  // blocks a bit less than a shield when you defend. 45 are bought one per level (1-45); 3 are legendary.
   const pc = (v) => Math.round(v * 100) + '%';
   const beltDesc = (flavor, x) => [flavor, x.reflect && 'Reverses ' + pc(x.reflect) + ' of what it absorbs back at the attacker.',
-    x.counter && 'Hits back for ' + pc(x.counter) + ' of your attack whenever you defend against a hit.', x.regen && 'Each Defend refills ' + pc(x.regen) + ' of its gauge.'].filter(Boolean).join(' ');
+    x.counter && 'Hits back for ' + pc(x.counter) + ' of your attack whenever you defend against a hit.', x.regen && 'Blocks ' + pc(x.regen) + ' more when you defend.'].filter(Boolean).join(' ');
   const BELT = (id, name, armor, block, extra, flavor, req) => ({ id, name, slot: 'shield', type: 'shield', belt: true, armor, block, ...extra, desc: beltDesc(flavor, extra), req, icon: 'wi/' + id + '.png' });
   [
     ['bt_leather', 'Leather Belt', 'Plain cowhide with a brass buckle.'],
@@ -1024,10 +1022,10 @@
     { id: 'elixir', name: 'Grand Elixir', kind: 'heal', amount: 0.8, cost: 180, pal: 'cyan', desc: 'Restores 80% of your HP.', req: { level: 4 }, base: true },
     // brewed specials from the item pack
     { id: 'storm', name: 'Storm in a Bottle', kind: 'swift', amount: 0.2, cost: 160, pal: 'cyan', desc: 'Recharges your weapon instantly and restores 20% HP.', req: { level: 8 }, base: true },
-    // shield potions (3.3.14): battle only, they work on the Defend gauge and on the shield itself
-    { id: 'polish', name: 'Shield Polish', kind: 'guardhp', amount: 0.5, cost: 90, pal: 'cyan', desc: 'Shield only: refills half of your shield’s Defend gauge and mends a broken guard so you can defend again. Doesn’t restore your HP.', req: { level: 3 }, base: true, shield: true },
-    { id: 'smithoil', name: 'Smith’s Oil', kind: 'mend', amount: 30, refill: 0.2, cost: 150, pal: 'brass', desc: 'Shield only: repairs your shield or belt by 30% condition (a worn shield loses more gauge per hit) and refills 20% of its gauge. Doesn’t restore your HP.', req: { level: 6 }, base: true, shield: true },
-    { id: 'bulwarkbrew', name: 'Bulwark Brew', kind: 'guardup', amount: 0.5, cost: 240, pal: 'ash', desc: 'Shield only: for the rest of the battle your Defend gauge is 50% bigger, and the extra starts full. Doesn’t restore your HP.', req: { level: 12 }, base: true, shield: true },
+    // shield potions (3.5.3): battle only, they make Defend stronger or repair the shield. They never restore HP.
+    { id: 'polish', name: 'Shield Polish', kind: 'blockup', amount: 0.1, cost: 90, pal: 'cyan', desc: 'Shield only: you block 10% more when you defend, for the rest of the battle. Doesn’t restore your HP.', req: { level: 3 }, base: true, shield: true },
+    { id: 'smithoil', name: 'Smith’s Oil', kind: 'mend', amount: 30, cost: 150, pal: 'brass', desc: 'Shield only: repairs your shield or belt by 30% condition, so it blocks as well as new again. Doesn’t restore your HP.', req: { level: 6 }, base: true, shield: true },
+    { id: 'bulwarkbrew', name: 'Bulwark Brew', kind: 'blockup', amount: 0.2, cost: 240, pal: 'ash', desc: 'Shield only: you block 20% more when you defend, for the rest of the battle. Doesn’t restore your HP.', req: { level: 12 }, base: true, shield: true },
     { id: 'cell', name: 'Ward Cell', kind: 'guard', turns: 4, factor: 0.4, cost: 210, pal: 'ash', desc: 'Cuts the damage you take by 60% for 4 turns.', req: { level: 10 }, base: true },
     { id: 'eye', name: 'Shadow Eye', kind: 'blast', power: 0.2, cost: 230, pal: 'violet', desc: 'Bursts for 20% of the enemy’s max HP.', req: { level: 12 }, base: true },
     { id: 'sundrop', name: 'Sundrop', kind: 'heal', amount: 1, cost: 320, pal: 'brass', desc: 'Restores all of your HP.', req: { level: 15 }, base: true },
@@ -1226,7 +1224,9 @@
   D.EGG_LINES = ['Something glints in a nest beside the path.', 'An egg sits all alone in the grass, still warm.', 'Half-buried in leaves: an egg with a strange shell.', 'A bird circles overhead and drops something shiny.', 'There’s an egg wedged between two stones.'];
   D.BATTLE_LEVEL = 3;    // creatures, battles, guardians and the Druid only appear from this level
   D.FIGHT_CHANCE = 0.4;
-  D.RIVAL_CHANCE = 0.08;   // a fighting creature is Redhood Rival 8% of the time, in any world
+  D.RIVAL_CHANCE = 0.22;   // 3.5.3: a fighting creature is Redhood Rival 22% of the time, in any world (was 8%)
+  D.RIVAL_PITY = 7;        // ...and she always turns up if 7 fights have gone by without her
+  D.RIVAL_REMATCH = 0.25;  // a world Rematch is her a quarter of the time
   // mobs: from level D.MOB_LEVEL a fight can be 2–3 creatures. The ones behind the front are weaker and attack 60% of rounds.
   D.MOB_MAX = 3; D.MOB_LEVEL = 6; D.MOB_CHANCE = 0.18; D.MOB_HP = 0.6; D.MOB_ATK = 0.55; D.MOB_ACT = 0.6;
   // Redhood Rival's battle talk: her travels, and how you don't walk as much as she does.

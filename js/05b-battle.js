@@ -29,7 +29,7 @@
     B.st = {
       enc, world: w, turn: 1, over: false, result: null,
       hero: { hp: Math.max(1, s.hp), max: G.maxHp(), atk: D.heroAtk(s.level), def: D.heroDef(s.level), lvl: s.level, guard: 0, guardF: 0.5, fury: 0, furyMult: 1.5, defend: false, reflect: false, poison: 0, venom: 0, burn: 0, weak: 0, stun: 0,
-        clone: 0, tome: 0, twice: 0, dodge: 0, guardHp: 0, guardMax: 0, guardUp: 1, harden: 0, spikes: 0, spikeF: 0, defended: false },
+        clone: 0, tome: 0, twice: 0, dodge: 0, blockUp: 0, harden: 0, spikes: 0, spikeF: 0, autoGuard: 0, riposte: false, defended: false },
       pet: pdef ? { id: pdef.id, name: pdef.name, hp: G.petHp(pdef.id), max: G.petMax(pdef.id), share: pdef.share + (G.perk('pet') ? 0.1 : 0), atk: pdef.atk || 0, verb: pdef.atkVerb,
         role: pdef.role || 'guard', heal: pdef.heal || 0, healVerb: pdef.healVerb || '', block: pdef.block || 0, proj: pdef.proj || null, charge: 0, wall: 0, sp: D.petSpecial(pdef) } : null,   // pet roles: D.PET_ROLES
       enemy: { id: enc.creature, sprite: enc.creature, name: D.CREATURES[enc.creature].name, boss: !!enc.boss, nemesis: !!enc.nemesis, rival: !!D.CREATURES[enc.creature].rival, ability: bd ? bd.ability : null, said: {}, wardF: bd && bd.ability === 'ward' ? 0.45 : 0.3, hp: cs.hp, max: cs.hp, atk: cs.atk, lvl: cs.lvl,
@@ -50,7 +50,6 @@
         moves: D.CREATURE_MOVES[id] || D.CREATURE_MOVES.hyena });
     }
     enc.mobN = B.st.foes.length;
-    B.st.hero.guardMax = B.st.hero.guardHp = B.guardMax(B.st.shield, B.st.hero.max, B.st);   // every battle starts with a full Defend gauge
     // initiative: some creatures strike before your opening move (never in your very first battle)
     const e0 = B.st.enemy, A = D.AMBUSH;
     B.st.ambush = s.enc.battles > 0 && (Math.random() < (e0.nemesis || e0.rival ? A.boss : e0.boss ? A.guardian : A.creature));
@@ -59,9 +58,16 @@
   };
 
   // seconds you get to pick a move (the battle screen runs the clock)
-  // ---------- the Defend gauge: your shield's (or belt's) own HP for this battle (D.GUARD_BARE etc. in 02-data.js) ----------
-  B.guardMax = (sh, maxHp, st) => Math.max(1, Math.round(maxHp * (sh ? sh.block : D.GUARD_BARE) * (st && st.perks && st.perks.has('guardmax') ? 1.3 : 1) * ((st && st.hero.guardUp) || 1)));   // Tower Sigil +30%, Bulwark Brew +50%
-  B.canDefend = (st) => { const h = st.hero; if (h.guardBroken && h.guardHp >= h.guardMax * D.GUARD_RECOVER / 100) h.guardBroken = false; return !h.guardBroken && h.guardHp > 0; };
+  // ---------- Defend (3.5.3): the classic RPG block. Defend, and until your next turn every hit is cut by your Block %:
+  // the shield's (or belt's) `block` (no shield: D.GUARD_BARE), less when it's worn (G.wearF), plus Tower Sigil +10% and
+  // Shield Polish / Bulwark Brew for the rest of the battle, never more than D.BLOCK_MAX. Tempered Ward: blocks everything.
+  B.blockPct = (st) => {
+    const h = st.hero, sh = st.shield;
+    if (h.harden > 0) return 1;
+    const base = sh ? (sh.block + (sh.regen || 0)) * G.wearF(sh.id) : D.GUARD_BARE;
+    return Math.min(D.BLOCK_MAX, base + (st.perks && st.perks.has('guardmax') ? 0.1 : 0) + (h.blockUp || 0));
+  };
+  B.canDefend = () => true;   // there's nothing to break any more: you can always defend
   const guardName = (st) => (st.shield ? (st.shield.belt ? 'belt' : 'shield') : 'guard');
   B.turnTime = () => { const e = B.st.enemy, T = D.TURN_TIME; return e.nemesis || e.rival ? T.boss : e.boss ? T.guardian : T.creature; };
 
@@ -132,8 +138,9 @@
     const st = B.st, events = [];
     if (!st || st.over) return events;
     const h = st.hero, e = st.enemy;
-    const P = st.perks, mult = (h.fury > 0 ? h.furyMult : 1) * (h.weak > 0 ? 0.7 : 1) * (P.has('dmg') ? 1.08 : 1) * (P.has('apex') ? 1.12 : 1) * (P.has('hunter') && (e.boss || e.nemesis) ? 1.15 : 1);
+    const P = st.perks, rip = h.riposte && (move === 'strike' || move === 'throw' || move === 'special'), mult = (rip ? 1.3 : 1) * (h.fury > 0 ? h.furyMult : 1) * (h.weak > 0 ? 0.7 : 1) * (P.has('dmg') ? 1.08 : 1) * (P.has('apex') ? 1.12 : 1) * (P.has('hunter') && (e.boss || e.nemesis) ? 1.15 : 1);
 
+    if (rip) h.riposte = false;   // Bulwark Sigil: the attack right after a Defend
     if (move === 'magic') {   // a magic item: instant, it doesn't use your turn (each once per battle, one per turn)
       const [id, mode] = String(arg).split('/'), m = D.magicById[id];
       if (!m || !st.magic.includes(id) || st.mused[id] || st.magicTurn === st.turn) return events;
@@ -155,9 +162,9 @@
         case 'valor': h.fury = fx.turns + 1; h.furyMult = 1.25; h.guard = fx.turns; h.guardF = 0.75; ev.text = nm + 'for ' + fx.turns + ' turns you hit 25% harder and take 25% less.'; break;
         case 'dragon': healBy(fx.amount); h.fury = fx.turns + 1; h.furyMult = fx.mult; ev.text = nm + '+' + ev.heal + ' HP, and your attacks do ' + pct(fx.mult - 1) + ' more for ' + fx.turns + ' turns.'; break;
         case 'recharge': st.cooldown = 0; ev.text = nm + 'your ' + st.weapon.name + ' is ready.'; break;
-        case 'harden': h.harden = fx.turns + 1; ev.text = nm + 'for ' + fx.turns + ' turns your ' + guardName(B.st) + ' catches every hit in full and its gauge loses only half.'; break;
-        case 'spikes': h.spikes = fx.turns + 1; h.spikeF = fx.power; ev.text = nm + 'for ' + fx.turns + ' turns, ' + pct(fx.power) + ' of what your ' + guardName(B.st) + ' absorbs is thrown back.'; break;
-        case 'guardfill': h.guardHp = h.guardMax; h.guardBroken = false; ev.text = nm + 'your ' + guardName(B.st) + ' is back to full (' + h.guardMax + ').'; break;
+        case 'harden': h.harden = fx.turns + 1; ev.text = nm + 'for ' + fx.turns + ' turns, Defend blocks every hit completely.'; break;
+        case 'spikes': h.spikes = fx.turns + 1; h.spikeF = fx.power; ev.text = nm + 'for ' + fx.turns + ' turns, ' + pct(fx.power) + ' of what your ' + guardName(B.st) + ' blocks is thrown back.'; break;
+        case 'guardfill': h.autoGuard = fx.turns + 1; ev.text = nm + 'for ' + fx.turns + ' turns you stay on guard even while you attack: every hit is blocked as if you defended.'; break;
         case 'special': st.special.charge = 100; ev.text = nm + st.special.name + ' is ready!'; break;
         case 'cleanse': h.poison = h.venom = h.burn = h.weak = h.stun = 0; healBy(fx.amount); ev.text = nm + 'you’re cleansed of every ailment' + (ev.heal ? ' and recover ' + ev.heal + ' HP.' : '.'); break;
         case 'reflect': h.reflect = true; ev.text = nm + 'the next hit you take is half thrown back.'; break;
@@ -268,16 +275,12 @@
       }
       events.push(ev);
     } else if (move === 'defend') {
-      if (!B.canDefend(st)) return events;   // guard broken: it recovers on turns you don't defend
-      h.guardHp = Math.max(0, h.guardHp - Math.round(h.guardMax * D.DEFEND_UPKEEP / 100)); h.defended = true;
-      h.defend = true;
-      // 3.5.0: defending never heals you. It raises your shield, and the shield takes every hit this turn.
-      // (The Aegis of the Last Road's `regen` refills its gauge instead.)
-      const sh = st.shield, g0 = h.guardHp;
-      if (sh && sh.regen) h.guardHp = Math.min(h.guardMax, h.guardHp + Math.round(h.guardMax * sh.regen));
-      const dev = { who: 'hero', type: 'defend', guardGain: h.guardHp - g0 };
+      // raise your shield: until your next turn every hit is cut by your Block %. Defending never heals you.
+      h.defend = true; h.defended = true;
+      const sh = st.shield, dev = { who: 'hero', type: 'defend', block: Math.round(B.blockPct(st) * 100) };
       if (sh) wearOut(st, sh, 'defend', dev);
-      dev.text = (sh ? (sh.belt ? 'You cinch the ' + sh.name + ' tight.' : 'You raise the ' + sh.name + '.') : 'You brace yourself.') + ' It takes every hit this turn.' + (dev.guardGain ? ' Gauge +' + dev.guardGain + '.' : '') + (dev.worn ? ' ' + dev.worn : '');
+      if (P.has('guard')) h.riposte = true;   // Bulwark Sigil: your next attack hits 30% harder
+      dev.text = (sh ? (sh.belt ? 'You cinch the ' + sh.name + ' tight.' : 'You raise the ' + sh.name + '.') : 'You brace yourself.') + ' Blocking ' + dev.block + '% of every hit until your next turn.' + (P.has('guard') ? ' Your next attack will hit 30% harder.' : '') + (dev.worn ? ' ' + dev.worn : '');
       events.push(dev);
     } else if (move === 'potion') {
       const onPet = /\/pet$/.test(arg || ''); if (onPet) arg = arg.slice(0, -4);
@@ -294,13 +297,12 @@
       const ev = { who: 'hero', type: 'potion', potion: arg, left: s.potions[arg] };
       if (p.kind === 'heal') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * p.amount)); ev.heal = h.hp - b0; ev.text = p.name + ': +' + ev.heal + ' HP.'; if (p.guardTurns) { h.guard = p.guardTurns; h.guardF = p.guardF || 0.5; ev.text += ' Damage taken halved for ' + p.guardTurns + ' turns.'; } }
       if (p.kind === 'guard') { h.guard = p.turns; h.guardF = p.factor || 0.5; ev.text = p.name + ': damage taken cut by ' + pct(1 - h.guardF) + ' for ' + p.turns + ' turns.'; }
-      // shield potions (3.3.14): the Defend gauge and the shield itself
-      if (p.kind === 'guardhp') { const b0 = h.guardHp; h.guardHp = Math.min(h.guardMax, h.guardHp + Math.round(h.guardMax * p.amount)); h.guardBroken = false; ev.guardGain = h.guardHp - b0; ev.text = p.name + ': your ' + guardName(st) + ' gauge +' + ev.guardGain + ' (' + h.guardHp + '/' + h.guardMax + ').'; }
-      if (p.kind === 'guardup') { const add = Math.round(h.guardMax * p.amount); h.guardUp = (h.guardUp || 1) * (1 + p.amount); h.guardMax += add; h.guardHp += add; h.guardBroken = false; ev.guardGain = add; ev.text = p.name + ': your ' + guardName(st) + ' gauge grows by ' + add + ' (' + h.guardHp + '/' + h.guardMax + ').'; }
+      // shield potions (3.5.3): a stronger Defend for the rest of the battle, or a repaired shield. They never touch HP.
+      if (p.kind === 'blockup') { h.blockUp = (h.blockUp || 0) + p.amount; ev.blockGain = Math.round(p.amount * 100); ev.text = p.name + ': you block ' + pct(p.amount) + ' more when you defend, for the rest of this battle (now ' + Math.round(B.blockPct(st) * 100) + '%).'; }
       if (p.kind === 'mend') {
-        const sh = st.shield, b0 = h.guardHp; h.guardHp = Math.min(h.guardMax, h.guardHp + Math.round(h.guardMax * (p.refill || 0))); h.guardBroken = false; ev.guardGain = h.guardHp - b0;
-        if (sh) { const c0 = G.cond(sh.id); G.stock().wear[sh.id] = Math.min(100, c0 + p.amount); ev.text = p.name + ': your ' + sh.name + ' is back to ' + Math.round(G.cond(sh.id)) + '% condition, gauge +' + ev.guardGain + '.'; }
-        else ev.text = p.name + ': no shield to oil, but your guard firms up (+' + ev.guardGain + ').';
+        const sh = st.shield; ev.blockGain = 0;
+        if (sh) { const c0 = G.cond(sh.id); G.stock().wear[sh.id] = Math.min(100, c0 + p.amount); ev.blockGain = 1; ev.text = p.name + ': your ' + sh.name + ' is back to ' + Math.round(G.cond(sh.id)) + '% condition. Block ' + Math.round(B.blockPct(st) * 100) + '%.'; }
+        else ev.text = p.name + ': you have no shield or belt to oil.';
       }
       if (p.kind === 'fury') { h.fury = p.turns + 1; h.furyMult = p.mult || 1.5; ev.text = p.name + ': +' + pct(h.furyMult - 1) + ' damage for ' + p.turns + ' turns.'; }
       if (p.kind === 'swift') { st.cooldown = 0; const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * (p.amount || 0.1))); ev.heal = h.hp - b0; ev.text = p.name + ': your weapon is ready again' + (ev.heal ? ' (+' + ev.heal + ' HP).' : '.'); }
@@ -319,8 +321,8 @@
     if (pet && pet.hp > 0 && e.hp > 0 && ['strike', 'throw', 'special', 'defend', 'potion'].includes(move)) {
       pet.charge = Math.min(D.PET_SP_EVERY, pet.charge + 1);
       const hurt = (h.hp > 0 && h.hp < h.max) || pet.hp < pet.max;
-      // its special, when charged (a healer waits until someone is hurt, a guardian until its last wall is used)
-      if (pet.charge >= D.PET_SP_EVERY && (pet.role !== 'heal' || hurt) && (pet.role !== 'guard' || !pet.wall)) {
+      // its special, when charged (a healer waits until someone is hurt)
+      if (pet.charge >= D.PET_SP_EVERY && (pet.role !== 'heal' || hurt)) {
         pet.charge = 0; petSpecial(st, events);
       } else if ((pet.role === 'attack' || pet.role === 'shoot') && pet.atk) {
         const ev = { who: 'pet', type: pet.role === 'shoot' ? 'petShot' : 'petAttack', proj: pet.proj }; strikeEnemy(st, hit(h.atk * pet.atk), ev, pet.role === 'shoot' && pet.proj === 'orb');   // magic orbs pierce guards
@@ -404,7 +406,7 @@
     if (h.fury > 0) h.fury--;
     if (h.harden > 0) h.harden--;
     if (h.spikes > 0) h.spikes--;
-    if (!h.defended) h.guardHp = Math.min(h.guardMax, h.guardHp + Math.round(h.guardMax * (P.has('guard') ? 25 : D.DEFEND_REGEN) / 100));
+    if (h.autoGuard > 0) h.autoGuard--;
     if (P.has('regen') && h.hp > 0 && h.hp < h.max) { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.max(1, Math.round(h.max * 0.03))); events.push({ who: 'hero', type: 'regen', heal: h.hp - b0, text: 'Pendant of Renewal: +' + (h.hp - b0) + ' HP.' }); }
     h.defend = false; h.defended = false;
     if (st.cooldown > 0) st.cooldown--;
@@ -468,9 +470,9 @@
       const cleared = !!(h.poison > 0 || h.burn > 0 || h.venom > 0); h.poison = 0; h.burn = 0; h.venom = 0;
       ev.heal = h.hp - b0; ev.selfHeal = pet.hp - p0; ev.cleansed = cleared;
       ev.text = pet.name + ' uses Renewal! You +' + ev.heal + ' HP, ' + pet.name + ' +' + ev.selfHeal + ' HP.' + (cleared ? ' Poison and burns are gone.' : '');
-    } else {
-      pet.wall = 2;
-      ev.text = pet.name + ' uses ' + sp.name + '! It will take the next 2 hits for you.';
+    } else {   // a guardian rallies you: 30% less damage for 3 turns
+      h.guardF = h.guard > 0 ? Math.min(h.guardF, 0.7) : 0.7; h.guard = Math.max(h.guard, 3);
+      ev.text = pet.name + ' uses ' + sp.name + '! You take 30% less damage for 3 turns.';
     }
     events.push(ev);
   }
@@ -496,32 +498,22 @@
     if (st.perks.has('apex')) dmg *= 0.88;   // Crown of the Long Walk
     if (st.perks.has('firsthit') && !st.firstHit) { st.firstHit = true; dmg *= 0.5; ev.soul = true; }
     dmg = hit(Math.max(1, dmg));
-    // defending (3.5.0): the shield takes the WHOLE hit and you take none of it, ever. The hit comes off the shield's own HP
-    // (the Defend gauge): a worn shield (or bare hands) loses more of its gauge per hit, a quake costs it 1.5×, and the
-    // Tempered Ward halves the cost. A hit bigger than what's left breaks the guard, but the shield still took it.
-    if (h.defend && h.guardHp > 0) {
-      const mult = (h.harden > 0 ? 0.5 : 1) * (quake ? 1.5 : 1) / (h.harden > 0 ? 1 : sh ? shF : D.GUARD_BARE_ABSORB);
-      const soak = dmg;
-      h.guardHp = Math.max(0, h.guardHp - Math.ceil(soak * mult)); dmg = 0; ev.blocked = true; ev.soak = soak;
+    // defending (3.5.3): your Block % comes off the hit (a quake is harder to block: half as much), the rest reaches you
+    if (h.defend || h.autoGuard > 0) {
+      const bp = B.blockPct(st) * (quake && h.harden <= 0 ? 0.5 : 1), soak = Math.min(dmg, Math.round(dmg * bp));
+      dmg -= soak; ev.blocked = true; ev.soak = soak; ev.blockPct = Math.round(bp * 100);
       if (h.spikes > 0 && soak > 0) { const back = Math.max(1, Math.round(soak * h.spikeF)); e.hp = Math.max(0, e.hp - back); ev.spiked = back; }   // Thorned Bulwark
-      if (h.guardHp <= 0) { ev.guardBroke = true; h.guardBroken = true; }
       if (sh && soak > 0) wearOut(st, sh, 'block', ev);   // taking a hit for you wears it a little more
       if (sh && sh.reflect && soak > 0) { const back = Math.max(1, Math.round(soak * sh.reflect)); e.hp = Math.max(0, e.hp - back); ev.reversed = back; }
       if (sh && sh.counter) { const c = hit(h.atk * sh.counter); e.hp = Math.max(0, e.hp - c); ev.countered = c; }
     }
     if (h.reflect) { const back = Math.round(dmg / 2); dmg -= back; e.hp = Math.max(0, e.hp - back); h.reflect = false; ev.mirrored = back; }
-    // pets (3.5.0): only guardians take hits for you. Shield Wall / Stone Wall: the guardian takes the whole hit (half of it hurts).
-    if (pet && pet.hp > 0 && pet.role === 'guard' && dmg > 0) {
-      if (pet.wall > 0) {
-        pet.wall--; ev.petGuard = true; ev.petWall = true;
-        const take = Math.min(pet.hp, Math.max(1, Math.round(dmg * 0.5))); pet.hp -= take; ev.pet = take; dmg = 0;
-        if (pet.hp <= 0) { ev.petKO = true; pet.fell = true; pet.wall = 0; }
-      } else if (dmg > 1) {
-        const guard = Math.random() < pet.block;   // a guardian jumps in front and takes most of the hit
-        if (guard) ev.petGuard = true;
-        const take = Math.min(pet.hp, Math.round(dmg * (guard ? Math.max(0.7, pet.share) : pet.share)));
-        if (take > 0) { pet.hp -= take; dmg -= take; ev.pet = take; if (pet.hp <= 0) { ev.petKO = true; pet.fell = true; } }
-      }
+    // pets (3.5.0): only guardians take hits for you
+    if (pet && pet.hp > 0 && pet.role === 'guard' && dmg > 1) {
+      const guard = Math.random() < pet.block;   // a guardian jumps in front and takes most of the hit
+      if (guard) ev.petGuard = true;
+      const take = Math.min(pet.hp, Math.round(dmg * (guard ? Math.max(0.7, pet.share) : pet.share)));
+      if (take > 0) { pet.hp -= take; dmg -= take; ev.pet = take; if (pet.hp <= 0) { ev.petKO = true; pet.fell = true; } }
     }
     h.hp = Math.max(0, h.hp - dmg);
     ev.dmg = dmg;
@@ -530,8 +522,7 @@
     const lead = kind === 'special' ? (ev.combo ? ev.name + ' hits again.' : e.name + ' unleashes ' + ev.name + '!')
       : kind === 'magic' ? e.name + ' uses ' + ev.name + '.' : e.name + ' attacks.';
     const gn = guardName(st), took = !ev.blocked ? ' You take ' + dmg + ' damage.'
-      : ' ' + (sh ? 'Your ' + sh.name : 'Your guard') + ' takes all ' + ev.soak + (quake ? ' (the quake hits it hard)' : '') + '. You take nothing.' +
-        (ev.guardBroke ? ' Your ' + gn + ' gives way! No Defend until it refills to ' + D.GUARD_RECOVER + '%.' : ' ' + gn[0].toUpperCase() + gn.slice(1) + ' ' + h.guardHp + '/' + h.guardMax + '.');
+      : ' ' + (sh ? 'Your ' + sh.name : 'You') + ' block' + (sh ? 's ' : ' ') + ev.soak + ' (' + ev.blockPct + '%)' + (quake ? ', the quake is hard to block' : '') + (dmg > 0 ? ' and you take ' + dmg + '.' : '. You take nothing.');
     ev.text = lead + took +
       (ev.pet ? ' ' + pet.name + (ev.petGuard ? ' jumps in front and takes ' : ' takes ') + ev.pet + (ev.petKO ? ' and is knocked out!' : '.') : '') +
       (ev.reversed ? ' Your ' + (sh && sh.belt ? 'belt' : 'shield') + ' reverses ' + ev.reversed + ' back at it!' : '') + (ev.countered ? ' Spikes hit back for ' + ev.countered + '.' : '') + (ev.spiked ? ' Thorns on your ' + gn + ' throw back ' + ev.spiked + '.' : '') +
@@ -609,8 +600,7 @@
       st.cds[st.weapon.id] = st.cooldown; st.weapon = w; st.cooldown = st.cds[id] || 0;
     } else if (slot === 'shield') {
       if (st.shield && st.shield.id === id) return null;
-      const h = st.hero, f = h.guardMax ? h.guardHp / h.guardMax : 1;   // a fresh shield comes in as full as the one it replaces
-      st.shield = w; h.guardMax = B.guardMax(w, h.max, st); h.guardHp = Math.round(h.guardMax * f);
+      st.shield = w;
     }
     else return null;
     return w;

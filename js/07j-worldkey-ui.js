@@ -174,6 +174,7 @@
           ${energyBar(w.e)}
           ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: charge it below' : 'Low: charge it below'}</p>` : ''}
           ${WK.gaugeHtml(st ? st.gauge : G.wkGauge())}
+          ${step && step.act === 'tune' ? `<div class="wk-gauge-act"><button class="btn tertiary" type="button" data-wk="tune" data-wid="${dest ? dest.id : ''}"><span class="tl"><span>${esc(step.label)}</span></span></button></div>` : ''}
           <p class="wk-game fine">Tunes with <b>${esc(gm.name)}</b> · ${esc(gm.title)}</p>
           ${dest ? `<dl class="wk-dl">
             <div><dt>Next world</dt><dd>${esc(dest.name)}</dd></div>
@@ -186,7 +187,7 @@
             <div class="bar seg cyan" role="progressbar" aria-label="Progress to ${esc(dest.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
             <p class="fine"><span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Level ${dest.unlock.level}</span>${wp.prev ? ` · <span class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : ''}${G.gatePct(dest)}% of ${esc(wp.prev.name)}</span>` : ''} · ~${WB.fmt(wp.stepsLeft)} steps</p>
           </div>` : ''}
-        <div class="wk-acts">${step ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${dest ? dest.id : ''}">${esc(step.label)}</button>` : ''}<button class="btn ghost sm wk-keys" type="button" data-wk="custom">${WB.icon('key', 2)}Worldkeys</button></div>
+        <div class="wk-acts">${step && step.act !== 'tune' ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${dest ? dest.id : ''}">${step.cls === 'tertiary' ? '<span class="tl"><span>' + esc(step.label) + '</span></span>' : esc(step.label)}</button>` : ''}<button class="btn ghost sm wk-keys" type="button" data-wk="custom">${WB.icon('key', 2)}Worldkeys</button></div>
       </div>
       ${UI.wkFuel()}`;
   };
@@ -245,7 +246,7 @@
         ${st.found ? '' : `<li>${check(false)}<span>Discover</span><b>${esc(G.worldReq(world))}</b></li>`}
       </ul>
       <div class="wk-gate-g">${WK.gaugeHtml(st.gauge, { sm: true })}</div>
-      <div class="row">${step ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${world.id}" data-autofocus>${esc(step.label)}</button>` : ''}<button class="btn ghost" type="button" data-close>Not now</button></div>
+      <div class="row">${step ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${world.id}" data-autofocus>${step.cls === 'tertiary' ? '<span class="tl"><span>' + esc(step.label) + '</span></span>' : esc(step.label)}</button>` : ''}<button class="btn ghost" type="button" data-close>Not now</button></div>
     </div>`, (root) => { const cv = root.querySelector('canvas'); WK.device(cv); });
   };
 

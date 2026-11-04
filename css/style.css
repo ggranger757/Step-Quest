@@ -3845,3 +3845,53 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .wq-pics figcaption, .wq-cap-pics figcaption { font: 400 9px/1.2 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); text-align: center; max-width: 72px; }
 .wq-cap-pics figcaption { max-width: 124px; font-size: 10px; }
 .wq-snap[aria-disabled="true"] { opacity: .7; cursor: progress; }
+
+/* 3.5.4: tertiary links draw their underline under each line of text (a background on the label span, cloned per
+   line), so a label that wraps stays centered and its underlines line up; never under trailing spaces or letter-spacing */
+:root .btn.tertiary, :root[data-theme] .btn.tertiary { text-decoration: none; }
+.btn.tertiary .tl { display: block; width: max-content; max-width: 100%; text-align: center; line-height: 1.85; }   /* a block (it's a flex item) holding... */
+.btn.tertiary .tl > span { --u: color-mix(in srgb, var(--t) 45%, transparent); padding-bottom: 3px;   /* ...the inline label, underlined line by line */
+  background: linear-gradient(var(--u), var(--u)) left bottom / 100% 2px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.btn.tertiary:hover:not([disabled]):not([aria-disabled="true"]) .tl > span { --u: var(--t); }
+
+/* 3.5.5: on the Worldkey card the tune link sits right under the Tuning gauge (the thing it fixes), aligned to its right edge */
+.wk-gauge-act { display: flex; justify-content: flex-end; margin: -2px 0 calc(var(--s3) * -1); }
+.wk-gauge-act .btn.tertiary { min-height: 44px; padding: 0 0 0 var(--s2); justify-content: flex-end; }
+.wk-gauge-act .btn.tertiary .tl { text-align: right; }
+.wk-acts .btn.wk-keys:only-child { flex: 1 1 100%; }
+
+/* ---------- 3.6.0 duels with a walker nearby ---------- */
+.dl-sheet { display: grid; gap: var(--s3); }
+.dl-sheet h3 { margin: 0; }
+.dl-sheet p { margin: 0; }
+.dl-tips { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.dl-tips li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: var(--s2); align-items: start; font-size: 14px; line-height: 1.35; }
+.dl-sheet .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.dl-qr { margin: 0 auto; display: grid; gap: var(--s2); justify-items: center; width: min(100%, 300px); }
+.dl-qr canvas { width: 100%; aspect-ratio: 1; height: auto; background: #fff; image-rendering: pixelated; box-shadow: 0 0 0 3px var(--line-hi), 0 0 0 6px var(--shadow); }
+.dl-qr figcaption { font: 400 12px/1 var(--label); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.dl-text summary { cursor: pointer; font: 400 13px/1.3 var(--label); color: var(--cyan, #59e3ff); padding: 6px 0; min-height: 32px; }
+.dl-text textarea { width: 100%; box-sizing: border-box; font: 12px/1.3 ui-monospace, monospace; background: var(--inset); color: var(--text); border: 0; box-shadow: inset 0 0 0 2px var(--line); padding: var(--s2); resize: vertical; word-break: break-all; margin-bottom: var(--s2); }
+.dl-scan { position: relative; width: min(100%, 320px); margin: 0 auto; aspect-ratio: 1; background: #05040f; overflow: hidden; box-shadow: 0 0 0 3px var(--line-hi), 0 0 0 6px var(--shadow); }
+.dl-scan video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dl-aim { position: absolute; inset: 16%; box-shadow: 0 0 0 2000px rgba(5,4,15,.35); outline: 3px dashed var(--gold); outline-offset: -3px; pointer-events: none; }
+.dl-scan-msg { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--s2); text-align: center; font: 400 13px/1.3 var(--label); color: #fff; background: rgba(5,4,15,.72); }
+.dl-wait { display: flex; align-items: center; justify-content: center; gap: var(--s2); min-height: 22px; font: 400 13px/1.3 var(--label); color: var(--muted); text-align: center; }
+.dl-vs-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s2); align-items: start; }
+.dl-side { display: grid; justify-items: center; gap: 4px; text-align: center; padding: var(--s2); background: var(--surface-2); box-shadow: 0 0 0 2px var(--line), 0 0 0 4px var(--shadow); min-width: 0; }
+.dl-side b { overflow-wrap: anywhere; }
+.dl-side.boss { box-shadow: 0 0 0 2px #ff6b5b, 0 0 0 4px var(--shadow); }
+.dl-side.boss b { color: #ffb3a8; }
+.dl-side canvas { width: 72px; height: 72px; image-rendering: pixelated; background: var(--inset); }
+.dl-vs-x { align-self: center; font: 400 28px/1 'Silkscreen', var(--display); color: #ffd119; text-shadow: 2px 2px 0 #ff8544; }
+.dl-stats { display: grid; grid-template-columns: repeat(3, auto); gap: 2px var(--s2); margin: 4px 0 0; }
+.dl-stats div { display: grid; gap: 2px; }
+.dl-stats dt { font: 400 10px/1 var(--label); text-transform: uppercase; color: var(--muted); }
+.dl-stats dd { margin: 0; font: 400 15px/1 var(--display); }
+#battle.duel .b-actions .defend { grid-column: 1 / -1; }
+.dl-intro { flex-direction: column; }
+.dl-intro .b-title { color: #ff6b5b; }
+.dl-intro-name { display: block; margin-top: var(--s2); font: 400 clamp(16px, 5vw, 24px)/1.1 var(--display); color: #fff; text-shadow: 2px 2px 0 var(--shadow); text-align: center; }
+.b-intro.go .dl-intro-name { animation: b-title 1s both; }
+.dl-intro { align-content: center; }
+#battle.duel .b-banner .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-top: var(--s3); }

@@ -417,7 +417,7 @@
       home() { B.play('app'); },
       play(key, opt = {}) {
         const epic = key === 'battle' && WB.state && WB.state.level >= WB.DATA.EPIC_MUSIC_LEVEL;
-        const t = epic ? TRACKS.battle.concat(TRACKS.battleEpic) : TRACKS[key]; if (!t) return;
+        const t = key === 'duel' ? TRACKS.battleEpic.concat(TRACKS.battle) : epic ? TRACKS.battle.concat(TRACKS.battleEpic) : TRACKS[key]; if (!t) return;
         if (want && want.key === key && el && !el.paused) return;
         const list = Array.isArray(t) ? t : null;
         want = { key, src: list ? pickTrack(list) : t, list, delay: opt.delay || 0 };

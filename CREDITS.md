@@ -85,3 +85,8 @@ Roaming boss sprites supplied by the project owner: Demon Slime (boss_demon_slim
 ## Neon City world
 
 The Neon City parallax world (`assets/bg/neoncity`, rebuilt by `tools/add_neon_city_world.py`) is built from the supplied NeonCity pixel-art skyline: the original towers, sky and rooftops, extended into a long seamless loop with generated filler buildings in the same palette. Its three artifact icons (`art/y1-y3`) are original pixel art drawn for the game.
+
+## Duels nearby: QR codes (3.6.0)
+
+- `js/vendor/qrcode.js`: QR Code Generator for JavaScript by Kazuhiko Arase (kazuhikoarase/qrcode-generator), MIT License. See `js/vendor/LICENSE-qrcode-generator.txt`. "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
+- `js/vendor/jsqr.js`: jsQR by Cosmo Wolfe (cozmo/jsQR), Apache License 2.0. See `js/vendor/LICENSE-jsqr.txt`. Used only where the browser has no built-in barcode reader.

@@ -395,17 +395,16 @@
     const st = WB.Battle.st, h = st.hero, e = st.enemy, p = st.pet;
     const est = [e.poison > 0 && 'Poisoned', e.burn > 0 && 'Burning', e.bleed > 0 && 'Cursed', e.freeze > 0 && 'Frozen', e.stun > 0 && 'Stunned',
       e.drain > 0 && 'Drained', e.weaken > 0 && 'Weakened', e.sunder > 0 && 'Sundered', e.brace && 'Bracing', e.ward && 'Ward up', e.charging && 'Charging!', e.nemesis && e.halved && e.ability === 'enrage' && 'Enraged'].filter(Boolean);
-    const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.harden > 0 && 'Hard shield', h.spikes > 0 && 'Spiked shield', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, !WB.Battle.canDefend(st) && 'Guard broken'].filter(Boolean);
+    const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.harden > 0 && 'Perfect block', h.autoGuard > 0 && 'On guard', h.spikes > 0 && 'Spiked shield', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, !WB.Battle.canDefend(st) && 'Guard broken'].filter(Boolean);
     const plate = (name, lvl, cur, g, max, tags, cls) => `<div class="pl-main"><span class="pl-name">${WB.esc(name)}</span>${bar(cur, g, max, cls)}<div class="pl-bot"><span class="lbl">${lvl}</span><span class="lbl" data-hpn="1">${Math.max(0, Math.round(cur))} / ${max}</span></div></div><span class="lbl tags">${tags.join(' · ')}</span>`;
     $('#b-pe').innerHTML = plate(e.name, `Lv ${e.lvl}${e.boss ? ' · Guardian' : e.nemesis ? ' · Boss' : ''}`, disp.enemy, ghost.enemy, e.max, est, 'ehp');
     const rest = (st.foes || []).filter((f) => f !== e && f.hp > 0);   // the rest of a mob, waiting their turn
     if (rest.length) $('#b-pe').insertAdjacentHTML('beforeend', `<div class="pl-mob" aria-label="${rest.length} more in the mob">${rest.map((f) => `<span class="pm"><span class="lbl">${WB.esc(f.name)}</span>${bar(f.hp, f.hp, f.max, 'ehp thin')}</span>`).join('')}</div>`);
     $('#b-pe').classList.toggle('boss', !!e.nemesis);
-    const gName = st.shield ? (st.shield.belt ? 'Belt' : 'Shield') : 'Guard', gOk = WB.Battle.canDefend(st);
-    const guardRow = `<div class="pl-guard ${gOk ? '' : 'broken'}" aria-label="${gName} ${h.guardHp} of ${h.guardMax}">${WB.icon('shield', 1)}<span class="lbl">${gName}</span>${bar(h.guardHp, h.guardHp, h.guardMax, 'guard thin')}<span class="lbl">${h.guardHp}</span></div>`;
+    const guardRow = '';   // 3.5.3: no Defend gauge; the Defend button shows your Block %
     $('#b-ph').innerHTML = plate(S().name, `Lv ${h.lvl}`, disp.hero, ghost.hero, h.max, hst, 'hp') + guardRow +
       (p ? `<div class="pl-pet ${shown.pet <= 0 ? 'ko' : ''}">${WB.icon('paw', 1)}<span class="lbl">${WB.esc(p.name)}</span>${bar(disp.pet, ghost.pet, p.max, 'hp thin')}<span class="lbl" data-hpn="pet">${shown.pet <= 0 ? 'KO' : Math.round(disp.pet)}</span></div>
-        <div class="pl-psp ${p.charge >= D.PET_SP_EVERY ? 'ready' : ''}" aria-label="${WB.esc(p.sp.name)}: ${p.wall ? p.wall + ' hits left' : p.charge >= D.PET_SP_EVERY ? 'ready' : p.charge + ' of ' + D.PET_SP_EVERY + ' charged'}"><span class="lbl">${WB.esc(p.sp.name)}</span><span class="psp-pips" aria-hidden="true">${Array.from({ length: D.PET_SP_EVERY }, (_, i) => `<i class="${i < p.charge ? 'on' : ''}"></i>`).join('')}</span>${p.wall ? `<span class="lbl psp-wall">Wall ×${p.wall}</span>` : ''}</div>` : '');
+        <div class="pl-psp ${p.charge >= D.PET_SP_EVERY ? 'ready' : ''}" aria-label="${WB.esc(p.sp.name)}: ${p.charge >= D.PET_SP_EVERY ? 'ready' : p.charge + ' of ' + D.PET_SP_EVERY + ' charged'}"><span class="lbl">${WB.esc(p.sp.name)}</span><span class="psp-pips" aria-hidden="true">${Array.from({ length: D.PET_SP_EVERY }, (_, i) => `<i class="${i < p.charge ? 'on' : ''}"></i>`).join('')}</span></div>` : '');
     // both plates are always the same size: the shorter one grows to match the taller one
     const pe = $('#b-pe'), ph = $('#b-ph'); pe.style.minHeight = ph.style.minHeight = '';
     const hgt = Math.max(pe.offsetHeight, ph.offsetHeight); if (hgt) pe.style.minHeight = ph.style.minHeight = hgt + 'px';
@@ -421,7 +420,7 @@
     l.onclick = () => { clearInterval(typeT); l.textContent = text; };
   }
   const clip = (t, n) => { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };   // keeps a name inside its button
-  const potionTag = (p) => (p.kind === 'guardhp' ? 'Gauge +' + Math.round(p.amount * 100) + '%' : p.kind === 'guardup' ? 'Gauge +' + Math.round(p.amount * 100) + '% bigger' : p.kind === 'mend' ? 'Repair +' + p.amount + '%' : p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
+  const potionTag = (p) => (p.kind === 'blockup' ? 'Block +' + Math.round(p.amount * 100) + '%' : p.kind === 'mend' ? 'Repair +' + p.amount + '%' : p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
   function actions(mode = 'main') {
     const st = WB.Battle.st, el = $('#b-actions'), s = S();
     if (!el) return;
@@ -453,11 +452,11 @@
       const wpn = st.weapon, m = st.melee, sh = st.shield, ready = st.cooldown === 0, noAmmo = G.ammo(wpn.id) <= 0, nPot = D.POTIONS.reduce((n, p) => n + (s.potions[p.id] || 0), 0);
       el.className = 'b-actions';
       el.innerHTML = `
+        <button class="btn ghost gear-btn" type="button" data-b="gearmenu">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Gear &amp; Magic</span><small>${st.magic.length ? 'Swap weapons · cast magic' : 'Weapons, bows, shield'}</small></span></button>
         <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(clip(m.name, 16))}</small></span></button>
         <button class="btn" type="button" data-b="throw" ${WB.UI.off(noAmmo ? wpn.name + ' is out. Swap to another ranged weapon in Gear, or strike.' : !ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(clip(wpn.name, 16))} · ${noAmmo ? 'out' : ready ? G.ammo(wpn.id) + ' left' : 'in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
-        <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(!WB.Battle.canDefend(st) && 'Your ' + (sh ? (sh.belt ? 'belt' : 'shield') : 'guard') + ' is broken (' + st.hero.guardHp + '/' + st.hero.guardMax + '). It refills ' + D.DEFEND_REGEN + '% every turn you don’t defend, and works again at ' + D.GUARD_RECOVER + '%.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${(sh ? (sh.belt ? 'Belt ' : 'Shield ') : 'Guard ') + st.hero.guardHp + '/' + st.hero.guardMax}${sh && sh.reflect ? ' · reverse' : ''}${sh && sh.counter ? ' · counter' : ''}<span class="sr-only">. Hits land on it instead of you while you defend.</span></small></span><span class="sp-gauge df-gauge ${!WB.Battle.canDefend(st) || st.hero.guardHp < st.hero.guardMax * 0.3 ? 'low' : ''}" aria-hidden="true"><i style="width:${Math.round(100 * st.hero.guardHp / Math.max(1, st.hero.guardMax))}%"></i></span></button>
+        <button class="btn ghost defend" type="button" data-b="defend">${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>Block ${Math.round(WB.Battle.blockPct(st) * 100)}%${sh && sh.reflect ? ' · reverse' : ''}${sh && sh.counter ? ' · counter' : ''}<span class="sr-only">: until your next turn, every hit is cut by this much.</span></small></span></button>
         <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'No potions. Buy some in the Shop later.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
-        <button class="btn ghost gear-btn" type="button" data-b="gearmenu">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Gear &amp; Magic</span><small>${st.magic.length ? 'Swap weapons · cast magic' : 'Weapons, bows, shield'}</small></span></button>
         ${specialBtn(st)}
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
       const ic = el.querySelector('.wp-ic'); if (ic) WB.UI.paintWeapon(ic, wpn.id);
@@ -639,7 +638,7 @@
         if (ev.selfHeal) { shown.pet = Math.min(st.pet.max, shown.pet + ev.selfHeal); floater(hpText(ev.selfHeal), 'pet', 'heal'); plates(); }
         await sleep(420); return;
       }
-      if (ev.type === 'petSpecial' && ev.sp === 'wall') {   // a guardian plants itself in front of you
+      if (ev.type === 'petSpecial' && ev.sp === 'rally') {   // a guardian rallies you: 30% less damage for 3 turns
         if (ps) ps.flash = 0.5;
         floater(ev.name + '!', 'pet', 'tag'); WB.Sfx.play('shield_block');
         fx.push({ type: 'ring', x: view.px, y: py, color: '#59e3ff', t: 0 }); fx.push({ type: 'ring', x: view.hx, y: hY(), color: '#59e3ff', t: 0 });
@@ -807,13 +806,13 @@
         if (ev.type === 'magic') await enemySpell(false);
         else if (ev.type === 'special' && st.enemy.moves.special[1] !== 'multi' && st.enemy.moves.special[1] !== 'quake') await enemySpell(true);
         else { await sleep(ev.combo ? 200 : 380); if (ev.type === 'special') shake = 1.6; }
-        if (ev.blocked) { fx.push({ type: 'ring', x: view.hx, y: g - 30, color: '#59e3ff', t: 0 }); floater(ev.guardBroke ? 'Guard broken!' : (st.shield ? (st.shield.belt ? 'Belt ' : 'Shield ') : 'Guard ') + '−' + ev.soak, 'hero', 'tag'); plates(); }
+        if (ev.blocked) { fx.push({ type: 'ring', x: view.hx, y: g - 30, color: '#59e3ff', t: 0 }); floater('Blocked ' + ev.soak, 'hero', 'tag'); plates(); }
         if (ev.blocked) WB.Sfx.play('shield_block');
         if (ev.dodged) { floater('Dodged!', 'hero', 'miss'); hs.anim = 'walk'; hs.once = true; hs.f = 0; }
         else if (ev.clone) { floater('Hit the copy!', 'hero', 'tag'); fx.push({ type: 'ring', x: view.hx - 22, y: hY(), color: '#c7b8ff', t: 0 }); }
         else if (ev.dmg > 0) hurtHero(ev.dmg, ev.type === 'special');
         else if (ev.blocked) { await sleep(200); floater('No damage', 'hero', 'miss'); }   // the shield took all of it
-        if (ev.petGuard && ps) { floater(ev.petWall ? 'Wall!' : 'Guarded!', 'pet', 'tag'); fx.push({ type: 'ring', x: view.px, y: g - 14, color: '#59e3ff', t: 0 }); WB.Sfx.play('shield_block'); }
+        if (ev.petGuard && ps) { floater('Guarded!', 'pet', 'tag'); fx.push({ type: 'ring', x: view.px, y: g - 14, color: '#59e3ff', t: 0 }); WB.Sfx.play('shield_block'); }
         if (ev.pet && ps) { ps.flash = 0.5; shown.pet -= ev.pet; floater(hpText(-ev.pet), 'pet', 'dmg'); if (ev.petKO) setTimeout(() => floater('KO', 'pet', 'tag'), 250); plates(); }
         if (ev.reversed) { await sleep(200); bolt('hero', 'enemy', '#59e3ff'); await sleep(260); floater('Reversed!', 'hero', 'tag'); hurtEnemy(ev.reversed, false, '#59e3ff'); }
         if (ev.spiked) { await sleep(200); bolt('hero', 'enemy', '#ff9a3d'); await sleep(260); floater('Thorns!', 'hero', 'tag'); hurtEnemy(ev.spiked, false, '#ff9a3d'); }

@@ -446,7 +446,10 @@
       const fight = opts.hostile || s.enc.battles < 3 || !calm.length || Math.random() < D.FIGHT_CHANCE;
       e.creature = opts.creature || (fight && hostile.length ? WB.pick(hostile) : WB.pick(calm.length ? calm : w.pool));
       // Redhood Rival can turn up in any world once battles are open
-      if (!opts.creature && fight && G.battlesOpen() && s.enc.battles >= 3 && Math.random() < D.RIVAL_CHANCE) e.creature = 'redhood';
+      if (!opts.creature && fight && G.battlesOpen() && s.enc.battles >= 3) {
+        s.enc.sinceRival = (s.enc.sinceRival || 0) + 1;
+        if (Math.random() < D.RIVAL_CHANCE || s.enc.sinceRival > D.RIVAL_PITY) { e.creature = 'redhood'; s.enc.sinceRival = 0; }
+      }
       if (D.CREATURES[e.creature].rival) e.rival = true;
       const c = D.CREATURES[e.creature];
       if (c.aggressive && !G.battlesOpen()) {   // too early to fight: it can only be shooed off or snuck past
@@ -503,11 +506,18 @@
     return e;
   };
   // Rematch (World map → a world whose guardian you beat): a random fight from that world, not just the guardian.
-  // The guardian comes back 1 time in 5; otherwise one of the world's creatures, or (from D.MOB_LEVEL) a mob of them.
+  // The guardian comes back 1 time in 5, Redhood Rival a quarter of the time (D.RIVAL_REMATCH); otherwise one of the
+  // world's creatures, or (from D.MOB_LEVEL) a mob of them.
   G.makeRematch = (wid, rnd = Math.random) => {
     const s = S(), w = D.worldById[wid];
     if (!w || !s.bosses[wid]) return null;
-    if (rnd() < 0.2 || !w.pool.length) return G.makeEncounter('boss', { world: wid });
+    const roll = rnd();
+    if (roll < 0.2 || !w.pool.length) return G.makeEncounter('boss', { world: wid });
+    if (roll < 0.2 + D.RIVAL_REMATCH && G.battlesOpen()) {   // Redhood Rival crashes the rematch
+      const r = G.makeEncounter('creature', { world: wid, creature: 'redhood', hostile: true });
+      r.aggressive = true; r.rematch = true; r.text = 'Rematch in ' + w.name + '? ' + D.CREATURES.redhood.name + ' cuts in. “Fight me instead.”';
+      return r;
+    }
     const e = G.makeEncounter('creature', { world: wid, creature: WB.pick(w.pool, rnd), hostile: true });
     const c = D.CREATURES[e.creature];
     e.aggressive = true; e.rematch = true; e.arena = true; delete e.rival;

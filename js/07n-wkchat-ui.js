@@ -26,7 +26,7 @@
     el.id = 'wk-bubble'; el.className = 'wk-bubble' + (g.inTune ? '' : ' static');
     el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
     el.style.setProperty('--key', key.hue);
-    const act = opts.tune ? `<button class="btn tertiary sm wk-bub-act" type="button" data-wk="tune">Tune now</button>` : '';
+    const act = opts.tune ? `<button class="btn tertiary sm wk-bub-act" type="button" data-wk="tune"><span class="tl"><span>Tune now</span></span></button>` : '';
     el.innerHTML = `<canvas class="wk-bub-key" width="52" height="81" aria-hidden="true"></canvas><p><span class="lbl">${esc(key.name)} · ${esc(v.name)}</span><span class="wk-bub-t">${esc(text)}</span>${act}</p><button class="wk-x" type="button" aria-label="Dismiss">×</button>`;
     WB.WK.thumb(el.querySelector('canvas'), key.id);
     el.querySelector('.wk-x').onclick = () => C.hide();

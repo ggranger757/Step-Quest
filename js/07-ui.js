@@ -166,7 +166,7 @@
     if (act) pinned++; else tShown++;
     const el = document.createElement('div');
     el.className = 'toast ' + (o.cls || '') + (act ? ' has-act' : '');
-    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${act ? `<button class="btn sm t-act ${WB.esc(o.action.cls || '')}" type="button">${WB.esc(o.action.label)}</button><button class="t-x" type="button" aria-label="Close">×</button>` : ''}`;
+    el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${act ? `<button class="btn sm t-act ${WB.esc(o.action.cls || '')}" type="button">${o.action.cls === 'tertiary' ? '<span class="tl"><span>' + WB.esc(o.action.label) + '</span></span>' : WB.esc(o.action.label)}</button><button class="t-x" type="button" aria-label="Close">×</button>` : ''}`;
     $('#toasts').appendChild(el);
     let gone = false;
     if (o.tag) el.dataset.tag = o.tag;
@@ -300,7 +300,7 @@
       </div>
       <button class="btn glass block map-cta" data-act="map" type="button">${WB.icon('map', 2)}<span>Open world map</span><small>${s.unlocked.length} / ${D.WORLDS.length} open</small></button>
       ${sensor}
-      <div class="chips">${pend ? `<button class="chipbtn" data-act="pending" type="button">${WB.icon('flag', 2)}${pend} encounter${pend > 1 ? 's' : ''} waiting</button>` : ''}${daily ? `<button class="chipbtn cta" data-act="daily" type="button">${WB.icon('chest', 2)}Claim daily reward</button>` : ''}</div>
+      <div class="chips">${pend ? `<button class="chipbtn" data-act="pending" type="button">${WB.icon('flag', 2)}${pend} encounter${pend > 1 ? 's' : ''} waiting</button>` : ''}${daily ? `<button class="chipbtn cta" data-act="daily" type="button">${WB.icon('chest', 2)}Claim daily reward</button>` : ''}${G.battlesOpen() && WB.DuelUI ? `<button class="chipbtn" data-act="duel" type="button">${WB.icon('sword', 2)}Duel nearby</button>` : ''}</div>
       ${obj ? `<button class="objective pbox card" data-act="tasks" data-mt="${obj.tab || 'today'}" type="button">
         <span class="obj-head"><span class="lbl">Next objective</span><span class="obj-reward">${WB.esc(obj.t.reward ? G.rewardText(obj.t.reward) : '')}</span></span>
         <span class="obj-title">${WB.esc(WB.unitText(obj.t.title))}</span>
@@ -827,7 +827,7 @@
   // one button to fix everything you own
   const repairAll = () => { const n = G.worn().length, c = G.repairAllCost(); return n ? `<div class="pbox card repair-all"><span><b>${n}</b> item${n === 1 ? '' : 's'} worn</span><button class="btn sm" type="button" data-repair="all" ${off(S().coins < c && 'You need ' + WB.fmt(c - S().coins) + ' more coins.')}>Repair all · ${WB.fmt(c)}</button></div>` : ''; };
   const emptyBag = (what, sub) => `<div class="pbox card empty-bag"><p class="fine">No ${what} yet.</p><button class="btn ghost sm" type="button" data-hubgo="shop:${sub}">Shop for ${what}</button></div>`;
-  const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Defend gauge ${Math.round(w.block * 100)}% HP` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
+  const statLine = (w) => w.slot === 'shield' ? `Armor ${Math.round(w.armor * 100)}% · Block ${Math.round(w.block * 100)}% when defending` : `Power ${w.power}x${w.slot === 'ranged' ? ' · Recharge ' + w.cd : ''}`;
   const WGROUPS = { melee: [['sword', 'Swords'], ['dagger', 'Daggers'], ['axe', 'Axes'], ['mace', 'Maces'], ['spear', 'Spears'], ['staff', 'Staves']],
     ranged: [['throw', 'Throwing weapons'], ['knife', 'Throwing knives & gear'], ['bow', 'Bows'], ['gun', 'Firearms'], ['spell', 'Spells']], shield: [['shield', 'Shields']] };
   // Melee / Shield switch: text only (the gear itself is in the lists below)
@@ -894,7 +894,7 @@
       };
       const base = byUnlock(D.POTIONS.filter((p) => p.base && !p.food && !p.shield)), shieldP = byUnlock(D.POTIONS.filter((p) => p.shield)), food = byUnlock(D.POTIONS.filter((p) => p.food)), found = D.POTIONS.filter((p) => !p.base && G.hasFound(p.id)), hidden = D.POTIONS.filter((p) => !p.base && !G.hasFound(p.id));
       return `<div class="sect"><h2>Everyday potions <span class="aside">${base.length}</span></h2><div class="grid">${base.map(card).join('')}</div></div>
-        <div class="sect"><h2>For your shield <span class="aside">${shieldP.length} · battle only</span></h2><p class="fine">They work on your Defend gauge, your shield’s HP in battle.</p><div class="grid">${shieldP.map(card).join('')}</div></div>
+        <div class="sect"><h2>For your shield <span class="aside">${shieldP.length} · battle only</span></h2><p class="fine">They make Defend stronger or repair your shield. None of them restore HP.</p><div class="grid">${shieldP.map(card).join('')}</div></div>
         <div class="sect"><h2>Food <span class="aside">${food.length}</span></h2><div class="grid">${food.map(card).join('')}</div></div>
         <div class="sect"><h2>Discovered <span class="aside">${found.length} / ${found.length + hidden.length}</span></h2>${found.length ? `<div class="grid">${found.map(card).join('')}</div>` : '<p class="fine">Find rare potions in new worlds to add them to the Shop.</p>'}</div>
         ${hidden.length ? `<div class="sect"><h2>Still out there <span class="aside">${hidden.length}</span></h2><div class="grid">${hidden.map(card).join('')}</div></div>` : ''}
@@ -1372,6 +1372,7 @@
     if (d.toggle) { const s = S(); s.settings[d.toggle] = !(d.toggle === 'reducedMotion' ? WB.reducedMotion() : s.settings[d.toggle]); document.documentElement.classList.toggle('rm', !!WB.reducedMotion()); WB.Save.queue(); WB.Sfx.applySession(); WB.Bgm.sync(); return UI.renderProfile(); }
     switch (d.act) {
       case 'sensor-start': WB.Steps.motion.start().then(() => UI.render()); UI.render(); break;
+      case 'duel': WB.DuelUI.open(); break;
       case 'sensor-stop': WB.Steps.motion.stop(); UI.render(); break;
       case 'health-connect': WB.Health.connect(true).then(() => UI.render()); break;
       case 'health-sync': WB.Health.sync(true).then((n) => { if (!n) UI.toast({ kicker: WB.Health.name(), title: 'Up to date', icon: 'check', cls: 'ok' }); UI.render(); }); break;

@@ -160,12 +160,12 @@
     while (cacheKeys.length > 24) delete tintCache[cacheKeys.shift()];
     return c;
   };
-  WB.recolor = (img, path, skinId) => {
+  WB.recolor = (img, path, skinId, outfit) => {   // outfit: someone else's outfit colors (a duel foe); default: yours
     const avatarId = (path.match(/^av\/([a-z0-9]+)\.png$/) || [])[1];
     if (!avatarId) return img;
     const map = D.SKIN_MAP[avatarId];
     const tone = skinId && map && D.SKIN_TONES.find((t) => t.id === skinId);
-    const om = D.OUTFIT_MAP[avatarId], worn = WB.outfitOf(avatarId);
+    const om = D.OUTFIT_MAP[avatarId], worn = outfit || WB.outfitOf(avatarId);
     const dyes = om ? ['o', 't'].filter((k) => om[k] && D.dyeById[worn[k]]) : [];
     if (!tone && !dyes.length) return img;
     const key = path + '|' + (tone ? tone.id : '') + '|' + dyes.map((k) => k + worn[k]).join(',');
@@ -255,7 +255,7 @@
     if (front) opts = { ...opts, face: null };
     const go = (img) => {
       if (!img || !img._ok) return;
-      const src = opts.kind === 'av' ? WB.recolor(img, sh.path, opts.skin) : img;
+      const src = opts.kind === 'av' ? WB.recolor(img, sh.path, opts.skin, opts.outfit) : img;
       const box = WB.frameBox(img, sh);
       const W = canvas.width, H = canvas.height;
       const x = canvas.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, W, H);

@@ -103,6 +103,40 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.6.0
+
+### Duels nearby: battle another walker (`js/04d-link.js`, `js/05q-duel.js`, `js/07p-duel-ui.js`)
+- **World page → Duel nearby** (from level 3, when battles open). One phone hosts and shows an invitation QR; the other joins, scans it and shows a reply QR; the host scans the reply and the phones are linked. Each code can also be copied and pasted if scanning fails.
+- **The phones talk directly** over a WebRTC data channel: no account, no server, no Firebase. The two phones need to be on the same Wi-Fi, or one shares a hotspot. A public STUN server is used only to discover addresses.
+- **On each phone, the other walker is the boss**: they stand on the enemy side, drawn bigger with a red glow, in their own avatar, skin tone and outfit colours, with a boss plate ("Lv X · Boss"), a "Boss Duel" intro and epic boss music.
+- **Simultaneous turns**: both pick Strike, Shoot, Defend, or their class Special (when charged) within 20 seconds (no pick means Defend). The host's phone resolves the turn and both screens play the same result. Defend blocks your Block %, Specials punch through half of a block, Arcane Nova stuns for a turn, Life Drain heals, pets help by their role. After 25 turns, the higher HP % wins.
+- Full HP for both, and nothing is used up: no ammo, potions, magic or gear wear.
+- **Rewards**: your first 5 duels a day pay coins and XP (win 80 + 60 XP, draw 40 + 30, loss 25 + 20). Your won/lost/drawn record shows on the versus card.
+- Rematch (both tap it), Give up (tap twice), Leave. A lost connection calls the duel off with no result.
+- Everything the other phone sends is checked and clamped (`G.duelClean`), so a bad message cannot break or rig a duel.
+- **Native app**: the Android manifest gets the CAMERA permission for scanning inside the app (`npm run sync` adds it); iOS already has the camera description. The privacy page mentions duels.
+- QR libraries (`js/vendor/`) load only when a duel starts. Credits are in CREDITS.md.
+
+## Changes in 3.5.6
+
+- **Redhood Rival redrawn in the walkers' art style** (`tools/make_redhood.py` → `assets/cr/redhood.png`). She was a small, blocky sprite scaled up 1.75×; she's now built from the hooded starter's 128 px sheet (same crisp outlines, shading and animation: idle, walk, run, attack, hurt) with a scarlet hood and cloak, a cream robe and a cherry-wood staff, drawn at the same size as your walker.
+
+## Changes in 3.5.5
+
+- On the Worldkey card the tune link (Tune to…, Retune…) now sits right under the Tuning gauge, aligned to its right edge, instead of floating alone between the details and the buttons. The Worldkeys button takes the full bottom row; Charge and Open still appear there when they're the next step.
+
+## Changes in 3.5.4
+
+- Battle menu: **Gear & Magic** is back at the top (full width) and the **special attack** sits where Gear & Magic was, below Defend and Items, still full width with its charge bar.
+- **Tertiary links (Tune now, Tune to…, Retune…) are underlined line by line.** The underline is drawn under the label itself, so it's centered and, if a label ever wraps, every line gets its own aligned underline instead of one mismatched line.
+
+## Changes in 3.5.3
+
+- **Defend works like most RPGs.** Defend, and until your next turn every hit is cut by your **Block %**, shown right on the Defend button. Block comes from your shield or belt (Round Buckler 65% up to 90% for the legendary aegises; no shield 35%), drops as the shield wears (down to half), and is capped at 90% (`D.BLOCK_MAX`). Quakes are harder to block (half as well). Shields still shave their armor off every hit. There's no Defend gauge any more: nothing to refill, nothing breaks, you can always defend, and defending never heals.
+- Shield items now make Defend stronger: **Shield Polish** +10% block and **Bulwark Brew** +20% block for the rest of the battle, **Smith's Oil** repairs the shield (so it blocks like new), **Tempered Ward** perfect block for 3 turns, **Guard Rune** keeps you on guard for 3 turns even while you attack, **Thorned Bulwark** throws back 60% of what you block. Charms: **Tower Sigil** +10% block, **Bulwark Sigil** makes your next attack after a Defend hit 30% harder.
+- **Shield Wall is gone.** Guardian pets' special is now **Rally** (rock pets: **Stone Skin**): you take 30% less damage for 3 turns.
+- **Redhood Rival turns up more:** 22% of fights on the road (was 8%), and always after 7 fights without her (`D.RIVAL_CHANCE`, `D.RIVAL_PITY`). World map Rematches are her a quarter of the time (`D.RIVAL_REMATCH`).
+
 ## Changes in 3.5.2
 
 - **Quest photos work the same on iPhone and Android** (`js/04c-photo.js`):
@@ -317,7 +351,7 @@ js/07l-mood-ui.js        mood check-in card and Profile moods
 js/08-main.js            startup, onboarding, developer panel
 assets/                  art, sound, music, fonts, icons
 native/                  Capacitor project for the iPhone / Android app (step sync)
-tools/                   asset and release scripts
+tools/                   asset and release scripts (make_state_birds.py, make_redhood.py draw sprites)
 ```
 
 ## Shipping updates
