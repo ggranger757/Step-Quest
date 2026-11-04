@@ -35,7 +35,9 @@
   D.eggById = Object.fromEntries(D.EGGS.map((e) => [e.id, e]));
   // the picture for an egg: elemental eggs come in colors (v = 1..10); the original three have one look
   D.eggArt = (egg, v) => { const e = D.eggById[egg]; return e && e.variants ? egg + Math.min(e.variants, Math.max(1, v || 1)) : egg; };
-  D.EGG_COLORS = D.EGGS.filter((e) => e.variants).reduce((n, e) => n + e.variants, 0);   // 50 to collect
+  D.EGG_COLORS = D.EGGS.filter((e) => e.variants).reduce((n, e) => n + e.variants, 0);   // 50 elemental colors
+  D.EGG_CLASSIC = D.EGGS.filter((e) => !e.variants).map((e) => e.id);                   // Frost, Ember, Crystal: one look each
+  D.EGG_COLLECTION = D.EGG_CLASSIC.length + D.EGG_COLORS;                               // 53 in the Egg collection (3.4.0: the classic three count too)
   D.QUIZ_BONUS = 1.5;   // a right answer multiplies the coins and XP
 
   D.MERLIN_LINES = [

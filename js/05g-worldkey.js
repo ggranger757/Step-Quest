@@ -1,20 +1,31 @@
 /* Step Quest — Worldkey rules: energy, charging with artifacts, resonance, the travel gate and what it says.
    Every change of state happens here, once, and only after its checks pass; screens only call these functions.
-   Energy only goes down when a world opens (it never fades). A tuning fades after K.TUNE_HOURS, so the symbol game comes back often. */
+   Energy only goes down when a world opens (it never fades).
+   Tuning (3.4.0): each Worldkey holds its own tuning, which drifts down a gauge and runs out K.TUNE_HOURS (2 h) after you
+   tune it. Every key tunes with its own mini-game (05o-wkgames.js). A newly discovered world also needs a LOCK: a tuning
+   played after you found it, while the key is in tune, so every new world is opened with a fresh tuning. */
 (() => {
   const D = WB.DATA, G = WB.Game, K = D.WK, S = () => WB.state;
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
   // ---------- state (repaired on every read, so old or damaged saves can't break it) ----------
-  G.wkFresh = () => ({ e: K.START, look: D.WK_START, keys: [D.WK_START], tuned: {}, found: [], seen: [], told: [], recent: [], last: null, ping: {} });
+  G.wkFresh = () => ({ e: K.START, look: D.WK_START, keys: [D.WK_START], tunes: {}, locks: {}, found: [], seen: [], told: [], recent: [], last: null, ping: {} });
   G.wk = () => {
     const s = S(); let w = s.wk;
     if (!w || typeof w !== 'object') w = s.wk = G.wkFresh();
     const f = G.wkFresh();
     for (const k of Object.keys(f)) if (w[k] === undefined || w[k] === null || (Array.isArray(f[k]) && !Array.isArray(w[k])) || (typeof f[k] === 'object' && !Array.isArray(f[k]) && typeof w[k] !== 'object') || (typeof f[k] === 'string' && typeof w[k] !== 'string')) w[k] = f[k];
     for (const k of ['found', 'seen', 'told', 'recent']) w[k] = w[k].filter((x) => typeof x === 'string');
-    if (Array.isArray(w.tuned)) { const t = {}; w.tuned.forEach((id) => { if (typeof id === 'string') t[id] = Date.now(); }); w.tuned = t; }
-    if (!w.tuned || typeof w.tuned !== 'object') w.tuned = {};
+    // 3.4.0: per-world tunings become the key's tuning (the latest one) plus locks for worlds already discovered
+    if (w.tuned !== undefined) {
+      let t = w.tuned; if (Array.isArray(t)) { const o = {}; t.forEach((id) => { if (typeof id === 'string') o[id] = Date.now(); }); t = o; }
+      if (t && typeof t === 'object') for (const [id, at] of Object.entries(t)) if (typeof at === 'number') {
+        w.tunes[w.look] = Math.max(w.tunes[w.look] || 0, at);
+        if (w.found.includes(id)) w.locks[id] = at;
+      }
+      delete w.tuned;
+    }
+    for (const k of ['tunes', 'locks']) { if (!w[k] || typeof w[k] !== 'object' || Array.isArray(w[k])) w[k] = {}; for (const [id, at] of Object.entries(w[k])) if (typeof at !== 'number' || !(at > 0)) delete w[k][id]; }
     // older saves: Darkmatter in the pack becomes energy, bought Worldkeys are refunded, and the old fading/forge fields go
     if (w.dm && typeof w.dm === 'object') { w.e = (Number(w.e) || 0) + (w.dm.void || 0) * 20 + (w.dm.nebula || 0) * 45 + (w.dm.eclipse || 0) * 70; delete w.dm; }
     for (const k of ['at', 'lastTalk', 'walkMark', 'lowSaid', 'tuneLock', 'chat', 'voice']) delete w[k];
@@ -22,7 +33,8 @@
     w.keys = [...new Set([D.WK_START, ...w.keys.filter((id) => D.wkLookById[id])])];
     if (!w.keys.includes(w.look)) w.look = D.WK_START;
     w.e = clamp(Number(w.e) || 0, 0, K.MAX);
-    w.found = w.found.filter((id) => D.worldById[id] && !s.unlocked.includes(id));
+    // a discovered world must still meet its gate (3.4.0: the world before it fully explored), so worlds found under the old 75% rule wait
+    w.found = w.found.filter((id) => D.worldById[id] && !s.unlocked.includes(id) && (!G.gateMet || G.gateMet(D.worldById[id])));
     return w;
   };
   G.wkLow = () => G.wk().e <= K.LOW;
@@ -54,14 +66,27 @@
   // A discovered world (its level and gate are met) is a legitimate destination; otherwise it points at the
   // next locked world, which can be tuned in advance but not opened yet.
   G.wkDest = () => { const w = G.wk(); return D.worldById[w.found[0]] || G.nextWorld() || null; };
-  // a tuning fades: after K.TUNE_HOURS the Worldkey drifts out of tune and the symbol game has to be played again
-  K.TUNE_HOURS = 6;
-  G.wkTuneLeft = (id) => { const t = G.wk().tuned[id]; if (!t) return 0; const span = K.TUNE_HOURS * 3600000; return typeof t === 'number' ? Math.max(0, t + span - Date.now()) : span; };
-  G.wkTuned = (id) => G.wkTuneLeft(id) > 0;
+  // ---------- tuning: one gauge per Worldkey, drifting from 100% to 0 over K.TUNE_HOURS ----------
+  K.TUNE_HOURS = 2;
+  K.DRIFT_PCT = 25;   // at or below this the key is "drifting" and says so
+  const span = () => K.TUNE_HOURS * 3600000;
+  G.wkTunedAt = (look) => G.wk().tunes[look || G.wk().look] || 0;
+  // pct 0..100, state: 'tuned' | 'drifting' | 'out' (it was tuned once and ran out) | 'never'
+  G.wkGauge = (look, now = Date.now()) => {
+    const at = G.wkTunedAt(look);
+    if (!at) return { pct: 0, inTune: false, state: 'never', at: 0, until: 0 };
+    const pct = clamp(100 * (1 - (now - at) / span()), 0, 100);
+    return { pct, inTune: pct > 0, state: pct <= 0 ? 'out' : pct <= K.DRIFT_PCT ? 'drifting' : 'tuned', at, until: at + span() };
+  };
+  G.wkResonant = () => !!(G.featOn && G.featOn('wk')) && G.wkGauge().inTune;   // an in-tune key senses artifacts (more finds on the road)
+  // a world's lock: tuned after it was discovered, and still inside the key's tuning window
+  G.wkLocked = (wid, now = Date.now()) => { const t = G.wk().locks[wid]; return !!t && now - t < span(); };
+  G.wkTuned = (wid) => G.wkGauge().inTune && (!G.wk().found.includes(wid) || G.wkLocked(wid));
   G.wkStatus = (world) => {
-    const w = G.wk(), cost = K.cost(world), found = w.found.includes(world.id);
-    const energyOk = w.e >= cost, tuned = G.wkTuned(world.id), lapsed = !!w.tuned[world.id] && !tuned;
-    return { world, cost, found, energy: w.e, energyOk, tuned, lapsed, tuneLeft: G.wkTuneLeft(world.id), ready: found && energyOk && tuned, tier: K.tier(world), unlocked: S().unlocked.includes(world.id) };
+    const w = G.wk(), cost = K.cost(world), found = w.found.includes(world.id), g = G.wkGauge();
+    const energyOk = w.e >= cost, locked = found && G.wkLocked(world.id), tuned = g.inTune && (!found || locked);
+    const lapsed = !tuned && (g.state === 'out' || (found && !!w.locks[world.id]));
+    return { world, cost, found, energy: w.e, energyOk, tuned, locked, gauge: g, lapsed, ready: found && energyOk && g.inTune && locked, tier: K.tier(world), unlocked: S().unlocked.includes(world.id) };
   };
   // called by the world-progress check: requirements met = discovered, not entered
   G.wkDiscover = (world) => {
@@ -108,8 +133,17 @@
 
   // ---------- resonance ----------
   G.wkSequence = () => { const sp = K.tuneSpec(S().level); return K.sequence(sp.len, sp.syms); };   // a fresh pattern for every attempt
-  G.wkLearn = (world) => { const w = G.wk(); w.tuned[world.id] = Date.now(); G.tally('tuned', 1); WB.Save.queue(); return true; };
   G.wkTuneSpec = () => K.tuneSpec(S().level);
+  // a won tuning game: only a session the game engine (05o-wkgames.js) has judged a win counts, once.
+  // Fills the key's gauge; a discovered world it was played for is locked for opening.
+  G.wkLearn = (world, sid) => {
+    if (!G.wkGames || !G.wkGames.consume(sid)) return false;
+    const w = G.wk(), now = Date.now();
+    w.tunes[w.look] = now;
+    if (world && w.found.includes(world.id)) w.locks[world.id] = now;
+    G.tally('tuned', 1); WB.Save.queue(); G.after && G.after();
+    return true;
+  };
 
   // ---------- the gate: activate and travel ----------
   let opening = false;
@@ -121,12 +155,13 @@
       const st = G.wkStatus(world), s = S(), w = G.wk();
       if (G.featOn && !G.featOn('wk') && wid !== G.firstWorld().id) return { ok: false, why: 'Your Worldkey wakes up when you finish ' + G.firstWorld().name + '.' };   // no travel before the Worldkey is awake
       if (st.unlocked) { G.travel(wid); return { ok: true, free: true }; }
-      if (!st.found) return { ok: false, why: 'Not discovered yet: ' + G.worldReq(world) + '.' };
+      if (!st.found || !G.gateMet(world)) return { ok: false, why: 'Not discovered yet: ' + G.worldReq(world) + '.' };
       if (!st.energyOk) return { ok: false, why: 'Needs ' + st.cost + '% energy. You have ' + Math.floor(w.e) + '%.' };
-      if (!st.tuned) return { ok: false, why: st.lapsed ? 'The Worldkey drifted out of tune. Play the symbol game again to tune to ' + world.name + '.' : 'Tune the Worldkey to ' + world.name + ' first.' };
+      if (!st.gauge.inTune) return { ok: false, why: 'Your Worldkey is out of tune. Tune it to ' + world.name + ' first.' };
+      if (!st.locked) return { ok: false, why: 'A new world needs its own tuning. Tune to ' + world.name + ' first.' };
       w.e = Math.max(0, w.e - st.cost);                       // everything checked: spend once, open, go
       w.found = w.found.filter((id) => id !== wid); w.last = wid;
-      delete w.tuned[wid];
+      delete w.locks[wid];
       s.unlocked.push(wid); s.worldSteps[wid] = s.worldSteps[wid] || 0; G.tally('portals', 1);
       WB.bus.emit('worldUnlocked', world);
       G.travel(wid);
@@ -138,7 +173,7 @@
   // ---------- dialogue: real game state + the key's voice ----------
   G.wkVars = (extra = {}) => {
     const s = S();
-    return { world: G.world().name, steps: WB.fmt(s.today.day === WB.dayKey() ? s.today.steps : 0), name: s.name, pct: Math.floor(G.explorePct(s.world)), ...extra };
+    return { world: G.world().name, steps: WB.fmt(s.today.day === WB.dayKey() ? s.today.steps : 0), name: s.name, pct: Math.floor(G.explorePct(s.world)), lvl: s.level, game: G.wkGameFor ? G.wkGameFor().name : 'the tuning game', ...extra };
   };
   // pick a line for a moment, avoiding the last few things it said
   G.wkLine = (ctx, extra) => {

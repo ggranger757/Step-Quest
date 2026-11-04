@@ -27,7 +27,7 @@
   const MINI = {
     wk: [
       { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dev', page: 'Worldkey', title: 'Your Worldkey is awake', text: 'It opens new worlds. Find it in Inventory → Worldkey.' },
-      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Tune it once', text: 'Repeat a world’s symbol pattern to tune in. The tuning fades after a few hours, so you may need to play it again.' },
+      { go: hub('bag', 'worldkey'), sel: '#scr-inv .wk-dl', page: 'Worldkey', title: 'Keep it in tune', text: 'Every Worldkey tunes with its own mini-game. The tuning gauge drains over time, and each new world needs a fresh tuning before it opens.' },
       { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Worldkey', title: 'Charge it with artifacts', text: 'Opening a world costs energy. Artifacts charge it. Energy never fades.' },
     ],
     merlin: [

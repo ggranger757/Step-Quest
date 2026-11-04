@@ -22,11 +22,13 @@
       ${gift ? `<button class="btn gold sm" type="button" data-merlin-gift>Get egg</button>` : ''}
     </div>`;
 
-  // the Egg collection: every elemental egg color, a silhouette until you've hatched it
+  // the Egg collection: the three classic eggs and every elemental egg color, a silhouette until you've hatched it
   const eggCollection = (m) => {
-    const fams = D.EGGS.filter((e) => e.variants);
-    return `<div class="sect"><h2>Egg collection <span class="aside">${m.colors.length} / ${D.EGG_COLORS}</span></h2>
-      <div class="pbox card egg-col">${fams.map((e) => `<div class="ec-row"><span class="lbl">${esc(e.name.replace(' Egg', ''))} · ${esc(e.rarity)}</span><div class="ec-eggs">${Array.from({ length: e.variants }, (_, i) => { const a = D.eggArt(e.id, i + 1), got = m.colors.includes(a); return `<span class="ec-egg ${got ? 'got' : ''}" role="img" aria-label="${esc(e.name)} color ${i + 1}${got ? '' : ', not hatched yet'}">${WB.eggImg(a, 28, 'still')}</span>`; }).join('')}</div></div>`).join('')}</div></div>`;
+    const fams = D.EGGS.filter((e) => e.variants), got = (a) => m.colors.includes(a);
+    const cell = (a, label) => `<span class="ec-egg ${got(a) ? 'got' : ''}" role="img" aria-label="${esc(label)}${got(a) ? '' : ', not hatched yet'}">${WB.eggImg(a, 28, 'still')}</span>`;
+    const classic = `<div class="ec-row"><span class="lbl">Classic · Frost, Ember, Crystal</span><div class="ec-eggs">${D.EGG_CLASSIC.map((id) => cell(id, D.eggById[id].name)).join('')}</div></div>`;
+    return `<div class="sect"><h2>Egg collection <span class="aside">${m.colors.length} / ${D.EGG_COLLECTION}</span></h2>
+      <div class="pbox card egg-col">${classic}${fams.map((e) => `<div class="ec-row"><span class="lbl">${esc(e.name.replace(' Egg', ''))} · ${esc(e.rarity)}</span><div class="ec-eggs">${Array.from({ length: e.variants }, (_, i) => cell(D.eggArt(e.id, i + 1), e.name + ' color ' + (i + 1))).join('')}</div></div>`).join('')}</div></div>`;
   };
   // Missions → Merlin
   UI.merlinSection = () => {
@@ -79,7 +81,7 @@
         <span class="lbl">${esc(e.name)} hatched</span>
         <h3 id="sheet-title">${res.right ? 'Correct!' : 'Not quite'}</h3>
         <div class="hatch-top"><canvas class="mer-face" width="64" height="64" aria-hidden="true"></canvas><p class="hatch-say">${esc(WB.pick(res.right ? D.MERLIN_RIGHT : D.MERLIN_WRONG))}${res.right ? '' : ` The answer was <b>${esc(res.answer)}</b>.`}</p></div>
-        <div class="hatched">${WB.eggImg(res.art || res.egg, 56)}${res.newColor ? `<span class="lbl new-color">New color · ${G.merlin().colors.length} / ${D.EGG_COLORS}</span>` : ''}</div>
+        <div class="hatched">${WB.eggImg(res.art || res.egg, 56)}${res.newColor ? `<span class="lbl new-color">${D.EGG_CLASSIC.includes(res.art) ? 'New egg' : 'New color'} · ${G.merlin().colors.length} / ${D.EGG_COLLECTION}</span>` : ''}</div>
         <div class="pbox card history"><span class="lbl">${WB.icon('note', 1)} Merlin’s History Note</span><p>${esc(res.fact)}</p></div>
         <div class="outcome">${UI.pills(res.granted)}</div>
         <button class="btn gold block" type="button" data-close data-autofocus>Collect</button>

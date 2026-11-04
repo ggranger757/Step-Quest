@@ -52,7 +52,9 @@
   BU.challenge = (worldId, force) => {
     if (!force && !G.battlesOpen()) return WB.UI.toast({ kicker: 'Not yet', title: 'Battles unlock at level ' + D.BATTLE_LEVEL + '.', cls: 'msg' });
     if (S().hp < 1) S().hp = 1;
-    BU.open(G.makeEncounter('boss', { world: worldId }), force);
+    // a beaten guardian's world offers a rematch: a random fight from that world (G.makeRematch)
+    const e = S().bosses[worldId] ? G.makeRematch(worldId) : G.makeEncounter('boss', { world: worldId });
+    if (e) BU.open(e, force);
   };
 
   // The one door into every fight. Battle mode stays shut until level D.BATTLE_LEVEL (4), whatever called it (a developer force skips this).
@@ -853,7 +855,7 @@
       else { title = 'You got away'; body = `<p>You escaped ${WB.esc(c.name)}. ${bd ? '' : ''}It still roams the roads.${petNote}</p>`; }
     } else if (res.result === 'win') {
       title = res.boss ? 'Guardian defeated!' : res.rematch ? 'Rematch won!' : enc.creature === 'druid' ? 'The Druid flees' : res.mob ? 'Mob defeated!' : 'Victory!';
-      body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : res.rematch ? WB.esc(c.name) + ' falls again. Rematches pay half.' : res.mob ? 'All ' + res.mob + ' creatures are beaten.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${res.egg ? ' You got a ' + D.eggById[res.egg].name + ' (Missions → Merlin).' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.eggArt || res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`;
+      body = `<p>${res.boss ? 'You cleared ' + WB.esc(res.boss.name) + '.' : res.arena ? (res.mob ? 'All ' + res.mob + ' creatures of ' + WB.esc(res.rematch.name) + ' are beaten.' : 'The ' + WB.esc(c.name) + ' of ' + WB.esc(res.rematch.name) + ' is beaten.') : res.rematch ? WB.esc(c.name) + ' falls again. Rematches pay half.' : res.mob ? 'All ' + res.mob + ' creatures are beaten.' : 'The ' + WB.esc(c.name) + ' is beaten.'}${res.newKind ? ' New creature logged.' : ''}${res.egg ? ' You got a ' + D.eggById[res.egg].name + ' (Missions → Merlin).' : ''}${petNote}</p><div class="outcome">${WB.UI.pills(res.granted)}${res.egg ? `<span class="reward-pill thing">${WB.eggImg(res.eggArt || res.egg, 20)}${D.eggById[res.egg].name}</span>` : ''}</div>`;
     } else if (res.result === 'lose') {
       title = 'Knocked down';
       body = `<p>${res.lostCoins ? 'You dropped ' + WB.fmt(res.lostCoins) + ' coins as you fell. ' : ''}HP refills in ${WB.UI.dur(WB.Game.minsToFull())}, or drink a potion.${enc.boss ? ' The guardian waits on the world map.' : ''}${petNote}</p>${res.lostCoins || res.lostEggs ? `<div class="outcome">${res.lostCoins ? `<span class="reward-pill lost">${WB.icon('coin', 2)}-${WB.fmt(res.lostCoins)}</span>` : ''}</div>` : ''}`;
@@ -888,6 +890,7 @@
       WB.view.playOutcome(enc, { anim: res.result === 'win' ? 'win' : 'leave' });
     }
     WB.UI.flushToasts();
+    WB.bus.emit('battleEnd', { result: res.result, creature: enc.creature, boss: !!enc.boss, nemesis: !!enc.nemesis, mob: res.mob || 0 });
     if (res.boss) WB.UI.toast({ kicker: 'Guardian defeated', title: res.boss.name + ' cleared', icon: 'trophy', cls: 'big' });
     if (res.nemesis) WB.UI.toast({ kicker: 'Boss defeated', title: D.CREATURES[res.nemesis].name, icon: 'trophy', cls: 'big' });
     if (res.levelsLost) WB.UI.toast({ kicker: 'Boss defeat', title: 'Back to level ' + S().level, cls: 'warn' });

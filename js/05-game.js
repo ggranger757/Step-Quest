@@ -196,8 +196,8 @@
     WB.bus.emit('world', wid);
     WB.Save.queue();
   };
-  // a world opens when you reach its level AND have explored the world before it to D.WORLD_GATE_PCT%
-  G.gatePct = (w) => (w.unlock && w.unlock.pct) || D.WORLD_GATE_PCT;   // the world after Rust Hollow needs it 100% explored, the rest D.WORLD_GATE_PCT%
+  // a world opens when you reach its level AND have explored the world before it fully (D.WORLD_GATE_PCT = 100%)
+  G.gatePct = (w) => Math.max(D.WORLD_GATE_PCT, (w.unlock && w.unlock.pct) || 0);
   G.gateMet = (w) => !w.unlock.after || S().unlocked.includes(w.id) || G.explorePct(w.unlock.after) >= G.gatePct(w);
   G.worldReq = (w) => {
     const prev = w.unlock.after && D.worldById[w.unlock.after];
@@ -418,7 +418,8 @@
   // ---------- encounters ----------
   G.makeEncounter = (forceType, opts = {}) => {
     const s = S(), w = opts.world ? D.worldById[opts.world] : G.world();
-    let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS.map((x) => x.type === 'find' && G.perk('finds') ? { ...x, w: x.w * 1.5 } : x)).type;   // Explorer's Lantern: more finds
+    // Explorer's Lantern: more finds; an in-tune Worldkey senses artifacts too (×1.25)
+    let type = forceType || WB.weighted(D.ENCOUNTER_WEIGHTS.map((x) => x.type === 'find' ? { ...x, w: x.w * (G.perk('finds') ? 1.5 : 1) * (G.wkResonant && G.wkResonant() ? 1.25 : 1) } : x)).type;
     if (type === 'druid' && s.level < D.BATTLE_LEVEL && !forceType) type = 'chest';   // a wrong answer means a fight, so he waits until battles unlock
     if (type === 'boss' && !G.battlesOpen() && !forceType) type = 'chest';
     if (type === 'creature' && !G.battlesOpen() && !opts.creature) type = WB.pick(['chest', 'find', 'traveler']);   // no creatures at all before battles unlock
@@ -499,6 +500,19 @@
       e.text = WB.pick(D.TRAVELER_LINES);
       e.choices = [{ id: 'accept', label: 'Carry it', hint: 'Walk ' + e.dist + ' steps' }, { id: 'decline', label: 'Not today', hint: '' }];
     }
+    return e;
+  };
+  // Rematch (World map → a world whose guardian you beat): a random fight from that world, not just the guardian.
+  // The guardian comes back 1 time in 5; otherwise one of the world's creatures, or (from D.MOB_LEVEL) a mob of them.
+  G.makeRematch = (wid, rnd = Math.random) => {
+    const s = S(), w = D.worldById[wid];
+    if (!w || !s.bosses[wid]) return null;
+    if (rnd() < 0.2 || !w.pool.length) return G.makeEncounter('boss', { world: wid });
+    const e = G.makeEncounter('creature', { world: wid, creature: WB.pick(w.pool, rnd), hostile: true });
+    const c = D.CREATURES[e.creature];
+    e.aggressive = true; e.rematch = true; e.arena = true; delete e.rival;
+    if (s.level >= D.MOB_LEVEL && w.pool.length > 1 && rnd() < 0.35) e.mob = Array.from({ length: s.level >= 12 && rnd() < 0.4 ? 2 : 1 }, () => WB.pick(w.pool, rnd));
+    e.text = e.mob ? 'Rematch in ' + w.name + '! A mob: ' + [e.creature, ...e.mob].map((id) => D.CREATURES[id].name).join(', ') + '.' : 'Rematch in ' + w.name + '! A ' + c.name + ' ' + c.verb + '.';
     return e;
   };
   G.scheduleNext = () => { const s = S(); s.enc.next = (s.worldSteps[s.world] || 0) + 900 + Math.floor(Math.random() * 600); };   // an encounter every 900–1,500 steps
@@ -605,6 +619,7 @@
     out.granted = G.grant(out.reward, true);
     WB.Sfx.play(out.anim === 'fight' ? 'hit' : out.anim === 'open' ? 'chest' : 'claim');
     G.after();
+    WB.bus.emit('resolved', { type: e.type, choice, find: out.find || null, reward: out.reward });
     return out;
   };
   // called by WB.Battle when a battle ends
@@ -625,6 +640,7 @@
       if (first) { out.reward.coins += 30; out.newKind = e.creature; }
       for (const f of (b.foes || []).slice(1)) { if (!s.enc.cards[f.id] && !out.newKind) out.newKind = f.id; s.enc.cards[f.id] = (s.enc.cards[f.id] || 0) + 1; s.enc.battles++; }   // every creature in a mob counts
       if (e.boss && re) { s.enc.rematches = (s.enc.rematches || 0) + 1; out.rematch = w; if (Math.random() < 0.5) out.reward.potion = 'elixir'; }
+      else if (e.arena) { s.enc.rematches = (s.enc.rematches || 0) + 1; out.rematch = w; out.arena = true; if (Math.random() < 0.3) out.reward.potion = 'tonic'; }
       else if (e.boss) {
         s.bosses[w.id] = Date.now(); s.enc.bossDue = null; out.boss = w;
         out.reward.potion = 'elixir';

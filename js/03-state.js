@@ -33,7 +33,7 @@
       merlin: { nest: [], seq: 0, hatched: 0, right: 0, taken: 0, asked: [], facts: [], gift: '', at: 0 },   // Merlin's eggs (05e-merlin.js)
       druid: { asked: [], wins: 0, losses: 0, taken: 0 },
       nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
-      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, theme: 'night', notify: true, chartDays: 14, moodAsk: true, turnTimer: true },
+      settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, theme: 'night', notify: true, chartDays: 14, moodAsk: true, turnTimer: true, wkChat: true },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
   }
@@ -45,6 +45,7 @@
     // Sound & music became two switches: Game music starts where the old switch was
     if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
     if (s.settings && s.settings.turnTimer === undefined) s.settings.turnTimer = true;   // the battle turn timer is on for older saves too
+    if (s.settings && s.settings.wkChat === undefined) s.settings.wkChat = true;   // 3.4.0: the Worldkey talks on walks (Profile → Settings)
     if (s.settings) delete s.settings.homeState;   // only photo hunts used it (state bird / flower)
     // 3.0: field missions, Merlin's walking quests, egg trades, the Darkmatter Forge and gear care were retired.
     // Eggs carried move into Merlin's nest (05e-merlin.js reads s._oldEggs once). Magic items are kept and never run out.

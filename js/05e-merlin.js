@@ -13,6 +13,15 @@
     if (!m || typeof m !== 'object') m = s.merlin = { nest: [], seq: 0, hatched: 0, right: 0, taken: 0, asked: [], facts: [], gift: '', at: 0 };
     for (const k of ['nest', 'asked', 'facts', 'colors']) if (!Array.isArray(m[k])) m[k] = [];   // colors: elemental egg colors you've hatched (the Egg collection)
     for (const k of ['seq', 'hatched', 'right', 'taken', 'at']) if (typeof m[k] !== 'number') m[k] = 0;
+    if (!m.kinds || typeof m.kinds !== 'object' || Array.isArray(m.kinds)) m.kinds = {};   // hatched per egg kind (from 3.4.0)
+    // 3.4.0: the classic Frost / Ember / Crystal eggs now count in the Egg collection. Before, only elemental colors were
+    // recorded, so a save whose hatch count is higher than its recorded colors hatched classic eggs that never showed up.
+    // Which ones isn't saved, but the first egg everyone gets is Merlin's Frost Egg, so that one is restored.
+    if (!m.colFix) {
+      m.colFix = 1;
+      const elemental = m.colors.filter((a) => !D.EGG_CLASSIC.includes(a)).length;
+      if (m.hatched > elemental && !m.colors.includes('frost')) m.colors.unshift('frost');
+    }
     // older saves (03-state.js stashes them): carried eggs move into the nest, rarest first
     const old = s._oldEggs;
     if (old) {
@@ -121,8 +130,9 @@
       m.nest = m.nest.filter((x) => x !== r);
       m.hatched++; m.taken++; if (right) m.right++;
       const fact = nextFact();
-      const art = G.eggArt(r), newColor = !!e.variants && !m.colors.includes(art);
-      if (newColor) m.colors.push(art);   // a color you hadn't hatched yet joins the Egg collection
+      m.kinds[r.egg] = (m.kinds[r.egg] || 0) + 1;
+      const art = G.eggArt(r), newColor = !m.colors.includes(art);
+      if (newColor) m.colors.push(art);   // an egg (or elemental color) you hadn't hatched yet joins the Egg collection
       const granted = G.grant(reward, true);
       G.after();
       return { right, answer: qz.options[qz.answer], reward, granted, fact, egg: r.egg, art, newColor, item };

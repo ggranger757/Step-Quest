@@ -3694,3 +3694,120 @@ details.how > ul { margin-top: var(--s2); }
 .egg-img.fit.still > i { animation: none; }
 @media (prefers-reduced-motion: reduce) { .egg-img.fit > i { animation: none; } }
 html.reduce-motion .egg-img.fit > i, html.rm .egg-img.fit > i { animation: none; }
+
+/* ================= 3.4.0 · Worldkey tuning gauge, tuning games, chatter ================= */
+/* the tuning gauge: a segmented meter, never a clock */
+.wk-gauge { display: grid; gap: 6px; margin-top: var(--s2); }
+.wk-gauge-h { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.wk-gauge-h .lbl { color: var(--muted); }
+.wk-gauge-h b { margin-left: auto; font: 400 12px/1 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--ok); }
+.wk-gauge-bar { position: relative; display: block; height: 12px; background: var(--inset); box-shadow: 0 0 0 2px var(--line); overflow: hidden; }
+.wk-gauge-bar > i { position: absolute; inset: 0 auto 0 0; background: var(--ok); transition: width 1.2s steps(10); -webkit-mask: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 10px); mask: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 10px); }
+.wk-gauge.s-drifting .wk-gauge-bar > i { background: var(--gold); }
+.wk-gauge.s-drifting .wk-gauge-h b { color: var(--gold); }
+.wk-gauge.s-out .wk-gauge-h b, .wk-gauge.s-never .wk-gauge-h b { color: var(--danger); }
+.wk-gauge.s-out .wk-gauge-bar, .wk-gauge.s-never .wk-gauge-bar { box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 70%, var(--line)); animation: blink 1.6s steps(2) infinite; }
+.wk-gauge.sm { margin-top: 0; }
+.wk-gauge.sm .wk-gauge-bar { height: 8px; }
+.wk-game { margin-top: var(--s2); }
+.wk-gate-g { margin-top: calc(var(--s2) * -1); }
+.wk-game b, .wk-kd-g b { color: var(--text); font-weight: 400; }
+.wk-kd-g { font-size: 14px; color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 var(--s2); }
+.wk-req .wk-req-g { display: block; }
+.wk-req .wk-req-g .wk-gauge { width: 100%; }
+html.rm .wk-gauge.s-out .wk-gauge-bar, html.rm .wk-gauge.s-never .wk-gauge-bar { animation: none; }
+
+/* ----- the tuning sheet: shared frame ----- */
+.wkg .wkg-how { margin-top: var(--s1); }
+.wkg-hud { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin-top: var(--s2); min-height: 14px; }
+.wkg-stat { font: 400 11px/1 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.wkg-lives { display: inline-flex; gap: 4px; }
+.wkg-lives i { width: 10px; height: 10px; background: var(--inset); box-shadow: 0 0 0 1px var(--line-hi); }
+.wkg-lives i.on { background: var(--key, var(--cyan)); box-shadow: 0 0 0 1px var(--text); }
+.wkg-board { display: grid; gap: var(--s3); justify-items: center; }
+.wkg-board.is-won .wkg-stage, .wkg-board.is-won .wkg-cards { filter: drop-shadow(0 0 10px var(--key)); }
+.wkg-stage { position: relative; display: grid; place-items: center; width: min(100%, 300px); aspect-ratio: 1; padding: 0; border: 0; background: var(--inset); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 5px var(--shadow); touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+.wkg-stage canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+button.wkg-stage { cursor: pointer; }
+button.wkg-stage:disabled { cursor: default; }
+button.wkg-stage:focus-visible { outline: 3px solid var(--key); outline-offset: 4px; }
+/* echo: each symbol in its own color */
+.wkg .wk-sym { --c: var(--key); }
+.wkg .wk-sym.on { box-shadow: 0 0 0 2px var(--c), 0 0 0 4px var(--shadow), 0 0 18px var(--c); }
+.wkg .wk-sym.want { box-shadow: 0 0 0 2px var(--ok), 0 0 0 4px var(--shadow); }
+.wkg .wk-sym.want canvas { opacity: 1; }
+.wkg .wk-sym:focus-visible { outline: 3px solid var(--key); outline-offset: 2px; }
+.wkg .wk-pad { width: 100%; }
+
+/* pairs: cards that flip */
+.wkg-cards { display: grid; gap: var(--s2); width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.wkg-cards.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.wkg-card { position: relative; aspect-ratio: 1; min-height: 52px; padding: 0; border: 0; background: none; cursor: pointer; perspective: 400px; -webkit-tap-highlight-color: transparent; }
+.wkg-card .f { position: absolute; inset: 0; display: grid; place-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; transition: transform .28s steps(5); }
+.wkg-card .back { background: var(--surface-2); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 4px var(--shadow), inset 0 0 0 5px var(--inset);
+  background-image: repeating-linear-gradient(45deg, color-mix(in srgb, var(--key) 30%, transparent) 0 4px, transparent 4px 10px); }
+.wkg-card .front { background: var(--inset); box-shadow: 0 0 0 2px var(--key), 0 0 0 4px var(--shadow); transform: rotateY(180deg); }
+.wkg-card .front canvas { width: 70%; height: 70%; image-rendering: pixelated; }
+.wkg-card.up .back { transform: rotateY(180deg); }
+.wkg-card.up .front { transform: rotateY(360deg); }
+.wkg-cards > i.wkg-card.back { display: block; background: var(--surface-2); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 4px var(--shadow); opacity: .6; }
+.wkg-card.got .front { box-shadow: 0 0 0 2px var(--ok), 0 0 0 4px var(--shadow), 0 0 14px color-mix(in srgb, var(--ok) 60%, transparent); }
+.wkg-card.got { cursor: default; }
+.wkg-card.miss .front { box-shadow: 0 0 0 2px var(--danger), 0 0 0 4px var(--shadow); animation: wkg-shake .3s steps(4); }
+.wkg-card:disabled:not(.got) { cursor: default; }
+.wkg-card:focus-visible { outline: 3px solid var(--key); outline-offset: 3px; }
+.wkg-card:active:not(:disabled) .f { translate: 0 2px; }
+.wkg-peek { width: 100%; height: 6px; background: var(--inset); box-shadow: 0 0 0 1px var(--line-hi); }
+.wkg-peek i { display: block; height: 100%; width: 100%; background: var(--key); transition: width linear; }
+.wkg-peek.done { visibility: hidden; }
+html.rm .wkg-card .f { transition: none; }
+html.rm .wkg-card.miss .front { animation: none; }
+@keyframes wkg-shake { 25% { translate: -3px 0; } 75% { translate: 3px 0; } }
+
+/* pulse */
+.wkg-call { position: absolute; top: 10px; left: 0; right: 0; text-align: center; font: 400 22px/1 var(--display); color: var(--text); text-shadow: 2px 2px 0 var(--shadow); pointer-events: none; }
+.wkg-grade { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font: 400 26px/1 var(--display); text-shadow: 2px 2px 0 var(--shadow); opacity: 0; pointer-events: none; }
+.wkg-grade.show { animation: wkg-pop .7s steps(6) forwards; }
+.wkg-grade.perfect { color: var(--ok); } .wkg-grade.good { color: var(--cyan); } .wkg-grade.miss { color: var(--danger); }
+@keyframes wkg-pop { 0% { opacity: 1; transform: translateY(6px) scale(1.15); } 70% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+html.rm .wkg-grade.show { animation: none; opacity: 1; }
+
+/* wave */
+.wkg-stage.wkg-wave { aspect-ratio: 300 / 130; width: 100%; max-width: none; }
+.wkg-wave.matched, .wkg-board.matched .wkg-wave { box-shadow: 0 0 0 2px var(--ok), 0 0 0 5px var(--shadow), 0 0 16px color-mix(in srgb, var(--ok) 50%, transparent); }
+.wkg-meters { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px var(--s3); align-items: center; }
+.wkg-hold, .wkg-time { height: 10px; background: var(--inset); box-shadow: 0 0 0 1px var(--line-hi); overflow: hidden; }
+.wkg-hold i, .wkg-time i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .1s linear; }
+.wkg-time i { background: var(--muted); }
+.wkg-dial { width: 100%; display: grid; grid-template-columns: 88px 44px minmax(0, 1fr) 44px; gap: var(--s2); align-items: center; }
+.wkg-dial .btn.sm { min-width: 44px; min-height: 44px; padding: 0; font-size: 20px; }
+.wkg-dial input[type=range] { width: 100%; height: 44px; accent-color: var(--key); cursor: pointer; }
+.wkg-dial input[type=range]:focus-visible { outline: 3px solid var(--key); outline-offset: 2px; }
+
+/* rings */
+.wkg-rings { cursor: pointer; }
+.wkg-lockbtn { max-width: 300px; min-height: 52px; }
+
+/* ----- chatter: the key on the world page and its speech bubble ----- */
+.wk-buddy { position: absolute; top: var(--s3); right: var(--s3); z-index: 4; width: 44px; height: 56px; padding: 4px 6px 4px 4px; border: 0; cursor: pointer; display: grid; grid-template-columns: 1fr 4px; gap: 3px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 4px var(--shadow); -webkit-tap-highlight-color: transparent; }
+.wk-buddy canvas { width: 30px; height: 47px; image-rendering: pixelated; }
+.wk-buddy-g { position: relative; display: block; background: var(--inset); align-self: stretch; }
+.wk-buddy-g b { position: absolute; left: 0; right: 0; bottom: 0; background: var(--ok); }
+.wk-buddy-g.s-drifting b { background: var(--gold); }
+.wk-buddy-g.s-out b, .wk-buddy-g.s-never b { background: var(--danger); }
+.wk-buddy.static { box-shadow: 0 0 0 2px var(--danger), 0 0 0 4px var(--shadow); }
+.wk-buddy.talk { animation: wk-hop .4s steps(4); }
+.wk-buddy:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+@keyframes wk-hop { 40% { transform: translateY(-5px); } }
+#stage .wk-bubble { top: 74px; right: var(--s3); left: auto; z-index: 5; max-width: min(78%, 320px); grid-template-columns: minmax(0, 1fr) 32px; opacity: 0; transform: translateY(-4px); transition: opacity .18s steps(3), transform .18s steps(3);
+  box-shadow: 0 0 0 2px var(--key, var(--violet)), 0 0 0 5px var(--shadow); }
+#stage .wk-bubble::before { content: ''; position: absolute; top: -10px; right: 16px; border: 6px solid transparent; border-bottom: 6px solid var(--key, var(--violet)); }
+#stage .wk-bubble.in { opacity: 1; transform: none; animation: none; }
+#stage .wk-bubble.out { opacity: 0; }
+#stage .wk-bubble p .lbl { color: var(--key, var(--violet-hi)); }
+#stage .wk-bubble.static { box-shadow: 0 0 0 2px var(--danger), 0 0 0 5px var(--shadow); background-image: repeating-linear-gradient(0deg, transparent 0 3px, color-mix(in srgb, var(--text) 6%, transparent) 3px 4px); }
+#stage .wk-bubble.static::before { border-bottom-color: var(--danger); }
+.wk-bub-act { justify-self: start; margin-top: 2px; min-height: 40px; padding-left: 0; }
+html.rm #stage .wk-bubble { transition: none; }
+html.rm .wk-buddy.talk { animation: none; }

@@ -169,10 +169,12 @@
     el.innerHTML = `${o.egg ? WB.eggImg(o.egg, 36, 'ti') : o.img ? WB.pxImg(o.img, 36, 'ti') : o.icon ? WB.icon(o.icon, 3, o.pal ? { pal: o.pal } : {}) : ''}<div class="tx"><span class="tk">${WB.esc(o.kicker || '')}</span><span class="tt">${WB.esc(o.title || '')}</span>${o.sub ? `<span class="ts">${WB.esc(o.sub)}</span>` : ''}</div>${act ? `<button class="btn sm t-act ${WB.esc(o.action.cls || '')}" type="button">${WB.esc(o.action.label)}</button><button class="t-x" type="button" aria-label="Close">×</button>` : ''}`;
     $('#toasts').appendChild(el);
     let gone = false;
+    if (o.tag) el.dataset.tag = o.tag;
     const done = (fast) => {
       if (gone) return; gone = true; if (curDone === done) curDone = null; el.classList.add('out');
       setTimeout(() => { el.remove(); if (act) pinned--; else tShown--; pump(); }, fast === true ? 60 : 300);
     };
+    el._done = done;
     if (act) {
       el.querySelector('.t-act').onclick = () => { o.action.fn(); done(); };
       el.querySelector('.t-x').onclick = () => done();
@@ -189,6 +191,11 @@
   }
 
   UI.flushToasts = pump;
+  // take back notes that no longer apply (e.g. "Tune now" once the key is tuned): queued ones and ones on screen
+  UI.dropToasts = (tag) => {
+    for (let i = tq.length - 1; i >= 0; i--) if (tq[i].tag === tag) tq.splice(i, 1);
+    document.querySelectorAll('#toasts .toast').forEach((el) => { if (el.dataset.tag === tag && el._done) el._done(true); });
+  };
   // open the Shop on one item (e.g. from a "New avatar" note): the right tab, scrolled to it, briefly highlighted
   UI.showItem = (cat, id) => {
     UI.hub = 'shop'; UI.shopTab = cat === 'magic' || (cat === 'weapon' && D.weaponById[id] && D.weaponById[id].slot === 'ranged') ? 'ranged' : { avatar: 'avatar', pet: 'pets', weapon: 'weapons' }[cat] || 'avatar';
@@ -1139,6 +1146,7 @@
       <div class="sect"><h2>Appearance &amp; sound</h2>
         <div class="setting pbox theme-set"><div><div id="lbl-theme">Theme</div><div class="sd">App colors. All meet WCAG AA.</div></div>
           <div class="theme-pick" role="radiogroup" aria-labelledby="lbl-theme">${UI.THEMES.map(([id, name, sub, sw]) => `<button type="button" role="radio" aria-checked="${(s.settings.theme || 'night') === id}" data-theme-pick="${id}"><span class="th-sw" aria-hidden="true">${sw.map((c) => `<i style="background:${c}"></i>`).join('')}</span><span class="tn">${name}</span><span class="ts">${sub}</span></button>`).join('')}</div></div>
+        <div class="setting pbox"><div><div id="lbl-wkchat">Worldkey chatter</div><div class="sd">Your Worldkey talks while you walk and on the world page.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-wkchat" aria-checked="${s.settings.wkChat !== false}" data-toggle="wkChat"></button></div>
         <div class="setting pbox"><div><div id="lbl-music">Game music</div><div class="sd">Turn off to play your own music.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-music" aria-checked="${s.settings.gameMusic !== false}" data-toggle="gameMusic"></button></div>
         <div class="setting pbox"><div><div id="lbl-sound">Sound effects</div><div class="sd">Game sounds.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-sound" aria-checked="${!!s.settings.sound}" data-toggle="sound"></button></div>
         <div class="setting pbox"><div><div id="lbl-timer">Battle turn timer</div><div class="sd">Appears after ${D.TURN_GRACE} seconds of waiting, then counts down.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-timer" aria-checked="${s.settings.turnTimer !== false}" data-toggle="turnTimer"></button></div>
@@ -1299,7 +1307,7 @@
           <div class="wbody"><h3>${w.name}</h3><p class="wb">${w.blurb}</p>
           <div class="wcr"><span class="lbl">Creatures here</span><div class="crts">${w.pool.map((c) => `<span class="crt" title="${WB.esc(D.CREATURES[c].name)}"><canvas width="80" height="80" data-crthumb="${c}" aria-label="${WB.esc(D.CREATURES[c].name)}" role="img"></canvas></span>`).join('')}</div></div>
           ${open ? `<div class="wrow"><div class="bar seg cyan"><i style="width:${pct}%"></i></div><div class="wmeta"><span class="lbl">${Math.floor(pct)}% explored · ${(s.enc.finds[w.id] || []).length}/${D.FINDS[w.id].length} artifacts</span>${cur ? '<span class="lbl here">You are here</span>' : G.canTravel(w.id) ? `<button class="btn sm" type="button" data-travel="${w.id}">Travel</button>` : `<span class="lbl dim">Finish ${WB.esc(G.firstWorld().name)} to wake your Worldkey</span>`}</div>
-            <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${s.bosses[w.id] ? (G.battlesOpen() ? `<button class="btn ghost sm" type="button" data-boss="${w.id}" aria-label="Rematch ${WB.esc(D.CREATURES[w.boss].name)}">Rematch</button>` : '') : pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : '<span class="lbl dim">Appears at 100%</span>'}</div></div>`
+            <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${s.bosses[w.id] ? (G.battlesOpen() ? `<button class="btn ghost sm" type="button" data-boss="${w.id}" aria-label="Rematch: a random fight in ${WB.esc(w.name)}">Rematch</button>` : '') : pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : '<span class="lbl dim">Appears at 100%</span>'}</div></div>`
           : G.wk().found.includes(w.id) ? `<div class="wrow"><div class="wmeta"><span class="lbl here">Discovered</span><button class="btn gold sm" type="button" data-wk="gate" data-wid="${w.id}">Use Worldkey</button></div></div>`
           : `<div class="wrow"><span class="lbl wreq-h">${WB.icon('lock', 2)} To open this world</span>
             <ul class="wreq"><li class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Reach level ${w.unlock.level}</li>${wp.prev ? `<li class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Explore ${G.gatePct(w)}% of ${WB.esc(wp.prev.name)}</li>` : ''}</ul>

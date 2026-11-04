@@ -73,7 +73,7 @@ App icons: the Step Quest logo is already in `native/assets/` (`icon.png` 1024×
 One loop: **walk → explore worlds → find things on the road → level up → open the next world.**
 
 - **Walkers.** At sign-up you pick one of three starters; it's the only walker you have at level 1. The other two open at level 5 for 1,500 coins, and the rest unlock with levels, coins, streaks and exploring.
-- **Worlds (50).** Each opens with a level and the world before it explored (Rust Hollow 100%, then 75%), and then through your **Worldkey**.
+- **Worlds (50).** Each opens with a level and the world before it 100% explored, and then through your **Worldkey**.
 - **On the road** (`D.ENCOUNTER_WEIGHTS`): creatures (half want a fight, from level 3), supply crates, artifacts, **merchants** (cheap tonics), **travelers** (deliveries: walk N steps), **Merlin** with an egg, an **egg** by the road, the **Druid** (from level 3) and, from level 20, rare **roaming bosses**. **Redhood Rival** can appear in any fight once battles open. Each world's **guardian** wakes at 100% explored and guards a Crystal Egg.
 - **The Druid** (`js/05f-druid.js`), the quick NPC: one trivia question. Right pays XP and coins; wrong means a battle. Your eggs are always safe.
 - **Roaming bosses** (6) and **Redhood Rival**: scaled to your level, each with its own magic, ability and dialogue. Beating a boss pays big and drops an egg; losing costs 2 levels.
@@ -99,9 +99,23 @@ One loop: **walk → explore worlds → find things on the road → level up →
 Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs:
 
 - **Destination:** the world is discovered (level + previous world explored).
-- **Resonance:** repeat the world's symbol pattern once (gets longer and faster with your level; unlimited tries). It fades after 6 hours (`K.TUNE_HOURS`), so you replay it often.
+- **Tuning:** every Worldkey tunes with its own mini-game (see below). Its tuning gauge drains from full to empty over 2 hours (`K.TUNE_HOURS`); the Worldkey page shows the gauge, never a countdown. A newly discovered world also needs its own tuning, played after you discover it. An in-tune key finds artifacts 25% more often.
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
+
+## Changes in 3.4.0
+
+- **Every Worldkey has its own tuning game** (`js/02j-wkgames.js` data, `js/05o-wkgames.js` rules, `js/07m-wkgames-ui.js` screens). The rules engine runs each attempt as a session and judges every tap, flip and dial turn with its own clock; the screen only shows it. Only a session it judged a win can tune the key, once, for the key that played it.
+  - **Echo** (repeat the pattern): the Rookie (classic symbols), Classic (circuit glyphs), Marmalade (memory shards), Parchment (case clues). The three new sets have their own shapes, a color per symbol and their own notes.
+  - **Mirror Pairs** (peek, then match every pair before you run out of misses): Bluebell (constellations), Blossom (blossoms), Fernlight (field specimens), Sugarplum (the silver service). 6 / 8 / 10 pairs by level.
+  - **Pulse** (tap as the ring meets the target): Twilight (random swing), Patriot (LEFT / RIGHT drill), Starshine (speeds up), Regalia (long-short fanfare). Too-early taps count as misses, so mashing never wins.
+  - **Waveform** (turn the dials until your signal lies on the world's, then hold it): Static, Alarm Bell (a nervous shiver), Coral Reef (a slow swell). Height dial from level 12.
+  - **Ring Lock** (stop each spinning ring with its notch on the mark): Night Ember, Tidepool (calmer), Dune.
+- **Tuning is per key and drifts over 2 hours.** The Worldkey page, the new-world gate and the Worldkeys list show a tuning gauge (In tune / Drifting / Out of tune) instead of a time. Switching keys switches gauges. **Every new world needs a tuning played after you discover it** before it opens. Old saves keep their latest tuning.
+- **The Worldkeys talk** (`js/02k-wkchat.js`, `js/07n-wkchat-ui.js`): a small key sits at the top right of the world page (with its gauge); tap it to talk. It greets you by time of day, chats while you walk and at every 1,000 steps, fills long silences, reacts to battles, artifacts, crates, level-ups, milestones and your daily goal, and when it's out of tune its screen fills with static and it asks to be tuned. About 27 new lines per personality. Never over a battle, sheet, card or the tour; Profile → Settings → **Worldkey chatter** turns it off.
+- **Worlds must be 100% explored** before the next one is discovered (`D.WORLD_GATE_PCT`, was 75%). Worlds already opened stay open; a discovered-but-unopened world whose previous world isn't finished waits until it is.
+- **Rematch is a random fight** from that world (World map → Rematch): one of its creatures, a mob of them (from `D.MOB_LEVEL`), or the guardian about 1 time in 5 (`G.makeRematch`).
+- **Egg collection counts the classic eggs.** Frost, Ember and Crystal now have their own row (53 in all). Before, only elemental colors were recorded, so classic eggs you hatched never showed. Saves whose hatch count is higher than their recorded colors get the Frost Egg back (every walker's first egg); which other classic eggs were hatched before wasn't saved.
 
 ## Changes in 3.3.14
 
@@ -235,6 +249,8 @@ js/02-data.js            worlds, creatures, avatars, pets, weapons, potions, dai
 js/02d-merlin.js         Merlin's eggs, his lines and the History Notes
 js/02e-quiz.js           the 945 Knowledge Check questions
 js/02g-worldkey.js       Worldkey numbers, tuning symbols, the Rookie's dialogue
+js/02j-wkgames.js        Worldkey tuning games: symbol art, sets, which key plays which game
+js/02k-wkchat.js         more Worldkey dialogue (walks, world page, fights, finds, tuning)
 js/02h-quick.js          quick missions and mission types
 js/03-state.js           save data, migration of older saves
 js/04-steps.js           step tracking, sound and music
@@ -244,7 +260,8 @@ js/05b-battle.js         battle rules
 js/05d-custom.js         your own missions
 js/05e-merlin.js         Merlin's eggs: nest, hatching, Knowledge Check, History Notes
 js/05f-druid.js          the Druid's Knowledge Challenge
-js/05g-worldkey.js       Worldkey: tuning, charging with artifacts, opening worlds
+js/05g-worldkey.js       Worldkey: tuning gauge, charging with artifacts, opening worlds
+js/05o-wkgames.js        Worldkey tuning games: the rules (sessions that judge every move)
 js/05h-remind.js         mission reminders and the alert bell
 js/05i-artifacts.js      artifact collection and copies
 js/05j-unlocks.js        feature unlocks
@@ -259,6 +276,8 @@ js/07g-celebrate.js      confetti and celebration lines
 js/07h-merlin-ui.js      Missions → Merlin and the hatching card
 js/07i-loading.js        loading screen
 js/07j-worldkey-ui.js    Worldkey screens
+js/07m-wkgames-ui.js     Worldkey tuning game screens
+js/07n-wkchat-ui.js      the Worldkey on the world page and its speech bubble
 js/07k-quick-ui.js       quick missions card
 js/07l-mood-ui.js        mood check-in card and Profile moods
 js/08-main.js            startup, onboarding, developer panel
