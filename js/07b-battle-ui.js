@@ -64,7 +64,7 @@
     const st = WB.Battle.start(e);
     const w = st.world;
     view = { world: w, sceneH: WB.scene(w).h, cam: (S().worldSteps[w.id] || 0) * D.PX_PER_STEP, heroTop: 0, enemyTop: 0, petTop: 0, px: 0 };
-    shown = { hero: st.hero.hp, enemy: st.enemy.hp, pet: st.pet ? st.pet.hp : 0 };
+    shown = { hero: st.hero.hp, enemy: st.enemy.hp, pet: st.pet ? st.pet.hp : 0, sg: st.sg.hp, gb: false, def: false };
     disp = { ...shown }; ghost = { ...shown };
     sprites.hero = { anim: 'idle', f: 0, once: false, t: 0, adv: 0, advTo: 0, enter: 1.5 };
     sprites.enemy = { anim: 'idle', f: 0, once: false, fade: 1, adv: 0, advTo: 0, enter: 1.5, flash: 0 };
@@ -111,9 +111,10 @@
     w.layers.forEach((L) => WB.Assets.get(WB.layerPath(w, L[0])));
     resize();
     BU.ro = new ResizeObserver(resize); BU.ro.observe($('#b-stage'));
+    $('#b-stage').addEventListener('click', stageTap);
     plates();
     const c = D.CREATURES[e.creature];
-    log((e.nemesis ? (e.cutOff ? `You try to slip away, but ${c.name} cuts you off! ` : '') + `Boss battle: ${c.name}. ${D.BOSSES[e.creature].abilityName}: ${D.BOSSES[e.creature].abilityDesc}` : e.boss ? `${c.name}, guardian of ${w.name}, blocks the way!` : e.creature === 'druid' ? 'Wrong answer! The Druid raises his blade. Beat him or he takes all your eggs.' : st.foes.length > 1 ? `A mob of ${st.foes.length}! ${st.foes.map((f) => f.name).join(', ')}. Beat them one by one.` : `${c.name} wants a fight!`) +
+    log((e.nemesis ? (e.cutOff ? `You try to slip away, but ${c.name} cuts you off! ` : '') + `Boss battle: ${c.name}. ${D.BOSSES[e.creature].abilityName}: ${D.BOSSES[e.creature].abilityDesc}` : e.boss ? `${c.name}, guardian of ${w.name}, blocks the way!` : e.creature === 'druid' ? 'Wrong answer! The Druid raises his blade. Beat him or he takes all your eggs.' : st.foes.length > 1 ? `A mob of ${st.foes.length}! ${st.foes.map((f) => f.name).join(', ')}. Tap one to pick your target.` : `${c.name} wants a fight!`) +
       (S().hints.battle ? '' : ` Tip: Strike uses your ${st.melee.name}. Your ${st.weapon.name} hits harder but needs to recharge. Defend while it does.`));
     actions();
     last = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
@@ -272,7 +273,7 @@
       for (const sp of sprites.foes) {
         if (sp.gone) continue;
         const sh = WB.sheet('cr', sp.id, sp.anim), img = WB.Assets.ok(sh.path) || WB.Assets.ok(WB.sheet('cr', sp.id, 'idle').path);
-        const x = view.ex + 30 + k * 24; k++;
+        const x = view.ex + 30 + k * 24; k++; sp.x = x;
         if (!img) continue;
         const ish = WB.Assets.ok(sh.path) ? sh : WB.sheet('cr', sp.id, 'idle');
         step(sp, ish, dt, sp.anim === 'idle' ? 7 : 11); ease(sp, dt);
@@ -293,7 +294,7 @@
     const esh = WB.sheet('cr', eid, es.anim), eimg = WB.Assets.ok(esh.path);
     if (eimg) {
       step(es, esh, dt, es.anim === 'idle' ? 7 : es.anim === 'transform' ? 9 : 11);
-      const sc = (cdef.scale || 1) * (enc.boss ? 1.25 : 1), sz = esh.fs * sc, f = Math.min(esh.n - 1, Math.floor(es.f)), dy = g - sz + 1;
+      const sc = (cdef.scale || 1) * (st && st.enemy.boss ? 1.25 : 1), sz = esh.fs * sc, f = Math.min(esh.n - 1, Math.floor(es.f)), dy = g - sz + 1;
       if (es.run) { es.runX = (es.runX || 0) + dt * 220; es.fade = Math.max(0, 1 - es.runX / 160); }   // running off the stage
       ease(es, dt);
       const ex0 = view.ex; view.ex += Math.round(es.runX || 0) - Math.round(es.adv) + Math.round(Math.pow(Math.min(1, es.enter), 2) * view.W * 0.5);
@@ -319,6 +320,11 @@
       if (E && E.stun > 0) { ctx.fillStyle = '#ff9a3d'; for (let i = 0; i < 3; i++) { const a = t * 4 + i * 2.1; ctx.fillRect(Math.round(view.ex + Math.cos(a) * 10), Math.round(topOf(esh, dy, sc) - 4 + Math.sin(a) * 3), 2, 2); } }
       ctx.globalAlpha = 1;
       view.enemyTop = topOf(WB.sheet('cr', eid, 'idle'), dy, sc);
+      if (E && es.fade > 0 && es.anim !== 'death' && st.foes && st.foes.filter((x) => x.hp > 0).length > 1) {   // your target in a mob: a bobbing gold arrow
+        const ay = Math.round(view.enemyTop - 9 + Math.sin(t * 5) * 1.5), ax = Math.round(view.ex);
+        ctx.fillStyle = '#1a1030'; ctx.fillRect(ax - 4, ay - 1, 9, 2); ctx.fillRect(ax - 3, ay + 1, 7, 2); ctx.fillRect(ax - 2, ay + 3, 5, 1); ctx.fillRect(ax - 1, ay + 4, 3, 2);
+        ctx.fillStyle = '#ffd166'; ctx.fillRect(ax - 3, ay, 7, 1); ctx.fillRect(ax - 2, ay + 1, 5, 2); ctx.fillRect(ax - 1, ay + 3, 3, 1); ctx.fillRect(ax, ay + 4, 1, 1);
+      }
       if (E && E.nemesis && E.halved && E.ability === 'enrage' && es.fade > 0 && !reducedFx && Math.random() < dt * 18) fx.push({ type: 'spark', x: view.ex - sz * 0.2 + Math.random() * sz * 0.4, y: g - Math.random() * sz * 0.6, vx: 0, vy: -40, life: 0.6, t: 0, color: Math.random() < 0.5 ? '#ff6b3d' : '#ff9a3d', size: 2 });
       view.ex = ex0;
     }
@@ -395,16 +401,20 @@
     const st = WB.Battle.st, h = st.hero, e = st.enemy, p = st.pet;
     const est = [e.poison > 0 && 'Poisoned', e.burn > 0 && 'Burning', e.bleed > 0 && 'Cursed', e.freeze > 0 && 'Frozen', e.stun > 0 && 'Stunned',
       e.drain > 0 && 'Drained', e.weaken > 0 && 'Weakened', e.sunder > 0 && 'Sundered', e.brace && 'Bracing', e.ward && 'Ward up', e.charging && 'Charging!', e.nemesis && e.halved && e.ability === 'enrage' && 'Enraged'].filter(Boolean);
-    const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.harden > 0 && 'Perfect block', h.autoGuard > 0 && 'On guard', h.spikes > 0 && 'Spiked shield', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge, !WB.Battle.canDefend(st) && 'Guard broken'].filter(Boolean);
+    const hst = [h.defend && 'Defending', h.guard > 0 && 'Guarded', h.harden > 0 && 'Perfect block', h.autoGuard > 0 && 'On guard', h.spikes > 0 && 'Spiked shield', h.fury > 0 && 'Fury', h.reflect && 'Mirror', h.poison > 0 && 'Poisoned', h.venom > 0 && 'Venom · ' + h.venom + (h.venom > 1 ? ' turns' : ' turn'), h.burn > 0 && 'Burning', h.weak > 0 && 'Weakened', h.stun > 0 && 'Stunned', h.clone > 0 && 'Copy ×' + h.clone, h.tome > 0 && 'Magic +' + Math.round(D.BOOK_BONUS * 100) + '%', h.twice > 0 && 'Lucky ×' + h.twice, h.dodge > 0 && 'Dodge ×' + h.dodge].filter(Boolean);
     const plate = (name, lvl, cur, g, max, tags, cls) => `<div class="pl-main"><span class="pl-name">${WB.esc(name)}</span>${bar(cur, g, max, cls)}<div class="pl-bot"><span class="lbl">${lvl}</span><span class="lbl" data-hpn="1">${Math.max(0, Math.round(cur))} / ${max}</span></div></div><span class="lbl tags">${tags.join(' · ')}</span>`;
     $('#b-pe').innerHTML = plate(e.name, `Lv ${e.lvl}${e.boss ? ' · Guardian' : e.nemesis ? ' · Boss' : ''}`, disp.enemy, ghost.enemy, e.max, est, 'ehp');
     const rest = (st.foes || []).filter((f) => f !== e && f.hp > 0);   // the rest of a mob, waiting their turn
-    if (rest.length) $('#b-pe').insertAdjacentHTML('beforeend', `<div class="pl-mob" aria-label="${rest.length} more in the mob">${rest.map((f) => `<span class="pm"><span class="lbl">${WB.esc(f.name)}</span>${bar(f.hp, f.hp, f.max, 'ehp thin')}</span>`).join('')}</div>`);
+    if (rest.length) {   // the rest of the mob: tap one to attack it instead (3.7.0)
+      $('#b-pe').insertAdjacentHTML('beforeend', `<div class="pl-mob" role="group" aria-label="${rest.length} more in the mob. Tap one to target it.">${rest.map((f) => `<button type="button" class="pm" data-target="${st.foes.indexOf(f)}" aria-label="Target ${WB.esc(f.name)}, ${Math.round(f.hp)} of ${f.max} HP">${WB.icon('sword', 1)}<span class="lbl">${WB.esc(f.name)}</span>${bar(f.hp, f.hp, f.max, 'ehp thin')}</button>`).join('')}</div>`);
+      WB.$$('#b-pe [data-target]').forEach((b) => (b.onclick = () => target(+b.dataset.target)));
+    }
     $('#b-pe').classList.toggle('boss', !!e.nemesis);
-    const guardRow = '';   // 3.5.3: no Defend gauge; the Defend button shows your Block %
+    // the shield gauge (3.7.0): what your shield can still take while you defend
+    const sg = st.sg, gb = !!shown.gb, gn = st.shield ? (st.shield.belt ? 'Belt' : 'Shield') : 'Guard';
+    const guardRow = `<div class="pl-sg ${!gb && (shown.def || h.autoGuard > 0) ? 'on' : ''} ${gb ? 'broken' : ''}" aria-label="${gn} gauge ${gb ? 'broken' : Math.round(shown.sg) + ' of ' + sg.max}">${WB.icon('shield', 1)}<span class="lbl">${gn}</span><span class="bar sg thin ${!gb && shown.sg / sg.max < 0.3 ? 'low' : ''}"><i style="width:${gb ? 0 : Math.max(0, Math.min(100, shown.sg / sg.max * 100))}%"></i></span><span class="lbl" data-sgn="1">${gb ? 'Broken' : Math.max(0, Math.round(shown.sg))}</span></div>`;
     $('#b-ph').innerHTML = plate(S().name, `Lv ${h.lvl}`, disp.hero, ghost.hero, h.max, hst, 'hp') + guardRow +
-      (p ? `<div class="pl-pet ${shown.pet <= 0 ? 'ko' : ''}">${WB.icon('paw', 1)}<span class="lbl">${WB.esc(p.name)}</span>${bar(disp.pet, ghost.pet, p.max, 'hp thin')}<span class="lbl" data-hpn="pet">${shown.pet <= 0 ? 'KO' : Math.round(disp.pet)}</span></div>
-        <div class="pl-psp ${p.charge >= D.PET_SP_EVERY ? 'ready' : ''}" aria-label="${WB.esc(p.sp.name)}: ${p.charge >= D.PET_SP_EVERY ? 'ready' : p.charge + ' of ' + D.PET_SP_EVERY + ' charged'}"><span class="lbl">${WB.esc(p.sp.name)}</span><span class="psp-pips" aria-hidden="true">${Array.from({ length: D.PET_SP_EVERY }, (_, i) => `<i class="${i < p.charge ? 'on' : ''}"></i>`).join('')}</span></div>` : '');
+      (p ? `<div class="pl-pet ${shown.pet <= 0 ? 'ko' : ''}">${WB.icon('paw', 1)}<span class="lbl">${WB.esc(p.name)}</span>${bar(disp.pet, ghost.pet, p.max, 'hp thin')}<span class="lbl" data-hpn="pet">${shown.pet <= 0 ? 'KO' : Math.round(disp.pet)}</span></div>` : '');
     // both plates are always the same size: the shorter one grows to match the taller one
     const pe = $('#b-pe'), ph = $('#b-ph'); pe.style.minHeight = ph.style.minHeight = '';
     const hgt = Math.max(pe.offsetHeight, ph.offsetHeight); if (hgt) pe.style.minHeight = ph.style.minHeight = hgt + 'px';
@@ -420,7 +430,7 @@
     l.onclick = () => { clearInterval(typeT); l.textContent = text; };
   }
   const clip = (t, n) => { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };   // keeps a name inside its button
-  const potionTag = (p) => (p.kind === 'blockup' ? 'Block +' + Math.round(p.amount * 100) + '%' : p.kind === 'mend' ? 'Repair +' + p.amount + '%' : p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
+  const potionTag = (p) => (p.kind === 'blockup' ? 'Block +' + Math.round(p.amount * 100) + '%' : p.kind === 'mend' ? 'Repair + gauge +' + p.amount * 2 + '%' : p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
   function actions(mode = 'main') {
     const st = WB.Battle.st, el = $('#b-actions'), s = S();
     if (!el) return;
@@ -430,7 +440,7 @@
       const row = (w, on, why, ic, sub) => `<button class="btn ghost ${on ? 'on' : ''}" type="button" data-b="swap:${w.slot}/${w.id}" ${on ? 'aria-pressed="true"' : ''} ${WB.UI.off(why)} aria-label="${WB.esc(w.name)}">${ic}<span class="bt"><span>${WB.esc(clip(w.name, 18))}</span><small>${on ? 'In hand' : WB.esc(sub)} · ${w.slot === 'ranged' ? G.ammo(w.id) + ' left' : Math.round(G.cond(w.id)) + '%'}</small></span></button>`;   // condition shows on every piece of gear
       const melee = owned.filter((w) => w.slot === 'melee').map((w) => row(w, st.melee.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Strike'));
       const rng = owned.filter((w) => w.slot === 'ranged').map((w) => { const cd = st.weapon.id === w.id ? st.cooldown : st.cds[w.id] || 0; return row(w, st.weapon.id === w.id, G.ammo(w.id) <= 0 && w.name + ' is out. Refill it in the Shop.', `<canvas width="24" height="24" class="wp-ic" data-wid="${w.id}"></canvas>`, (VERB[w.type] || 'Throw') + (cd > 0 ? ' · in ' + cd : '')); });
-      const shd = owned.filter((w) => w.slot === 'shield').map((w) => row(w, !!st.shield && st.shield.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Gauge ' + Math.round(w.block * 100) + '% HP'));
+      const shd = owned.filter((w) => w.slot === 'shield').map((w) => row(w, !!st.shield && st.shield.id === w.id, '', WB.pxImg(w.icon, 24, 'b-ic'), 'Gauge ' + Math.round(st.hero.max * (w.block + (w.regen || 0)) * G.wearF(w.id) * D.SG_SHIELD)));
       const sec = (t, list) => list.length ? `<p class="b-sub">${t}</p>${list.join('')}` : '';
       // ranged weapons and battle magic are one family: everything you throw, shoot or cast
       const turnUsed = st.magicTurn === st.turn;
@@ -455,7 +465,7 @@
         <button class="btn ghost gear-btn" type="button" data-b="gearmenu">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Gear &amp; Magic</span><small>${st.magic.length ? 'Swap weapons · cast magic' : 'Weapons, bows, shield'}</small></span></button>
         <button class="btn" type="button" data-b="strike">${WB.pxImg(m.icon, 24, 'b-ic')}<span class="bt"><span>Strike</span><small>${WB.esc(clip(m.name, 16))}</small></span></button>
         <button class="btn" type="button" data-b="throw" ${WB.UI.off(noAmmo ? wpn.name + ' is out. Swap to another ranged weapon in Gear, or strike.' : !ready && wpn.name + ' is recharging: ready in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '') + '. Strike or defend meanwhile.')}><canvas width="24" height="24" class="wp-ic"></canvas><span class="bt"><span>${VERB[wpn.type] || 'Throw'}</span><small>${WB.esc(clip(wpn.name, 16))} · ${noAmmo ? 'out' : ready ? G.ammo(wpn.id) + ' left' : 'in ' + st.cooldown + ' turn' + (st.cooldown > 1 ? 's' : '')}</small></span></button>
-        <button class="btn ghost defend" type="button" data-b="defend">${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>Block ${Math.round(WB.Battle.blockPct(st) * 100)}%${sh && sh.reflect ? ' · reverse' : ''}${sh && sh.counter ? ' · counter' : ''}<span class="sr-only">: until your next turn, every hit is cut by this much.</span></small></span></button>
+        <button class="btn ghost defend" type="button" data-b="defend" ${WB.UI.off(!WB.Battle.canDefend(st) && 'Your ' + (sh ? (sh.belt ? 'belt' : 'shield') : 'guard') + ' is broken. It’s back in ' + st.sg.broken + ' turn' + (st.sg.broken > 1 ? 's' : '') + '.')}>${sh ? WB.pxImg(sh.icon, 24, 'b-ic') : WB.icon('shield', 2, { pal: 'gold' })}<span class="bt"><span>Defend</span><small>${!WB.Battle.canDefend(st) ? 'Broken · back in ' + st.sg.broken : 'Block ' + Math.round(WB.Battle.blockPct(st) * 100) + '%'}${sh && sh.reflect ? ' · reverse' : ''}${sh && sh.counter ? ' · counter' : ''}<span class="sr-only">: until your next turn, your shield gauge takes this much of every hit.</span></small></span></button>
         <button class="btn ghost" type="button" data-b="items" ${WB.UI.off(!nPot && 'No potions. Buy some in the Shop later.')}>${WB.potionImg((D.POTIONS.find((p) => s.potions[p.id] > 0) || D.POTIONS[0]).id, 32)}<span class="bt"><span>Items</span><small>${nPot ? nPot + ' potion' + (nPot > 1 ? 's' : '') : 'No potions'}</small></span></button>
         ${specialBtn(st)}
         <button class="linkbtn flee" type="button" data-b="flee">Run away</button>`;
@@ -547,6 +557,27 @@
   }
   const hpText = (n) => (n > 0 ? '+' : '-') + Math.abs(Math.round(n)) + ' HP';
 
+  // pick a target in a mob (3.7.0): free, and the creature you pick steps up to the front
+  function target(i) {
+    const st = WB.Battle.st; if (busy || !st || st.over) return;
+    const r = WB.Battle.target(i); if (!r) return;
+    const old = sprites.foes[r.from], nw = sprites.foes[r.to];
+    Object.assign(old, { gone: false, anim: 'idle', f: 0, once: false, fade: 1, adv: 0, advTo: 0, enter: 0, flash: 0 });
+    nw.gone = true;
+    Object.assign(sprites.enemy, { id: st.enemy.id, anim: 'idle', f: 0, once: false, fade: 1, adv: 0, advTo: 0, enter: 0.35, flash: 0.2, run: false, runX: 0 });
+    shown.enemy = disp.enemy = ghost.enemy = st.enemy.hp;
+    WB.Sfx.play('tap'); plates(); floater('Target', 'enemy', 'tag');
+    log('You turn to ' + st.enemy.name + '.' + (st.enemy.charging ? ' It’s gathering power. Defend!' : ''));
+  }
+  BU.target = target;
+  // tapping a creature on the stage targets it
+  function stageTap(e) {
+    const st = WB.Battle.st; if (busy || !st || st.over || !sprites.foes || st.foes.filter((f) => f.hp > 0).length < 2) return;
+    const r = $('#b-stage').getBoundingClientRect(), nx = (e.clientX - r.left) / view.scale;
+    let best = -1, bd = 16;
+    sprites.foes.forEach((sp, i) => { if (!sp.gone && sp.x != null && st.foes[i].hp > 0) { const d = Math.abs(sp.x - nx); if (d < bd) { bd = d; best = i; } } });
+    if (best >= 0) target(best);
+  }
   async function onAction(a) {
     if (busy) return;
     if (a === 'items') return actions('items');
@@ -573,7 +604,7 @@
   async function runEvents(events) {
     for (const ev of events) await play(ev);
     const st = WB.Battle.st;
-    shown.hero = st.hero.hp; shown.enemy = st.enemy.hp; if (st.pet) shown.pet = st.pet.hp;
+    shown.hero = st.hero.hp; shown.enemy = st.enemy.hp; if (st.pet) shown.pet = st.pet.hp; shown.sg = st.sg.hp; shown.gb = st.sg.broken > 0; shown.def = false;
     plates();
     if (st.over) return finish(st);
     setBusy(false); actions(); startTurn();
@@ -720,7 +751,9 @@
         await sleep(380);
       } else if (ev.type === 'defend') {
         fx.push({ type: 'ring', x: view.hx, y: g - 30, color: '#59e3ff', t: 0 }); WB.Sfx.play('defend');
-        floater('Guard up', 'hero', 'tag'); plates(); await sleep(650);
+        shown.def = true; floater('Guard up', 'hero', 'tag'); plates(); await sleep(650);
+      } else if (ev.type === 'guardBack') {
+        shown.sg = ev.sg; shown.gb = false; fx.push({ type: 'ring', x: view.hx, y: g - 30, color: '#59e3ff', t: 0 }); WB.Sfx.play('equip'); floater('Guard back!', 'hero', 'tag'); plates(); await sleep(550);
       } else if (ev.type === 'spAttack') {
         const A = WB.ASSETS.fx, sp = D.SPECIALS[ev.sp];
         hs.anim = 'attack'; hs.once = true; hs.f = 0; hs.melee = false;
@@ -768,6 +801,7 @@
         await sleep(180);
         fx.push({ type: 'ring', x: hx, y: g - 30, color: ev.heal ? '#6ee7a0' : ev.guardGain != null ? '#59e3ff' : '#ff9a3d', t: 0 });
         healHero(ev.heal);
+        if (ev.sg !== undefined) { shown.sg = ev.sg; if (ev.guardGain) shown.gb = false; plates(); }
         if (ev.guardGain) floater((st.shield ? (st.shield.belt ? 'Belt' : 'Shield') : 'Guard') + ' +' + ev.guardGain, 'hero', 'tag');
         if (ev.dmg) { await sleep(250); hurtEnemy(ev.dmg, true, '#c58bff'); fx.push({ type: 'ring', x: view.ex, y: eY(), color: '#c58bff', t: 0 }); }
         plates(); await sleep(650);
@@ -806,8 +840,10 @@
         if (ev.type === 'magic') await enemySpell(false);
         else if (ev.type === 'special' && st.enemy.moves.special[1] !== 'multi' && st.enemy.moves.special[1] !== 'quake') await enemySpell(true);
         else { await sleep(ev.combo ? 200 : 380); if (ev.type === 'special') shake = 1.6; }
-        if (ev.blocked) { fx.push({ type: 'ring', x: view.hx, y: g - 30, color: '#59e3ff', t: 0 }); floater('Blocked ' + ev.soak, 'hero', 'tag'); plates(); }
+        if (ev.mirror) floater('Copied!', 'enemy', 'tag');
+        if (ev.blocked) { fx.push({ type: 'ring', x: view.hx, y: g - 30, color: '#59e3ff', t: 0 }); if (ev.sg !== undefined) shown.sg = ev.sg; floater((ev.sg !== undefined ? 'Shield −' : 'Blocked ') + ev.soak, 'hero', 'tag'); plates(); }
         if (ev.blocked) WB.Sfx.play('shield_block');
+        if (ev.guardBreak) { shown.gb = true; shown.def = false; plates(); setTimeout(() => { floater('Guard broken!', 'hero', 'tag'); WB.Sfx.play('hit_mace'); shake = Math.max(shake, 0.9); }, 260); }
         if (ev.dodged) { floater('Dodged!', 'hero', 'miss'); hs.anim = 'walk'; hs.once = true; hs.f = 0; }
         else if (ev.clone) { floater('Hit the copy!', 'hero', 'tag'); fx.push({ type: 'ring', x: view.hx - 22, y: hY(), color: '#c7b8ff', t: 0 }); }
         else if (ev.dmg > 0) hurtHero(ev.dmg, ev.type === 'special');

@@ -3895,3 +3895,18 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .b-intro.go .dl-intro-name { animation: b-title 1s both; }
 .dl-intro { align-content: center; }
 #battle.duel .b-banner .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-top: var(--s3); }
+
+/* ---------- 3.7.0 shield gauge · mob targets ---------- */
+.pl-sg { display: grid; grid-template-columns: auto minmax(0, auto) minmax(24px, 1fr) auto; gap: 6px; align-items: center; padding-top: 4px; border-top: 1px solid var(--line); }
+.pl-sg .bar { height: 5px; }
+.bar.sg > i, .bar.sg > b { background: #59e3ff; }
+.bar.sg { position: relative; display: block; background: var(--inset); box-shadow: inset 0 0 0 1px var(--shadow); overflow: hidden; }
+.bar.sg > i { position: absolute; inset: 0 auto 0 0; transition: width .35s steps(6); }
+.pl-sg.on { box-shadow: inset 0 0 0 1px #59e3ff; background: color-mix(in srgb, #59e3ff 12%, transparent); padding: 4px 4px 2px; border-top-color: transparent; }
+.pl-sg.on .lbl { color: #9fefff; }
+.pl-sg.broken .lbl { color: #ff8d7e; }
+.pl-sg.broken { animation: sg-broke .5s steps(2) 2; }
+@keyframes sg-broke { 50% { opacity: .45; } }
+.pl-mob .pm { appearance: none; border: 0; background: color-mix(in srgb, #ffd166 6%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffd166 35%, transparent); color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 4px 6px; min-height: 30px; grid-template-columns: auto minmax(0, 1fr) 32%; gap: 6px; }
+.pl-mob .pm:hover, .pl-mob .pm:focus-visible { background: color-mix(in srgb, #ffd166 12%, transparent); box-shadow: inset 0 0 0 1px #ffd166; outline: none; }
+@media (prefers-reduced-motion: reduce) { .pl-sg.broken { animation: none; } }

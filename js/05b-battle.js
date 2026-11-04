@@ -50,6 +50,8 @@
         moves: D.CREATURE_MOVES[id] || D.CREATURE_MOVES.hyena });
     }
     enc.mobN = B.st.foes.length;
+    B.st.sg = { max: 0, hp: 0, broken: 0 }; B.st.sg.max = B.st.sg.hp = B.guardMax(B.st);   // the shield gauge (3.7.0)
+    if (B.st.enemy.rival) B.rivalScale(B.st);
     // initiative: some creatures strike before your opening move (never in your very first battle)
     const e0 = B.st.enemy, A = D.AMBUSH;
     B.st.ambush = s.enc.battles > 0 && (Math.random() < (e0.nemesis || e0.rival ? A.boss : e0.boss ? A.guardian : A.creature));
@@ -67,7 +69,37 @@
     const base = sh ? (sh.block + (sh.regen || 0)) * G.wearF(sh.id) : D.GUARD_BARE;
     return Math.min(D.BLOCK_MAX, base + (st.perks && st.perks.has('guardmax') ? 0.1 : 0) + (h.blockUp || 0));
   };
-  B.canDefend = () => true;   // there's nothing to break any more: you can always defend
+  // ---------- the shield gauge (3.7.0): your shield (or belt, or bare guard) has its own HP for the battle. While you
+  // defend, your Block % of every hit comes out of the gauge instead of your HP. When the gauge runs out the guard
+  // breaks: no Defend for D.SG_BREAK turns, then it comes back at D.SG_BACK. Rounds you don't defend refill D.SG_REGEN.
+  // Size: your max HP × the shield's block × its condition × D.SG_SHIELD (no shield: × D.SG_BARE).
+  B.guardMax = (st) => { const sh = st.shield; return Math.max(8, Math.round(st.hero.max * (sh ? (sh.block + (sh.regen || 0)) * G.wearF(sh.id) * D.SG_SHIELD : D.SG_BARE))); };
+  B.canDefend = (st = B.st) => !st || !st.sg || st.sg.broken <= 0;
+  // a new shield mid-battle keeps the gauge's fill (as a share) on the new size
+  function regauge(st) { const sg = st.sg, k = sg.max ? sg.hp / sg.max : 1, m = B.guardMax(st); sg.max = m; sg.hp = sg.broken > 0 ? 0 : Math.round(m * k); }
+  function guardRound(st, events) {
+    const sg = st.sg, h = st.hero, sh = st.shield; if (!sg) return;
+    if (sg.broken > 0) {
+      if (--sg.broken === 0) { sg.hp = Math.round(sg.max * D.SG_BACK); events.push({ who: 'hero', type: 'guardBack', sg: sg.hp, text: 'Your ' + guardName(st) + ' is back up (' + sg.hp + ' / ' + sg.max + ').' }); }
+    } else if (!h.defended && sg.hp < sg.max) sg.hp = Math.min(sg.max, sg.hp + Math.max(1, Math.round(sg.max * (D.SG_REGEN + (sh && sh.regen ? sh.regen : 0)))));
+  }
+  // pick which creature in a mob to attack (free: it doesn't use your turn). The one you pick steps up to the front.
+  B.target = (i) => {
+    const st = B.st; if (!st || st.over) return null;
+    const f = (st.foes || [])[i]; if (!f || f.hp <= 0 || f === st.enemy) return null;
+    const from = st.foes.indexOf(st.enemy); st.enemy = f;
+    return { from, to: i };
+  };
+  // Redhood Rival keeps pace with you (3.7.0): her HP and attack follow your max HP and your weapon, and
+  // sometimes she copies your last attack for exactly the damage you dealt (D.RIVAL_MIRROR).
+  B.rivalScale = (st) => {
+    const e = st.enemy, h = st.hero, m = st.melee, sh = st.shield;
+    const yours = h.atk * m.power * G.wearF(m.id) * (st.perks.has('dmg') ? 1.08 : 1);   // your plain Strike
+    const soften = sh ? 1 - sh.armor * G.wearF(sh.id) : 1;
+    e.atk = Math.max(e.atk, Math.round((yours * D.RIVAL_PACE + h.def * 0.5) / Math.max(0.5, soften)));
+    e.max = e.hp = Math.max(e.hp, Math.round(h.max * D.RIVAL_HP));
+    e.lvl = Math.max(e.lvl, h.lvl);
+  };
   const guardName = (st) => (st.shield ? (st.shield.belt ? 'belt' : 'shield') : 'guard');
   B.turnTime = () => { const e = B.st.enemy, T = D.TURN_TIME; return e.nemesis || e.rival ? T.boss : e.boss ? T.guardian : T.creature; };
 
@@ -275,12 +307,13 @@
       }
       events.push(ev);
     } else if (move === 'defend') {
-      // raise your shield: until your next turn every hit is cut by your Block %. Defending never heals you.
+      // raise your shield: until your next turn your Block % of every hit goes to the shield gauge. Defending never heals you.
+      if (!B.canDefend(st)) return events;
       h.defend = true; h.defended = true;
       const sh = st.shield, dev = { who: 'hero', type: 'defend', block: Math.round(B.blockPct(st) * 100) };
       if (sh) wearOut(st, sh, 'defend', dev);
       if (P.has('guard')) h.riposte = true;   // Bulwark Sigil: your next attack hits 30% harder
-      dev.text = (sh ? (sh.belt ? 'You cinch the ' + sh.name + ' tight.' : 'You raise the ' + sh.name + '.') : 'You brace yourself.') + ' Blocking ' + dev.block + '% of every hit until your next turn.' + (P.has('guard') ? ' Your next attack will hit 30% harder.' : '') + (dev.worn ? ' ' + dev.worn : '');
+      dev.text = (sh ? (sh.belt ? 'You cinch the ' + sh.name + ' tight.' : 'You raise the ' + sh.name + '.') : 'You brace yourself.') + ' It takes ' + dev.block + '% of every hit until your next turn (shield ' + st.sg.hp + ' / ' + st.sg.max + ').' + (P.has('guard') ? ' Your next attack will hit 30% harder.' : '') + (dev.worn ? ' ' + dev.worn : '');
       events.push(dev);
     } else if (move === 'potion') {
       const onPet = /\/pet$/.test(arg || ''); if (onPet) arg = arg.slice(0, -4);
@@ -298,11 +331,13 @@
       if (p.kind === 'heal') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * p.amount)); ev.heal = h.hp - b0; ev.text = p.name + ': +' + ev.heal + ' HP.'; if (p.guardTurns) { h.guard = p.guardTurns; h.guardF = p.guardF || 0.5; ev.text += ' Damage taken halved for ' + p.guardTurns + ' turns.'; } }
       if (p.kind === 'guard') { h.guard = p.turns; h.guardF = p.factor || 0.5; ev.text = p.name + ': damage taken cut by ' + pct(1 - h.guardF) + ' for ' + p.turns + ' turns.'; }
       // shield potions (3.5.3): a stronger Defend for the rest of the battle, or a repaired shield. They never touch HP.
-      if (p.kind === 'blockup') { h.blockUp = (h.blockUp || 0) + p.amount; ev.blockGain = Math.round(p.amount * 100); ev.text = p.name + ': you block ' + pct(p.amount) + ' more when you defend, for the rest of this battle (now ' + Math.round(B.blockPct(st) * 100) + '%).'; }
+      if (p.kind === 'blockup') { const sg = st.sg, g0 = sg.hp; if (sg.broken <= 0) sg.hp = Math.min(sg.max, sg.hp + Math.round(sg.max * p.amount)); ev.guardGain = sg.hp - g0; ev.sg = sg.hp; h.blockUp = (h.blockUp || 0) + p.amount; ev.blockGain = Math.round(p.amount * 100); ev.text = p.name + ': you block ' + pct(p.amount) + ' more when you defend, for the rest of this battle (now ' + Math.round(B.blockPct(st) * 100) + '%).' + (ev.guardGain ? ' Shield gauge +' + ev.guardGain + '.' : ''); }
       if (p.kind === 'mend') {
         const sh = st.shield; ev.blockGain = 0;
-        if (sh) { const c0 = G.cond(sh.id); G.stock().wear[sh.id] = Math.min(100, c0 + p.amount); ev.blockGain = 1; ev.text = p.name + ': your ' + sh.name + ' is back to ' + Math.round(G.cond(sh.id)) + '% condition. Block ' + Math.round(B.blockPct(st) * 100) + '%.'; }
-        else ev.text = p.name + ': you have no shield or belt to oil.';
+        if (sh) { const c0 = G.cond(sh.id); G.stock().wear[sh.id] = Math.min(100, c0 + p.amount); ev.blockGain = 1; }
+        // it also mends the shield gauge (and a broken guard)
+        const sg = st.sg; regauge(st); const g0 = sg.broken > 0 ? 0 : sg.hp; sg.broken = 0; sg.hp = Math.min(sg.max, g0 + Math.round(sg.max * p.amount / 100 * 2)); ev.guardGain = sg.hp - g0; ev.sg = sg.hp;
+        ev.text = p.name + ': ' + (sh ? 'your ' + sh.name + ' is back to ' + Math.round(G.cond(sh.id)) + '% condition, and ' : '') + 'your shield gauge is up to ' + sg.hp + ' / ' + sg.max + '.';
       }
       if (p.kind === 'fury') { h.fury = p.turns + 1; h.furyMult = p.mult || 1.5; ev.text = p.name + ': +' + pct(h.furyMult - 1) + ' damage for ' + p.turns + ' turns.'; }
       if (p.kind === 'swift') { st.cooldown = 0; const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * (p.amount || 0.1))); ev.heal = h.hp - b0; ev.text = p.name + ': your weapon is ready again' + (ev.heal ? ' (+' + ev.heal + ' HP).' : '.'); }
@@ -316,6 +351,10 @@
       if (ok) { st.over = true; st.result = 'fled'; if (e.nemesis || e.rival) say(st, events, 'victory'); return finish(events); }
     } else return events;
 
+    if (move === 'strike' || move === 'throw' || move === 'special') {   // what you just dealt (Redhood copies it)
+      const he = events.filter((x) => x.who === 'hero' && x.dmg > 0).pop();
+      if (he) st.heroLast = { dmg: he.dmg, name: move === 'strike' ? st.melee.name : move === 'throw' ? st.weapon.name : st.special.name };
+    }
     // your pet acts after your move: attackers dart in, shooters fire, healers heal you (guardians act when you're hit)
     const pet = st.pet;
     if (pet && pet.hp > 0 && e.hp > 0 && ['strike', 'throw', 'special', 'defend', 'potion'].includes(move)) {
@@ -407,6 +446,7 @@
     if (h.harden > 0) h.harden--;
     if (h.spikes > 0) h.spikes--;
     if (h.autoGuard > 0) h.autoGuard--;
+    guardRound(st, events);
     if (P.has('regen') && h.hp > 0 && h.hp < h.max) { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.max(1, Math.round(h.max * 0.03))); events.push({ who: 'hero', type: 'regen', heal: h.hp - b0, text: 'Pendant of Renewal: +' + (h.hp - b0) + ' HP.' }); }
     h.defend = false; h.defended = false;
     if (st.cooldown > 0) st.cooldown--;
@@ -498,9 +538,15 @@
     if (st.perks.has('apex')) dmg *= 0.88;   // Crown of the Long Walk
     if (st.perks.has('firsthit') && !st.firstHit) { st.firstHit = true; dmg *= 0.5; ev.soul = true; }
     dmg = hit(Math.max(1, dmg));
-    // defending (3.5.3): your Block % comes off the hit (a quake is harder to block: half as much), the rest reaches you
-    if (h.defend || h.autoGuard > 0) {
-      const bp = B.blockPct(st) * (quake && h.harden <= 0 ? 0.5 : 1), soak = Math.min(dmg, Math.round(dmg * bp));
+    // Redhood Rival copies your last attack: exactly the damage you dealt (3.7.0)
+    if (e.rival && kind === 'attack' && st.heroLast && Math.random() < D.RIVAL_MIRROR) { dmg = st.heroLast.dmg; ev.mirror = st.heroLast.name; }
+    // defending (3.7.0): your Block % of the hit goes to the shield gauge (a quake is harder to block: half as much), the
+    // rest reaches you. An empty gauge breaks your guard. A perfect block (Tempered Ward) takes nothing from the gauge.
+    const sg = st.sg;
+    if ((h.defend || h.autoGuard > 0) && (h.harden > 0 || (sg && sg.broken <= 0 && sg.hp > 0))) {
+      const bp = B.blockPct(st) * (quake && h.harden <= 0 ? 0.5 : 1);
+      let soak = Math.min(dmg, Math.round(dmg * bp));
+      if (h.harden <= 0 && sg) { soak = Math.min(soak, sg.hp); sg.hp -= soak; ev.sg = sg.hp; if (sg.hp <= 0) { sg.broken = D.SG_BREAK + 1; ev.guardBreak = true; } }
       dmg -= soak; ev.blocked = true; ev.soak = soak; ev.blockPct = Math.round(bp * 100);
       if (h.spikes > 0 && soak > 0) { const back = Math.max(1, Math.round(soak * h.spikeF)); e.hp = Math.max(0, e.hp - back); ev.spiked = back; }   // Thorned Bulwark
       if (sh && soak > 0) wearOut(st, sh, 'block', ev);   // taking a hit for you wears it a little more
@@ -520,9 +566,9 @@
     if (st.perks.has('thorns') && dmg > 0) { const t = Math.max(1, Math.round(dmg * 0.1)); e.hp = Math.max(0, e.hp - t); ev.thorns = t; }
     // the log line: who did what, then what it cost you (after your shield and pet)
     const lead = kind === 'special' ? (ev.combo ? ev.name + ' hits again.' : e.name + ' unleashes ' + ev.name + '!')
-      : kind === 'magic' ? e.name + ' uses ' + ev.name + '.' : e.name + ' attacks.';
+      : kind === 'magic' ? e.name + ' uses ' + ev.name + '.' : ev.mirror ? e.name + ' copies your ' + ev.mirror + '!' : e.name + ' attacks.';
     const gn = guardName(st), took = !ev.blocked ? ' You take ' + dmg + ' damage.'
-      : ' ' + (sh ? 'Your ' + sh.name : 'You') + ' block' + (sh ? 's ' : ' ') + ev.soak + ' (' + ev.blockPct + '%)' + (quake ? ', the quake is hard to block' : '') + (dmg > 0 ? ' and you take ' + dmg + '.' : '. You take nothing.');
+      : ' ' + (sh ? 'Your ' + sh.name + ' takes ' : 'Your guard takes ') + ev.soak + (quake ? ' (the quake is hard to block)' : '') + (dmg > 0 ? ' and you take ' + dmg + '.' : '. You take nothing.') + (ev.guardBreak ? ' Your ' + gn + ' breaks! No Defend for ' + D.SG_BREAK + ' turns.' : '');
     ev.text = lead + took +
       (ev.pet ? ' ' + pet.name + (ev.petGuard ? ' jumps in front and takes ' : ' takes ') + ev.pet + (ev.petKO ? ' and is knocked out!' : '.') : '') +
       (ev.reversed ? ' Your ' + (sh && sh.belt ? 'belt' : 'shield') + ' reverses ' + ev.reversed + ' back at it!' : '') + (ev.countered ? ' Spikes hit back for ' + ev.countered + '.' : '') + (ev.spiked ? ' Thorns on your ' + gn + ' throw back ' + ev.spiked + '.' : '') +
@@ -551,6 +597,7 @@
   // a short end of round after a mob member falls (your recharge and the turn count still move on)
   function endRound(st, events) {
     const h = st.hero;
+    guardRound(st, events);
     h.defend = false; h.defended = false;
     if (st.cooldown > 0) st.cooldown--;
     for (const k of Object.keys(st.cds)) if (st.cds[k] > 0) st.cds[k]--;
@@ -600,7 +647,7 @@
       st.cds[st.weapon.id] = st.cooldown; st.weapon = w; st.cooldown = st.cds[id] || 0;
     } else if (slot === 'shield') {
       if (st.shield && st.shield.id === id) return null;
-      st.shield = w;
+      st.shield = w; regauge(st);
     }
     else return null;
     return w;

@@ -340,6 +340,13 @@
   // never above D.BLOCK_MAX. Shields also shave their `armor` off every hit, defending or not. Defending never heals.
   // Rules: B.blockPct and enemyHit in 05b-battle.js.
   D.GUARD_BARE = 0.35; D.BLOCK_MAX = 0.9;
+  // The shield gauge (3.7.0): blocked damage comes out of it while you defend (B.guardMax / guardRound in 05b-battle.js)
+  D.SG_SHIELD = 0.9; D.SG_BARE = 0.25;   // gauge size: max HP × block × condition × this (no shield: max HP × D.SG_BARE)
+  D.SG_REGEN = 0.12;                     // refills this share each round you don't defend
+  D.SG_BREAK = 2; D.SG_BACK = 0.5;       // an emptied gauge breaks your guard for 2 turns, then it's back at half
+  // Redhood Rival keeps pace with you (3.7.0): her plain attack is about D.RIVAL_PACE of your Strike, her HP about
+  // D.RIVAL_HP of yours, and D.RIVAL_MIRROR of her attacks copy your last attack for exactly what you dealt.
+  D.RIVAL_PACE = 0.8; D.RIVAL_HP = 1.0; D.RIVAL_MIRROR = 0.35;
   // Initiative: the chance a creature strikes first, before your opening move (never in your very first battle; the Druid always does)
   D.AMBUSH = { creature: 0.3, guardian: 0.4, boss: 0.5 };
   // Turn timer (seconds) to pick a move; when it runs out you hesitate and the creature acts. Tougher foes give you less time.
@@ -1023,9 +1030,9 @@
     // brewed specials from the item pack
     { id: 'storm', name: 'Storm in a Bottle', kind: 'swift', amount: 0.2, cost: 160, pal: 'cyan', desc: 'Recharges your weapon instantly and restores 20% HP.', req: { level: 8 }, base: true },
     // shield potions (3.5.3): battle only, they make Defend stronger or repair the shield. They never restore HP.
-    { id: 'polish', name: 'Shield Polish', kind: 'blockup', amount: 0.1, cost: 90, pal: 'cyan', desc: 'Shield only: you block 10% more when you defend, for the rest of the battle. Doesn’t restore your HP.', req: { level: 3 }, base: true, shield: true },
-    { id: 'smithoil', name: 'Smith’s Oil', kind: 'mend', amount: 30, cost: 150, pal: 'brass', desc: 'Shield only: repairs your shield or belt by 30% condition, so it blocks as well as new again. Doesn’t restore your HP.', req: { level: 6 }, base: true, shield: true },
-    { id: 'bulwarkbrew', name: 'Bulwark Brew', kind: 'blockup', amount: 0.2, cost: 240, pal: 'ash', desc: 'Shield only: you block 20% more when you defend, for the rest of the battle. Doesn’t restore your HP.', req: { level: 12 }, base: true, shield: true },
+    { id: 'polish', name: 'Shield Polish', kind: 'blockup', amount: 0.1, cost: 90, pal: 'cyan', desc: 'Shield only: refills 10% of your shield gauge, and you block 10% more when you defend for the rest of the battle. Doesn’t restore your HP.', req: { level: 3 }, base: true, shield: true },
+    { id: 'smithoil', name: 'Smith’s Oil', kind: 'mend', amount: 30, cost: 150, pal: 'brass', desc: 'Shield only: repairs your shield or belt by 30% condition and refills 60% of its gauge, even when your guard is broken. Doesn’t restore your HP.', req: { level: 6 }, base: true, shield: true },
+    { id: 'bulwarkbrew', name: 'Bulwark Brew', kind: 'blockup', amount: 0.2, cost: 240, pal: 'ash', desc: 'Shield only: refills 20% of your shield gauge, and you block 20% more when you defend for the rest of the battle. Doesn’t restore your HP.', req: { level: 12 }, base: true, shield: true },
     { id: 'cell', name: 'Ward Cell', kind: 'guard', turns: 4, factor: 0.4, cost: 210, pal: 'ash', desc: 'Cuts the damage you take by 60% for 4 turns.', req: { level: 10 }, base: true },
     { id: 'eye', name: 'Shadow Eye', kind: 'blast', power: 0.2, cost: 230, pal: 'violet', desc: 'Bursts for 20% of the enemy’s max HP.', req: { level: 12 }, base: true },
     { id: 'sundrop', name: 'Sundrop', kind: 'heal', amount: 1, cost: 320, pal: 'brass', desc: 'Restores all of your HP.', req: { level: 15 }, base: true },

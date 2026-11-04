@@ -103,6 +103,21 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.7.0
+- **Shield gauge.** Your shield (or belt, or bare guard) has its own HP bar on your battle plate. While you Defend, your Block % of every hit comes out of the gauge instead of your HP, and the bar lights up. If the gauge runs out your guard breaks: no Defend for 2 turns, then it comes back at half. Rounds you don't defend refill 12% of it.
+  - Gauge size: your max HP × the shield's block × its condition × 0.9 (no shield: 25% of max HP). Better shields and repaired shields last longer; the Gear menu shows each shield's gauge.
+  - Shield Polish and Bulwark Brew also refill 10% / 20% of the gauge. Smith's Oil refills 60% and fixes a broken guard. Tempered Ward's perfect block doesn't drain it.
+  - Rules: `B.guardMax`, `guardRound`, `enemyHit` in `js/05b-battle.js`; constants `D.SG_*` in `js/02-data.js`.
+- **Redhood Rival keeps pace with you.** Her attack follows your weapon (about 80% of your Strike, never weaker than before) and her HP follows yours. About a third of her attacks copy your last attack for exactly the damage you just dealt ("Redhood copies your Rusty Sword!"). Constants `D.RIVAL_PACE`, `D.RIVAL_HP`, `D.RIVAL_MIRROR`.
+- **Choose your target in a mob.** Tap a creature on the stage, or one of the mob rows on its plate, and it steps up to the front so your attacks hit it. Choosing is free (it doesn't use your turn). A gold arrow marks your target. `B.target(i)`.
+
+## Changes in 3.6.2
+- Battle: the pet special meter under your pet (for example "Rally") is gone. Pet specials still go off on their own.
+- Worldkey page: the "Tunes with …" line under the gauge and on each key is gone.
+
+## Changes in 3.6.1
+- The Duel nearby sheet no longer explains who shows as the boss on which phone.
+
 ## Changes in 3.6.0
 
 ### Duels nearby: battle another walker (`js/04d-link.js`, `js/05q-duel.js`, `js/07p-duel-ui.js`)

@@ -162,7 +162,7 @@
 
   // ---------- Inventory → Worldkey: the device, its energy, where it points and the one next step, then your artifacts ----------
   UI.wkSection = () => {
-    const w = G.wk(), dest = G.wkDest(), st = dest && G.wkStatus(dest), key = G.wkKey(), v = G.wkVoice(), gm = G.wkGameFor();
+    const w = G.wk(), dest = G.wkDest(), st = dest && G.wkStatus(dest), key = G.wkKey(), v = G.wkVoice();
     const step = st ? nextStep(st) : !G.wkGauge().inTune || G.wkGauge().state === 'drifting' ? { act: 'tune', label: 'Retune your Worldkey', cls: 'tertiary' } : null;
     const wp = dest && !st.found ? G.worldProgress(dest) : null, pct = wp ? Math.floor(wp.pct) : 100;
     return `<div class="wk-dev pbox card ${w.e <= K.LOW ? 'is-low' : ''}">
@@ -175,7 +175,6 @@
           ${w.e <= K.LOW ? `<p class="wk-warn">${w.e <= 0 ? 'Empty: charge it below' : 'Low: charge it below'}</p>` : ''}
           ${WK.gaugeHtml(st ? st.gauge : G.wkGauge())}
           ${step && step.act === 'tune' ? `<div class="wk-gauge-act"><button class="btn tertiary" type="button" data-wk="tune" data-wid="${dest ? dest.id : ''}"><span class="tl"><span>${esc(step.label)}</span></span></button></div>` : ''}
-          <p class="wk-game fine">Tunes with <b>${esc(gm.name)}</b> · ${esc(gm.title)}</p>
           ${dest ? `<dl class="wk-dl">
             <div><dt>Next world</dt><dd>${esc(dest.name)}</dd></div>
             <div><dt>Energy</dt><dd>${check(st.energyOk)}${st.cost}% needed</dd></div>
@@ -300,7 +299,7 @@
       return `<div class="wk-kd pbox">
         <div class="wk-kd-h"><b>${esc(k.name)}</b><span class="lbl">${st.owned ? (st.inUse ? 'In use' : 'Owned') : 'Level ' + k.req.level}</span></div>
         <p class="wk-kd-v"><span>${esc(v.name)}</span> · ${esc(v.blurb)}</p>
-        ${(() => { const gm = G.wkGameFor(id), g = G.wkGauge(id); return `<p class="wk-kd-g">${WB.icon(gm.icon, 1)} Tunes with <b>${esc(gm.name)}</b> · ${esc(gm.title)}</p>${st.owned ? WK.gaugeHtml(g, { sm: true }).replace('data-wk-gauge', '') : ''}`; })()}
+        ${(() => { const g = G.wkGauge(id); return `${st.owned ? WK.gaugeHtml(g, { sm: true }).replace('data-wk-gauge', '') : ''}`; })()}
         ${st.owned ? `<p class="wk-kd-q">“${esc(v.lines.idle[0])}”</p>` : `<p class="fine">${st.levelOk ? WB.icon('check', 1) + ' Level ' + k.req.level : WB.icon('lock', 1) + ' Reach level ' + k.req.level}${st.levelOk && !st.coinsOk ? ' · ' + WB.fmt(k.req.cost - S().coins) + ' more coins' : ''}</p>`}
         ${act}
       </div>`;

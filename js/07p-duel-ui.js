@@ -28,7 +28,7 @@
     UI.sheet(`<div class="dl-sheet">
       <span class="lbl">Duel nearby</span>
       <h3 id="sheet-title">Battle a walker next to you</h3>
-      <p>Two phones link by scanning each other’s screen, then you fight live. On your phone, they’re the boss; on theirs, you are.</p>
+      <p>Two phones link by scanning each other’s screen, then you fight live.</p>
       <ul class="dl-tips"><li>${WB.icon('signal', 2)}<span>Be on the <b>same Wi-Fi</b>, or have one phone share a <b>hotspot</b>.</span></li>
         <li>${WB.icon('sword', 2)}<span>Full HP for both. No ammo, potions or magic are used.</span></li>
         <li>${WB.icon('coin', 2)}<span>Your first ${D.DUEL_PAID} duels a day pay coins and XP.</span></li></ul>
