@@ -103,6 +103,15 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.7.2
+- No shield or belt equipped: you can't block. Defend is greyed out ("No shield or belt"), there's no shield gauge, and every hit takes your full HP. The first-battle tip points new walkers to the Leather Belt in the Shop.
+- A broken shield or belt (its gauge ran out) does nothing until it's back: no block and no armor, so hits take your full HP ("You take 15 damage (your shield is broken)").
+- Duels: a walker with no shield or belt blocks 0% too.
+
+## Changes in 3.7.1
+- Defending always lets some damage through to your HP: your share is what your shield or belt doesn't block (1 − Block %, at least 1 HP). Better shields let less through. The Defend button shows both ("Block 80% · you take 20%").
+- Tempered Ward is now a hard block (95%, and it still doesn't drain the shield gauge) instead of a perfect block. A Mirror or a guardian pet can't take the last point either.
+
 ## Changes in 3.7.0
 - **Shield gauge.** Your shield (or belt, or bare guard) has its own HP bar on your battle plate. While you Defend, your Block % of every hit comes out of the gauge instead of your HP, and the bar lights up. If the gauge runs out your guard breaks: no Defend for 2 turns, then it comes back at half. Rounds you don't defend refill 12% of it.
   - Gauge size: your max HP × the shield's block × its condition × 0.9 (no shield: 25% of max HP). Better shields and repaired shields last longer; the Gear menu shows each shield's gauge.

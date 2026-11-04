@@ -339,7 +339,7 @@
   // Block % = your shield's or belt's `block` (no shield: D.GUARD_BARE), lower when it's worn (G.wearF, down to half),
   // never above D.BLOCK_MAX. Shields also shave their `armor` off every hit, defending or not. Defending never heals.
   // Rules: B.blockPct and enemyHit in 05b-battle.js.
-  D.GUARD_BARE = 0.35; D.BLOCK_MAX = 0.9;
+  D.GUARD_BARE = 0;   // 3.7.2: no shield or belt, no block D.BLOCK_MAX = 0.9; D.BLOCK_HARDEN = 0.95;   // defending always lets some through (3.7.1)
   // The shield gauge (3.7.0): blocked damage comes out of it while you defend (B.guardMax / guardRound in 05b-battle.js)
   D.SG_SHIELD = 0.9; D.SG_BARE = 0.25;   // gauge size: max HP × block × condition × this (no shield: max HP × D.SG_BARE)
   D.SG_REGEN = 0.12;                     // refills this share each round you don't defend
@@ -770,7 +770,7 @@
     B('venom', 'Venom Crystal', 5, 900, { type: 'status', effect: 'poison', turns: 3 }, 'Poison 3 turns', 'Poisons the creature for 3 turns.'),
     B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill', turns: 3 }, 'On guard, 3 turns', 'For 3 turns you stay on guard even while you attack: every hit is blocked as if you had defended.'),
     // shield magic: makes Defend stronger
-    B('tempered', 'Tempered Ward', 9, 1400, { type: 'harden', turns: 3 }, 'Perfect block, 3 turns', 'For 3 turns, Defend blocks every hit completely.'),
+    B('tempered', 'Tempered Ward', 9, 1400, { type: 'harden', turns: 3 }, 'Hard block, 3 turns', 'For 3 turns, Defend blocks 95% of every hit and doesn’t drain your shield gauge.'),
     B('thornwall', 'Thorned Bulwark', 13, 2300, { type: 'spikes', turns: 3, power: 0.6 }, 'Spiked shield, 3 turns', 'For 3 turns, 60% of every hit you block is thrown back at the creature.'),
     B('stoneskin', 'Stoneskin Rune', 7, 1100, { type: 'guard', turns: 4, factor: 0.65 }, '−35% damage, 4 turns', 'You take 35% less damage for 4 turns.'),
     B('holyrelic', 'Holy Relic', 8, 1250, { type: 'cleanse', amount: 0.15 }, 'Cure + 15% HP', 'Cures poison, burn, weakness and stun, and restores 15% HP.'),

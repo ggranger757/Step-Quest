@@ -52,7 +52,8 @@
   // ---------- a duel: side 0 = host, side 1 = guest ----------
   const fighter = (p) => ({ ...p, hp: p.max, cd: 0, charge: 0, defend: false, stun: 0, petHp: p.pet ? p.pet.hp : 0 });
   G.duelNew = (p0, p1) => ({ turn: 1, over: false, winner: null, f: [fighter(p0), fighter(p1)] });
-  G.duelBlock = (f) => Math.min(D.BLOCK_MAX, f.shield ? (f.shield.block + (f.shield.regen || 0)) * (f.shield.wear || 1) : D.GUARD_BARE);
+  G.duelBlock = (f) =>   // no shield or belt: 0 (3.7.2)
+    Math.min(D.BLOCK_MAX, f.shield ? (f.shield.block + (f.shield.regen || 0)) * (f.shield.wear || 1) : D.GUARD_BARE);
   G.duelCan = (f, move) => move === 'strike' || move === 'defend' || (move === 'ranged' && !!f.ranged && f.cd === 0) || (move === 'special' && !!f.special && f.charge >= 100);
 
   // resolve one turn (host only) → events, in the order the screens play them

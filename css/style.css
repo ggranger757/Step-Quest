@@ -3910,3 +3910,4 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .pl-mob .pm { appearance: none; border: 0; background: color-mix(in srgb, #ffd166 6%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffd166 35%, transparent); color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 4px 6px; min-height: 30px; grid-template-columns: auto minmax(0, 1fr) 32%; gap: 6px; }
 .pl-mob .pm:hover, .pl-mob .pm:focus-visible { background: color-mix(in srgb, #ffd166 12%, transparent); box-shadow: inset 0 0 0 1px #ffd166; outline: none; }
 @media (prefers-reduced-motion: reduce) { .pl-sg.broken { animation: none; } }
+.pl-sg.none .lbl { color: var(--dim); }
