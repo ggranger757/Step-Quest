@@ -72,7 +72,7 @@ App icons: the Step Quest logo is already in `native/assets/` (`icon.png` 1024×
 
 One loop: **walk → explore worlds → find things on the road → level up → open the next world.**
 
-- **Walkers.** At sign-up you pick one of three starters; it's the only walker you have at level 1. The other two open at level 5 for 1,500 coins, and the rest unlock with levels, coins, streaks and exploring.
+- **Walkers.** At sign-up you pick one of three starters; it's the only walker you have at level 1. The other two open at level 5 for 1,500 coins. The rest unlock with levels, streaks, steps and exploring, and are always bought with coins.
 - **Worlds (50).** Each opens with a level and the world before it 100% explored, and then through your **Worldkey**.
 - **On the road** (`D.ENCOUNTER_WEIGHTS`): creatures (half want a fight, from level 3), supply crates, artifacts, **merchants** (cheap tonics), **travelers** (deliveries: walk N steps), **Merlin** with an egg, an **egg** by the road, the **Druid** (from level 3) and, from level 20, rare **roaming bosses**. **Redhood Rival** can appear in any fight once battles open. Each world's **guardian** wakes at 100% explored and guards a Crystal Egg.
 - **The Druid** (`js/05f-druid.js`), the quick NPC: one trivia question. Right pays XP and coins; wrong means a battle. Your eggs are always safe.
@@ -91,7 +91,7 @@ One loop: **walk → explore worlds → find things on the road → level up →
 
 - **Get an egg:** one a day from Missions → Merlin, when Merlin finds you on the road, eggs by the road, a quarter of the creatures you beat, every guardian (Crystal) and every roaming boss. The nest holds 3 (`D.NEST_MAX`).
 - **Walk to hatch:** every live step warms every egg in the nest. Frost 3,000 steps, Ember 6,000, Crystal 12,000. Eggs never expire, never break and are never lost in battle.
-- **Knowledge Check:** hatching asks one question from the 945-question bank. Right pays ×1.5 coins and XP, and a Crystal Egg adds a weapon or pet you don't own. Wrong still hatches and shows the answer.
+- **Knowledge Check:** hatching asks one question from the 945-question bank. Right pays ×1.5 coins and XP, and a Crystal Egg adds a weapon you don't own. Wrong still hatches and shows the answer.
 - **History Note:** every hatch ends with a short history fact (`D.HISTORY`, about 150, no repeats until all are read).
 
 ### The Worldkey (`js/02g-worldkey.js`, `js/05g-worldkey.js`, `js/07j-worldkey-ui.js`)
@@ -102,6 +102,34 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Tuning:** every Worldkey tunes with its own mini-game (see below). Its tuning gauge drains from full to empty over 2 hours (`K.TUNE_HOURS`); the Worldkey page shows the gauge, never a countdown. A newly discovered world also needs its own tuning, played after you discover it. An in-tune key finds artifacts 25% more often.
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
+
+## Changes in 3.5.2
+
+- **Quest photos work the same on iPhone and Android** (`js/04c-photo.js`):
+  - **Installed app:** the native camera (`@capacitor/camera`, added to `native/package.json`) opens straight to the rear camera, never the photo library. It asks for camera access once; if you said no, the quest tells you where to turn it back on (iPhone: Settings → Step Quest → Camera; Android: Settings → Apps → Step Quest → Permissions). `npm run add` / `npm run sync` now writes the iPhone camera permission text to `Info.plist` (without it iOS closes the app when the camera opens) and the Android 11+ camera-app `<queries>` entry to `AndroidManifest.xml`. Run `npm install` in `native/` once to get the camera plugin.
+  - **Browser / home-screen app:** the camera file input opens the rear camera in iPhone Safari and Android Chrome.
+  - Every photo is shrunk on the phone to a 240 px JPEG thumbnail (a 12-megapixel photo takes about 0.1 s), turned upright from its EXIF rotation, and kept only on the quest. HEIC photos the browser can't open, non-images and unreadable files each get a plain message instead of failing silently. Cancelling the camera does nothing.
+  - **Old photos don't count:** a picked file's time is the earlier of its file date and its EXIF "taken" date, so a gallery photo can't pass as new even on phones that re-date picked files.
+  - The privacy page in the installed app now says what happens to quest photos.
+- Quest cards and the state bird screen label both pictures: "Your photo" and the bird's name.
+
+## Changes in 3.5.1
+
+- **Pets are bought, never handed out.** Every pet that used to arrive free (streaks, step counts, guardians beaten, the day-7 daily reward, a Crystal Egg's prize) now only unlocks and is bought in Shop → Pets. The daily rare day pays 600 coins and an Elixir instead, and a Crystal Egg's right answer adds a weapon. Pets you already have keep.
+- **51 state birds** (`tools/make_state_birds.py` → `assets/pet/sb_<state>.png`, `js/02m-birds-art.js`, `js/02m-birds.js`): one pixel-art pet for every state and DC, with idle and hop animations like the other pets. 29 species are drawn from four body plans with their own marks (crests, masks, caps, bibs, breast colors, spots, wing bars, tails, bills); states that share a species get their own pose and a two-color leg band. Each has a battle role by species: game birds and the Nēnē guard, the Roadrunner, Yellowhammer, Thrasher and Cardinal attack, thrushes, bluebirds, the Chickadee and the Robin heal, water birds splash, the rest flick feathers. They can't be bought: Shop → Pets lists them under **State birds** (silhouettes until you have one).
+- **State bird Quests need a photo of the bird.** "I spotted it" is gone. Walk, tap **Photograph the bird**, then say which state you're in: that state's bird joins your pets (or, if you have it, the quest pays coins only). The quest card shows your photo next to the bird you got. "I'm not in the US" turns it into a nature photo instead. State flower quests are retired.
+
+## Changes in 3.5.0
+
+- **Walkers are never handed out.** A level, streak, step count or explored world only unlocks a walker; you always buy it in Shop → Avatars. The 16 walkers that used to be free on a level-up now have prices (level × 160, streak 1,200 + 260 a day, steps ÷ 40, explored worlds 4,500; `js/02-data.js`). Walkers you already got keep.
+- **The Worldkey no longer lives on the world page.** Its lines still pop up there, and every bubble now shows the key in use beside what it says (`js/07n-wkchat-ui.js`).
+- **Defend never heals you, and the shield takes every hit.** While you defend, the whole hit comes off the shield's Defend gauge and you take nothing, even if the hit breaks the guard. A worn shield or bare hands lose more of the gauge per hit, and a quake costs it 1.5×. The 6% HP you used to get from Defend is gone; the Aegis of the Last Road refills its gauge instead of your HP. Shield Polish, Smith's Oil, Bulwark Brew, Tempered Ward and the Guard Rune only ever restore the shield, and now say so.
+- **Pets do one job each, and every pet has a special** (`D.petSpecial`, charged by 3 of your moves, fired on its own; the battle plate shows the charge):
+  - Attackers and shooters **only attack** (they no longer take hits for you). Specials: Frenzy (3 hits) or a 3-shot volley that pierces guards (Feather Storm, Venom Spray, Firestorm, Rockslide, Arcane Barrage, Chain Spark, Tidal Burst).
+  - Healers **only heal**, you and themselves. Special: Renewal (you +20%, itself +40%, clears poison and burns).
+  - Guardians **only defend**: they're the only pets that take part of your hits. Special: Shield Wall / Stone Wall (takes the next 2 hits for you completely).
+  - Since attackers and healers don't hide behind you, creatures sometimes go for them directly (`D.PET_TARGET` 18%).
+- **Quests are back** on Missions → Today (`js/02l-quests.js`, `js/05p-quests.js`, `js/07o-quests-ui.js`): 3 at a time, a fresh set every 24 hours, coins only, and every one is done on foot: a walk, exploring more of the world you're in, a walk that ends with a nature photo (a tree, water, moss, an insect…), or a walk where you look for your state bird (all 50 states and DC; "I'm not in the US" swaps it for another nature photo). Photos are taken with the phone's camera, must be taken during the quest (older gallery photos don't count), and are kept only as a small thumbnail on the quest. Quests count in Claim all, the Missions badge and the Mission complete note.
 
 ## Changes in 3.4.0
 
@@ -251,10 +279,14 @@ js/02e-quiz.js           the 945 Knowledge Check questions
 js/02g-worldkey.js       Worldkey numbers, tuning symbols, the Rookie's dialogue
 js/02j-wkgames.js        Worldkey tuning games: symbol art, sets, which key plays which game
 js/02k-wkchat.js         more Worldkey dialogue (walks, world page, fights, finds, tuning)
+js/02l-quests.js         Quests: nature photo subjects, state birds and flowers, coin rewards
+js/02m-birds-art.js      the 51 state-bird sprites' boxes and looks (generated by tools/make_state_birds.py)
+js/02m-birds.js          the 51 state-bird pets
 js/02h-quick.js          quick missions and mission types
 js/03-state.js           save data, migration of older saves
 js/04-steps.js           step tracking, sound and music
 js/04b-health.js         Apple Health / Health Connect sync (installed app)
+js/04c-photo.js          quest photos: native camera in the installed app, camera input in browsers, thumbnails
 js/05-game.js            core rules: rewards, levels, streaks, daily missions, encounters, shop
 js/05b-battle.js         battle rules
 js/05d-custom.js         your own missions
@@ -262,6 +294,7 @@ js/05e-merlin.js         Merlin's eggs: nest, hatching, Knowledge Check, History
 js/05f-druid.js          the Druid's Knowledge Challenge
 js/05g-worldkey.js       Worldkey: tuning gauge, charging with artifacts, opening worlds
 js/05o-wkgames.js        Worldkey tuning games: the rules (sessions that judge every move)
+js/05p-quests.js         Quests: the rules (24-hour sets, walking, photos, claiming)
 js/05h-remind.js         mission reminders and the alert bell
 js/05i-artifacts.js      artifact collection and copies
 js/05j-unlocks.js        feature unlocks
@@ -277,7 +310,8 @@ js/07h-merlin-ui.js      Missions → Merlin and the hatching card
 js/07i-loading.js        loading screen
 js/07j-worldkey-ui.js    Worldkey screens
 js/07m-wkgames-ui.js     Worldkey tuning game screens
-js/07n-wkchat-ui.js      the Worldkey on the world page and its speech bubble
+js/07n-wkchat-ui.js      the Worldkey's speech bubbles on the world page
+js/07o-quests-ui.js      Quests on Missions → Today
 js/07k-quick-ui.js       quick missions card
 js/07l-mood-ui.js        mood check-in card and Profile moods
 js/08-main.js            startup, onboarding, developer panel

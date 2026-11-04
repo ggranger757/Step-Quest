@@ -335,12 +335,12 @@
      Ability: enrage (hits 35% harder below half HP) · shadow (25% of non-piercing hits pass through) ·
      rebirth (at half HP turns into a second form, heals and changes moves) · armor (non-piercing hits do 30% less)
      · reaper (hits 40% harder while you're under 35% HP) · ward (raises a ward that reverses 45% often). */
-  // The Defend gauge (3.3.12) is your shield's or belt's own HP. While you defend, hits land on it instead of you.
-  // Its size is the shield's `block` as a share of your max HP (no shield: D.GUARD_BARE). A fresh shield takes the whole
-  // hit; a worn one takes less (G.wearF: down to 50%) and the rest reaches you, and so does anything past an empty gauge.
+  // The Defend gauge (3.3.12) is your shield's or belt's own HP. While you defend, the shield takes every hit in full and
+  // you take nothing (3.5.0); defending never restores your HP. Its size is the shield's `block` as a share of your max HP
+  // (no shield: D.GUARD_BARE). A worn shield (G.wearF, down to 50%) or bare hands lose more of the gauge per hit.
   // Each Defend also costs D.DEFEND_UPKEEP% of the gauge; it refills D.DEFEND_REGEN% a turn you don't defend.
   // When it hits 0 it breaks: no Defend until it has refilled to D.GUARD_RECOVER%.
-  D.GUARD_BARE = 0.4; D.GUARD_BARE_ABSORB = 0.6;   // bare-handed brace: a smaller gauge that catches 60% of a hit
+  D.GUARD_BARE = 0.4; D.GUARD_BARE_ABSORB = 0.6;   // bare-handed brace: a smaller gauge, and each hit costs it 1/0.6 as much
   D.DEFEND_UPKEEP = 8; D.DEFEND_REGEN = 15; D.GUARD_RECOVER = 40;
   // Initiative: the chance a creature strikes first, before your opening move (never in your very first battle; the Druid always does)
   D.AMBUSH = { creature: 0.3, guardian: 0.4, boss: 0.5 };
@@ -447,6 +447,16 @@
     { id: 'bladedancer', name: 'Blade Dancer', role: 'Curved sword, silent cloak, light steps.', req: { cost: 8800, level: 31 } },
     { id: 'warlock', name: 'Hex Warlock', role: 'His staff burns with a cold violet fire.', req: { cost: 11000, level: 40 } },
   ];
+  // 3.5.0: walkers are never handed out. A level, streak, step count or explored world only UNLOCKS a walker;
+  // you always buy it in Shop → Avatars. Walkers that used to be free get a price that fits what unlocks them.
+  const r100 = (n) => Math.round(n / 100) * 100;
+  D.AVATARS.forEach((a) => {
+    const q = a.req; if (q.cost) return;
+    q.cost = q.level ? r100(Math.max(1500, q.level * 160))
+      : q.streak ? r100(1200 + q.streak * 260)
+      : q.steps ? r100(Math.max(1500, q.steps / 40))
+      : q.explored ? 4500 : 2000;
+  });
 
   // ---------- Pets (77) ----------
   // src 'pet' = animal sheets (face right), 'cr' = creature sheets (face left)
@@ -543,6 +553,13 @@
     rock_lime: [60, 0.45], rock_sand: [60, 0.45], rock_moss: [70, 0.5], rock_rust: [75, 0.5], rock_cobble: [85, 0.55], rock_marble: [90, 0.55], rock_frost: [95, 0.6], rock_magma: [110, 0.6],
     cm1: [28, 0.2], cm2: [32, 0.2], cm3: [34, 0.25], cm4: [38, 0.25], cm5: [38, 0.25], cm6: [70, 0.45], cm7: [55, 0.4], cm8: [44, 0.3], cm9: [50, 0.35], cm10: [36, 0.25], cm11: [40, 0.3], cm12: [52, 0.35], cm13: [55, 0.35], cm14: [68, 0.45], cm15: [60, 0.4], cm16: [45, 0.3], cm17: [52, 0.35], cm18: [36, 0.25], cm19: [90, 0.55], cm20: [82, 0.5], cm21: [95, 0.6], cm22: [46, 0.3], cm23: [48, 0.35], cm24: [62, 0.4], cm25: [42, 0.3], cm26: [44, 0.3], cm27: [66, 0.45], cm28: [60, 0.4], cm29: [50, 0.35], cm30: [98, 0.6], cm31: [54, 0.35], cm32: [80, 0.5], cm33: [56, 0.4], cm34: [64, 0.4], cm35: [92, 0.55], cm36: [100, 0.6], cm37: [84, 0.5], cm38: [105, 0.6], cm39: [100, 0.6], cm40: [88, 0.55], cm41: [102, 0.6], cm42: [40, 0.25], cm43: [86, 0.55], cm44: [78, 0.5], cm45: [82, 0.5], cm46: [54, 0.35], cm47: [50, 0.35], cm48: [58, 0.4], cm49: [90, 0.55], cm50: [115, 0.6] };
   D.PETS.forEach((p) => { const [hp, share] = PET_STATS[p.id] || [40, 0.3]; p.hp = hp; p.share = share; });
+  // 3.5.1: pets are bought, never handed out. A level, streak, step count, guardians beaten or a daily reward only
+  // unlocks a pet; you always buy it in Shop → Pets. (The 51 state birds, added in 02m-birds.js, come from Quests.)
+  D.PETS.forEach((p) => {
+    const q = p.req; if (q.cost) return;
+    q.cost = Math.round((q.level ? Math.max(600, q.level * 75) : q.streak ? 400 + q.streak * 120 : q.steps ? Math.max(800, q.steps / 60) : q.bosses ? 1500 + q.bosses * 600 : q.explored ? 2500 : 2000) / 100) * 100;
+    delete q.daily;
+  });
   // ---------- pet roles in battle (3.3.2). Every pet still takes its share of each hit; on top of that each one has a role:
   //   attack  darts in after each of your moves and hits the creature for `atk` × your attack
   //   shoot   fires a pixel projectile (`proj`: feather, spit, ember, stone, orb, spark, water) for `atk` × your attack
@@ -578,9 +595,20 @@
     p.role = r.role; p.block = r.block || 0; p.heal = r.heal || 0; p.proj = r.proj || null; p.healVerb = r.role === 'heal' ? r.verb : '';
     if (r.atk) { p.atk = r.atk; p.atkVerb = r.verb; }
   });
+  // 3.5.0: every pet does ONE job. Attackers and shooters only attack (they never take hits for you), healers only heal
+  // (you and themselves), guardians only defend (they're the only pets that take part of your hits). Creatures sometimes
+  // go for a pet that isn't guarding (D.PET_TARGET), so attackers' and healers' HP still matters.
+  // Every pet also charges a special (D.PET_SP_EVERY of your moves) and uses it on its own: see D.petSpecial.
+  D.PET_TARGET = 0.18; D.PET_SP_EVERY = 3;
+  const SP_SHOT = { feather: 'Feather Storm', spit: 'Venom Spray', ember: 'Firestorm', stone: 'Rockslide', orb: 'Arcane Barrage', spark: 'Chain Spark', water: 'Tidal Burst' };
+  D.petSpecial = (p) => p.role === 'attack' ? { id: 'frenzy', name: 'Frenzy', desc: 'Three fast hits in a row.' }
+    : p.role === 'shoot' ? { id: 'volley', name: SP_SHOT[p.proj] || 'Volley', desc: 'Three shots that pierce guards.' }
+    : p.role === 'heal' ? { id: 'renewal', name: 'Renewal', desc: 'A big heal for you (20%) and itself (40%), and clears poison and burns.' }
+    : { id: 'wall', name: /^rock_/.test(p.id) ? 'Stone Wall' : 'Shield Wall', desc: 'Takes the next 2 hits for you completely.' };
   // how a pet helps, in a few words (Shop and Inventory cards)
-  D.petRoleText = (p) => p.role === 'attack' ? 'Attacker. ' + p.atkVerb + ' the creature after your moves.' : p.role === 'shoot' ? 'Shooter. ' + p.atkVerb + ' the creature after your moves.'
-    : p.role === 'heal' ? 'Healer. Restores ' + Math.round(p.heal * 100) + '% of your HP each turn.' : 'Guardian. Only defends: ' + Math.round(p.block * 100) + '% chance to take most of a hit.';
+  D.petRoleText = (p) => (p.role === 'attack' ? 'Attacker: only attacks. ' + p.atkVerb + ' the creature after your moves.' : p.role === 'shoot' ? 'Shooter: only attacks. ' + p.atkVerb + ' the creature after your moves.'
+    : p.role === 'heal' ? 'Healer: only heals. Restores ' + Math.round(p.heal * 100) + '% of your HP and ' + Math.round(p.heal * 150) + '% of its own each turn.' : 'Guardian: only defends. Takes part of every hit, with a ' + Math.round(p.block * 100) + '% chance to jump in front and take most of it.')
+    + ' Special: ' + D.petSpecial(p).name + ' (' + D.petSpecial(p).desc.replace(/\.$/, '') + ').';
   D.petMaxHp = (p, lvl) => Math.round(p.hp + p.hp * 0.04 * (lvl - 1));
 
   // ---------- Skin tones ----------
@@ -737,7 +765,7 @@
     B('venom', 'Venom Crystal', 5, 900, { type: 'status', effect: 'poison', turns: 3 }, 'Poison 3 turns', 'Poisons the creature for 3 turns.'),
     B('guardrune', 'Guard Rune', 6, 950, { type: 'guardfill' }, 'Guard to 100%', 'Refills your shield’s Defend gauge to full.'),
     // shield magic (3.3.14): works on the Defend gauge (your shield's or belt's HP in battle)
-    B('tempered', 'Tempered Ward', 9, 1400, { type: 'harden', turns: 3 }, 'Hard shield, 3 turns', 'For 3 turns your shield catches every hit in full, even when worn, and its Defend gauge loses only half of what it catches.'),
+    B('tempered', 'Tempered Ward', 9, 1400, { type: 'harden', turns: 3 }, 'Hard shield, 3 turns', 'Shield only: for 3 turns your shield’s Defend gauge loses only half of each hit it takes, even when worn.'),
     B('thornwall', 'Thorned Bulwark', 13, 2300, { type: 'spikes', turns: 3, power: 0.6 }, 'Spiked shield, 3 turns', 'For 3 turns, 60% of every hit your shield absorbs is thrown back at the creature.'),
     B('stoneskin', 'Stoneskin Rune', 7, 1100, { type: 'guard', turns: 4, factor: 0.65 }, '−35% damage, 4 turns', 'You take 35% less damage for 4 turns.'),
     B('holyrelic', 'Holy Relic', 8, 1250, { type: 'cleanse', amount: 0.15 }, 'Cure + 15% HP', 'Cures poison, burn, weakness and stun, and restores 15% HP.'),
@@ -922,14 +950,14 @@
     SH('sh_ruby', 'Ruby Crest', 0.14, 0.8, {}, 'Defend gauge holds 80% of your HP. 14% armor.', { cost: 3400, level: 31 }),
     SH('sh_gilded', 'Gilded Kite', 0.15, 0.8, { reflect: 0.35, counter: 0.4 }, 'Gauge 80% of your HP, reverses 35% and hits back.', { cost: 4200, level: 38 }),
     SH('sh_gold', 'Aegis of Kings', 0.2, 0.85, { reflect: 0.5, regen: 0.1, legendary: true }, 'Legendary. 20% armor, gauge 85% of your HP, reverses half and heals.', { bosses: 16 }),
-    SH('sh_last', 'Aegis of the Last Road', 0.24, 0.88, { reflect: 0.4, counter: 0.5, regen: 0.1 }, '24% armor, gauge 88% of your HP, reverses 40%, hits back and heals when you defend.', { cost: 30000, level: 79 }),
+    SH('sh_last', 'Aegis of the Last Road', 0.24, 0.88, { reflect: 0.4, counter: 0.5, regen: 0.1 }, '24% armor, gauge 88% of your HP, reverses 40%, hits back and refills its gauge when you defend.', { cost: 30000, level: 79 }),
   );
   // ---- belts (CraftPix belt icons): shields you wear at the waist. They are ordinary shields in the Defense
   // slot (you wear one at a time), but trade gauge for armor: a belt shaves a bit more off EVERY hit, and
   // its Defend gauge is a bit smaller than a shield's. 45 are bought one per level (1-45); 3 are legendary.
   const pc = (v) => Math.round(v * 100) + '%';
   const beltDesc = (flavor, x) => [flavor, x.reflect && 'Reverses ' + pc(x.reflect) + ' of what it absorbs back at the attacker.',
-    x.counter && 'Hits back for ' + pc(x.counter) + ' of your attack whenever you defend against a hit.', x.regen && 'Defending restores ' + pc(x.regen) + ' HP instead of 6%.'].filter(Boolean).join(' ');
+    x.counter && 'Hits back for ' + pc(x.counter) + ' of your attack whenever you defend against a hit.', x.regen && 'Each Defend refills ' + pc(x.regen) + ' of its gauge.'].filter(Boolean).join(' ');
   const BELT = (id, name, armor, block, extra, flavor, req) => ({ id, name, slot: 'shield', type: 'shield', belt: true, armor, block, ...extra, desc: beltDesc(flavor, extra), req, icon: 'wi/' + id + '.png' });
   [
     ['bt_leather', 'Leather Belt', 'Plain cowhide with a brass buckle.'],
@@ -997,9 +1025,9 @@
     // brewed specials from the item pack
     { id: 'storm', name: 'Storm in a Bottle', kind: 'swift', amount: 0.2, cost: 160, pal: 'cyan', desc: 'Recharges your weapon instantly and restores 20% HP.', req: { level: 8 }, base: true },
     // shield potions (3.3.14): battle only, they work on the Defend gauge and on the shield itself
-    { id: 'polish', name: 'Shield Polish', kind: 'guardhp', amount: 0.5, cost: 90, pal: 'cyan', desc: 'Refills half of your shield’s Defend gauge, and mends a broken guard so you can defend again.', req: { level: 3 }, base: true, shield: true },
-    { id: 'smithoil', name: 'Smith’s Oil', kind: 'mend', amount: 30, refill: 0.2, cost: 150, pal: 'brass', desc: 'Repairs your shield or belt by 30% condition (a worn shield catches more of each hit) and refills 20% of its gauge.', req: { level: 6 }, base: true, shield: true },
-    { id: 'bulwarkbrew', name: 'Bulwark Brew', kind: 'guardup', amount: 0.5, cost: 240, pal: 'ash', desc: 'For the rest of the battle your Defend gauge is 50% bigger, and the extra starts full.', req: { level: 12 }, base: true, shield: true },
+    { id: 'polish', name: 'Shield Polish', kind: 'guardhp', amount: 0.5, cost: 90, pal: 'cyan', desc: 'Shield only: refills half of your shield’s Defend gauge and mends a broken guard so you can defend again. Doesn’t restore your HP.', req: { level: 3 }, base: true, shield: true },
+    { id: 'smithoil', name: 'Smith’s Oil', kind: 'mend', amount: 30, refill: 0.2, cost: 150, pal: 'brass', desc: 'Shield only: repairs your shield or belt by 30% condition (a worn shield loses more gauge per hit) and refills 20% of its gauge. Doesn’t restore your HP.', req: { level: 6 }, base: true, shield: true },
+    { id: 'bulwarkbrew', name: 'Bulwark Brew', kind: 'guardup', amount: 0.5, cost: 240, pal: 'ash', desc: 'Shield only: for the rest of the battle your Defend gauge is 50% bigger, and the extra starts full. Doesn’t restore your HP.', req: { level: 12 }, base: true, shield: true },
     { id: 'cell', name: 'Ward Cell', kind: 'guard', turns: 4, factor: 0.4, cost: 210, pal: 'ash', desc: 'Cuts the damage you take by 60% for 4 turns.', req: { level: 10 }, base: true },
     { id: 'eye', name: 'Shadow Eye', kind: 'blast', power: 0.2, cost: 230, pal: 'violet', desc: 'Bursts for 20% of the enemy’s max HP.', req: { level: 12 }, base: true },
     { id: 'sundrop', name: 'Sundrop', kind: 'heal', amount: 1, cost: 320, pal: 'brass', desc: 'Restores all of your HP.', req: { level: 15 }, base: true },
@@ -1072,7 +1100,7 @@
 
   // ---------- Daily reward calendar (claim after walking 300 steps today) ----------
   D.DAILY_CAL = [{ coins: 50 }, { coins: 75, potion: 'tonic' }, { coins: 100 }, { coins: 125, potion: 'iron' }, { coins: 150 }, { coins: 200, potion: 'elixir' }, { rare: true }];
-  D.DAILY_RARES = [{ pet: 'crow' }, { pet: 'cm47' }];
+  D.DAILY_RARES = [];   // 3.5.1: pets are bought, so the rare day pays coins and an Elixir (G.dailyRewardAt)
   D.DAILY_MIN_STEPS = 300;
 
   // ---------- Daily tasks (3 per day, seeded by date) ----------

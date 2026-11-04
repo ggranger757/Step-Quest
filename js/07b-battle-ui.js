@@ -404,7 +404,8 @@
     const gName = st.shield ? (st.shield.belt ? 'Belt' : 'Shield') : 'Guard', gOk = WB.Battle.canDefend(st);
     const guardRow = `<div class="pl-guard ${gOk ? '' : 'broken'}" aria-label="${gName} ${h.guardHp} of ${h.guardMax}">${WB.icon('shield', 1)}<span class="lbl">${gName}</span>${bar(h.guardHp, h.guardHp, h.guardMax, 'guard thin')}<span class="lbl">${h.guardHp}</span></div>`;
     $('#b-ph').innerHTML = plate(S().name, `Lv ${h.lvl}`, disp.hero, ghost.hero, h.max, hst, 'hp') + guardRow +
-      (p ? `<div class="pl-pet ${shown.pet <= 0 ? 'ko' : ''}">${WB.icon('paw', 1)}<span class="lbl">${WB.esc(p.name)}</span>${bar(disp.pet, ghost.pet, p.max, 'hp thin')}<span class="lbl" data-hpn="pet">${shown.pet <= 0 ? 'KO' : Math.round(disp.pet)}</span></div>` : '');
+      (p ? `<div class="pl-pet ${shown.pet <= 0 ? 'ko' : ''}">${WB.icon('paw', 1)}<span class="lbl">${WB.esc(p.name)}</span>${bar(disp.pet, ghost.pet, p.max, 'hp thin')}<span class="lbl" data-hpn="pet">${shown.pet <= 0 ? 'KO' : Math.round(disp.pet)}</span></div>
+        <div class="pl-psp ${p.charge >= D.PET_SP_EVERY ? 'ready' : ''}" aria-label="${WB.esc(p.sp.name)}: ${p.wall ? p.wall + ' hits left' : p.charge >= D.PET_SP_EVERY ? 'ready' : p.charge + ' of ' + D.PET_SP_EVERY + ' charged'}"><span class="lbl">${WB.esc(p.sp.name)}</span><span class="psp-pips" aria-hidden="true">${Array.from({ length: D.PET_SP_EVERY }, (_, i) => `<i class="${i < p.charge ? 'on' : ''}"></i>`).join('')}</span>${p.wall ? `<span class="lbl psp-wall">Wall ×${p.wall}</span>` : ''}</div>` : '');
     // both plates are always the same size: the shorter one grows to match the taller one
     const pe = $('#b-pe'), ph = $('#b-ph'); pe.style.minHeight = ph.style.minHeight = '';
     const hgt = Math.max(pe.offsetHeight, ph.offsetHeight); if (hgt) pe.style.minHeight = ph.style.minHeight = hgt + 'px';
@@ -628,11 +629,32 @@
         if (ev.dmg) hurtEnemy(ev.dmg, false, P.c[Object.keys(P.c)[0]]); else floater('Miss', 'enemy', 'miss');
         await sleep(300); return;
       }
-      if (ev.type === 'petHeal') {   // a healer: green sparkles rise from your walker
+      if (ev.type === 'petHeal' || (ev.type === 'petSpecial' && ev.sp === 'renewal')) {   // a healer: green sparkles rise from your walker and from itself
+        const big = ev.type === 'petSpecial';
         if (ps) ps.flash = 0.3;
-        WB.Sfx.play('potion'); fx.push({ type: 'ring', x: view.px, y: py, color: '#6ee7a0', t: 0 });
-        for (let i = 0; i < 10; i++) fx.push({ type: 'spark', x: view.hx - 10 + Math.random() * 20, y: hY() + 10 - Math.random() * 20, vx: 0, vy: -28 - Math.random() * 20, life: 0.8, t: -i * 0.04, color: i % 2 ? '#6ee7a0' : '#c9ffd9', size: 2 });
-        await sleep(260); healHero(ev.heal); await sleep(420); return;
+        if (big) { floater(ev.name + '!', 'pet', 'tag'); await sleep(200); }
+        WB.Sfx.play('potion'); fx.push({ type: 'ring', x: view.px, y: py, color: '#6ee7a0', t: 0 }); if (big) fx.push({ type: 'ring', x: view.hx, y: hY(), color: '#c9ffd9', t: 0 });
+        for (let i = 0; i < (big ? 22 : 10); i++) fx.push({ type: 'spark', x: (i % 3 ? view.hx : view.px) - 10 + Math.random() * 20, y: hY() + 10 - Math.random() * 20, vx: 0, vy: -28 - Math.random() * 20, life: 0.8, t: -i * 0.04, color: i % 2 ? '#6ee7a0' : '#c9ffd9', size: 2 });
+        await sleep(260); if (ev.heal) healHero(ev.heal);
+        if (ev.selfHeal) { shown.pet = Math.min(st.pet.max, shown.pet + ev.selfHeal); floater(hpText(ev.selfHeal), 'pet', 'heal'); plates(); }
+        await sleep(420); return;
+      }
+      if (ev.type === 'petSpecial' && ev.sp === 'wall') {   // a guardian plants itself in front of you
+        if (ps) ps.flash = 0.5;
+        floater(ev.name + '!', 'pet', 'tag'); WB.Sfx.play('shield_block');
+        fx.push({ type: 'ring', x: view.px, y: py, color: '#59e3ff', t: 0 }); fx.push({ type: 'ring', x: view.hx, y: hY(), color: '#59e3ff', t: 0 });
+        plates(); await sleep(650); return;
+      }
+      if (ev.type === 'petSpecial') {   // Frenzy (three lunges) or a volley (three shots)
+        floater(ev.name + '!', 'pet', 'tag'); await sleep(220);
+        const P = PET_PROJ[ev.proj] || PET_PROJ.orb;
+        for (const d of ev.hits) {
+          if (ev.sp === 'volley') { WB.Sfx.play(P.sfx); fx.push({ type: 'pixproj', p: P, x0: view.px + 6, y0: py, x1: view.ex - 8, y1: eY(), t: 0, dur: 0.3 }); await sleep(320); burst(view.ex - 4, eY(), P.c[Object.keys(P.c)[0]], 6); }
+          else { if (ps) ps.lunge = 1; WB.Sfx.play('hit_dagger'); await sleep(200); }
+          if (d) hurtEnemy(d, false, ev.sp === 'volley' ? P.c[Object.keys(P.c)[0]] : '#ffb347'); else floater('Miss', 'enemy', 'miss');
+          await sleep(180);
+        }
+        plates(); await sleep(260); return;
       }
       // an attacker darts in
       if (ps) { ps.lunge = 1; }
@@ -699,7 +721,7 @@
         await sleep(380);
       } else if (ev.type === 'defend') {
         fx.push({ type: 'ring', x: view.hx, y: g - 30, color: '#59e3ff', t: 0 }); WB.Sfx.play('defend');
-        floater('Guard up', 'hero', 'tag'); healHero(ev.heal); plates(); await sleep(650);
+        floater('Guard up', 'hero', 'tag'); plates(); await sleep(650);
       } else if (ev.type === 'spAttack') {
         const A = WB.ASSETS.fx, sp = D.SPECIALS[ev.sp];
         hs.anim = 'attack'; hs.once = true; hs.f = 0; hs.melee = false;
@@ -791,7 +813,7 @@
         else if (ev.clone) { floater('Hit the copy!', 'hero', 'tag'); fx.push({ type: 'ring', x: view.hx - 22, y: hY(), color: '#c7b8ff', t: 0 }); }
         else if (ev.dmg > 0) hurtHero(ev.dmg, ev.type === 'special');
         else if (ev.blocked) { await sleep(200); floater('No damage', 'hero', 'miss'); }   // the shield took all of it
-        if (ev.petGuard && ps) { floater('Guarded!', 'pet', 'tag'); fx.push({ type: 'ring', x: view.px, y: g - 14, color: '#59e3ff', t: 0 }); WB.Sfx.play('shield_block'); }
+        if (ev.petGuard && ps) { floater(ev.petWall ? 'Wall!' : 'Guarded!', 'pet', 'tag'); fx.push({ type: 'ring', x: view.px, y: g - 14, color: '#59e3ff', t: 0 }); WB.Sfx.play('shield_block'); }
         if (ev.pet && ps) { ps.flash = 0.5; shown.pet -= ev.pet; floater(hpText(-ev.pet), 'pet', 'dmg'); if (ev.petKO) setTimeout(() => floater('KO', 'pet', 'tag'), 250); plates(); }
         if (ev.reversed) { await sleep(200); bolt('hero', 'enemy', '#59e3ff'); await sleep(260); floater('Reversed!', 'hero', 'tag'); hurtEnemy(ev.reversed, false, '#59e3ff'); }
         if (ev.spiked) { await sleep(200); bolt('hero', 'enemy', '#ff9a3d'); await sleep(260); floater('Thorns!', 'hero', 'tag'); hurtEnemy(ev.spiked, false, '#ff9a3d'); }

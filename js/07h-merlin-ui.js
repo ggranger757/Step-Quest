@@ -64,7 +64,7 @@
         <div class="hatch-top"><canvas class="mer-face" width="64" height="64" aria-hidden="true"></canvas><p class="hatch-say">${esc(WB.pick(D.MERLIN_HATCH))}</p></div>
         <p class="dq">${esc(qz.q)}</p>
         <div class="choices quiz">${qz.options.map((o, i) => `<button class="btn ghost" type="button" data-ans="${i}">${esc(o)}</button>`).join('')}</div>
-        <p class="fine">Right: +${Math.round((D.QUIZ_BONUS - 1) * 100)}% reward${e.hoard ? ' and a weapon or pet' : ''}. Hatches either way.</p>
+        <p class="fine">Right: +${Math.round((D.QUIZ_BONUS - 1) * 100)}% reward${e.hoard ? ' and a new weapon' : ''}. Hatches either way.</p>
       </div>`, (root) => {
       WB.paintThumb(root.querySelector('.mer-face'), { kind: 'npc', id: 'merlin' });
       root.querySelectorAll('[data-ans]').forEach((b) => (b.onclick = () => {

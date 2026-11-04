@@ -17,6 +17,7 @@ writeFileSync(join(www, 'privacypolicy.html'), `<!doctype html><html lang="en"><
 <style>body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#0b0a1a;color:#ece9ff}h1{font-size:24px}</style></head><body>
 <h1>Step Quest privacy policy</h1>
 <p>Step Quest reads your daily <b>step count</b> from Apple Health (iPhone) or Health Connect (Android) so your steps move your character in the game. It reads nothing else and writes nothing to your health data.</p>
+<p>Quest photos are taken with your camera only when you tap a quest's camera button. Each one is shrunk to a small thumbnail and kept on your device with your game progress; it is never uploaded.</p>
 <p>Step counts and your game progress are stored on your device. Step Quest has no accounts, no ads and no analytics, and it does not send your health data to anyone.</p>
 <p>You can stop step access at any time in Step Quest (Profile) or in your phone's health settings. Uninstalling the app deletes its data from your device.</p>
 <p>Questions: replace this line with your contact email before publishing.</p>

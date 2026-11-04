@@ -16,7 +16,7 @@
     { id: 'ember', name: 'Ember Egg', rarity: 'Uncommon', steps: 6000, w: 28, reward: { coins: 140, xp: 180, potion: 'iron' },
       short: '6,000 steps', desc: 'Hatches in 6,000 steps.' },
     { id: 'crystal', name: 'Crystal Egg', rarity: 'Rare', steps: 12000, w: 10, reward: { coins: 300, xp: 400, potion: 'elixir' }, hoard: true,
-      short: '12,000 steps', desc: 'Hatches in 12,000 steps. Answer right for a new weapon or pet.' },
+      short: '12,000 steps', desc: 'Hatches in 12,000 steps. Answer right for a new weapon.' },
   ];
   // elemental eggs (3.3.3): five families, each laid in one of 10 colors (art: assets/egg/<id><1-10>.png, tools/add_eggs.py)
   D.EGGS.push(
@@ -29,7 +29,7 @@
     { id: 'prism', name: 'Prism Egg', rarity: 'Rare', steps: 10000, w: 8, reward: { coins: 250, xp: 330, potion: 'cell' }, variants: 10,
       short: '10,000 steps', desc: 'Hatches in 10,000 steps.' },
     { id: 'shadow', name: 'Shadow Egg', rarity: 'Epic', steps: 15000, w: 3, reward: { coins: 400, xp: 520, potion: 'sundrop' }, hoard: true, variants: 10,
-      short: '15,000 steps', desc: 'Hatches in 15,000 steps. Answer right for a new weapon or pet.' },
+      short: '15,000 steps', desc: 'Hatches in 15,000 steps. Answer right for a new weapon.' },
   );
   D.EGGS.find((e) => e.id === 'frost').w = 40; D.EGGS.find((e) => e.id === 'ember').w = 20; D.EGGS.find((e) => e.id === 'crystal').w = 8;   // room for the new eggs
   D.eggById = Object.fromEntries(D.EGGS.map((e) => [e.id, e]));

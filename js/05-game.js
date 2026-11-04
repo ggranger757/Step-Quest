@@ -160,7 +160,7 @@
   G.reqStatus = (req) => {
     const s = S();
     if (req.starter && !req.cost) return { met: true, label: 'Starter' };
-    if (req.daily) return { met: false, label: 'Daily reward (day 7)' };
+    if (req.bird) return { met: false, label: 'Photograph it on a state bird Quest in ' + (D.wqStateById[req.bird] || {}).name, bird: true };
     if (req.found && !G.hasFound(req.found)) return { met: false, label: 'Find it in ' + D.worldById[req.world].name, found: false };
     if (req.level && s.level < req.level) return { met: false, label: 'Reach level ' + req.level, cur: s.level, target: req.level };
     if (req.steps && s.totalSteps < req.steps) return { met: false, label: 'Walk ' + WB.fmt(req.steps) + ' total steps', cur: s.totalSteps, target: req.steps };
@@ -172,7 +172,7 @@
   };
   G.checkUnlocks = () => {
     for (const cat of Object.keys(CATS)) for (const it of CATS[cat][1]) {
-      if (G.owns(cat, it.id) || it.req.cost || it.req.daily) continue;
+      if (G.owns(cat, it.id) || it.req.cost || it.req.daily || it.req.bird) continue;
       if (G.reqStatus(it.req).met) G.unlock(cat, it.id);
     }
   };
@@ -272,7 +272,7 @@
     const c = D.DAILY_CAL[i % 7];
     if (!c.rare) return c;
     for (const r of D.DAILY_RARES) { const cat = Object.keys(r)[0]; if (!G.owns(cat, r[cat])) return r; }
-    return { coins: 400, potion: 'elixir' };
+    return { coins: 600, potion: 'elixir' };
   };
   G.claimDaily = () => {
     if (!G.dailyCanClaim()) return null;

@@ -602,6 +602,7 @@
       <div class="sect"><h2>Daily missions <span class="aside">New missions in ${hh}h ${mm}m</span></h2>
         <div class="list">${s.tasks.daily.map((d) => taskRow(G.dailyDef(d.id), 'daily', d.claimed)).join('')}</div>
       </div>
+      ${UI.questSection ? UI.questSection() : ''}
       ${s.tasks.quests.length ? `<div class="sect" id="deliveries"><h2>Deliveries <span class="aside">${s.tasks.quests.length} / 3</span></h2><div class="list">${s.tasks.quests.map((q) => taskRow(q, 'quest')).join('')}</div></div>` : ''}
       ${G.activeMilestones().length ? `<div class="sect" id="milestones"><h2>Milestones <span class="aside">${s.tasks.advDone.filter((id) => D.milestoneById[id]).length} / ${D.MILESTONES.length}</span></h2><div class="list">${G.activeMilestones().map((t) => taskRow(t, 'adv')).join('')}</div></div>` : ''}
       <div class="sect"><h2>Walking streak</h2>
@@ -614,7 +615,7 @@
       <div class="seg three m-tabs" role="tablist" aria-label="Mission types">${MT.map(([id, l, ic]) => `<button type="button" role="tab" data-mtab="${id}" aria-selected="${id === mt}" aria-pressed="${id === mt}" class="${lockOf[id] ? 'm-locked' : ''}"${lockOf[id] ? ` aria-label="${l}, locked until level ${D.MERLIN_MIN_LEVEL}"` : ''}>${WB.icon(lockOf[id] ? 'lock' : ic, 2)}<span>${l}</span>${lockOf[id] ? `<span class="cnt lock">Lv ${D.MERLIN_MIN_LEVEL}</span>` : cnt[id] ? `<span class="cnt ready">${cnt[id]} ready</span>` : ''}</button>`).join('')}</div>
       ${body}
     </div>`);
-    if (changed) { const mf = $('#scr-tasks .mer-face'); if (mf) WB.paintThumb(mf, { kind: 'npc', id: 'merlin' }); }
+    if (changed) { const mf = $('#scr-tasks .mer-face'); if (mf) WB.paintThumb(mf, { kind: 'npc', id: 'merlin' }); if (UI.paintQuestBirds) UI.paintQuestBirds($('#scr-tasks')); }
     UI.updateBadges();
   };
 
@@ -900,7 +901,14 @@
         <div class="sect"><h2>Streak</h2><div class="grid">${D.SUPPLIES.map((it) => { const full = s.streak.rest >= D.SHIELD_MAX; return `<div class="item pbox"><div class="prev"><canvas width="120" height="120" data-icon-canvas="sshield"></canvas><span class="tag">Have ${s.streak.rest}/${D.SHIELD_MAX}</span></div><h3>${it.name}</h3><div class="req"><span>${it.desc}</span></div>
           <div class="foot">${priceTag(it.cost)}<button class="btn gold sm block" type="button" data-supply="${it.id}" ${off(full ? 'You already carry the maximum of ' + D.SHIELD_MAX + ' Streak Shields.' : shortWhy(it.cost, it.name))}>${full ? 'Full' : 'Buy'}</button></div></div>`; }).join('')}</div></div>`;
     }
-    if (cat === 'pets') return `<div class="grid">${byUnlock(D.PETS).map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: 'HP ' + G.petMax(p.id) + ' · Guards ' + Math.round(p.share * 100) + '% of hits' })).join('')}</div>`;
+    if (cat === 'pets') {
+      const pstat = (p) => 'HP ' + G.petMax(p.id) + ' · ' + ({ attack: 'Attacker', shoot: 'Shooter', heal: 'Healer', guard: 'Guardian' })[p.role];
+      const birds = D.STATE_BIRDS || [], got = birds.filter((p) => G.owns('pet', p.id)).length;
+      return `<div class="grid">${byUnlock(D.PETS.filter((p) => !p.bird)).map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div>
+        <div class="sect" id="state-birds"><h2>State birds <span class="aside">${got} / ${birds.length}</span></h2>
+          <p class="fine">Not for sale. Photograph one on a state bird Quest (Missions → Today) and tell us which state you’re in.</p>
+          <div class="grid">${birds.map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div></div>`;
+    }
     return `<div class="grid">${byUnlock(D.AVATARS).map((it) => itemCard('avatar', it, { desc: it.role })).join('')}</div>`;
   }
   // ----- Bag sections -----

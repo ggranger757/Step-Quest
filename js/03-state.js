@@ -46,7 +46,7 @@
     if (s.settings && s.settings.gameMusic === undefined) s.settings.gameMusic = s.settings.sound !== false;
     if (s.settings && s.settings.turnTimer === undefined) s.settings.turnTimer = true;   // the battle turn timer is on for older saves too
     if (s.settings && s.settings.wkChat === undefined) s.settings.wkChat = true;   // 3.4.0: the Worldkey talks on walks (Profile → Settings)
-    if (s.settings) delete s.settings.homeState;   // only photo hunts used it (state bird / flower)
+    // s.settings.homeState: your US state (or 'none'), for the state bird / flower Quests (3.5.0)
     // 3.0: field missions, Merlin's walking quests, egg trades, the Darkmatter Forge and gear care were retired.
     // Eggs carried move into Merlin's nest (05e-merlin.js reads s._oldEggs once). Magic items are kept and never run out.
     if (s.eggs) { s._oldEggs = { eggs: s.eggs, at: s.enc && s.enc.merlinAt }; delete s.eggs; }

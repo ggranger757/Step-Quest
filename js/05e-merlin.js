@@ -83,10 +83,10 @@
     const e = D.eggById[egg], k = (1 + (S().level - 1) * 0.03) * (right ? D.QUIZ_BONUS : 1);
     return { coins: r5(e.reward.coins * k), xp: r5(e.reward.xp * k), potion: e.reward.potion };
   };
-  // a weapon or pet you don't own yet (cheapest first, so it's never a huge jump): a Crystal Egg's prize for a right answer
+  // a weapon you don't own yet (cheapest first, so it's never a huge jump): a Crystal Egg's prize for a right answer.
+  // 3.5.1: no pets here any more: pets are bought (or, for state birds, photographed on a Quest).
   function hoardItem() {
-    const pool = [...D.WEAPONS.filter((w) => !G.owns('weapon', w.id) && w.req && w.req.cost && (!w.req.level || w.req.level <= S().level + 5)).map((w) => ['weapon', w.id, w.req.cost]),
-      ...D.PETS.filter((p) => !G.owns('pet', p.id) && p.req && p.req.cost).map((p) => ['pet', p.id, p.req.cost])].sort((a, b) => a[2] - b[2]).slice(0, 8);
+    const pool = D.WEAPONS.filter((w) => !G.owns('weapon', w.id) && w.req && w.req.cost && (!w.req.level || w.req.level <= S().level + 5)).map((w) => ['weapon', w.id, w.req.cost]).sort((a, b) => a[2] - b[2]).slice(0, 8);
     return pool.length ? WB.pick(pool) : null;
   }
 

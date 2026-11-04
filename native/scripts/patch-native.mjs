@@ -12,6 +12,9 @@ const plistKeys = {
   NSHealthShareUsageDescription: 'Step Quest reads your step count so your steps move your hero.',
   NSHealthUpdateUsageDescription: 'Step Quest does not write health data.',
   NSMotionUsageDescription: 'Step Quest counts your steps while the game is open.',
+  // quest photos (3.5.2): the camera only. The photo library text is required by the camera plugin but never shown, because quests never open the library.
+  NSCameraUsageDescription: 'Step Quest uses the camera for quest photos, like a tree or your state bird. Photos stay on your phone as small thumbnails.',
+  NSPhotoLibraryUsageDescription: 'Step Quest only takes new photos with the camera for quests.',
 };
 const iosApp = join(native, 'ios', 'App', 'App');
 edit(join(iosApp, 'Info.plist'), (s) => {
@@ -29,6 +32,14 @@ edit(join(native, 'ios', 'App', 'App.xcodeproj', 'project.pbxproj'), (s) =>
 
 // ---- Android: Location Awareness was removed, so no location permission (older projects drop it here)
 edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) => s.replace(/\s*<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" \/>/, ''));
+
+// ---- Android: quest photos (3.5.2). The camera plugin opens the phone's camera app; Android 11+ only lets an app see
+// camera apps it declares it may look for (package visibility).
+edit(join(native, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), (s) => {
+  if (s.includes('android.media.action.IMAGE_CAPTURE')) return s;
+  const q = '    <queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE" />\n        </intent>\n    </queries>\n';
+  return s.includes('<queries>') ? s.replace('<queries>', '<queries>\n        <intent>\n            <action android:name="android.media.action.IMAGE_CAPTURE" />\n        </intent>') : s.replace(/(\s*)<application/, `\n${q}$1<application`);
+});
 
 // ---- Android: Health Connect needs minSdk 26
 edit(join(native, 'android', 'variables.gradle'), (s) => s.replace(/minSdkVersion\s*=\s*(\d+)/, (m, n) => (Number(n) < 26 ? 'minSdkVersion = 26' : m)));
@@ -87,4 +98,4 @@ edit(vc, (s) => s.includes('AVAudioSession') ? s : s
 `));
 edit(join(iosApp, 'Base.lproj', 'Main.storyboard'), (s) => s.replace(/customClass="CAPBridgeViewController" customModule="Capacitor"/, 'customClass="MainViewController" customModule="App" customModuleProvider="target"'));
 
-console.log('Native projects are ready for step sync.');
+console.log('Native projects are ready for step sync and quest photos.');
