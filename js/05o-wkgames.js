@@ -25,19 +25,22 @@
   K.gameSpec = (type, L, cfg = {}) => {
     L = Math.max(1, L || 1);
     if (type === 'echo') { const sp = K.tuneSpec(L); return { ...sp, syms: Math.min(sp.syms, cfg.symset ? cfg.symset.symbols.length : 9), lead: 500 }; }
+    // 3.7.3: easy at level 1, harder every level, hardest from D.WK_HARD_AT (K.wkDiff)
+    const d = K.wkDiff(L), lp = (a, b) => K.lerp(a, b, d), r = (a, b) => Math.round(lp(a, b));
     if (type === 'pairs') {
-      const n = L < 10 ? 6 : L < 25 ? 8 : 10;
-      return { pairs: n, cols: n === 10 ? 5 : 4, peek: Math.max(1600, 3400 - L * 30), misses: L < 10 ? n : L < 25 ? n - 1 : n - 2, flipBack: 650 };
+      // 3 pairs (6 cards) at level 1 up to 10 pairs, in board sizes that make tidy grids
+      const steps = [[3, 3], [4, 4], [5, 5], [6, 4], [8, 4], [10, 5]], cap = cfg.symset ? cfg.symset.symbols.length : 10;
+      const ok = steps.filter(([k]) => k <= cap), [n, cols] = ok[Math.min(ok.length - 1, Math.floor(d * ok.length))];
+      return { pairs: n, cols, peek: r(4200, 1400), misses: Math.max(1, Math.round(n * lp(1.4, 0.3))), flipBack: r(900, 550) };
     }
     if (type === 'pulse') {
-      const beats = Math.min(12, 8 + Math.floor(L / 12));
-      return { beats, allowMiss: L < 10 ? 3 : L < 30 ? 2 : 1, interval: Math.max(480, (cfg.tempo || 860) - L * 6), perfect: 70, good: Math.max(100, 160 - L), lead: 1400 };
+      return { beats: r(5, 14), allowMiss: r(4, 1), interval: Math.max(420, Math.round((cfg.tempo || 860) * lp(1.3, 0.62))), perfect: r(95, 55), good: r(230, 100), lead: 1400 };
     }
     if (type === 'wave') {
-      return { locks: L < 15 ? 2 : 3, hold: 1200, tolF: Math.max(0.09, 0.22 - L * 0.003), amp: L >= 12, tolA: Math.max(0.07, 0.15 - L * 0.002), time: 60000, drift: L >= 20 ? 1 : 0.45, fMin: 0.6, fMax: 5.4 };
+      return { locks: r(1, 3), hold: r(900, 1500), tolF: +lp(0.32, 0.08).toFixed(3), amp: d >= 0.25, tolA: +lp(0.2, 0.07).toFixed(3), time: r(75000, 45000), drift: +lp(0.15, 1).toFixed(2), fMin: 0.6, fMax: 5.4 };
     }
     if (type === 'rings') {
-      return { rings: L < 12 ? 3 : L < 30 ? 4 : 5, speed: (cfg.calm ? 72 : 96) + L * 1.6, tol: Math.max(9, 21 - L * 0.2), misses: L < 30 ? 3 : 2 };
+      return { rings: r(2, 5), speed: Math.round((cfg.calm ? 56 : 74) * lp(1, 2.4)), tol: +lp(28, 8).toFixed(1), misses: r(4, 1) };
     }
     return {};
   };

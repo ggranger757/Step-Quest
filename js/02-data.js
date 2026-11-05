@@ -339,7 +339,13 @@
   // Block % = your shield's or belt's `block` (no shield: D.GUARD_BARE), lower when it's worn (G.wearF, down to half),
   // never above D.BLOCK_MAX. Shields also shave their `armor` off every hit, defending or not. Defending never heals.
   // Rules: B.blockPct and enemyHit in 05b-battle.js.
-  D.GUARD_BARE = 0;   // 3.7.2: no shield or belt, no block D.BLOCK_MAX = 0.9; D.BLOCK_HARDEN = 0.95;   // defending always lets some through (3.7.1)
+  D.GUARD_BARE = 0;      // 3.7.2: no shield or belt, no block
+  D.BLOCK_MAX = 0.9;     // the most any shield blocks
+  // Shoo it off or sneak past (3.7.3): G.shooChance / G.resolve in 05-game.js
+  D.SHOO_BASE = 0.55; D.SHOO_PER_LVL = 0.012; D.SHOO_PET = 0.1; D.SHOO_MAX = 0.85;   // your odds of scaring it off
+  D.SHOO_BITE = 0.1;     // a failed shoo: it bites for 10% of your max HP
+  D.SNEAK_FIND = 0.3;    // sneaking past: 30% chance of a few coins
+  D.BLOCK_HARDEN = 0.95; // Tempered Ward; defending always lets some through (3.7.1)
   // The shield gauge (3.7.0): blocked damage comes out of it while you defend (B.guardMax / guardRound in 05b-battle.js)
   D.SG_SHIELD = 0.9; D.SG_BARE = 0.25;   // gauge size: max HP × block × condition × this (no shield: max HP × D.SG_BARE)
   D.SG_REGEN = 0.12;                     // refills this share each round you don't defend

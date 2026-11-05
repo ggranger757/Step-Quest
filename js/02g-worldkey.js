@@ -24,13 +24,21 @@
   //   syms    how many symbols are on the pad: 6, then all 9 from level 8
   //   lit     the pad lights up along with the Worldkey's screen while the pattern plays (always on: it is the only way to see which shapes to memorize)
   //   shuffle the pad is rearranged before every attempt, so only the shapes can be remembered (from level 18)
-  K.tuneSpec = (level) => ({
-    len: Math.min(12, 5 + Math.floor((level - 1) / 6)),
-    ms: Math.max(300, 680 - (level - 1) * 8),
-    syms: level >= 8 ? 9 : 6,
-    lit: true,
-    shuffle: level >= 18,
-  });
+  // Difficulty (3.7.3): every tuning game starts easy and gets harder with your level, on one smooth curve.
+  // K.wkDiff(level): 0 at level 1, 1 from level D.WK_HARD_AT. Each game blends its easy and hard settings by it.
+  D.WK_HARD_AT = 60;
+  K.wkDiff = (level) => Math.max(0, Math.min(1, ((level || 1) - 1) / (D.WK_HARD_AT - 1)));
+  K.lerp = (a, b, d) => a + (b - a) * d;
+  K.tuneSpec = (level) => {
+    const d = K.wkDiff(level);
+    return {
+      len: Math.round(K.lerp(3, 10, d)),          // 3 symbols to remember at level 1, 10 at the top
+      ms: Math.round(K.lerp(820, 330, d)),         // and they flash faster
+      syms: d < 0.12 ? 4 : d < 0.4 ? 6 : 9,        // 4 pads, then 6, then 9
+      lit: true,
+      shuffle: d >= 0.5,                           // the pads change places every round
+    };
+  };
 
   // ---------- resonance symbols: square-pixel formations, like the ones on the Worldkey screens ----------
   // dots on a 7x7 grid (-3..3). On the device they appear spread out and pull together (the screens' own motion),

@@ -454,7 +454,7 @@
       const c = D.CREATURES[e.creature];
       if (c.aggressive && !G.battlesOpen()) {   // too early to fight: it can only be shooed off or snuck past
         e.text = 'A ' + c.name + ' ' + c.verb + '! Battles unlock at level ' + D.BATTLE_LEVEL + '.';
-        e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
+        e.choices = G.shooChoices(e);
       } else if (c.aggressive) {
         e.aggressive = true;
         e.text = e.rival ? c.name + ' ' + c.verb + '. “Still walking? Prove it.”' : 'A ' + c.name + ' ' + c.verb + '!';
@@ -467,7 +467,7 @@
         e.choices = [{ id: 'battle', label: 'Battle', hint: (e.mob ? 'Mob of ' + (e.mob.length + 1) + ' · ' : '') + 'Lv ' + (e.rival ? D.rivalStats(s.level) : D.creatureStats(e.creature, D.worldTier(w, s.level))).lvl }, { id: 'avoid', label: e.rival ? 'Walk away' : 'Avoid it', hint: e.rival ? 'She’ll be back' : 'Walk on' }];
       } else {
         e.text = 'A ' + c.name + ' ' + c.verb + '.';
-        e.choices = [{ id: 'shoo', label: 'Shoo it off', hint: '+' + (14 + s.level * 2) + ' XP' }, { id: 'sneak', label: 'Sneak past', hint: '+6 XP' }];
+        e.choices = G.shooChoices(e);
       }
     } else if (type === 'merlin') {   // Merlin swoops down with an egg for your nest
       G.merlin().at = Date.now();
@@ -548,6 +548,18 @@
   G.removePending = (e) => { S().enc.pending = S().enc.pending.filter((p) => p.id !== e.id); };
 
   // choices that resolve immediately (battles are resolved by WB.Battle)
+  // ---------- shoo or sneak (3.7.3): a real choice. Shoo it off is a gamble: win XP, coins and a bestiary entry, or
+  // it bites back (you lose some HP and get nothing). Sneak past is safe but earns no XP: sometimes you find what it was
+  // guarding. Your odds of shooing it grow with your level, and an attacking pet helps.
+  G.shooChance = () => {
+    const s = S(), pet = s.equip.pet && G.pet(s.equip.pet);
+    return Math.min(D.SHOO_MAX, D.SHOO_BASE + s.level * D.SHOO_PER_LVL + (pet && (pet.role === 'attack' || pet.role === 'shoot') ? D.SHOO_PET : 0));
+  };
+  G.shooReward = () => ({ xp: 14 + S().level * 2, coins: 6 + S().level });
+  G.shooChoices = (e) => {
+    const r = G.shooReward(), p = Math.round(G.shooChance() * 100);
+    return [{ id: 'shoo', label: 'Shoo it off', hint: p + '% · +' + r.xp + ' XP, +' + r.coins + ' coins' }, { id: 'sneak', label: 'Sneak past', hint: 'Safe · no XP' }];
+  };
   G.resolve = (e, choice) => {
     const s = S(), out = { text: '', reward: {}, anim: null };
     const lvl = s.level;
@@ -588,7 +600,14 @@
       }
       case 'creature:avoid': out.text = 'You give it a wide berth and keep walking.'; out.anim = 'leave'; break;
       case 'creature:shoo': {
-        out.anim = 'fight'; out.reward = { xp: 14 + lvl * 2, coins: 6 + lvl };
+        out.anim = 'fight';
+        if (Math.random() >= G.shooChance()) {   // it bites back: some HP, nothing gained (never knocks you out)
+          const bite = Math.min(Math.max(0, s.hp - 1), Math.max(1, Math.round(G.maxHp() * D.SHOO_BITE)));
+          s.hp -= bite; out.hurt = bite; out.reward = null;
+          out.text = 'The ' + D.CREATURES[e.creature].name + ' won’t budge and bites back! You lose ' + bite + ' HP.';
+          break;
+        }
+        out.reward = G.shooReward();
         s.enc.fights++; s.today.fights++;
         const first = !s.enc.cards[e.creature];
         s.enc.cards[e.creature] = (s.enc.cards[e.creature] || 0) + 1;
@@ -596,7 +615,11 @@
         out.newKind = first ? e.creature : null;
         break;
       }
-      case 'creature:sneak': out.reward = { xp: 6 }; out.text = 'You slip past unnoticed.'; out.anim = 'leave'; break;
+      case 'creature:sneak':   // safe, no XP; now and then you find what it was guarding
+        out.anim = 'leave';
+        if (Math.random() < D.SNEAK_FIND) { out.reward = { coins: 4 + Math.round(lvl / 2) }; out.text = 'You slip past unnoticed, and find a few coins it was sitting on.'; }
+        else out.text = 'You slip past unnoticed.';
+        break;
       case 'chest:open': {
         out.anim = 'open';
         out.reward = { coins: 10 + Math.floor(Math.random() * 16) + lvl };

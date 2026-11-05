@@ -68,7 +68,8 @@
     if (!sh) return 0;   // 3.7.2: no shield or belt, nothing to block with
     if (h.harden > 0) return D.BLOCK_HARDEN;   // Tempered Ward: almost everything (you still feel every hit)
     const base = sh ? (sh.block + (sh.regen || 0)) * G.wearF(sh.id) : D.GUARD_BARE;
-    return Math.min(D.BLOCK_MAX, base + (st.perks && st.perks.has('guardmax') ? 0.1 : 0) + (h.blockUp || 0));
+    const v = Math.min(D.BLOCK_MAX, base + (st.perks && st.perks.has('guardmax') ? 0.1 : 0) + (h.blockUp || 0));
+    return Number.isFinite(v) ? v : 0;   // never let a bad number reach the shield gauge
   };
   // ---------- the shield gauge (3.7.0): your shield (or belt, or bare guard) has its own HP for the battle. While you
   // defend, your Block % of every hit comes out of the gauge instead of your HP. When the gauge runs out the guard

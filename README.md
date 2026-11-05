@@ -103,6 +103,16 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.7.3
+- **Fix: the shield gauge showed NaN.** A 3.7.2 edit knocked out the block limits (`D.BLOCK_MAX`, `D.BLOCK_HARDEN`), so every Block % became NaN as soon as you defended. Restored, and `B.blockPct` can no longer return a bad number.
+- **Worldkey tuning games start easy and get harder as you level up**, on one smooth curve from level 1 to level 60 (`K.wkDiff` in `js/02g-worldkey.js`, settings in `K.gameSpec`):
+  - Echo: 3 symbols on 4 pads at level 1 → 10 symbols on 9 shuffling pads, flashing faster.
+  - Mirror Pairs: 3 pairs with a long look and 4 misses → 10 pairs, a short look, few misses.
+  - Pulse: 5 slow beats, wide timing, 4 misses → 14 fast beats, tight timing, 1 miss.
+  - Waveform: 1 band, loose match, no amplitude → 3 bands, tight match, amplitude too, the signal drifts.
+  - Ring Lock: 2 slow rings, wide notch, 4 misses → 5 fast rings, narrow notch, 1 miss.
+- **Shoo it off or Sneak past is now a real choice.** Shoo it off is a gamble: your odds show on the button (55% + 1.2% per level, +10% with an attacking pet, up to 85%). Win: XP, coins and a bestiary entry. Lose: it bites back for 10% of your max HP and you get nothing (it never knocks you out). Sneak past is always safe but earns no XP; 30% of the time you find a few coins it was sitting on. Constants `D.SHOO_*`, `D.SNEAK_FIND`.
+
 ## Changes in 3.7.2
 - No shield or belt equipped: you can't block. Defend is greyed out ("No shield or belt"), there's no shield gauge, and every hit takes your full HP. The first-battle tip points new walkers to the Leather Belt in the Shop.
 - A broken shield or belt (its gauge ran out) does nothing until it's back: no block and no armor, so hits take your full HP ("You take 15 damage (your shield is broken)").

@@ -111,13 +111,13 @@
   GAMES.echo = {
     idle(ui) {
       const set = ui.cfg.symset, sp = K.gameSpec('echo', WB.state.level, ui.cfg);
-      ui.board.innerHTML = `<div class="wk-pad ${sp.syms > 6 ? 'nine' : ''}" role="group" aria-label="Symbols">${set.symbols.slice(0, sp.syms).map((s, i) => `<button type="button" class="wk-sym" data-sym="${i}" aria-label="${esc(s.name)}" disabled><canvas width="36" height="36" aria-hidden="true"></canvas></button>`).join('')}</div>`;
+      ui.board.innerHTML = `<div class="wk-pad ${sp.syms > 6 ? 'nine' : sp.syms <= 4 ? 'four' : ''}" role="group" aria-label="Symbols">${set.symbols.slice(0, sp.syms).map((s, i) => `<button type="button" class="wk-sym" data-sym="${i}" aria-label="${esc(s.name)}" disabled><canvas width="36" height="36" aria-hidden="true"></canvas></button>`).join('')}</div>`;
       ui.board.querySelectorAll('.wk-sym').forEach((b) => paintSym(b.querySelector('canvas'), set.symbols[+b.dataset.sym], ui.cfg, 4.4));
       ui.hud.innerHTML = `<div class="wk-pips">${pips(sp.len)}</div>`;
     },
     play(sess, ui, life) {
       const set = ui.cfg.symset, sp = sess.spec;
-      ui.board.innerHTML = `<div class="wk-pad ${sp.syms > 6 ? 'nine' : ''}" role="group" aria-label="Symbols">${sess.order.map((i) => `<button type="button" class="wk-sym" data-sym="${i}" aria-label="${esc(set.symbols[i].name)}" disabled style="--c:${symColor(set.symbols[i], ui.cfg)}"><canvas width="36" height="36" aria-hidden="true"></canvas></button>`).join('')}</div>`;
+      ui.board.innerHTML = `<div class="wk-pad ${sp.syms > 6 ? 'nine' : sp.syms <= 4 ? 'four' : ''}" role="group" aria-label="Symbols">${sess.order.map((i) => `<button type="button" class="wk-sym" data-sym="${i}" aria-label="${esc(set.symbols[i].name)}" disabled style="--c:${symColor(set.symbols[i], ui.cfg)}"><canvas width="36" height="36" aria-hidden="true"></canvas></button>`).join('')}</div>`;
       const pads = [...ui.board.querySelectorAll('.wk-sym')];
       pads.forEach((b) => paintSym(b.querySelector('canvas'), set.symbols[+b.dataset.sym], ui.cfg, 4.4));
       ui.hud.innerHTML = `<div class="wk-pips">${pips(sp.len)}</div>`;
