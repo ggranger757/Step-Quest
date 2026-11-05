@@ -9,7 +9,7 @@ const edit = (file, fn) => { if (!existsSync(file)) return false; const a = read
 
 // ---- iOS: usage descriptions + HealthKit entitlement
 const plistKeys = {
-  NSHealthShareUsageDescription: 'Step Quest reads your step count so your steps move your hero.',
+  NSHealthShareUsageDescription: 'Step Quest reads your step count so your steps move your hero, and your active calories to show what your walks burn.',
   NSHealthUpdateUsageDescription: 'Step Quest does not write health data.',
   NSMotionUsageDescription: 'Step Quest counts your steps while the game is open.',
   // quest photos (3.5.2): the camera only. The photo library text is required by the camera plugin but never shown, because quests never open the library.

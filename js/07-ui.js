@@ -293,6 +293,7 @@
           <span class="of">of ${WB.fmt(goal)} steps \u00b7 ${WB.fmtKm(td.meters)}</span>
         </div>
         <div class="bar seg ok" role="progressbar" aria-label="Daily goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct}%"></i></div>
+        ${UI.kcalLine ? UI.kcalLine() : ''}
         <div class="earnrate"><span>${WB.icon('coin', 2)}1 coin / ${D.STEPS_PER_COIN} steps</span><span>${WB.icon('xp', 2)}1 XP / ${D.STEPS_PER_XP} steps</span></div>
         <button class="hpline" type="button" data-act="heal-info" aria-label="Health ${WB.fmt(s.hp)} of ${WB.fmt(G.maxHp())}. Open potions.">
           <span class="lbl">HP</span><span class="bar hp ${s.hp / G.maxHp() < 0.3 ? 'low' : ''}"><i style="width:${(s.hp / G.maxHp()) * 100}%"></i></span><span class="num">${WB.fmt(s.hp)} / ${WB.fmt(G.maxHp())}</span>
@@ -1145,6 +1146,7 @@
         <div class="setting pbox"><div><label for="set-goal">Daily goal</label><div class="sd">Hit it for a 100-coin bonus.</div></div><select id="set-goal">${opt(D.DAILY_GOALS.includes(s.settings.dailyGoal) ? D.DAILY_GOALS : [...D.DAILY_GOALS, s.settings.dailyGoal].sort((a, b) => a - b), s.settings.dailyGoal, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-streak">Streak minimum</label><div class="sd">Steps a day to keep your streak.</div></div><select id="set-streak">${opt(D.STREAK_GOALS.includes(s.settings.streakMin) ? D.STREAK_GOALS : [...D.STREAK_GOALS, s.settings.streakMin].sort((a, b) => a - b), s.settings.streakMin, WB.fmt)}</select></div>
         <div class="setting pbox"><div><label for="set-units">Distance units</label><div class="sd">How distances are shown.</div></div><select id="set-units">${opt(['mi', 'km'], s.settings.units || 'km', (v) => (v === 'mi' ? 'Miles' : 'Kilometers'))}</select></div>
+        ${UI.kcalSettings ? UI.kcalSettings() : ''}
         <div class="setting pbox"><div><label for="set-stride">Stride length</label><div class="sd">Turns steps into distance.</div></div><select id="set-stride">${opt([0.6, 0.65, 0.7, 0.76, 0.8, 0.85, 0.9], s.settings.stride, (v) => WB.miles() ? Math.round(v * 39.37) + ' in' : v.toFixed(2) + ' m')}</select></div>
       </div>
       <div class="sect"><h2>Notifications</h2>
@@ -1187,7 +1189,9 @@
     WB.$$('[data-theme-pick]', pf).forEach((b) => (b.onclick = () => { s.settings.theme = b.dataset.themePick; WB.Save.queue(); UI.applyTheme(); WB.Sfx.play('tap'); UI.renderProfile(); const nb = pf.querySelector(`[data-theme-pick="${b.dataset.themePick}"]`); if (nb) nb.focus({ preventScroll: true }); }));
     // arrow keys move between the theme choices (radio-group keyboard pattern)
     const tp = pf.querySelector('.theme-pick'); if (tp) tp.onkeydown = (e) => { const bs = [...tp.querySelectorAll('button')], i = bs.indexOf(document.activeElement); if (i < 0) return; const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0; if (d) { e.preventDefault(); bs[(i + d + bs.length) % bs.length].click(); } };
-    sel('#set-goal', 'dailyGoal', Number); sel('#set-streak', 'streakMin', Number); sel('#set-stride', 'stride', Number); sel('#set-units', 'units', String);
+    sel('#set-goal', 'dailyGoal', Number);
+    if ($('#set-kcal-goal')) $('#set-kcal-goal').onchange = (e) => { s.settings.kcalGoal = Number(e.target.value); WB.Save.queue(); G.kcalTick(); UI.render(); };
+    if ($('#set-weight')) $('#set-weight').onchange = (e) => { const v = e.target.value; s.settings.weightKg = v === '' ? null : Number(v); WB.Save.queue(); G.kcalTick(); UI.render(); }; sel('#set-streak', 'streakMin', Number); sel('#set-stride', 'stride', Number); sel('#set-units', 'units', String);
     let taps = 0;
     if ($('#ver')) $('#ver').onclick = () => { if (WB.DEV_TOOLS && ++taps >= 5) { taps = 0; const on = !WB.store.get('walkbound.dev'); WB.store.set('walkbound.dev', on); $('#dev-fab').hidden = !on; UI.toast({ kicker: 'Developer mode', title: on ? 'On' : 'Off', icon: 'gear' }); } };
   };
@@ -1373,6 +1377,7 @@
     switch (d.act) {
       case 'sensor-start': WB.Steps.motion.start().then(() => UI.render()); UI.render(); break;
       case 'duel': WB.DuelUI.open(); break;
+      case 'kcal-info': UI.kcalInfo(); break;
       case 'sensor-stop': WB.Steps.motion.stop(); UI.render(); break;
       case 'health-connect': WB.Health.connect(true).then(() => UI.render()); break;
       case 'health-sync': WB.Health.sync(true).then((n) => { if (!n) UI.toast({ kicker: WB.Health.name(), title: 'Up to date', icon: 'check', cls: 'ok' }); UI.render(); }); break;

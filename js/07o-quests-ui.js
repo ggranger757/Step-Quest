@@ -4,7 +4,7 @@
    that state's bird joins your pets (3.5.1). Rules: 05p-quests.js */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, esc = WB.esc, S = () => WB.state;
-  const ICON = { walk: 'steps', explore: 'map', photo: 'photo', state: 'feather' };
+  const ICON = { burn: 'flame',  walk: 'steps', explore: 'map', photo: 'photo', state: 'feather' };
   const until = (t) => { const ms = Math.max(0, t - Date.now()), h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000); return h ? h + 'h ' + m + 'm' : m + 'm'; };
   // the camera button: the native camera in the installed app, the camera file input in a browser (04c-photo.js)
   const busy = new Set();
@@ -25,7 +25,7 @@
       <div class="wq-main"><span class="wq-ic" aria-hidden="true">${WB.icon(ICON[q.kind], 3)}</span>
         <div><div class="t-title">${esc(G.wqTitle(q))}</div><div class="t-sub">${esc(G.wqHow(q))}</div><div class="t-rew">${WB.icon('coin', 1)}${WB.fmt(q.reward.coins)} coins${q.kind === 'state' && !q.capState ? ' + a state bird pet' : ''}</div></div>
         <span class="wq-pics">${q.photo ? `<figure><img class="wq-photo" src="${q.photo}" alt="Your photo for this quest" width="64" height="64"><figcaption>Your photo</figcaption></figure>` : ''}${bird ? `<figure><canvas class="wq-bird" width="64" height="64" data-wq-bird="${bird.id}" role="img" aria-label="${esc(bird.name)}"></canvas><figcaption>${esc(bird.name)}</figcaption></figure>` : ''}</span></div>
-      ${st.claimed ? '' : `<div class="obj-prog"><div class="bar seg ${st.done ? 'gold' : 'cyan'}" role="progressbar" aria-label="Steps for this quest" aria-valuemin="0" aria-valuemax="${st.target}" aria-valuenow="${st.cur}"><i style="width:${pct}%"></i></div><span class="num">${st.done ? (st.needsState ? 'Photo taken · pick the state' : st.needsPic && !q.photo ? (q.kind === 'state' ? 'Walked · now find the bird' : 'Walked · now the photo') : 'Ready to claim') : WB.fmt(st.cur) + ' / ' + WB.fmt(st.target)}</span></div>`}
+      ${st.claimed ? '' : `<div class="obj-prog"><div class="bar seg ${st.done ? 'gold' : 'cyan'}" role="progressbar" aria-label="${st.unit === 'kcal' ? 'Calories' : 'Steps'} for this quest" aria-valuemin="0" aria-valuemax="${st.target}" aria-valuenow="${st.cur}"><i style="width:${pct}%"></i></div><span class="num">${st.done ? (st.needsState ? 'Photo taken · pick the state' : st.needsPic && !q.photo ? (q.kind === 'state' ? 'Walked · now find the bird' : 'Walked · now the photo') : 'Ready to claim') : WB.fmt(st.cur) + ' / ' + WB.fmt(st.target) + (st.unit === 'kcal' ? ' kcal' : '')}</span></div>`}
       ${acts ? `<div class="wq-foot">${acts}</div>` : ''}
     </div>`;
   };

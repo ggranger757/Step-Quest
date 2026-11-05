@@ -15,6 +15,8 @@
  *                 your hero, pay out, and keep the streak alive.
  *   - Sync runs on launch, whenever the app comes back to the foreground, and every minute while open.
  *   - While health sync is on, the in-app pedometer is switched off so steps are never counted twice.
+ *   - Calories (3.8.0): the same sync reads each day's active energy ('calories') into s.kcal.native (05r-calories.js).
+ *     It's asked for together with steps; saying no to calories only means the game estimates them from your steps.
  */
 (() => {
   const H = (WB.Health = {
@@ -58,8 +60,12 @@
     if (!H.plugin) return false;
     const hs = S().health;
     try {
-      const opts = { read: ['steps'], write: [] };
-      const r = prompt ? await H.plugin.requestAuthorization(opts) : await H.plugin.checkAuthorization(opts);
+      const opts = { read: ['steps', 'calories'], write: [] };
+      // 3.8.0: someone connected before calories existed gets asked once for them (steps stay as they were)
+      const ask = prompt || !hs.kcalAsked;
+      const r = ask ? await H.plugin.requestAuthorization(opts) : await H.plugin.checkAuthorization(opts);
+      hs.kcalAsked = true;
+      H.kcalOk = !(r && Array.isArray(r.readDenied) && r.readDenied.includes('calories'));
       const denied = r && Array.isArray(r.readDenied) && r.readDenied.includes('steps');
       // HealthKit never tells an app that reading was refused (privacy), so on iOS "not denied" counts as on
       if (denied) { hs.on = false; WB.Save.queue(); set('denied', 'Step access is off. Turn it on in ' + (H.platform === 'ios' ? 'Settings → Health → Data Access & Devices → Step Quest.' : 'Health Connect → App permissions → Step Quest.')); return false; }
@@ -101,6 +107,16 @@
           const add = byDay[k] - (s.days[k] || 0);
           if (add > 0) { WB.Game.addSteps(add, { source: 'health', day: k }); added += add; }
         }
+      }
+      // calories: per-day active energy (optional: if it fails or isn't allowed, the game estimates from steps)
+      if (H.kcalOk !== false) {
+        try {
+          const kc = await H.plugin.queryAggregated({ dataType: 'calories', startDate: from.toISOString(), endDate: new Date().toISOString(), bucket: 'day', aggregation: 'sum' });
+          const kd = {};
+          ((kc && kc.samples) || []).forEach((b) => { const k = dayKeyOf(b.startDate); kd[k] = (kd[k] || 0) + (Number(b.value) || 0); });
+          Object.keys(kd).forEach((k) => WB.Game.kcalSetNative && WB.Game.kcalSetNative(k, kd[k]));
+          H.kcalLive = Object.keys(kd).length > 0;
+        } catch (e) { H.kcalLive = false; }
       }
       H.lastSync = Date.now(); hs.last = H.lastSync; WB.Save.queue();
       if (H.status !== 'on') set('on');

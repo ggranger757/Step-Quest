@@ -13,7 +13,7 @@
     const s = S(); let q = s.wq;
     if (!q || typeof q !== 'object' || !Array.isArray(q.list)) q = s.wq = fresh();
     if (typeof q.at !== 'number') q.at = 0; if (typeof q.seq !== 'number') q.seq = 0;
-    q.list = q.list.filter((x) => x && typeof x.id === 'string' && ['walk', 'explore', 'photo', 'state'].includes(x.kind));
+    q.list = q.list.filter((x) => x && typeof x.id === 'string' && ['walk', 'explore', 'photo', 'state', 'burn'].includes(x.kind));
     return q;
   };
   G.wqHome = () => { const st = S().settings.homeState; return st === 'none' ? 'none' : D.wqStateById[st] || null; };
@@ -30,6 +30,10 @@
     if (left >= 8 && rnd() < 0.55) {
       const pct = Math.min(Math.floor(left), [5, 8, 10, 12][Math.floor(rnd() * 4)]), steps = Math.round(world.length * pct / 100);
       out.push(common('explore', steps, { wid: world.id, wbase: s.worldSteps[world.id] || 0, pct, reward: { coins: D.wqCoins(steps, 40) } }));
+    } else if (G.kcalPerStep && rnd() < 0.5) {
+      // 3.8.0: burn calories walking. The steps it takes are worked out now, from your weight (05r-calories.js).
+      const kcal = Math.max(30, Math.round(G.kcalEst(base * (1.2 + rnd() * 0.6)) / 10) * 10), steps = G.kcalStepsFor(kcal);
+      out.push({ ...common('burn', steps, { kcal, reward: { coins: D.wqCoins(r100(steps)) } }), target: steps });
     } else {
       const steps = base * (1.2 + rnd() * 0.6);
       out.push(common('walk', steps, { reward: { coins: D.wqCoins(r100(steps)) } }));
@@ -58,6 +62,10 @@
   G.wqWalked = (q) => {
     const s = S();
     const cur = q.kind === 'explore' ? Math.max(0, (s.worldSteps[q.wid] || 0) - q.wbase) : Math.max(0, s.totalSteps - q.base);
+    if (q.kind === 'burn') {   // shown in calories: what these steps burn
+      const k = Math.min(q.kcal, Math.floor(Math.min(cur, q.target) / q.target * q.kcal));
+      return { cur: cur >= q.target ? q.kcal : k, target: q.kcal, done: cur >= q.target, unit: 'kcal' };
+    }
     return { cur: Math.min(cur, q.target), target: q.target, done: cur >= q.target };
   };
   G.wqStatus = (q) => {
@@ -68,6 +76,7 @@
   };
   G.wqTitle = (q) => {
     if (q.kind === 'walk') return 'Go for a ' + WB.fmt(q.target) + '-step walk';
+    if (q.kind === 'burn') return 'Burn ' + WB.fmt(q.kcal) + ' calories walking';
     if (q.kind === 'explore') return 'Explore ' + q.pct + '% more of ' + D.worldById[q.wid].name;
     if (q.kind === 'photo') return 'Nature photo: ' + G.wqSubject(q).name;
     const cap = q.capState && D.wqStateById[q.capState], h = G.wqHome();
@@ -77,6 +86,7 @@
   G.wqHow = (q) => {
     const n = WB.fmt(q.target);
     if (q.kind === 'walk') return 'Walk ' + n + ' steps.';
+    if (q.kind === 'burn') return 'That’s about ' + n + ' steps at your weight' + (G.kcalWeightSet && G.kcalWeightSet() ? '' : ' (set it in Profile → Settings for a better guess)') + '.';
     if (q.kind === 'explore') return 'Walk ' + n + ' steps in ' + D.worldById[q.wid].name + '. Steps in other worlds don’t count.';
     if (q.kind === 'photo') return 'Walk ' + n + ' steps, then snap a photo of ' + G.wqSubject(q).name + '. ' + G.wqSubject(q).tip;
     if (q.capState) { const b = D.birdOf(q.capState); return q.newPet ? (b ? b.name : 'The bird') + ' joined your pets.' : 'You already have ' + (b ? b.name : 'that bird') + ', so this one pays coins.'; }

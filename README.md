@@ -103,6 +103,18 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.8.0: calories burned
+- **Where the number comes from** (`js/05r-calories.js`):
+  - Installed app with Apple Health / Health Connect connected: each day's **active calories**, measured by the phone or watch (`calories` in `@capgo/capacitor-health`, read in the same sync as steps; `js/04b-health.js`). People who connected before 3.8.0 are asked once for calories. Saying no only means the game estimates instead.
+  - Otherwise (and in the browser): an **estimate** from your steps × 0.00057 × your weight in kg (about 0.04 kcal a step at 70 kg). Shown with "~" / "About" / "est.". Weight is optional (Profile → Settings, or the calorie sheet); 70 kg is used when it isn't set.
+- **Today card**: a calorie line under the step bar (~172 kcal, bar to your calorie goal). Tap it for the calorie sheet: source, what it's worth in snacks ("about 2 bananas"), your goal, last 7 days, best day, all time, goal days, the next award, and the weight and goal settings.
+- **Game**:
+  - Daily **calorie goal** (100–750 kcal, default 200): reach it for 75 coins and 60 XP, once a day. Toast, and the Worldkey cheers.
+  - **Achievements**: Kindling (500 kcal), Bonfire (5,000), Furnace (25,000), Inferno (100,000), Stoked (goal on 7 days), Eternal Flame (goal on 30 days).
+  - **Quests**: "Burn N calories walking" can be the walking quest, tracked in kcal (the steps it takes are worked out from your weight when the quest is handed out).
+- **Native app**: the Apple Health permission text and the in-app privacy page mention calories. Re-run `npm run sync`. The App Store / Play Console health data declarations need "active calories" added before release.
+- Calorie numbers are labeled as estimates for fun and motivation, not medical advice.
+
 ## Changes in 3.7.3
 - **Fix: the shield gauge showed NaN.** A 3.7.2 edit knocked out the block limits (`D.BLOCK_MAX`, `D.BLOCK_HARDEN`), so every Block % became NaN as soon as you defended. Restored, and `B.blockPct` can no longer return a bad number.
 - **Worldkey tuning games start easy and get harder as you level up**, on one smooth curve from level 1 to level 60 (`K.wkDiff` in `js/02g-worldkey.js`, settings in `K.gameSpec`):
