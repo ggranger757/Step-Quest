@@ -10,16 +10,36 @@
 
   // each step: where to go, what to highlight, and what to say. Kept short on purpose: features that open later
   // (battles, Merlin, the Worldkey) teach themselves with a mini tutorial the moment they unlock.
+  // 3.8.1: the tour covers everything, including what opens later (eggs, battles, the Worldkey, duels): those steps
+  // are a preview with a picture, and point at the real thing once you have it. `art` draws a small picture row.
+  const on = (k) => G.featOn && G.featOn(k);
+  const lv = () => (S() ? S().level : 1);
+  // a step about something that opens later: "From level 3, creatures…"; once it's open: "Creatures…"
+  const soon = (lvl, t) => (lv() >= lvl ? t[0].toUpperCase() + t.slice(1) : 'From level ' + lvl + ', ' + t);
   const ALL_STEPS = [
-    { go: tab('world'), title: 'Welcome to Step Quest', text: 'Real steps move your walker and earn coins and XP. A 30-second tour.' },
-    { go: tab('world'), sel: '#stage', page: 'World', title: 'Walk to explore', text: 'Your walker moves when you do. Tap things that appear on the road.' },
-    { go: tab('world'), sel: '.today', page: 'World', title: 'Today', text: '1 coin per ' + D.STEPS_PER_COIN + ' steps, 1 XP per ' + D.STEPS_PER_XP + '. Hit your goal for +100 coins.' },
+    { go: tab('world'), title: 'Welcome to Step Quest', text: 'Real steps move your walker and earn coins and XP. A one-minute tour of how it all works.' },
+    { go: tab('world'), sel: '#stage', page: 'World', title: 'Walk to explore', text: 'Your walker moves when you do. Tap what appears on the road: treasure, travelers, creatures.' },
+    { go: tab('world'), sel: '.today', page: 'World', title: 'Today', text: '1 coin per ' + D.STEPS_PER_COIN + ' steps, 1 XP per ' + D.STEPS_PER_XP + '. Hit your step goal for +100 coins.' },
+    { go: tab('world'), sel: '.kcalline', page: 'World', art: 'kcal', title: 'Calories burned',
+      text: () => 'With Apple Health or Health Connect connected, this is what your phone measured. Otherwise it’s estimated from your steps and weight. Reach your daily calorie goal for +' + D.KCAL_REWARD.coins + ' coins and ' + D.KCAL_REWARD.xp + ' XP. Tap it for details.' },
     { go: tab('world'), sel: '#hud-streak', page: 'World', title: 'Your streak', text: 'Walk your daily minimum to grow it. Shields cover missed days.' },
-    { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Explore this world to open the next. ' + D.WORLDS.length + ' in all.' },
-    { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'Daily goals, rewards and your own to-dos. Merlin opens at level ' + D.MERLIN_MIN_LEVEL + '.' },
+    { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Explore a world to 100% to open the next. ' + D.WORLDS.length + ' in all.' },
+    { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'Daily goals with rewards. Claim them here when they’re done.' },
+    { go: mis('today'), sel: '#wquests', page: 'Missions', art: 'quests', title: 'Quests',
+      text: 'Up to ' + D.WQ_MAX + ' a day, new every 24 hours: a walk, a nature photo, your state bird, or calories to burn. Snap your state bird and it joins you as a pet.' },
     { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'Turn goals into quests', text: 'Add a real task, set a due time, finish for a reward. Early pays more.' },
-    { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Shop', text: 'Spend coins on gear, potions and pets. Tap locked items to see why.' },
-    { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Profile & settings', text: 'Stats, achievements and settings. Replay this tour in Settings → Help.' },
+    { go: () => (on('merlin') ? mis('merlin')() : mis('today')()), sel: () => (on('merlin') ? $('#egg-strip') : null), page: 'Merlin’s eggs', art: 'eggs', title: 'Eggs',
+      text: () => soon(D.MERLIN_MIN_LEVEL, 'Merlin swoops down with eggs. Up to ' + D.NEST_MAX + ' warm at once, and every step warms them all (' + WB.fmt(D.eggById.frost.steps) + ' to ' + WB.fmt(D.eggById.shadow.steps) + ' steps). To hatch one, answer Merlin’s question: right answers pay more. ' + D.EGG_COLLECTION + ' eggs to collect.') },
+    { go: tab('world'), sel: () => (on('merlin') ? $('#stage') : null), page: 'Battles', art: 'battle', title: 'Battles',
+      text: () => soon(D.BATTLE_LEVEL, 'creatures block your road. Strike, shoot, or Defend: while you defend, your shield or belt soaks most of each hit from its gauge. No shield or belt? You take every hit in full. Some creatures you can shoo off (a gamble) or sneak past (safe).') },
+    { go: hub('shop', 'avatar'), sel: '#scr-shop .grid .item', page: 'Shop', title: 'Shop', text: 'Spend coins on walkers, gear, potions and pets. Tap locked items to see why.' },
+    { go: hub('shop', 'pets'), sel: '#scr-shop .grid .item', page: 'Shop', art: 'pets', title: 'Pets',
+      text: 'Pets walk and fight beside you. Each has one job: attack, shoot, heal you, or guard you. Their special move charges by itself.' },
+    { go: () => (on('wk') ? hub('bag', 'worldkey')() : tab('world')()), sel: () => (on('wk') ? $('#scr-inv .wk-dev') : null), page: 'Worldkey', art: 'key', title: 'Your Worldkey',
+      text: () => (on('wk') ? 'Your Worldkey opens new worlds.' : 'When Rust Hollow is fully explored, your Worldkey wakes up and opens new worlds.') + ' Each one needs a tuning: a quick mini-game that starts easy and grows harder as you level. It drifts out of tune every 2 hours, so retune it now and then.' },
+    { go: tab('world'), sel: () => $('[data-act="duel"]'), page: 'World', art: 'duel', title: 'Duel a friend',
+      text: () => soon(D.BATTLE_LEVEL, 'battle a walker next to you: tap Duel nearby, and scan each other’s screen. Same Wi-Fi or a hotspot.') },
+    { go: pf('settings'), sel: '#scr-profile .pf-tabs', page: 'Profile', title: 'Profile & settings', text: 'Stats, awards, your weight and calorie goal, and more. Replay this tour in Settings → Help.' },
     { go: tab('world'), title: 'You’re ready', text: 'Start walking. Every step counts!' },
   ];
 
@@ -31,8 +51,8 @@
       { go: hub('bag', 'worldkey'), sel: '#wk-forge', page: 'Worldkey', title: 'Charge it with artifacts', text: 'Opening a world costs energy. Artifacts charge it. Energy never fades.' },
     ],
     merlin: [
-      { go: mis('merlin'), sel: '#egg-strip', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Merlin’s Eggs', text: 'Walk to hatch eggs. Every step warms them all.' },
-      { go: mis('merlin'), sel: '#merlin-quest', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Knowledge Check', text: 'Each hatch asks one question. Right answers pay more.' },
+      { go: mis('merlin'), sel: '#egg-strip', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Merlin’s Eggs', text: 'Here’s your first egg. Up to ' + D.NEST_MAX + ' warm at once, and every step warms them all. Rarer eggs take longer.' },
+      { go: mis('merlin'), sel: '#merlin-quest', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Knowledge Check', text: 'A ready egg hatches when you answer Merlin’s question. Right answers pay more; rare eggs can hold a weapon. Collect all ' + D.EGG_COLLECTION + '.' },
       { go: tab('world'), sel: '#stage', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'Battles are open too', text: 'Fight or avoid creatures. When one is “Charging!”, Defend. Guardians appear at 100% explored.' },
       { go: tab('world'), sel: '#stage', page: 'Level ' + D.MERLIN_MIN_LEVEL, title: 'The Druid and the bosses', text: 'The Druid asks trivia: wrong means a fight. Bosses roam from level ' + D.BOSS_LEVEL + '; losing costs ' + D.BOSS_LEVEL_LOSS + ' levels.' },
     ],
@@ -43,7 +63,7 @@
   function build() {
     el = document.createElement('div'); el.className = 'tour'; el.id = 'tour';
     el.innerHTML = `<div class="tour-hole"></div><div class="tour-card pbox" role="dialog" aria-modal="true" aria-labelledby="tour-t">
-      <div class="tour-top"><div class="tour-kick" id="tour-k"></div><button class="btn ghost sm tour-skip" type="button" data-tour="skip">Skip tutorial</button></div><h3 id="tour-t"></h3><p id="tour-b"></p>
+      <div class="tour-top"><div class="tour-kick" id="tour-k"></div><button class="btn ghost sm tour-skip" type="button" data-tour="skip">Skip tutorial</button></div><h3 id="tour-t"></h3><div class="tour-art" id="tour-a" aria-hidden="true" hidden></div><p id="tour-b"></p>
       <div class="tour-bar"><i id="tour-p"></i></div>
       <div class="tour-nav"><span></span><button class="btn ghost sm" type="button" data-tour="back">Back</button><button class="btn gold sm" type="button" data-tour="next">Next</button></div></div>`;
     document.body.appendChild(el);
@@ -61,6 +81,22 @@
       if (e.key === 'Escape') T.end(); else if (e.key === 'ArrowRight') show(Math.min(STEPS.length - 1, T.i + 1)); else if (e.key === 'ArrowLeft') show(T.i - 1);
     });
     window.addEventListener('resize', () => T.active && place());
+  }
+  // the little picture row on preview steps
+  const ART = {
+    kcal: () => WB.icon('flame', 4) + `<span class="ta-big">~${WB.fmt(G.kcalToday ? G.kcalToday().kcal : 0)}</span><span class="ta-u">kcal</span>`,
+    quests: () => ['steps', 'photo', 'feather', 'flame'].map((i) => WB.icon(i, 3)).join(''),
+    eggs: () => ['frost', D.eggArt('sprout', 3), D.eggArt('tide', 6), D.eggArt('flame', 2), D.eggArt('prism', 9), D.eggArt('shadow', 5)].map((e) => WB.eggImg(e, 40, 'still')).join(''),
+    battle: () => WB.icon('sword', 4) + WB.icon('shield', 4) + WB.icon('heart', 4),
+    pets: () => ['sb_ca', 'sb_ny', 'sb_tx', 'sb_fl'].map((id) => `<canvas width="48" height="48" data-tour-pet="${id}"></canvas>`).join(''),
+    key: () => WB.icon('key', 4) + WB.icon('world', 4) + WB.icon('signal', 3),
+    duel: () => WB.icon('signal', 3) + WB.icon('sword', 4) + WB.icon('signal', 3),
+  };
+  function paintArt(k) {
+    const a = $('#tour-a'); if (!a) return;
+    if (!k || !ART[k]) { a.hidden = true; a.innerHTML = ''; return; }
+    try { a.innerHTML = ART[k](); a.hidden = false; } catch (e) { a.hidden = true; return; }
+    a.querySelectorAll('[data-tour-pet]').forEach((c) => WB.paintThumb(c, { kind: 'pet', id: c.dataset.tourPet, face: 'right' }));
   }
   let target = null;
   function place() {
@@ -85,7 +121,8 @@
     UI.closeSheet();
     try { st.go && st.go(); } catch (e) { /* page not available */ }
     $('#tour-k').textContent = (st.page ? st.page + ' · ' : '') + (i + 1) + ' of ' + STEPS.length;
-    $('#tour-t').textContent = st.title; $('#tour-b').textContent = st.text;
+    $('#tour-t').textContent = st.title; $('#tour-b').textContent = typeof st.text === 'function' ? st.text() : st.text;
+    paintArt(st.art);
     $('#tour-p').style.width = ((i + 1) / STEPS.length) * 100 + '%';
     $('[data-tour="back"]', el).hidden = i === 0;
     $('[data-tour="next"]', el).textContent = i === STEPS.length - 1 ? (mini ? 'Got it' : 'Start walking') : 'Next';

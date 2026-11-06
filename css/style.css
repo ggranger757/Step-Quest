@@ -3941,3 +3941,10 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .kc-stats dd { margin: 0; font: 400 16px/1 var(--display); }
 .kc-set { display: grid; gap: var(--s2); }
 .kc-note { color: var(--dim); }
+
+/* 3.8.1: picture row on tour steps */
+.tour-art { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 8px 0 4px; min-height: 48px; }
+.tour-art canvas { width: 48px; height: 48px; image-rendering: pixelated; }
+.tour-art canvas[data-tour-key] { width: 64px; height: 64px; }
+.tour-art .ta-big { font: 400 26px/1 var(--display); color: #ffb27a; }
+.tour-art .ta-u { font: 400 12px/1 var(--label); text-transform: uppercase; color: var(--muted); align-self: flex-end; padding-bottom: 4px; margin-left: -6px; }

@@ -103,6 +103,17 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.8.1: a fuller tutorial
+- The guided tour (first launch, and Profile → Settings → Help → Watch tutorial) grows from 10 to 17 steps and now covers:
+  - **Calories**: where the number comes from (Apple Health / Health Connect, or an estimate from steps and weight) and the daily calorie goal reward.
+  - **Quests**: up to 3 a day (walks, nature photos, your state bird, calories), and that a state bird photo becomes a pet.
+  - **Eggs**: up to 3 warm at once, every step warms them all, Merlin's question hatches them, 53 to collect.
+  - **Battles**: Strike / Shoot / Defend, the shield gauge, full damage with no shield or belt, and Shoo vs Sneak.
+  - **Pets** (attack, shoot, heal or guard), the **Worldkey** (tuning mini-games that grow harder with your level) and **Duel a friend**.
+- Features you haven't opened yet are shown as a preview ("From level 3, …") with a small picture (eggs, pets, icons). Once they're open, the step points at the real thing.
+- Merlin's own unlock tutorial explains eggs in more detail too.
+- Code: `js/07f-tour.js` (steps can now have a function for their text and an `art` picture row).
+
 ## Changes in 3.8.0: calories burned
 - **Where the number comes from** (`js/05r-calories.js`):
   - Installed app with Apple Health / Health Connect connected: each day's **active calories**, measured by the phone or watch (`calories` in `@capgo/capacitor-health`, read in the same sync as steps; `js/04b-health.js`). People who connected before 3.8.0 are asked once for calories. Saying no only means the game estimates instead.
