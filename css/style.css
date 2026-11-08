@@ -3845,8 +3845,15 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .wq-pics figure, .wq-cap-pics figure { margin: 0; display: grid; gap: 4px; justify-items: center; }
 .wq-pics figcaption, .wq-cap-pics figcaption { font: 400 9px/1.2 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); text-align: center; max-width: 72px; }
 .wq-cap-pics figcaption { max-width: 124px; font-size: 10px; }
+.wq-cap-result { display: grid; gap: var(--s3); text-align: center; }
+.wq-cap-result h3 { margin-top: calc(var(--s2) * -1); }
+.wq-cap-result .wq-cap-pics { justify-content: center; }
+.wq-res-sub { font-size: 15px; color: var(--muted); }
+.wq-res-sub b { color: var(--text); }
+.wq-cap-result .reward-pill { justify-self: center; }
+.wq-cap-result .wq-fact { text-align: left; margin: 0; }
+.wq-fact .lbl { display: inline-flex; align-items: center; gap: var(--s1); color: var(--gold); }
 .wq-snap[aria-disabled="true"] { opacity: .7; cursor: progress; }
-
 /* 3.5.4: tertiary links draw their underline under each line of text (a background on the label span, cloned per
    line), so a label that wraps stays centered and its underlines line up; never under trailing spaces or letter-spacing */
 :root .btn.tertiary, :root[data-theme] .btn.tertiary { text-decoration: none; }

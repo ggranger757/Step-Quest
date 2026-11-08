@@ -1,12 +1,13 @@
-/* Step Quest — Quests on Missions → Today (3.5.0): up to 3, a new set every 24 hours, coins only.
+/* Step Quest — Quests on Missions → Today (3.5.0): up to 3 at a time, a new set every 12 hours, coins only.
    Photos are taken with the phone's camera (the file picker opens the camera on phones).
    Photos are not saved in the app: once the photo is taken, that quest is done.
-   A state bird photo then asks which state you're in, and that state's bird joins your pets (3.5.1).
+   State bird quests unlock a state bird pet and share a fun fact about it.
    Rules: 05p-quests.js */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, esc = WB.esc, S = () => WB.state;
-  const ICON = { burn: 'flame',  walk: 'steps', explore: 'map', photo: 'photo', state: 'feather' };
+  const ICON = { burn: 'flame', walk: 'steps', explore: 'map', photo: 'photo', state: 'feather' };
   const until = (t) => { const ms = Math.max(0, t - Date.now()), h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000); return h ? h + 'h ' + m + 'm' : m + 'm'; };
+
   // the camera button: the native camera in the installed app, the camera file input in a browser (04c-photo.js)
   const busy = new Set();
   const snapBtn = (q) => {
@@ -16,8 +17,10 @@
     return `<span class="wq-acts"><input class="wq-file" id="wq-file-${q.id}" type="file" accept="image/*" capture="environment" data-wq-photo="${q.id}" aria-label="${label}">
       <label class="btn sm wq-snap" for="wq-file-${q.id}">${WB.icon('photo', 2)}${label}</label></span>`;
   };
+
   const row = (q) => {
-    const st = G.wqStatus(q), pct = Math.round((st.cur / st.target) * 100), bird = q.capState && D.birdOf(q.capState);
+    const st = G.wqStatus(q), pct = Math.round((st.cur / st.target) * 100);
+    const targetState = q.capState || q.st, bird = targetState && D.birdOf(targetState);
     const acts = st.claimed ? `<span class="stamp">${WB.icon('check', 2)}Complete</span>`
       : st.ready ? `<button class="btn gold sm" type="button" data-claim="wq:${q.id}">Claim +${WB.fmt(q.reward.coins)}</button>`
       : st.needsState ? `<button class="btn gold sm" type="button" data-wq-cap="${q.id}">${WB.icon('feather', 2)}Which state?</button>`
@@ -30,6 +33,7 @@
       ${acts ? `<div class="wq-foot">${acts}</div>` : ''}
     </div>`;
   };
+
   UI.questSection = () => {
     if (!S().onboarded) return '';
     G.wqRoll();
@@ -38,11 +42,37 @@
       <p class="fine">Get outside: every quest is a walk. Coins only.</p>
       <div class="list">${w.list.map(row).join('')}</div></div>`;
   };
+
   // paint the captured birds on the quest cards after a render
   UI.paintQuestBirds = (root = document) => root.querySelectorAll('canvas[data-wq-bird]').forEach((c) => { if (!c._p) { c._p = 1; WB.paintThumb(c, { kind: 'pet', id: c.dataset.wqBird, face: 'right' }); } });
 
-  // ---------- capture: which state's bird did you photograph? ----------
+  // ---------- celebration: fun facts whenever a state bird is captured ----------
   WB.WQ = {};
+  WB.WQ.celebrate = (stateCode, coins, isNew) => {
+    const st = D.wqStateById[stateCode], bird = st && D.birdOf(st.id);
+    const fact = (D.WQ_FACTS && D.WQ_FACTS[stateCode]) || '';
+    const kicker = isNew ? 'New state bird pet' : 'State bird captured';
+    const sub = isNew
+      ? `It joined your pets as <b>${esc(bird ? bird.name : 'your new bird')}</b>. Equip it in Inventory → Pets!`
+      : 'You already have this bird, so you earned coins and a fun fact.';
+    const coinsHtml = coins ? `<div class="reward-pill gold">${WB.icon('coin', 1)}+${WB.fmt(coins)} coins</div>` : '';
+    UI.sheet(`<div class="wq-cap-result">
+      <span class="lbl">${WB.icon('feather', 1)} ${kicker}</span>
+      <h3 id="sheet-title">${esc(st ? st.name : 'State')}: the ${esc(st ? st.bird : 'bird')}</h3>
+      <div class="wq-cap-pics"><figure><canvas width="120" height="120" id="wq-res-bird" role="img" aria-label="${esc(bird ? bird.name : 'State bird')}"></canvas><figcaption>${esc(bird ? bird.name : 'State bird')}</figcaption></figure></div>
+      <p class="wq-res-sub">${sub}</p>
+      ${coinsHtml}
+      ${fact ? `<div class="pbox card history wq-fact"><span class="lbl">${WB.icon('feather', 1)} Bird Fact</span><p>${esc(fact)}</p></div>` : ''}
+      <button class="btn gold block" type="button" data-close data-autofocus>Awesome!</button>
+    </div>`, (root) => {
+      const cv = root.querySelector('#wq-res-bird');
+      if (cv && bird) WB.paintThumb(cv, { kind: 'pet', id: bird.id, face: 'right' });
+    });
+    WB.Sfx.play(isNew ? 'unlock' : 'claim');
+    WB.Celebrate.fire('quest', st || {}, 90);
+  };
+
+  // ---------- capture: which state's bird did you photograph? ----------
   WB.WQ.capture = (id) => {
     const q = G.wq().list.find((x) => x.id === id); if (!q || !q.photo) return;
     const home = G.wqHome(), first = home && home !== 'none' ? home.id : '';
@@ -73,10 +103,8 @@
         if (!r.ok) return UI.toast({ kicker: 'Not yet', title: r.why, cls: 'msg' });
         const cur = G.wq().list.find((x) => x.id === id);
         G.claimTask('wq', id);
-        UI.closeSheet(); WB.Sfx.play(r.isNew ? 'unlock' : 'claim');
-        WB.Celebrate.fire('quest', cur || { id }, 80);
-        UI.toast(r.isNew ? { kicker: 'New pet · state bird', title: r.pet.name, sub: 'Equip it in Inventory → Pets. ' + D.petRoleText(r.pet).split('. ')[0] + '. +' + WB.fmt((cur && cur.reward.coins) || 0) + ' coins.', icon: 'feather', cls: 'gold', ms: 5000 } : { kicker: 'Quest complete', title: cur ? G.wqTitle(cur) : 'State bird', sub: '+' + WB.fmt((cur && cur.reward.coins) || 0) + ' coins', icon: 'feather', cls: 'gold' });
         UI.render();
+        WB.WQ.celebrate(sel.value, (cur && cur.reward.coins) || 120, r.isNew);
       };
       root.querySelector('#wq-cap-none').onclick = () => {
         G.wqNotUS(id);
@@ -100,16 +128,12 @@
     if (!q) { UI.render(); return; }
     if (q.kind === 'state') {
       const home = G.wqHome();
-      if (home && home !== 'none') {
-        const cap = G.wqCapture(q.id, home.id);
+      const st = q.st || (home && home !== 'none' ? home.id : null);
+      if (st) {
+        const cap = G.wqCapture(q.id, st);
         G.claimTask('wq', q.id);
-        WB.Celebrate.fire('quest', q, 80);
-        if (cap && cap.isNew) {
-          UI.toast({ kicker: 'New pet · state bird', title: cap.pet.name, sub: 'Equip it in Inventory → Pets. +' + WB.fmt(q.reward.coins) + ' coins.', icon: 'feather', cls: 'gold', ms: 5000 });
-        } else {
-          UI.toast({ kicker: 'Quest complete', title: G.wqTitle(q), sub: '+' + WB.fmt(q.reward.coins) + ' coins', icon: 'coin', cls: 'gold' });
-        }
         UI.render();
+        WB.WQ.celebrate(st, q.reward.coins, cap && cap.isNew);
       } else {
         UI.render();
         setTimeout(() => WB.WQ.capture(q.id), 250);
@@ -122,12 +146,14 @@
       UI.render();
     }
   };
+
   const run = async (id, job) => {
     if (busy.has(id)) return;
     busy.add(id); UI.render();
     let r; try { r = await job(); } catch (e) { r = { error: 'camera' }; } finally { busy.delete(id); }
     accept(id, r);
   };
+
   document.addEventListener('change', (e) => {
     const inp = e.target.closest && e.target.closest('[data-wq-photo]'); if (!inp) return;
     const f = inp.files && inp.files[0], id = inp.dataset.wqPhoto;
@@ -142,6 +168,7 @@
     const b = e.target.closest && e.target.closest('[data-wq-cap]'); if (!b) return;
     WB.Sfx.play('tap'); WB.WQ.capture(b.dataset.wqCap);
   });
+
   // the "new in" time and the bars move while you look at Missions
   setInterval(() => { if (UI.tab === 'tasks' && UI.missionTab === 'today' && document.visibilityState === 'visible') UI.renderTasks(); }, 60000);
 })();

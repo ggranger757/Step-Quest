@@ -103,10 +103,15 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.8.3: state bird challenges & fun facts
+- **State bird challenges populate often** (`js/05p-quests.js`): every quest set guarantees a state bird challenge, a second one populates 60% of the time, and a fresh set rolls every 12 hours (`D.WQ_HOURS = 12`) — up to 2–4 state bird challenges a day.
+- **Collect all 51 state birds:** challenges cycle through states whose birds you haven't collected yet, prioritizing your home state bird first.
+- **Bird fun facts on capture** (`js/02l-quests.js`, `js/07o-quests-ui.js`): every time a state bird is captured, a celebration card appears with the animated bird pet, coin reward, and a verified fun fact about that bird (`D.WQ_FACTS`).
+
 ## Changes in 3.8.1: a fuller tutorial
 - The guided tour (first launch, and Profile → Settings → Help → Watch tutorial) grows from 10 to 17 steps and now covers:
   - **Calories**: where the number comes from (Apple Health / Health Connect, or an estimate from steps and weight) and the daily calorie goal reward.
-  - **Quests**: up to 3 a day (walks, nature photos, your state bird, calories), and that a state bird photo becomes a pet.
+  - **Quests**: up to 3 at a time, a fresh set every 12 hours (walks, nature photos, state bird challenges, calories), and that a state bird photo becomes a pet.
   - **Eggs**: up to 3 warm at once, every step warms them all, Merlin's question hatches them, 53 to collect.
   - **Battles**: Strike / Shoot / Defend, the shield gauge, full damage with no shield or belt, and Shoo vs Sneak.
   - **Pets** (attack, shoot, heal or guard), the **Worldkey** (tuning mini-games that grow harder with your level) and **Duel a friend**.
@@ -218,7 +223,7 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
   - Healers **only heal**, you and themselves. Special: Renewal (you +20%, itself +40%, clears poison and burns).
   - Guardians **only defend**: they're the only pets that take part of your hits. Special: Shield Wall / Stone Wall (takes the next 2 hits for you completely).
   - Since attackers and healers don't hide behind you, creatures sometimes go for them directly (`D.PET_TARGET` 18%).
-- **Quests are back** on Missions → Today (`js/02l-quests.js`, `js/05p-quests.js`, `js/07o-quests-ui.js`): 3 at a time, a fresh set every 24 hours, coins only, and every one is done on foot: a walk, exploring more of the world you're in, a walk that ends with a nature photo (a tree, water, moss, an insect…), or a walk where you look for your state bird (all 50 states and DC; "I'm not in the US" swaps it for another nature photo). Photos are taken with the phone's camera, must be taken during the quest (older gallery photos don't count), and are kept only as a small thumbnail on the quest. Quests count in Claim all, the Missions badge and the Mission complete note.
+- **Quests are back** on Missions → Today (`js/02l-quests.js`, `js/05p-quests.js`, `js/07o-quests-ui.js`): 3 at a time, a fresh set every 12 hours, coins only, and every one is done on foot: a walk, exploring more of the world you're in, a walk that ends with a nature photo (a tree, water, moss, an insect…), or a walk where you look for your state bird (all 50 states and DC; "I'm not in the US" swaps it for another nature photo). Photos are taken with the phone's camera, must be taken during the quest (older gallery photos don't count), and are kept only as a small thumbnail on the quest. Quests count in Claim all, the Missions badge and the Mission complete note.
 
 ## Changes in 3.4.0
 
