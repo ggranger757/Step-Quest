@@ -199,10 +199,8 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Quest photos work the same on iPhone and Android** (`js/04c-photo.js`):
   - **Installed app:** the native camera (`@capacitor/camera`, added to `native/package.json`) opens straight to the rear camera, never the photo library. It asks for camera access once; if you said no, the quest tells you where to turn it back on (iPhone: Settings → Step Quest → Camera; Android: Settings → Apps → Step Quest → Permissions). `npm run add` / `npm run sync` now writes the iPhone camera permission text to `Info.plist` (without it iOS closes the app when the camera opens) and the Android 11+ camera-app `<queries>` entry to `AndroidManifest.xml`. Run `npm install` in `native/` once to get the camera plugin.
   - **Browser / home-screen app:** the camera file input opens the rear camera in iPhone Safari and Android Chrome.
-  - Every photo is shrunk on the phone to a 240 px JPEG thumbnail (a 12-megapixel photo takes about 0.1 s), turned upright from its EXIF rotation, and kept only on the quest. HEIC photos the browser can't open, non-images and unreadable files each get a plain message instead of failing silently. Cancelling the camera does nothing.
-  - **Old photos don't count:** a picked file's time is the earlier of its file date and its EXIF "taken" date, so a gallery photo can't pass as new even on phones that re-date picked files.
-  - The privacy page in the installed app now says what happens to quest photos.
-- Quest cards and the state bird screen label both pictures: "Your photo" and the bird's name.
+  - Photos are never saved in the app or on the device; once the photo is taken, that quest is done.
+  - The privacy page in the installed app says what happens to quest photos.
 
 ## Changes in 3.5.1
 
@@ -377,7 +375,7 @@ js/02h-quick.js          quick missions and mission types
 js/03-state.js           save data, migration of older saves
 js/04-steps.js           step tracking, sound and music
 js/04b-health.js         Apple Health / Health Connect sync (installed app)
-js/04c-photo.js          quest photos: native camera in the installed app, camera input in browsers, thumbnails
+js/04c-photo.js          quest photos: native camera in the installed app, camera input in browsers
 js/05-game.js            core rules: rewards, levels, streaks, daily missions, encounters, shop
 js/05b-battle.js         battle rules
 js/05d-custom.js         your own missions

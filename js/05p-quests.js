@@ -24,7 +24,7 @@
     const s = S(), w = G.wq(), rnd = WB.rng(WB.hash('wq' + now + s.created)), L = s.level;
     const base = Math.min(4500, 1500 + L * 40), out = [];
     const id = () => 'wq' + ++w.seq;
-    const common = (kind, steps, extra) => ({ id: id(), kind, at: now, base: s.totalSteps, target: r100(steps), claimed: false, photo: null, spotted: false, ...extra });
+    const common = (kind, steps, extra) => ({ id: id(), kind, at: now, base: s.totalSteps, target: r100(steps), claimed: false, photo: false, spotted: false, ...extra });
     // 1) a walk, or exploring the world you're in (when there's still some of it left to explore)
     const world = G.world(), left = 100 - G.explorePct(world.id);
     if (left >= 8 && rnd() < 0.55) {
@@ -94,15 +94,13 @@
   };
 
   // ---------- the photo / the sighting ----------
-  // takenAt = the photo file's time. It must have been taken during this quest, and recently, so a quest photo is a new one.
-  G.wqPhoto = (id, thumb, takenAt) => {
-    const q = G.wq().list.find((x) => x.id === id), now = Date.now();
+  // Photos are not saved in the app: taking one satisfies the photo step.
+  G.wqPhoto = (id) => {
+    const q = G.wq().list.find((x) => x.id === id);
     if (!q || q.claimed || !(q.kind === 'photo' || q.kind === 'state')) return { ok: false, why: 'That quest is gone.' };
     if (!G.wqWalked(q).done) return { ok: false, why: 'Finish the walk first: ' + WB.fmt(q.target - G.wqWalked(q).cur) + ' steps to go.' };
-    if (typeof thumb !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(thumb) || thumb.length > 150000) return { ok: false, why: 'That photo couldn’t be read. Try again.' };
-    if (!(takenAt > 0) || takenAt < q.at - 60000 || now - takenAt > D.WQ_PHOTO_FRESH_MIN * 60000) return { ok: false, why: 'Take a new photo on this walk: older photos from your gallery don’t count.' };
-    q.photo = thumb; q.photoAt = takenAt; WB.Save.queue(); G.after();
-    return { ok: true };
+    q.photo = true; q.photoAt = Date.now(); WB.Save.queue(); G.after();
+    return { ok: true, quest: q };
   };
   // which state the photographed bird belongs to: that state's bird joins your pets (or coins only if you have it)
   G.wqCapture = (id, code) => {
@@ -138,7 +136,7 @@
     if (type !== 'wq') return claimTask(type, id);
     const q = G.wq().list.find((x) => x.id === id);
     if (!q || !G.wqStatus(q).ready) return null;
-    q.claimed = true; q.photo = q.photo ? q.photo : null;
+    q.claimed = true;
     const reward = { coins: q.reward.coins };
     G.grant(reward); G.tally('quests', 1); WB.Sfx.play('claim'); G.after();
     return { t: { id: q.id, title: G.wqTitle(q) }, reward };

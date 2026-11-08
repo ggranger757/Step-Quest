@@ -3821,7 +3821,7 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .wq .t-rew { display: inline-flex; gap: 4px; align-items: center; }
 .wq-foot { display: flex; justify-content: flex-end; }
 .wq-acts { display: flex; gap: var(--s2); flex-wrap: wrap; justify-content: flex-end; }
-.wq-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.wq-file { position: absolute; width: 1px; height: 1px; opacity: 0; clip: rect(0 0 0 0); clip-path: inset(50%); overflow: hidden; margin: -1px; padding: 0; border: 0; white-space: nowrap; }
 .wq-snap { cursor: pointer; }
 .wq-file:focus-visible + .wq-snap, .wq-snap:focus-within { outline: 3px solid var(--cyan); outline-offset: 2px; }
 .wq-state { display: grid; gap: 4px; width: 100%; }
@@ -3834,7 +3834,8 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .wq-cap { display: grid; gap: var(--s3); }
 .wq-cap h3 { margin-top: calc(var(--s2) * -1); }
 .wq-cap-pics { display: flex; align-items: center; justify-content: center; gap: var(--s3); }
-.wq-cap-pics img, .wq-cap-pics canvas { width: 120px; height: 120px; object-fit: cover; background: var(--inset); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 4px var(--shadow); }
+.wq-cap-pics img, .wq-cap-pics canvas, .wq-cap-ic { width: 120px; height: 120px; object-fit: cover; background: var(--inset); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 4px var(--shadow); }
+.wq-cap-ic { display: grid; place-items: center; color: var(--ok); box-shadow: 0 0 0 2px var(--ok), 0 0 0 4px var(--shadow); }
 .wq-cap-pics canvas { image-rendering: pixelated; box-shadow: 0 0 0 2px var(--gold), 0 0 0 4px var(--shadow); }
 .wq-cap-pics span { font: 400 28px/1 var(--display); color: var(--muted); }
 .wq-cap-name { min-height: 2.8em; font-size: 15px; line-height: 1.4; }

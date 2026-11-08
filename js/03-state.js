@@ -128,6 +128,8 @@
       if (w && !w.open && i >= 0 && Math.max(s.peakLevel || 0, s.level) < w.unlock.level && !(s.wk && s.wk.last === id)) { s.unlocked.splice(i, 1); if (s.world === id) s.world = 'rust'; }
     }
     for (const w of D.WORLDS) if (w.open) { if (!s.unlocked.includes(w.id)) s.unlocked.push(w.id); if (!s.worldSteps) s.worldSteps = {}; if (s.worldSteps[w.id] == null) s.worldSteps[w.id] = 0; }   // saves from before an always-open world was added get it too
+    // quests: photos are not saved in the app; keep only the fact that it was taken
+    if (s.wq && Array.isArray(s.wq.list)) for (const q of s.wq.list) if (typeof q.photo === 'string') q.photo = true;
     s.hp = Math.min(s.hp, D.heroMaxHp(s.level));
     return s;
   }
