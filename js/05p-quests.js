@@ -1,6 +1,6 @@
 /* Step Quest — Quests: the rules (3.5.0). s.wq = { at, seq, list }. A new set of D.WQ_MAX quests is handed out
    D.WQ_HOURS after the last one (unfinished ones go). Every quest needs walking or exploring; photo quests then ask for
-   a photo. State bird quests feature a state bird — snap a photo to unlock that bird for your pets and learn a fun bird fact.
+   a photo. State & country bird quests feature a bird — snap a photo to unlock that bird for your pets and learn a fun bird fact.
    Quests pay coins only. They count as missions: the Mission complete note, the badge and Claim all include them. */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
@@ -104,10 +104,10 @@
     if (q.kind === 'explore') return 'Explore ' + q.pct + '% more of ' + D.worldById[q.wid].name;
     if (q.kind === 'photo') return 'Nature photo: ' + G.wqSubject(q).name;
     const cap = q.capState && D.wqStateById[q.capState];
-    if (cap) return 'State bird: the ' + cap.bird;
+    if (cap) return (cap.region === 'country' ? 'National bird: the ' : 'State bird: the ') + cap.bird;
     const tgt = q.st && D.wqStateById[q.st], h = G.wqHome();
     if (tgt) return 'Photograph ' + tgt.name + '’s ' + tgt.bird;
-    return h && h !== 'none' ? 'Photograph your state bird: the ' + h.bird : 'Photograph your state bird';
+    return h && h !== 'none' ? 'Photograph your bird: the ' + h.bird : 'Photograph a state or national bird';
   };
   G.wqHow = (q) => {
     const n = WB.fmt(q.target);
@@ -118,7 +118,7 @@
     if (q.capState) { const b = D.birdOf(q.capState); return q.newPet ? (b ? b.name : 'The bird') + ' joined your pets.' : 'You already have ' + (b ? b.name : 'that bird') + ', so this one pays coins.'; }
     const tgt = q.st && D.wqStateById[q.st];
     if (tgt) return 'Walk ' + n + ' steps, then snap a photo of a bird. You’ll unlock ' + tgt.name + '’s ' + tgt.bird + ' and learn a fun bird fact!';
-    return 'Walk ' + n + ' steps, then snap a photo of your state’s bird. Tell us which state you’re in, and that bird joins your pets.';
+    return 'Walk ' + n + ' steps, then snap a photo of a bird. Tell us where you took it, and its bird joins your pets, along with a fun bird fact.';
   };
 
   // ---------- the photo / the sighting ----------

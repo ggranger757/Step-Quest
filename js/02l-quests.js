@@ -1,6 +1,6 @@
 /* Step Quest — Quests (3.5.0, Missions → Today): up to 3 at a time, a fresh set every 12 hours, coins only.
    Every quest is done on foot: a walk, exploring the world you're in, or a walk that ends with a nature photo
-   (a tree, a flower, clouds…) or photographing a state bird. Rules: 05p-quests.js · screen: 07o-quests-ui.js */
+   (a tree, a flower, clouds…) or photographing a state or national bird. Rules: 05p-quests.js · screen: 07o-quests-ui.js */
 (() => {
   const D = WB.DATA;
   D.WQ_MAX = 3;          // quests at a time
@@ -50,10 +50,40 @@
     ['VA', 'Virginia', 'Northern Cardinal', 'American dogwood'], ['WA', 'Washington', 'American Goldfinch', 'Coast rhododendron'],
     ['WV', 'West Virginia', 'Northern Cardinal', 'Rhododendron'], ['WI', 'Wisconsin', 'American Robin', 'Wood violet'],
     ['WY', 'Wyoming', 'Western Meadowlark', 'Indian paintbrush'],
-  ].map(([id, name, bird, flower]) => ({ id, name, bird, flower }));
+  ].map(([id, name, bird, flower]) => ({ id, name, bird, flower, region: 'state' }));
+  // major countries and their national birds
+  D.WQ_COUNTRIES = [
+    ['CAN', 'Canada', 'Common Loon', 'Maple leaf'], ['GBR', 'United Kingdom', 'European Robin', 'Tudor rose'],
+    ['AUS', 'Australia', 'Emu', 'Golden wattle'], ['JPN', 'Japan', 'Green Pheasant', 'Cherry blossom'],
+    ['MEX', 'Mexico', 'Golden Eagle', 'Dahlia'], ['FRA', 'France', 'Gallic Rooster', 'Fleur-de-lis (iris)'],
+    ['DEU', 'Germany', 'Golden Eagle', 'Cornflower'], ['IND', 'India', 'Indian Peafowl (Peacock)', 'Lotus'],
+    ['BRA', 'Brazil', 'Rufous-bellied Thrush', 'Ipê-amarelo'], ['CHN', 'China', 'Red-crowned Crane', 'Peony'],
+    ['ZAF', 'South Africa', 'Blue Crane', 'King protea'], ['NZL', 'New Zealand', 'Kiwi', 'Kōwhai'],
+    ['ESP', 'Spain', 'Spanish Imperial Eagle', 'Red carnation'], ['ITA', 'Italy', 'Italian Sparrow', 'White lily'],
+    ['ARG', 'Argentina', 'Rufous Hornero', 'Ceibo'], ['COL', 'Colombia', 'Andean Condor', 'Orchid'],
+    ['KEN', 'Kenya', 'Lilac-breasted Roller', 'Orchid'], ['THA', 'Thailand', 'Siamese Fireback', 'Golden shower tree flower'],
+    ['EGY', 'Egypt', 'Steppe Eagle', 'White Egyptian lotus'], ['PHL', 'Philippines', 'Philippine Eagle', 'Sampaguita (Arabian jasmine)'],
+    ['NOR', 'Norway', 'White-throated Dipper', 'Purple saxifrage'], ['SWE', 'Sweden', 'Common Blackbird', 'Linnea (twinflower)'],
+    ['FIN', 'Finland', 'Whooper Swan', 'Lily of the valley'], ['DNK', 'Denmark', 'Mute Swan', 'Marguerite daisy'],
+    ['NLD', 'Netherlands', 'Black-tailed Godwit', 'Tulip'], ['IRL', 'Ireland', 'Northern Lapwing', 'Shamrock'],
+    ['GRC', 'Greece', 'Little Owl', 'Bear’s breech'], ['POL', 'Poland', 'White-tailed Eagle', 'Red poppy'],
+    ['CHL', 'Chile', 'Andean Condor', 'Copihue (Chilean bellflower)'], ['PER', 'Peru', 'Andean Cock-of-the-rock', 'Cantua (sacred flower of the Incas)'],
+    ['IDN', 'Indonesia', 'Javan Hawk-Eagle', 'Melati (Arabian jasmine)'], ['NGA', 'Nigeria', 'Black Crowned Crane', 'Costus spectabilis'],
+    ['KOR', 'South Korea', 'Korean Magpie', 'Hibiscus syriacus (Rose of Sharon)'], ['UKR', 'Ukraine', 'White Stork', 'Sunflower'],
+    ['ISR', 'Israel', 'Eurasian Hoopoe', 'Cyclamen persicum'], ['PAK', 'Pakistan', 'Chukar Partridge', 'Jasmine'],
+    ['SGP', 'Singapore', 'Crimson Sunbird', 'Vanda Miss Joaquim orchid'], ['USA', 'United States', 'Bald Eagle', 'Rose'],
+    ['ISL', 'Iceland', 'Gyrfalcon', 'Mountain avens'], ['BEL', 'Belgium', 'Common Kestrel', 'Red poppy'],
+    ['CZE', 'Czech Republic', 'Common Kingfisher', 'Small-leaved linden flower'], ['AUT', 'Austria', 'Barn Swallow', 'Edelweiss'],
+    ['HUN', 'Hungary', 'Saker Falcon', 'Tulip'], ['TWN', 'Taiwan', 'Taiwan Blue Magpie', 'Plum blossom'],
+    ['MYS', 'Malaysia', 'Rhinoceros Hornbill', 'Hibiscus rosa-sinensis'], ['VNM', 'Vietnam', 'Red-whiskered Bulbul', 'Lotus'],
+    ['BGD', 'Bangladesh', 'Oriental Magpie-Robin', 'Water lily (shapla)'], ['ARE', 'United Arab Emirates', 'Saker Falcon', 'Tribulus omanense'],
+    ['UGA', 'Uganda', 'Grey Crowned Crane', 'None'], ['CRI', 'Costa Rica', 'Clay-colored Thrush', 'Guaria morada (orchid)'],
+    ['JAM', 'Jamaica', 'Red-billed Streamertail (Doctor Bird)', 'Lignum vitae blossom'], ['GTM', 'Guatemala', 'Resplendent Quetzal', 'Monja blanca (white nun orchid)'],
+  ].map(([id, name, bird, flower]) => ({ id, name, bird, flower, region: 'country' }));
+  D.WQ_STATES = D.WQ_STATES.concat(D.WQ_COUNTRIES);
   D.wqStateById = Object.fromEntries(D.WQ_STATES.map((s) => [s.id, s]));
 
-  // fun facts shared when a state bird is captured (one per state/DC)
+  // fun facts shared when a state bird is captured (one per state/DC and country)
   D.WQ_FACTS = {
     AL: 'Northern Flickers are woodpeckers that hunt on the ground instead of in trees — they can eat more than 5,000 ants in a single meal.',
     AK: 'Willow Ptarmigans change color with the seasons: brown in summer and pure white in winter, with feathers down to their toes to act as snowshoes.',
@@ -106,6 +136,59 @@
     WV: 'West Virginia schoolchildren voted the cardinal their state bird in 1949 — its whistle has the cadence of “birdy, birdy, birdy”.',
     WI: 'A single Wisconsin robin can eat as many as fourteen feet of earthworms in one day during nesting season.',
     WY: 'The meadowlark’s song was noted in the journals of the Lewis and Clark expedition in 1805 as a new species.',
+    // countries
+    CAN: 'Common Loons can dive up to 200 feet deep and stay underwater for five minutes — and the bird on Canada’s one-dollar coin gave the “loonie” its name.',
+    GBR: 'European Robins are fiercely territorial — they will attack a tuft of red feathers or even their own reflection in a window.',
+    AUS: 'Emus are the second-tallest birds on Earth (up to 6.2 feet) and sprint at 30 mph, but they cannot walk backward.',
+    JPN: 'Green Pheasants are endemic to Japan, and folklore says their calls can detect earthquakes seconds before humans feel them.',
+    MEX: 'The Golden Eagle in Mexico’s flag commemorates the Aztec legend of an eagle on a cactus with a snake, which founded Tenochtitlan (Mexico City) in 1325.',
+    FRA: 'The Gallic rooster became a French emblem partly from a Latin pun: “gallus” means both a rooster and a Gaul (an ancient inhabitant of France).',
+    DEU: 'The eagle (Bundesadler) is one of the world’s oldest state symbols, appearing on German coats of arms since the Holy Roman Empire in the 12th century.',
+    IND: 'Only males have the famous iridescent “peacock” train, and each eye-spot is produced by microscopic crystal structures, not pigment.',
+    BRA: 'The Rufous-bellied Thrush’s melodious dawn song is so beloved in Brazil that it inspired classic bossa nova and folk songs.',
+    CHN: 'Red-crowned Cranes mate for life and are celebrated in Chinese art as symbols of longevity, traditionally said to live a thousand years.',
+    ZAF: 'Blue Cranes perform an elaborate courtship dance of running leaps and airborne pirouettes — fewer than 25,000 remain, almost all in South Africa.',
+    NZL: 'Kiwis are nearly blind nocturnal birds that sniff out earthworms with nostrils at the very tip of their long bills — unique among all birds.',
+    ESP: 'The Spanish Imperial Eagle exists only in Iberia; conservation rescued it from just 30 pairs in the 1960s to over 800 pairs today.',
+    ITA: 'Italian Sparrows are a stabilized hybrid species that evolved naturally from house and Spanish sparrows and now lives almost exclusively in Italy.',
+    ARG: 'Rufous Horneros build round oven-shaped clay nests on fences and poles that can weigh 10 pounds and take a month to construct.',
+    COL: 'With a wingspan up to 10.5 feet, the Andean Condor is one of the heaviest flying birds on Earth, able to soar hundreds of miles without flapping.',
+    KEN: 'The Lilac-breasted Roller is named for the spectacular rolling dive it performs during courtship — a near-vertical freefall with folded wings.',
+    THA: 'Male Siamese Firebacks have glossy blue-black plumage, a crimson facial mask, and an arched tail that can sweep 180 degrees in courtship displays.',
+    EGY: 'The Steppe Eagle, perched in golden profile on Egypt’s coat of arms, migrates thousands of miles each year between the Eurasian steppe and East Africa.',
+    PHL: 'With a 7-foot wingspan, the Philippine Eagle is one of the largest and rarest eagles on Earth — fewer than 400 breeding pairs survive in old-growth forests.',
+    NOR: 'White-throated Dippers are Europe’s only truly aquatic songbirds — they walk completely submerged along riverbeds hunting underwater insects.',
+    SWE: 'Sweden’s Common Blackbird was voted national bird twice — in 1962 and again in 2015 — famed for its flute-like twilight song.',
+    FIN: 'Whooper Swans fly at astonishing altitudes: a flock was once radar-tracked at 27,000 feet, nearly cruising altitude for commercial airliners.',
+    DNK: 'Despite the name, Mute Swans are not silent — their wingbeats produce a loud thrumming whistle audible up to half a mile away.',
+    NLD: 'About 85% of Western Europe’s Black-tailed Godwits breed in Dutch meadows, making the Netherlands the heart of the species’ breeding range.',
+    IRL: 'Northern Lapwings perform a stunning springtime “tumbling” display, calling “peewit” as they cartwheel and dive over Irish wetlands.',
+    GRC: 'The Little Owl was the sacred companion of Athena, goddess of wisdom — the owl on today’s Greek 1-euro coin copies a 2,500-year-old Athenian silver drachma.',
+    POL: 'Poland’s coat of arms has featured the white eagle since at least 1295, when it first appeared on the royal seal of King Przemysł II.',
+    CHL: 'Chile’s national bird appears alongside the huemul deer on the country’s coat of arms under the motto “Por la razón o la fuerza”.',
+    PER: 'Male Cock-of-the-rocks gather in groups called leks to compete for females with bobbing heads, wing-flapping, and strange pig-like squeals.',
+    IDN: 'The Javan Hawk-Eagle inspired the mythical Garuda on Indonesia’s coat of arms and is one of the rarest raptors on Earth, found only on Java.',
+    NGA: 'Black Crowned Cranes are the only cranes that can roost in trees, thanks to a unique long hind toe that lets them grip branches.',
+    KOR: 'In Korean folklore, magpies are bearers of good fortune — it is said that hearing a magpie’s call in the morning promises a welcome guest.',
+    UKR: 'In Ukrainian tradition, a stork nesting on a rooftop brings luck and new life to the household; storks are among the country’s most cherished symbols.',
+    ISR: 'The Eurasian Hoopoe was chosen as Israel’s national bird in 2008 in a public vote of over 150,000 people celebrating the country’s 60th anniversary.',
+    PAK: 'Chukars are desert-adapted partridges that can survive on rainfall alone; their name comes from their distinctive “chuk-chuk-chukar” call.',
+    SGP: 'Crimson Sunbirds weigh less than a nickel (around 5 grams) and can hover like hummingbirds while sipping nectar through their long curved bills.',
+    USA: 'Bald Eagles are not actually bald — “balde” is an Old English word meaning white-headed. Their nests can weigh over two tons, the largest of any bird.',
+    ISL: 'The Gyrfalcon is the world’s largest falcon, and Iceland has one of the densest breeding populations on Earth — about 300 to 400 territorial pairs.',
+    BEL: 'Common Kestrels are falcon master hovering hunters: they can hang motionless in the air while scanning the grass for mice.',
+    CZE: 'The Common Kingfisher’s iridescent blue comes not from pigment but from microscopic feather structures that refract light like a prism.',
+    AUT: 'Barn Swallows fly up to 200 miles a day on migration from Europe to sub-Saharan Africa — Austria’s symbol of returning spring.',
+    HUN: 'The Saker Falcon is the legendary “Turul” of Hungarian mythology, which in legend led the Magyar tribes to their homeland in the 9th century.',
+    TWN: 'Taiwan Blue Magpies are endemic to Taiwan and are cooperative breeders: grown chicks stay behind to help their parents raise the next clutch.',
+    MYS: 'The Rhinoceros Hornbill’s golden casque above its bill is hollow and acts as a resonating chamber, making its calls carry miles across the Borneo rainforest.',
+    VNM: 'Vietnam’s Red-whiskered Bulbul is a beloved songbird with a distinctive tall black crest and red cheek patch, celebrated in Vietnamese poetry.',
+    BGD: 'The Oriental Magpie-Robin, known as “doyel” in Bengali, is Bangladesh’s national bird — it perches high and cocks its long tail while pouring out sweet morning song.',
+    ARE: 'Saker Falcons are central to Emirati heritage: falconry has been practiced on the Arabian Peninsula for over 4,000 years and is UNESCO-listed intangible cultural heritage.',
+    UGA: 'The Grey Crowned Crane stands on Uganda’s national flag — a royal-looking bird with a spray of golden straw-like feathers on its head.',
+    CRI: 'Costa Rica’s “yigüirro” (clay-colored thrush) is famous for bursting into melodious song just before the rainy season arrives each April.',
+    JAM: 'Jamaica’s “doctor bird” is a streamer-tailed hummingbird found nowhere else on Earth, named for the male’s long black tail feathers and top-hat crest.',
+    GTM: 'The Resplendent Quetzal was so sacred to the Maya and Aztec that harming one was punishable by death — Guatemala’s currency is named after it.',
   };
 
   // coins only: a little for every 100 steps, more when the walk ends with a photo or a find

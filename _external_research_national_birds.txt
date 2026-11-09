@@ -1,0 +1,61 @@
+# External research: National birds of major countries
+# Sources:
+# - Wikipedia "List of national birds": https://en.wikipedia.org/wiki/List_of_national_birds (fetched 2026-11)
+# - AP News "Biden signs a bill officially making the bald eagle the national bird of the US":
+#   https://apnews.com/article/biden-bill-sign-bald-eagle-bird-national-7d9ae832ac8d249891d5daf11bf3ceb2 (Dec 24, 2024)
+# - BBC "Robin tops poll to find UK's national bird": https://www.bbc.com/news/uk-33090043
+# - Additional regional sources cited in Wikipedia footnotes (Sveriges Ornitologiska Förening 2015 blackbird vote, Taiwan News 2017 Taiwan Blue Magpie, Jabchai 2007 Siamese Fireback, The Middle East Beat UAE Saker Falcon, Washington Post June 2024)
+
+Country -> National bird mapping used:
+Canada (CAN) -> Common Loon (de facto, on $1 coin "loonie"; also 2016 national bird contest winner Canada Jay)
+United Kingdom (GBR) -> European Robin
+Australia (AUS) -> Emu
+Japan (JPN) -> Green Pheasant
+Mexico (MEX) -> Golden Eagle
+France (FRA) -> Gallic Rooster
+Germany (DEU) -> German Federal Eagle (Golden Eagle / Bundesadler)
+India (IND) -> Indian Peafowl (Peacock)
+Brazil (BRA) -> Rufous-bellied Thrush
+China (CHN) -> Red-crowned Crane
+South Africa (ZAF) -> Blue Crane
+New Zealand (NZL) -> Kiwi (North Island brown kiwi)
+Spain (ESP) -> Spanish Imperial Eagle
+Italy (ITA) -> Italian Sparrow
+Argentina (ARG) -> Rufous Hornero
+Colombia (COL) -> Andean Condor
+Chile (CHL) -> Andean Condor
+Peru (PER) -> Andean Cock-of-the-rock
+Kenya (KEN) -> Lilac-breasted Roller
+Thailand (THA) -> Siamese Fireback
+Egypt (EGY) -> Steppe Eagle
+Philippines (PHL) -> Philippine Eagle
+Norway (NOR) -> White-throated Dipper
+Sweden (SWE) -> Common Blackbird (voted 1962 and 2015)
+Finland (FIN) -> Whooper Swan
+Denmark (DNK) -> Mute Swan
+Netherlands (NLD) -> Black-tailed Godwit
+Ireland (IRL) -> Northern Lapwing
+Greece (GRC) -> Little Owl (sacred to Athena; on 1-euro coin)
+Poland (POL) -> White-tailed Eagle (on coat of arms since 1295)
+Indonesia (IDN) -> Javan Hawk-Eagle
+Nigeria (NGA) -> Black Crowned Crane
+South Korea (KOR) -> Korean Magpie
+Ukraine (UKR) -> White Stork
+Israel (ISR) -> Eurasian Hoopoe (2008 public vote)
+Pakistan (PAK) -> Chukar Partridge
+Singapore (SGP) -> Crimson Sunbird
+United States (USA) -> Bald Eagle (officially designated national bird Dec 24, 2024 by US legislation)
+Iceland (ISL) -> Gyrfalcon
+Belgium (BEL) -> Common Kestrel
+Czech Republic (CZE) -> Common Kingfisher
+Austria (AUT) -> Barn Swallow
+Hungary (HUN) -> Saker Falcon (sacred Turul of Hungarian myth)
+Taiwan (TWN) -> Taiwan Blue Magpie
+Malaysia (MYS) -> Rhinoceros Hornbill
+Vietnam (VNM) -> Red-whiskered Bulbul
+Bangladesh (BGD) -> Oriental Magpie-Robin
+UAE (ARE) -> Saker Falcon
+Uganda (UGA) -> Grey Crowned Crane
+Costa Rica (CRI) -> Clay-colored Thrush
+Jamaica (JAM) -> Red-billed Streamertail (Doctor Bird)
+Guatemala (GTM) -> Resplendent Quetzal

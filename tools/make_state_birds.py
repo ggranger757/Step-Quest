@@ -55,6 +55,60 @@ sp('carolinawren', plan='song', body='#a8602c', belly='#e8c88a', wing='#8e5026',
 sp('pheasant', plan='ground', body='#c8742a', belly='#a85a20', wing='#9a7a5a', head='#1e5a4a', neckring='#ffffff', face='#e02a2a', tail=11, beak='short', beakc='#e8d8a0', spots='#3a2410')
 sp('gull', plan='water', body='#ffffff', belly='#ffffff', wing='#a8b0bc', head='#ffffff', wingtip='#1e1e1e', tail=3, beak='hook', beakc='#f0c820', bspot='#e02020', feet='#f0c820')
 sp('hermitthrush', plan='song', body='#8a7458', belly='#f0ece4', wing='#7a6448', head='#8a7458', tailc='#b0603a', spots='#3a3028', ring='#ffffff', tail=6, beak='thin', beakc='#c8a890')
+# major countries' national bird species
+sp('eagle', plan='song', body='#5a3c22', belly='#6a4828', wing='#4a301a', head='#8a6e42', tail=8, beak='hook', beakc='#e0c030', eye='#e0c030')
+sp('baldeagle', plan='song', body='#4a3220', belly='#5a3e28', wing='#3a2618', head='#f4f0e6', tail=8, tailc='#f4f0e6', beak='hook', beakc='#e8c430', eye='#e8c430', feet='#e8c430')
+sp('canadajay', plan='song', body='#8a8e94', belly='#d4d6da', wing='#6a6e74', head='#dcdfe2', cap='#2a2a2e', tail=6, beak='cone', beakc='#2b2b2b')
+sp('erobin', plan='song', body='#7a6248', belly='#f0c8a8', wing='#6a5238', head='#e85a2a', flank='#e85a2a', bib='#e85a2a', tail=5, beak='thin', beakc='#2b2b2b')
+sp('blackbird', plan='song', body='#1c1a1e', belly='#1c1a1e', wing='#161418', head='#1c1a1e', tail=6, beak='cone', beakc='#f8d01c', ring='#f8d01c')
+sp('sparrow', plan='song', body='#8a6c50', belly='#c8c4bc', wing='#6a4e36', head='#7a563c', bib='#2a2420', streaks='#3a2418', tail=5, beak='cone', beakc='#5a4a3a')
+sp('dipper', plan='song', body='#4a3a30', belly='#4a3a30', wing='#3a2c24', head='#4a3a30', bib='#ffffff', tail=4, tailup=True, beak='thin', beakc='#2b2b2b')
+sp('swan', plan='water', body='#ffffff', belly='#ffffff', wing='#e8ecf0', head='#ffffff', neck='#ffffff', tail=3, beak='dagger', beakc='#f8d01c', feet='#2b2b2b')
+sp('godwit', plan='song', body='#9a6840', belly='#e8d0b8', wing='#6a4828', head='#b07848', bars='#3a2010', tail=6, beak='long', beakc='#d8a070')
+sp('lapwing', plan='ground', body='#3a5c3a', belly='#ffffff', wing='#2e482e', head='#2a2428', crest='#2a2428', flank='#c87040', tail=5, beak='thin', beakc='#2b2b2b')
+sp('owl', plan='ground', body='#8a7458', belly='#e8e0d0', wing='#6a5640', head='#8a7458', spots='#4a3824', eye='#f8e020', ring='#ffffff', tail=3, beak='hook', beakc='#e0b830', feet='#d0a860')
+sp('stork', plan='water', body='#ffffff', belly='#ffffff', wing='#2a2a2a', head='#ffffff', neck='#ffffff', wingtip='#2a2a2a', tail=4, beak='dagger', beakc='#e83020', feet='#e83020')
+sp('greenpheasant', plan='ground', body='#2e7a3e', belly='#1e4a28', wing='#7a5030', head='#1e5a32', neckring='#ffffff', face='#e02a2a', tail=11, beak='short', beakc='#e8d8a0')
+sp('crane', plan='runner', body='#e8ecee', belly='#ffffff', wing='#2a2a2a', head='#ffffff', cap='#e82020', tail=5, beak='long', beakc='#a0a070', feet='#2b2b2b')
+sp('crowncrane', plan='runner', body='#2a2a2e', belly='#3a3a40', wing='#d0c8b0', head='#ffffff', face='#ffffff', tail=5, beak='short', beakc='#2b2b2b', crest='#f8d01c')
+sp('peacock', plan='ground', body='#1a5fd0', belly='#1a2f6a', wing='#b8a840', head='#1a5fd0', crest='#1a5fd0', eye='#f8d81c', tail=14, beak='cone', beakc='#c8b880', feet='#a09070')
+sp('fireback', plan='ground', body='#3a5a7a', belly='#2a3a50', wing='#2a3a50', head='#3a5a7a', face='#e82020', tail=10, beak='short', beakc='#c8b880', feet='#c85030')
+sp('chukar', plan='ground', body='#9a8a7a', belly='#d8c8b4', wing='#7a6a5e', head='#b09a88', mask='#2a201c', neckring='#2a201c', flank='#8a3020', tail=4, beak='cone', beakc='#e83020', feet='#e83020')
+sp('magpie', plan='song', body='#2a3040', belly='#ffffff', wing='#1a60a0', head='#2a3040', wingpatch='#ffffff', tail=12, beak='cone', beakc='#2b2b2b')
+sp('hoopoe', plan='song', body='#d8905a', belly='#e8c09a', wing='#2a2a2e', head='#d8905a', crest='#e86030', wingbar='#ffffff', bars='#ffffff', tail=6, beak='curved', beakc='#5a4a3a')
+sp('sunbird', plan='song', body='#e8202a', belly='#b01820', wing='#5a1018', head='#e8202a', tail=4, beak='curved', beakc='#2b2b2b')
+sp('roller', plan='song', body='#6ab8b0', belly='#e8b0e8', wing='#5a9e6e', head='#5a9e6e', bib='#b070b8', tail=8, fork=True, beak='cone', beakc='#3a3030')
+sp('emu', plan='runner', body='#6a5a48', belly='#7a6a58', wing='#4a3a2c', head='#6a5a48', neck='#5a8ab8', streaks='#3a2a1c', tail=2, beak='short', beakc='#3a3030', feet='#8a7a68')
+sp('kiwi', plan='ground', body='#6a5038', belly='#7a6048', wing='#6a5038', head='#6a5038', streaks='#4a3424', tail=2, beak='curved', beakc='#d0c0a8', feet='#8a7a68')
+sp('condor', plan='song', body='#1c1c1e', belly='#1c1c1e', wing='#3a3a40', head='#c84030', ruff='#ffffff', wingpatch='#ffffff', tail=8, beak='hook', beakc='#e8d8a0')
+sp('cockoftherock', plan='song', body='#ff6a1a', belly='#ff6a1a', wing='#2a2a2e', head='#ff7828', crest='#ff7828', tail=5, beak='cone', beakc='#ffb830', feet='#ff8a30')
+sp('hornero', plan='song', body='#a86030', belly='#e8b888', wing='#8a4e26', head='#a05828', tail=5, beak='curved', beakc='#5a4636')
+sp('rfthrush', plan='song', body='#6a5840', belly='#d87830', wing='#5a4834', head='#6a5840', spots='#3a2e1c', tail=6, beak='thin', beakc='#c8a870')
+# eagle variants for eagle-using countries
+sp('goldeneagle', plan='song', body='#5a3c22', belly='#6a4828', wing='#4a301a', head='#a07c3e', tail=8, beak='hook', beakc='#e8c430', eye='#e8c430', nape='#a07c3e')
+sp('bundesadler', plan='song', body='#161418', belly='#161418', wing='#242028', head='#161418', tail=8, beak='hook', beakc='#e83020', eye='#e83020', feet='#e83020')
+sp('imperial', plan='song', body='#4a3424', belly='#5a3e2c', wing='#3a281c', head='#6a4a32', tail=8, beak='hook', beakc='#e0c030', eye='#e0c030', wingpatch='#ffffff')
+sp('whitetailed', plan='song', body='#5a4430', belly='#6a4e38', wing='#4a3624', head='#b09a78', tail=8, tailc='#ffffff', beak='hook', beakc='#e8c430', eye='#e8c430')
+sp('steppeeagle', plan='song', body='#7a6042', belly='#8a7050', wing='#5a442e', head='#8a7050', tail=8, beak='hook', beakc='#e0b830', eye='#e0b830')
+sp('philippine', plan='song', body='#8a7458', belly='#e8dfd0', wing='#6a5a44', head='#d8d0c0', crest='#e8e4dc', tail=8, beak='hook', beakc='#5a4a3a', eye='#8a9aa0')
+sp('javanhawk', plan='song', body='#a05830', belly='#d8c8b4', wing='#8a4824', head='#a05830', crest='#2a201c', tail=8, beak='hook', beakc='#5a4a3a', eye='#f8d020')
+# crane & swan variants
+sp('bluecrane', plan='runner', body='#8ab0cc', belly='#b8d4e4', wing='#6a90b0', head='#9ac0dc', crest='#7aa0bc', tail=5, beak='long', beakc='#a0a070', feet='#2b2b2b')
+sp('muteswan', plan='water', body='#ffffff', belly='#ffffff', wing='#e8ecf0', head='#ffffff', neck='#ffffff', tail=3, beak='dagger', beakc='#f87020', bspot='#1e1e1e', feet='#2b2b2b')
+# 14 additional countries
+sp('gyrfalcon', plan='song', body='#f0f0ee', belly='#ffffff', wing='#c8cac6', head='#f0f0ee', spots='#8a8e88', tail=8, beak='hook', beakc='#6a6e70')
+sp('kestrel', plan='song', body='#b05a38', belly='#e8c8b0', wing='#6a6c74', head='#8a9098', spots='#2a201c', tail=7, beak='hook', beakc='#f8d020', eye='#2a2a2e')
+sp('kingfisher', plan='song', body='#1aa8d8', belly='#e8601c', wing='#1280b0', head='#1aa8d8', tail=3, beak='dagger', beakc='#2b2b2b', eye='#ffffff')
+sp('swallow', plan='song', body='#2a3a58', belly='#ffffff', wing='#223048', head='#2a3a58', bib='#c83020', tail=12, fork=True, beak='tiny', beakc='#2b2b2b')
+sp('saker', plan='song', body='#8a7050', belly='#e8d8c0', wing='#6a5438', head='#8a7050', streaks='#3a2c1e', tail=7, beak='hook', beakc='#7a7c6e')
+sp('bluemagpie', plan='song', body='#1a5fd0', belly='#1a5fd0', wing='#1640a0', head='#1e1e24', tail=14, beak='cone', beakc='#e83020', feet='#e83020', wingbar='#ffffff')
+sp('hornbill', plan='ground', body='#2a2a2e', belly='#e8e8ec', wing='#2a2a2e', head='#2a2a2e', crest='#f8a020', plume='#f8a020', tail=8, beak='long', beakc='#f8c030')
+sp('bulbul', plan='song', body='#7a6450', belly='#e8dfd2', wing='#5a4a38', head='#2a201c', crest='#2a201c', patch='#e82030', tail=6, beak='cone', beakc='#2b2b2b')
+sp('magpierobin', plan='song', body='#1e1e24', belly='#ffffff', wing='#1e1e24', head='#1e1e24', wingpatch='#ffffff', tail=8, tailup=True, beak='thin', beakc='#2b2b2b')
+sp('greycrown', plan='runner', body='#6a6e78', belly='#8a8e98', wing='#e8e4d8', head='#ffffff', face='#ffffff', tail=5, beak='short', beakc='#2b2b2b', crest='#f8d01c')
+sp('claythrush', plan='song', body='#7a6652', belly='#a8947c', wing='#6a5644', head='#7a6652', tail=6, beak='thin', beakc='#f8d020')
+sp('streamertail', plan='song', body='#2ae08a', belly='#1ab068', wing='#168a50', head='#2ae08a', tail=10, fork=True, beak='thin', beakc='#e8202a', eye='#ffffff')
+sp('quetzal', plan='song', body='#1ad88a', belly='#e82030', wing='#129a60', head='#1ad88a', crest='#1ad88a', tail=14, beak='cone', beakc='#f8d020')
 
 # battle roles by species (attack / shoot / heal / guard; see D.PET_ROLES in js/02-data.js)
 ROLE = {
@@ -62,6 +116,15 @@ ROLE = {
     'roadrunner': 'attack', 'flicker': 'attack', 'thrasher': 'attack', 'cardinal': 'attack',
     'woodthrush': 'heal', 'hermitthrush': 'heal', 'mtbluebird': 'heal', 'ebluebird': 'heal', 'chickadee': 'heal', 'robin': 'heal',
     'loon': 'shoot', 'pelican': 'shoot', 'gull': 'shoot',
+    'eagle': 'attack', 'baldeagle': 'attack', 'condor': 'attack', 'owl': 'attack',
+    'erobin': 'heal', 'blackbird': 'heal', 'sparrow': 'heal', 'dipper': 'heal', 'lapwing': 'heal', 'stork': 'heal', 'crane': 'heal', 'roller': 'heal',
+    'swan': 'shoot', 'godwit': 'shoot', 'magpie': 'shoot', 'hoopoe': 'shoot', 'sunbird': 'shoot', 'canadajay': 'shoot', 'hornero': 'shoot', 'rfthrush': 'shoot',
+    'greenpheasant': 'guard', 'crowncrane': 'guard', 'peacock': 'guard', 'fireback': 'guard', 'chukar': 'guard', 'emu': 'guard', 'kiwi': 'guard', 'cockoftherock': 'guard',
+    'goldeneagle': 'attack', 'bundesadler': 'attack', 'imperial': 'attack', 'whitetailed': 'attack', 'steppeeagle': 'attack', 'philippine': 'attack', 'javanhawk': 'attack',
+    'gyrfalcon': 'attack', 'kestrel': 'attack', 'saker': 'attack', 'quetzal': 'attack',
+    'bluecrane': 'heal', 'swallow': 'heal', 'bulbul': 'heal', 'magpierobin': 'heal', 'claythrush': 'heal',
+    'muteswan': 'shoot', 'kingfisher': 'shoot', 'bluemagpie': 'shoot', 'streamertail': 'shoot',
+    'hornbill': 'guard', 'greycrown': 'guard',
 }
 
 # ---------- the states: code, species, leg band colors ----------
@@ -75,6 +138,21 @@ STATES = [
     ('OK', 'scissortail'), ('OR', 'meadowlark'), ('PA', 'ruffedgrouse'), ('RI', 'rired'), ('SC', 'carolinawren'), ('SD', 'pheasant'),
     ('TN', 'mockingbird'), ('TX', 'mockingbird'), ('UT', 'gull'), ('VT', 'hermitthrush'), ('VA', 'cardinal'), ('WA', 'goldfinch'),
     ('WV', 'cardinal'), ('WI', 'robin'), ('WY', 'meadowlark'),
+    # major countries (national birds)
+    ('CAN', 'loon'), ('GBR', 'erobin'), ('AUS', 'emu'), ('JPN', 'greenpheasant'),
+    ('MEX', 'goldeneagle'), ('FRA', 'rired'), ('DEU', 'bundesadler'), ('IND', 'peacock'),
+    ('BRA', 'rfthrush'), ('CHN', 'crane'), ('ZAF', 'bluecrane'), ('NZL', 'kiwi'),
+    ('ESP', 'imperial'), ('ITA', 'sparrow'), ('ARG', 'hornero'), ('COL', 'condor'),
+    ('KEN', 'roller'), ('THA', 'fireback'), ('EGY', 'steppeeagle'), ('PHL', 'philippine'),
+    ('NOR', 'dipper'), ('SWE', 'blackbird'), ('FIN', 'swan'), ('DNK', 'muteswan'),
+    ('NLD', 'godwit'), ('IRL', 'lapwing'), ('GRC', 'owl'), ('POL', 'whitetailed'),
+    ('CHL', 'condor'), ('PER', 'cockoftherock'), ('IDN', 'javanhawk'), ('NGA', 'crowncrane'),
+    ('KOR', 'magpie'), ('UKR', 'stork'), ('ISR', 'hoopoe'), ('PAK', 'chukar'),
+    ('SGP', 'sunbird'), ('USA', 'baldeagle'),
+    ('ISL', 'gyrfalcon'), ('BEL', 'kestrel'), ('CZE', 'kingfisher'), ('AUT', 'swallow'),
+    ('HUN', 'saker'), ('TWN', 'bluemagpie'), ('MYS', 'hornbill'), ('VNM', 'bulbul'),
+    ('BGD', 'magpierobin'), ('ARE', 'saker'), ('UGA', 'greycrown'), ('CRI', 'claythrush'),
+    ('JAM', 'streamertail'), ('GTM', 'quetzal'),
 ]
 BANDS = ['#e02a2a', '#2a6ad8', '#f0c820', '#2ab86a', '#a040d8', '#f07a1c', '#20c8d8', '#ff6fb1', '#ffffff', '#8a5a2a', '#9ae02a', '#1e1e1e']
 
@@ -252,7 +330,7 @@ def main():
         sh.save(os.path.join(OUT, sid + '.png'))
         meta[sid] = {'fs': FS, 'anims': {'idle': {'r': 0, 'n': 4, 'b': boxes['idle']}, 'walk': {'r': 1, 'n': 6, 'b': boxes['walk']}}, 'face': 'right',
                      'species': key, 'role': ROLE.get(key, 'shoot'), 'band': band, 'pose': pose % 3}
-    js = '/* generated by tools/make_state_birds.py: sprite boxes and looks for the 51 state-bird pets */\n(window.WB = window.WB || {}).BIRD_ART = ' + json.dumps(meta, separators=(',', ':')) + ';\n'
+    js = '/* generated by tools/make_state_birds.py: sprite boxes and looks for the 103 state and country bird pets */\n(window.WB = window.WB || {}).BIRD_ART = ' + json.dumps(meta, separators=(',', ':')) + ';\n'
     open(os.path.join(APP, 'js', '02m-birds-art.js'), 'w').write(js)
     print('drew', len(meta), 'state birds from', len(S), 'species')
 

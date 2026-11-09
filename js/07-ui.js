@@ -906,8 +906,8 @@
       const pstat = (p) => 'HP ' + G.petMax(p.id) + ' · ' + ({ attack: 'Attacker', shoot: 'Shooter', heal: 'Healer', guard: 'Guardian' })[p.role];
       const birds = D.STATE_BIRDS || [], got = birds.filter((p) => G.owns('pet', p.id)).length;
       return `<div class="grid">${byUnlock(D.PETS.filter((p) => !p.bird)).map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div>
-        <div class="sect" id="state-birds"><h2>State birds <span class="aside">${got} / ${birds.length}</span></h2>
-          <p class="fine">Not for sale. Photograph one on a state bird Quest (Missions → Today) and tell us which state you’re in.</p>
+        <div class="sect" id="state-birds"><h2>State &amp; country birds <span class="aside">${got} / ${birds.length}</span></h2>
+          <p class="fine">Not for sale. Photograph one on a bird Quest (Missions → Today) and tell us which state or country you’re in.</p>
           <div class="grid">${birds.map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div></div>`;
     }
     return `<div class="grid">${byUnlock(D.AVATARS).map((it) => itemCard('avatar', it, { desc: it.role })).join('')}</div>`;

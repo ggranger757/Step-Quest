@@ -13,7 +13,7 @@ const plistKeys = {
   NSHealthUpdateUsageDescription: 'Step Quest does not write health data.',
   NSMotionUsageDescription: 'Step Quest counts your steps while the game is open.',
   // quest photos (3.5.2): the camera only. The photo library text is required by the camera plugin but never shown, because quests never open the library.
-  NSCameraUsageDescription: 'Step Quest uses the camera for quest photos, like a tree or your state bird. Photos are not saved in the app or on your phone.',
+  NSCameraUsageDescription: 'Step Quest uses the camera for quest photos, like a tree or a bird. Photos are not saved in the app or on your phone.',
   NSPhotoLibraryUsageDescription: 'Step Quest only takes new photos with the camera for quests.',
 };
 const iosApp = join(native, 'ios', 'App', 'App');

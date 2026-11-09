@@ -103,15 +103,22 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.8.4: national birds from around the world
+- **National birds from 52 major countries** (`js/02l-quests.js`, `js/02m-birds.js`, `tools/make_state_birds.py`): the quest bird system now includes 103 regions in total — all 50 US states, DC, and 52 major countries across every continent (Canada's Common Loon, the UK's European Robin, Australia's Emu, Japan's Green Pheasant, Mexico's Golden Eagle, France's Gallic Rooster, India's Indian Peacock, Brazil's Rufous-bellied Thrush, China's Red-crowned Crane, South Africa's Blue Crane, New Zealand's Kiwi, and many more).
+- **Pixel-art pets with battle roles** for every country's bird, generated deterministically with unique leg-band color pairs.
+- **A verified fun fact for every country bird** (`D.WQ_FACTS`) shown in a celebration card when captured.
+- **Quest system now cycles through all 103 regions**, still prioritizing unowned birds, so bird challenges stay fresh for months of walking.
+- **The manual place picker groups regions** into 'US States' and 'Countries', and the option to treat the photo as a nature photo remains as a fallback.
+
 ## Changes in 3.8.3: state bird challenges & fun facts
 - **State bird challenges populate often** (`js/05p-quests.js`): every quest set guarantees a state bird challenge, a second one populates 60% of the time, and a fresh set rolls every 12 hours (`D.WQ_HOURS = 12`) — up to 2–4 state bird challenges a day.
-- **Collect all 51 state birds:** challenges cycle through states whose birds you haven't collected yet, prioritizing your home state bird first.
+- **Collect all 103 state and country birds:** challenges cycle through states whose birds you haven't collected yet, prioritizing your home state bird first.
 - **Bird fun facts on capture** (`js/02l-quests.js`, `js/07o-quests-ui.js`): every time a state bird is captured, a celebration card appears with the animated bird pet, coin reward, and a verified fun fact about that bird (`D.WQ_FACTS`).
 
 ## Changes in 3.8.1: a fuller tutorial
 - The guided tour (first launch, and Profile → Settings → Help → Watch tutorial) grows from 10 to 17 steps and now covers:
   - **Calories**: where the number comes from (Apple Health / Health Connect, or an estimate from steps and weight) and the daily calorie goal reward.
-  - **Quests**: up to 3 at a time, a fresh set every 12 hours (walks, nature photos, state bird challenges, calories), and that a state bird photo becomes a pet.
+  - **Quests**: up to 3 at a time, a fresh set every 12 hours (walks, nature photos, state & country bird challenges, calories), and that a state bird photo becomes a pet.
   - **Eggs**: up to 3 warm at once, every step warms them all, Merlin's question hatches them, 53 to collect.
   - **Battles**: Strike / Shoot / Defend, the shield gauge, full damage with no shield or belt, and Shoo vs Sneak.
   - **Pets** (attack, shoot, heal or guard), the **Worldkey** (tuning mini-games that grow harder with your level) and **Duel a friend**.
@@ -210,7 +217,7 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 ## Changes in 3.5.1
 
 - **Pets are bought, never handed out.** Every pet that used to arrive free (streaks, step counts, guardians beaten, the day-7 daily reward, a Crystal Egg's prize) now only unlocks and is bought in Shop → Pets. The daily rare day pays 600 coins and an Elixir instead, and a Crystal Egg's right answer adds a weapon. Pets you already have keep.
-- **51 state birds** (`tools/make_state_birds.py` → `assets/pet/sb_<state>.png`, `js/02m-birds-art.js`, `js/02m-birds.js`): one pixel-art pet for every state and DC, with idle and hop animations like the other pets. 29 species are drawn from four body plans with their own marks (crests, masks, caps, bibs, breast colors, spots, wing bars, tails, bills); states that share a species get their own pose and a two-color leg band. Each has a battle role by species: game birds and the Nēnē guard, the Roadrunner, Yellowhammer, Thrasher and Cardinal attack, thrushes, bluebirds, the Chickadee and the Robin heal, water birds splash, the rest flick feathers. They can't be bought: Shop → Pets lists them under **State birds** (silhouettes until you have one).
+- **103 state and country birds** (`tools/make_state_birds.py` → `assets/pet/sb_<state>.png`, `js/02m-birds-art.js`, `js/02m-birds.js`): one pixel-art pet for every state and DC, with idle and hop animations like the other pets. 29 species are drawn from four body plans with their own marks (crests, masks, caps, bibs, breast colors, spots, wing bars, tails, bills); states that share a species get their own pose and a two-color leg band. Each has a battle role by species: game birds and the Nēnē guard, the Roadrunner, Yellowhammer, Thrasher and Cardinal attack, thrushes, bluebirds, the Chickadee and the Robin heal, water birds splash, the rest flick feathers. They can't be bought: Shop → Pets lists them under **State & country birds** (silhouettes until you have one).
 - **State bird Quests need a photo of the bird.** "I spotted it" is gone. Walk, tap **Photograph the bird**, then say which state you're in: that state's bird joins your pets (or, if you have it, the quest pays coins only). The quest card shows your photo next to the bird you got. "I'm not in the US" turns it into a nature photo instead. State flower quests are retired.
 
 ## Changes in 3.5.0
