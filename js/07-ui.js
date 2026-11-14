@@ -616,7 +616,7 @@
       <div class="seg three m-tabs" role="tablist" aria-label="Mission types">${MT.map(([id, l, ic]) => `<button type="button" role="tab" data-mtab="${id}" aria-selected="${id === mt}" aria-pressed="${id === mt}" class="${lockOf[id] ? 'm-locked' : ''}"${lockOf[id] ? ` aria-label="${l}, locked until level ${D.MERLIN_MIN_LEVEL}"` : ''}>${WB.icon(lockOf[id] ? 'lock' : ic, 2)}<span>${l}</span>${lockOf[id] ? `<span class="cnt lock">Lv ${D.MERLIN_MIN_LEVEL}</span>` : cnt[id] ? `<span class="cnt ready">${cnt[id]} ready</span>` : ''}</button>`).join('')}</div>
       ${body}
     </div>`);
-    if (changed) { const mf = $('#scr-tasks .mer-face'); if (mf) WB.paintThumb(mf, { kind: 'npc', id: 'merlin' }); if (UI.paintQuestBirds) UI.paintQuestBirds($('#scr-tasks')); }
+    if (changed) { const mf = $('#scr-tasks .mer-face'); if (mf) WB.paintThumb(mf, { kind: 'npc', id: 'merlin' }); }
     UI.updateBadges();
   };
 
@@ -904,11 +904,11 @@
     }
     if (cat === 'pets') {
       const pstat = (p) => 'HP ' + G.petMax(p.id) + ' · ' + ({ attack: 'Attacker', shoot: 'Shooter', heal: 'Healer', guard: 'Guardian' })[p.role];
-      const birds = D.STATE_BIRDS || [], got = birds.filter((p) => G.owns('pet', p.id)).length;
-      return `<div class="grid">${byUnlock(D.PETS.filter((p) => !p.bird)).map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div>
-        <div class="sect" id="state-birds"><h2>State &amp; country birds <span class="aside">${got} / ${birds.length}</span></h2>
-          <p class="fine">Not for sale. Photograph one on a bird Quest (Missions → Today) and tell us which state or country you’re in.</p>
-          <div class="grid">${birds.map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div></div>`;
+      const birds = (D.STATE_BIRDS || []).filter((p) => G.owns('pet', p.id));   // bird pets from the old bird quests: kept if you own them, no longer earnable
+      return `<div class="grid">${byUnlock(D.PETS.filter((p) => !p.bird)).map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div>${birds.length ? `
+        <div class="sect" id="state-birds"><h2>Bird pets you earned <span class="aside">${birds.length}</span></h2>
+          <p class="fine">Earned on the old bird quests. They stay yours, but no new ones can be earned.</p>
+          <div class="grid">${birds.map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div></div>` : ''}`;
     }
     return `<div class="grid">${byUnlock(D.AVATARS).map((it) => itemCard('avatar', it, { desc: it.role })).join('')}</div>`;
   }
@@ -1149,12 +1149,6 @@
         ${UI.kcalSettings ? UI.kcalSettings() : ''}
         <div class="setting pbox"><div><label for="set-stride">Stride length</label><div class="sd">Turns steps into distance.</div></div><select id="set-stride">${opt([0.6, 0.65, 0.7, 0.76, 0.8, 0.85, 0.9], s.settings.stride, (v) => WB.miles() ? Math.round(v * 39.37) + ' in' : v.toFixed(2) + ' m')}</select></div>
       </div>
-      <div class="sect"><h2>Birds &amp; location</h2>
-        <div class="setting pbox"><div><label for="set-home">State or country</label><div class="sd">Bird photo quests start with birds from here: your state or national bird, local birds, plus everyday ones like pigeons, crows, hawks and eagles.</div></div>
-          <select id="set-home"><option value="" ${G.wqHome() === null ? 'selected' : ''}>Not set</option>${(() => { const h = G.wqHome(), og = (l, a) => `<optgroup label="${l}">${a.map((r) => `<option value="${r.id}" ${h && h !== 'none' && h.id === r.id ? 'selected' : ''}>${WB.esc(r.name)}</option>`).join('')}</optgroup>`; return og('US States', D.WQ_STATES.filter((r) => r.region === 'state')) + og('Countries', D.WQ_STATES.filter((r) => r.region === 'country')); })()}<option value="none" ${G.wqHome() === 'none' ? 'selected' : ''}>Somewhere else (everyday birds)</option></select></div>
-        <div class="setting pbox"><div><label for="set-city">City or town <span class="sd">(optional)</span></label><div class="sd">Shown on your bird quests. Birds are chosen by state or country.</div></div>
-          <input class="loc-city" id="set-city" type="text" maxlength="40" autocomplete="address-level2" placeholder="e.g. Austin" value="${WB.esc(G.wqCity())}"></div>
-      </div>
       <div class="sect"><h2>Notifications</h2>
         <div class="setting pbox"><div><div id="lbl-notify">Mission reminders</div><div class="sd">${WB.Remind.desc()}</div></div><div class="acts">${s.settings.notify && WB.Remind.canAsk() ? '<button class="btn sm" type="button" data-act="notify-allow">Allow</button>' : ''}<button class="toggle" type="button" role="switch" aria-labelledby="lbl-notify" aria-checked="${!!s.settings.notify}" data-act="notify-toggle"></button></div></div>
         <div class="setting pbox"><div><div id="lbl-mood">Mood check-ins</div><div class="sd">Ask how you feel while you walk.</div></div><button class="toggle" type="button" role="switch" aria-labelledby="lbl-mood" aria-checked="${s.settings.moodAsk !== false}" data-toggle="moodAsk"></button></div>
@@ -1196,8 +1190,6 @@
     // arrow keys move between the theme choices (radio-group keyboard pattern)
     const tp = pf.querySelector('.theme-pick'); if (tp) tp.onkeydown = (e) => { const bs = [...tp.querySelectorAll('button')], i = bs.indexOf(document.activeElement); if (i < 0) return; const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0; if (d) { e.preventDefault(); bs[(i + d + bs.length) % bs.length].click(); } };
     sel('#set-goal', 'dailyGoal', Number);
-    if ($('#set-home')) $('#set-home').onchange = (e) => { G.wqSetHome(e.target.value); WB.Sfx.play('tap'); UI.renderProfile(); };
-    if ($('#set-city')) $('#set-city').onchange = (e) => { G.wqSetCity(e.target.value); UI.renderProfile(); };
     if ($('#set-kcal-goal')) $('#set-kcal-goal').onchange = (e) => { s.settings.kcalGoal = Number(e.target.value); WB.Save.queue(); G.kcalTick(); UI.render(); };
     if ($('#set-weight')) $('#set-weight').onchange = (e) => { const v = e.target.value; s.settings.weightKg = v === '' ? null : Number(v); WB.Save.queue(); G.kcalTick(); UI.render(); }; sel('#set-streak', 'streakMin', Number); sel('#set-stride', 'stride', Number); sel('#set-units', 'units', String);
     let taps = 0;

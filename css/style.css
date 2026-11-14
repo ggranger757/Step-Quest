@@ -3828,31 +3828,7 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .wq-state select { min-height: 44px; font: inherit; color: var(--text); background: var(--inset); border: 0; box-shadow: 0 0 0 2px var(--line-hi); padding: 0 var(--s3); }
 .wq.claimed { opacity: .75; }
 
-/* 3.5.1: state bird capture */
-.wq-pics { display: flex; gap: var(--s2); }
-.wq-bird { width: 64px; height: 64px; image-rendering: pixelated; background: var(--inset); box-shadow: 0 0 0 2px var(--gold), 0 0 0 4px var(--shadow); }
-.wq-cap { display: grid; gap: var(--s3); }
-.wq-cap h3 { margin-top: calc(var(--s2) * -1); }
-.wq-cap-pics { display: flex; align-items: center; justify-content: center; gap: var(--s3); }
-.wq-cap-pics img, .wq-cap-pics canvas, .wq-cap-ic { width: 120px; height: 120px; object-fit: cover; background: var(--inset); box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 4px var(--shadow); }
-.wq-cap-ic { display: grid; place-items: center; color: var(--ok); box-shadow: 0 0 0 2px var(--ok), 0 0 0 4px var(--shadow); }
-.wq-cap-pics canvas { image-rendering: pixelated; box-shadow: 0 0 0 2px var(--gold), 0 0 0 4px var(--shadow); }
-.wq-cap-pics span { font: 400 28px/1 var(--display); color: var(--muted); }
-.wq-cap-name { min-height: 2.8em; font-size: 15px; line-height: 1.4; }
-.wq-cap .linkbtn { justify-self: center; }
-
-/* 3.5.2: captions under quest photos and birds */
-.wq-pics figure, .wq-cap-pics figure { margin: 0; display: grid; gap: 4px; justify-items: center; }
-.wq-pics figcaption, .wq-cap-pics figcaption { font: 400 9px/1.2 var(--label); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); text-align: center; max-width: 72px; }
-.wq-cap-pics figcaption { max-width: 124px; font-size: 10px; }
-.wq-cap-result { display: grid; gap: var(--s3); text-align: center; }
-.wq-cap-result h3 { margin-top: calc(var(--s2) * -1); }
-.wq-cap-result .wq-cap-pics { justify-content: center; }
-.wq-res-sub { font-size: 15px; color: var(--muted); }
-.wq-res-sub b { color: var(--text); }
-.wq-cap-result .reward-pill { justify-self: center; }
-.wq-cap-result .wq-fact { text-align: left; margin: 0; }
-.wq-fact .lbl { display: inline-flex; align-items: center; gap: var(--s1); color: var(--gold); }
+/* 3.10.0: quest cards */
 .wq-snap[aria-disabled="true"] { opacity: .7; cursor: progress; }
 /* 3.5.4: tertiary links draw their underline under each line of text (a background on the label span, cloned per
    line), so a label that wraps stays centered and its underlines line up; never under trailing spaces or letter-spacing */
@@ -3956,9 +3932,3 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .tour-art canvas[data-tour-key] { width: 64px; height: 64px; }
 .tour-art .ta-big { font: 400 26px/1 var(--display); color: #ffb27a; }
 .tour-art .ta-u { font: 400 12px/1 var(--label); text-transform: uppercase; color: var(--muted); align-self: flex-end; padding-bottom: 4px; margin-left: -6px; }
-
-/* 3.9.0: everyday / local bird quests and the location line */
-.wq-bird-ic { display: grid; place-items: center; color: var(--gold); }
-.wq-place { display: block; }
-.wq-place .linkbtn { display: inline; min-height: 44px; padding: 0 4px; }
-.loc-city { width: 100%; min-height: 44px; font: inherit; color: var(--text); background: var(--inset); border: 0; box-shadow: 0 0 0 2px var(--line-hi); padding: 0 var(--s3); }

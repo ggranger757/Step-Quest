@@ -103,6 +103,15 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.10.0: Missions are real-life again, birding removed
+
+- **Bird quests are gone**: no bird photos, no state or country capture screen, no "Birds & location" setting, no local-birds list (`js/02n-birds-local.js` deleted).
+- **New Quests** (Missions → Today, 3 at a time, new every 12 hours, coins only): a walk, exploring your world or burning calories, plus
+  - a **photo hunt** for an everyday object (a red door, a mailbox, a fire hydrant, a bench, a mural, a bridge, a street sign… 35 in `D.WQ_SUBJECTS`), and
+  - a **real-life task** (take the stairs, drink a glass of water, do 10 squats, say hello to a neighbor, pick up 5 pieces of litter… 22 in `D.WQ_TASKS`). Tasks use the honor system: walk the steps, do it, tap **I did it**.
+- Edit the lists in `js/02l-quests.js` to add your own. The rules are in `js/05p-quests.js`.
+- Old saves: unfinished bird quests are dropped. **Bird pets you already earned stay in your collection** (Shop → Pets → "Bird pets you earned"); no new ones can be earned.
+
 ## Changes in 3.9.0: bird quests follow where you walk
 
 - **Profile → Settings → Birds & location**: pick your **state or country** (and optionally your **city**, which is shown on your quests). It can be changed any time; unstarted bird quests swap to fit straight away, and steps already walked are kept.

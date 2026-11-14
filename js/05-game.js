@@ -160,7 +160,7 @@
   G.reqStatus = (req) => {
     const s = S();
     if (req.starter && !req.cost) return { met: true, label: 'Starter' };
-    if (req.bird) return { met: false, label: 'Photograph it on a state bird Quest in ' + (D.wqStateById[req.bird] || {}).name, bird: true };
+    if (req.bird) return { met: false, label: 'No longer available', bird: true };
     if (req.found && !G.hasFound(req.found)) return { met: false, label: 'Find it in ' + D.worldById[req.world].name, found: false };
     if (req.level && s.level < req.level) return { met: false, label: 'Reach level ' + req.level, cur: s.level, target: req.level };
     if (req.steps && s.totalSteps < req.steps) return { met: false, label: 'Walk ' + WB.fmt(req.steps) + ' total steps', cur: s.totalSteps, target: req.steps };

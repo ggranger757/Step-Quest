@@ -26,7 +26,7 @@
     { go: tab('world'), sel: '.next-unlock', page: 'World', title: 'Next world', text: 'Explore a world to 100% to open the next. ' + D.WORLDS.length + ' in all.' },
     { go: mis('today'), sel: '#scr-tasks .seg', page: 'Missions', title: 'Missions', text: 'Daily goals with rewards. Claim them here when they’re done.' },
     { go: mis('today'), sel: '#wquests', page: 'Missions', art: 'quests', title: 'Quests',
-      text: 'Up to ' + D.WQ_MAX + ' at a time, new every ' + D.WQ_HOURS + ' hours: a walk, a nature photo, a state or national bird, or calories to burn. Snap a bird and it joins you as a pet.' },
+      text: 'Up to ' + D.WQ_MAX + ' at a time, new every ' + D.WQ_HOURS + ' hours: a walk, a photo hunt for something real (a red door, a mailbox, a bench), a small task like taking the stairs or saying hello to a neighbor, or calories to burn.' },
     { go: mis('mine'), sel: '#my-missions', page: 'Missions', title: 'Turn goals into quests', text: 'Add a real task, set a due time, finish for a reward. Early pays more.' },
     { go: () => (on('merlin') ? mis('merlin')() : mis('today')()), sel: () => (on('merlin') ? $('#egg-strip') : null), page: 'Merlin’s eggs', art: 'eggs', title: 'Eggs',
       text: () => soon(D.MERLIN_MIN_LEVEL, 'Merlin swoops down with eggs. Up to ' + D.NEST_MAX + ' warm at once, and every step warms them all (' + WB.fmt(D.eggById.frost.steps) + ' to ' + WB.fmt(D.eggById.shadow.steps) + ' steps). To hatch one, answer Merlin’s question: right answers pay more. ' + D.EGG_COLLECTION + ' eggs to collect.') },
@@ -85,7 +85,7 @@
   // the little picture row on preview steps
   const ART = {
     kcal: () => WB.icon('flame', 4) + `<span class="ta-big">~${WB.fmt(G.kcalToday ? G.kcalToday().kcal : 0)}</span><span class="ta-u">kcal</span>`,
-    quests: () => ['steps', 'photo', 'feather', 'flame'].map((i) => WB.icon(i, 3)).join(''),
+    quests: () => ['steps', 'photo', 'check', 'flame'].map((i) => WB.icon(i, 3)).join(''),
     eggs: () => ['frost', D.eggArt('sprout', 3), D.eggArt('tide', 6), D.eggArt('flame', 2), D.eggArt('prism', 9), D.eggArt('shadow', 5)].map((e) => WB.eggImg(e, 40, 'still')).join(''),
     battle: () => WB.icon('sword', 4) + WB.icon('shield', 4) + WB.icon('heart', 4),
     pets: () => ['sb_ca', 'sb_ny', 'sb_tx', 'sb_fl'].map((id) => `<canvas width="48" height="48" data-tour-pet="${id}"></canvas>`).join(''),
