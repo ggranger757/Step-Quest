@@ -3956,3 +3956,9 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .tour-art canvas[data-tour-key] { width: 64px; height: 64px; }
 .tour-art .ta-big { font: 400 26px/1 var(--display); color: #ffb27a; }
 .tour-art .ta-u { font: 400 12px/1 var(--label); text-transform: uppercase; color: var(--muted); align-self: flex-end; padding-bottom: 4px; margin-left: -6px; }
+
+/* 3.9.0: everyday / local bird quests and the location line */
+.wq-bird-ic { display: grid; place-items: center; color: var(--gold); }
+.wq-place { display: block; }
+.wq-place .linkbtn { display: inline; min-height: 44px; padding: 0 4px; }
+.loc-city { width: 100%; min-height: 44px; font: inherit; color: var(--text); background: var(--inset); border: 0; box-shadow: 0 0 0 2px var(--line-hi); padding: 0 var(--s3); }

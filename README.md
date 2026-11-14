@@ -103,6 +103,14 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.9.0: bird quests follow where you walk
+
+- **Profile → Settings → Birds & location**: pick your **state or country** (and optionally your **city**, which is shown on your quests). It can be changed any time; unstarted bird quests swap to fit straight away, and steps already walked are kept.
+- **Local first.** Bird quests give your state or national bird (a pet) while you don't own it yet, then **local birds** of your region (`js/02n-birds-local.js`: US regions, Canada, Europe, Asia, Africa, Australia…), so a Texas walker sees different birds than a Tokyo one. A city has no bird of its own, so birds are chosen by state or country.
+- **Everyday birds always.** Pigeons, crows, hawks, eagles, sparrows, gulls, ducks, starlings, doves and owls can show up anywhere. Photograph one for coins and a fun fact. Only state and national birds become pets.
+- Not set yet (or set to "Somewhere else"): everyday birds only. Older saves keep their saved state.
+- The `assets/` folder (pet sprites, art, sound) is included in this download.
+
 ## Changes in 3.8.4: national birds from around the world
 - **National birds from 52 major countries** (`js/02l-quests.js`, `js/02m-birds.js`, `tools/make_state_birds.py`): the quest bird system now includes 103 regions in total — all 50 US states, DC, and 52 major countries across every continent (Canada's Common Loon, the UK's European Robin, Australia's Emu, Japan's Green Pheasant, Mexico's Golden Eagle, France's Gallic Rooster, India's Indian Peacock, Brazil's Rufous-bellied Thrush, China's Red-crowned Crane, South Africa's Blue Crane, New Zealand's Kiwi, and many more).
 - **Pixel-art pets with battle roles** for every country's bird, generated deterministically with unique leg-band color pairs.
