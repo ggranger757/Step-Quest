@@ -5,7 +5,7 @@
 
   // ---------- the Quick missions card under "New mission" ----------
   // Today's picked missions sit right here: tick to finish, × to drop (only missions not done yet, so dropping never costs anything).
-  // A finished mission leaves the list for good: its reward is kept and it can't be added again today. "+ Add" opens the picker.
+  // A finished mission leaves the list and keeps its reward; it can be added again D.QUICK_COOLDOWN_MIN minutes later. "+ Add" opens the picker.
   const rewardLine = (r) => '+' + r.coins + ' coins · +' + r.xp + ' XP';
   const pill = (xp) => `<span class="qk-pill">${xp ? '+' + xp + ' XP' : 'No XP'}</span>`;
   function row(t) {
@@ -25,15 +25,41 @@
     </div>`;
   };
 
-  // ---------- the picker: every quick mission you can still add today, by type; one tap adds it ----------
+  // ---------- the picker: every quick mission not already on today's list, by type; one tap adds it ----------
+  // One finished in the last D.QUICK_COOLDOWN_MIN minutes shows greyed out with the time until it can be added again.
+  const waitLabel = (ms) => { const m = Math.ceil(ms / 60000); return 'Again in ' + m + ' min'; };
+  let pickerTimer = 0;
   UI.quickOpen = () => {
     const q = G.quickState(), left = G.quickLeft(), capped = !left.coins && !left.xp;
+    let soonest = Infinity;
+    const opt = (t) => {
+      const wait = G.quickCooldownLeft(t.id);
+      if (!wait) return `<button class="qk qk-opt pbox" type="button" data-qadd="${t.id}"><span class="qk-t">${esc(t.title)}</span>${pill(G.quickPayout(t).xp)}</button>`;
+      soonest = Math.min(soonest, wait);
+      return `<button class="qk qk-opt pbox cool" type="button" data-qadd="${t.id}" aria-disabled="true" aria-label="${esc(t.title)}: done, ${waitLabel(wait).toLowerCase()}"><span class="qk-t">${esc(t.title)}</span><span class="qk-pill qk-wait">${waitLabel(wait)}</span></button>`;
+    };
     const groups = D.MCATS.map((c) => {
-      const list = D.QUICK.filter((t) => t.cat === c.id && !q.done[t.id] && !q.picked[t.id]);
-      return list.length ? `<h4 class="qk-g">${WB.icon(c.icon, 2)}${esc(c.name)}</h4><div class="qk-list">${list.map((t) => `<button class="qk qk-opt pbox" type="button" data-qadd="${t.id}"><span class="qk-t">${esc(t.title)}</span>${pill(G.quickPayout(t).xp)}</button>`).join('')}</div>` : '';
+      const list = D.QUICK.filter((t) => t.cat === c.id && !q.picked[t.id]);
+      return list.length ? `<h4 class="qk-g">${WB.icon(c.icon, 2)}${esc(c.name)}</h4><div class="qk-list">${list.map(opt).join('')}</div>` : '';
     }).join('');
     UI.sheet(`<h3 id="sheet-title">Add a quick mission</h3>${capped ? '<p class="fine">Today’s quick rewards are used up.</p>' : ''}
-      <div class="qk-pick">${groups || '<p class="fine">You’ve added them all today.</p>'}</div>`);
+      <p class="fine">Finished one? You can add it again ${D.QUICK_COOLDOWN_MIN} minutes later.</p>
+      <div class="qk-pick">${groups || '<p class="fine">They’re all on your list already.</p>'}</div>`);
+    // keep the countdowns fresh while the picker is open (once a minute, and right when the next one is ready)
+    clearTimeout(pickerTimer);
+    const pick = $('.qk-pick');
+    if (pick && soonest < Infinity) pickerTimer = setTimeout(function tick() {
+      if (!pick.isConnected) return;
+      let next = Infinity;
+      pick.querySelectorAll('.qk-opt.cool').forEach((b) => {
+        const t = D.quickById[b.dataset.qadd], wait = G.quickCooldownLeft(t.id);
+        if (!wait) { b.outerHTML = opt(t); return; }
+        b.querySelector('.qk-wait').textContent = waitLabel(wait);
+        b.setAttribute('aria-label', t.title + ': done, ' + waitLabel(wait).toLowerCase());
+        next = Math.min(next, wait);
+      });
+      if (next < Infinity) pickerTimer = setTimeout(tick, Math.min(60000, (next % 60000) || 60000) + 50);
+    }, Math.min(60000, (soonest % 60000) || 60000) + 50);
   };
 
   // ---------- a battle breaks out after a mission ----------
@@ -54,7 +80,7 @@
     if (!t || t.disabled || t.getAttribute('aria-disabled') === 'true') return;
     const d = t.dataset;
     if (d.qopen) { WB.Sfx.play('tap'); return UI.quickOpen(); }
-    if (d.qadd) { if (!G.quickPicked(d.qadd)) G.quickPick(d.qadd); WB.Sfx.play('tap'); UI.closeSheet(); return UI.render(); }
+    if (d.qadd) { if (!G.quickPicked(d.qadd) && !G.quickPick(d.qadd)) return; WB.Sfx.play('tap'); UI.closeSheet(); return UI.render(); }
     if (d.qdrop) { if (G.quickPicked(d.qdrop)) G.quickPick(d.qdrop); WB.Sfx.play('tap'); return UI.render(); }
     if (d.qdone) {
           const r = G.quickComplete(d.qdone); if (!r) return;

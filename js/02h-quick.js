@@ -1,6 +1,6 @@
 /* Step Quest — quick missions and mission types (data only; rules live in 05k-quick.js).
    Quick missions are pre-made, one-tap missions grouped by category. Players can't make their own.
-   Each can be finished once a day; a finished one can be removed the same day, which takes back what it paid. Mission types (D.MCATS) are shared: quick missions, the templates behind
+   The same one can be added again D.QUICK_COOLDOWN_MIN minutes after it was last finished (rewards still stop at D.QUICK_CAP a day). Mission types (D.MCATS) are shared: quick missions, the templates behind
    "My missions" count toward one of them, which feeds the mission achievements. */
 (() => {
   const D = WB.DATA;
@@ -38,6 +38,7 @@
   D.QUICK = RAW.map(([cat, title, size], i) => ({ id: 'q' + String(i + 1).padStart(3, '0'), cat, title, size, reward: size > 1 ? { coins: 8, xp: 12 } : { coins: 4, xp: 6 } }));
   D.quickById = Object.fromEntries(D.QUICK.map((q) => [q.id, q]));
   D.QUICK_CAP = { coins: 80, xp: 120 };   // everything quick, per day (about what 2,500 steps earn)
+  D.QUICK_COOLDOWN_MIN = 30;              // minutes before a finished quick mission can be added again
   D.QUICK_AMBUSH = 0.12;                   // chance a quick mission stirs up a battle (see G.missionBattle)
 
   // ---------- mission achievements ----------

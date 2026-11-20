@@ -1,14 +1,15 @@
 /* Step Quest — quick missions (rules), the mission log behind the mission achievements, and battles that can break
    out when you complete a mission. Data: 02h-quick.js.
 
-   s.quick = { day, picked: { [quickId]: true } (selected today, not done yet), done: { [quickId]: true } (today only),
-               paid: { [quickId]: { coins, xp, xpReal, dawn, night } } (what each of today's completions paid, so it can be undone),
+   s.quick = { day, picked: { [quickId]: true } (on today's list, not done yet), done: { [quickId]: n } (times finished today),
+               last: { [quickId]: ms } (when each was last finished; kept across midnight so the cooldown holds),
+               paid: { [quickId]: [{ coins, xp, xpReal, dawn, night, at }] } (what each of today's completions paid, newest last, so it can be undone),
                coinsToday, xpToday, total, perDay: { 'YYYY-MM-DD': n } }
    s.mx    = { days: { 'YYYY-MM-DD': { [typeId]: n } }, cats: { [typeId]: n }, dawn, night, early, ontime }
-   Quick missions: add it to today's list, then tick it off; once per task per day. They pay a little, up to D.QUICK_CAP a day in total (past
-   the cap they still complete and count, they just pay what is left). Once finished, a quick mission leaves today's list and keeps
-   what it paid; only missions not done yet can be dropped, and dropping one never costs anything. (G.quickUndo below is no longer
-   offered in the UI; it stays for old saves and tools.) */
+   Quick missions: add it to today's list, then tick it off. The same mission can be added again D.QUICK_COOLDOWN_MIN after it was
+   last finished. They pay a little, up to D.QUICK_CAP a day in total (past the cap they still complete and count, they just pay what
+   is left). Once finished, a quick mission leaves today's list and keeps what it paid; only missions not done yet can be dropped, and
+   dropping one never costs anything. (G.quickUndo below is no longer offered in the UI; it stays for old saves and tools.) */
 (() => {
   const D = WB.DATA, G = WB.Game, S = () => WB.state;
 
@@ -70,49 +71,71 @@
   G.stats = () => ({ ...baseStats(), ...MS.stats() });
 
   // ---------- quick missions ----------
+  const COOLDOWN = () => (D.QUICK_COOLDOWN_MIN || 30) * 60000;
   const Q = () => {
     const s = S(), q = s.quick, today = WB.dayKey();
+    if (!q.last || typeof q.last !== 'object') q.last = {};          // saves from before the cooldown
     if (q.day !== today) { q.day = today; q.done = {}; q.picked = {}; q.paid = {}; q.coinsToday = 0; q.xpToday = 0; }
     if (!q.picked || typeof q.picked !== 'object') q.picked = {};   // saves from before quick missions were selected first
     if (!q.paid || typeof q.paid !== 'object') q.paid = {};         // saves from before finished quick missions could be removed
+    for (const id of Object.keys(q.done)) if (q.done[id] === true) {  // saves from before repeats: done was once-a-day true
+      q.done[id] = 1;
+      if (!q.last[id]) q.last[id] = Date.now();                     // time unknown: start the cooldown now
+    }
+    for (const id of Object.keys(q.paid)) if (q.paid[id] && !Array.isArray(q.paid[id])) q.paid[id] = [q.paid[id]];
+    const now = Date.now();
+    for (const id of Object.keys(q.last)) if (now - q.last[id] >= COOLDOWN() || q.last[id] > now + COOLDOWN()) delete q.last[id];   // cooled down (or a clock that jumped)
     return q;
   };
   G.quickState = Q;
   G.quickDoneToday = (id) => !!Q().done[id];
+  // ms until this quick mission can be added again (0 = it can be added now)
+  G.quickCooldownLeft = (id) => { const t = Q().last[id]; return t ? Math.max(0, t + COOLDOWN() - Date.now()) : 0; };
+  G.quickReady = (id) => G.quickCooldownLeft(id) === 0;
   // pick a quick mission for today (tap again to put it back), then tap it when it's done
-  G.quickPicked = (id) => !!Q().picked[id] && !Q().done[id];
+  G.quickPicked = (id) => !!Q().picked[id];
   G.quickPickedList = () => D.QUICK.filter((t) => G.quickPicked(t.id));
-  G.quickPick = (id) => { const q = Q(); if (!D.quickById[id] || q.done[id]) return null; if (q.picked[id]) delete q.picked[id]; else q.picked[id] = true; WB.Save.queue(); return { picked: !!q.picked[id] }; };
-  G.quickCount = () => Object.keys(Q().done).length;
+  G.quickPick = (id) => {
+    const q = Q(); if (!D.quickById[id]) return null;
+    if (q.picked[id]) delete q.picked[id];
+    else { if (!G.quickReady(id)) return null; q.picked[id] = true; }
+    WB.Save.queue(); return { picked: !!q.picked[id] };
+  };
+  G.quickCount = () => Object.values(Q().done).reduce((a, n) => a + (+n || 0), 0);
   G.quickLeft = () => { const q = Q(); return { coins: Math.max(0, D.QUICK_CAP.coins - q.coinsToday), xp: Math.max(0, D.QUICK_CAP.xp - q.xpToday) }; };
   G.quickPayout = (def) => { const l = G.quickLeft(); return { coins: Math.min(def.reward.coins, l.coins), xp: Math.min(def.reward.xp, l.xp) }; };
-  // one tap: returns { def, pay, capped } or null (unknown task, or already done today)
+  // one tap: returns { def, pay, capped } or null (unknown task, not on today's list)
   G.quickComplete = (id) => {
-    const def = D.quickById[id], q = Q(); if (!def || q.done[id] || !q.picked[id]) return null;   // it has to be selected first
-    const pay = G.quickPayout(def), capped = pay.coins < def.reward.coins || pay.xp < def.reward.xp;
-    delete q.picked[id]; q.done[id] = true; q.total = (q.total || 0) + 1;
+    const def = D.quickById[id], q = Q(); if (!def || !q.picked[id]) return null;   // it has to be selected first
+    const pay = G.quickPayout(def), capped = pay.coins < def.reward.coins || pay.xp < def.reward.xp, now = Date.now();
+    delete q.picked[id]; q.done[id] = (+q.done[id] || 0) + 1; q.last[id] = now; q.total = (q.total || 0) + 1;
     q.perDay = q.perDay || {}; q.perDay[WB.dayKey()] = (q.perDay[WB.dayKey()] || 0) + 1;
     q.coinsToday += pay.coins; q.xpToday += pay.xp;
     for (const k of Object.keys(q.perDay)) if (WB.daysBetween(k, WB.dayKey()) > 60) delete q.perDay[k];
     const flags = MS.record(def.cat);
     // xpReal: the XP that actually landed (none at the level cap), which is what removing it takes back
-    q.paid[id] = { coins: pay.coins, xp: pay.xp, xpReal: S().level < D.LEVEL_CAP ? pay.xp : 0, dawn: flags.dawn, night: flags.night };
+    (q.paid[id] = q.paid[id] || []).push({ coins: pay.coins, xp: pay.xp, xpReal: S().level < D.LEVEL_CAP ? pay.xp : 0, dawn: flags.dawn, night: flags.night, at: now });
     if (pay.coins || pay.xp) G.grant({ coins: pay.coins, xp: pay.xp });
     WB.Sfx.play(pay.coins ? 'coin' : 'tap'); G.after();
     return { def, pay, capped };
   };
 
-  // what removing a finished quick mission takes back (saves from before this was tracked: assume full pay, within today's totals)
+  // what removing the latest completion of a quick mission takes back (saves from before this was tracked: assume full pay, within today's totals)
   G.quickRefund = (id) => {
     const q = Q(), def = D.quickById[id]; if (!def || !q.done[id]) return null;
-    const p = q.paid[id] || { coins: Math.min(def.reward.coins, q.coinsToday), xp: Math.min(def.reward.xp, q.xpToday), xpReal: S().level < D.LEVEL_CAP ? Math.min(def.reward.xp, q.xpToday) : 0 };
+    const list = q.paid[id] || [];
+    const p = list[list.length - 1] || { coins: Math.min(def.reward.coins, q.coinsToday), xp: Math.min(def.reward.xp, q.xpToday), xpReal: S().level < D.LEVEL_CAP ? Math.min(def.reward.xp, q.xpToday) : 0 };
     return { coins: Math.min(p.coins, S().coins), xp: p.xp, xpReal: p.xpReal || 0, dawn: !!p.dawn, night: !!p.night };
   };
-  // remove a quick mission finished today: returns { def, lost: { coins, xp }, levelsLost } or null
+  // remove the latest completion of a quick mission finished today: returns { def, lost: { coins, xp }, levelsLost } or null
   G.quickUndo = (id) => {
     const def = D.quickById[id], q = Q(), r = G.quickRefund(id); if (!r) return null;
     const s = S(), day = WB.dayKey(), lvBefore = s.level;
-    delete q.done[id]; delete q.paid[id];
+    q.done[id] = (+q.done[id] || 1) - 1; if (!q.done[id]) delete q.done[id];
+    const list = q.paid[id] || []; list.pop();
+    if (!list.length) delete q.paid[id];
+    const prev = list.length && list[list.length - 1].at;           // the cooldown goes back to the completion before it, if any
+    if (prev) q.last[id] = prev; else delete q.last[id];
     q.total = Math.max(0, (q.total || 0) - 1);
     if (q.perDay && q.perDay[day]) { q.perDay[day]--; if (!q.perDay[day]) delete q.perDay[day]; }
     q.coinsToday = Math.max(0, q.coinsToday - r.coins); q.xpToday = Math.max(0, q.xpToday - r.xp);
