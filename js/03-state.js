@@ -13,10 +13,10 @@
       owned: { avatars: ['scavenger'],   // replaced by the walker picked at sign-up
                 pets: [], weapons: ['star', 'sw_rusty'], magic: [] },
       petHp: {},          // pets have their own health (they take part of every hit in battle)
-      hp: D.heroMaxHp(1), potions: { tonic: 2 }, bosses: {},
+      hp: D.heroMaxHp(D.START_LEVEL), potions: { tonic: 2 }, bosses: {},
       health: { on: false, since: null, last: 0 },   // Apple Health / Health Connect sync (installed app only)
       hints: {},
-      level: 1, xp: 0, coins: 0, frac: { coins: 0, xp: 0 },
+      level: D.START_LEVEL, xp: 0, coins: D.START_COINS, frac: { coins: 0, xp: 0 },
       totalSteps: 0, meters: 0, bestDay: 0,
       days: {},
       today: { day: today, steps: 0, encounters: 0, fights: 0, battles: 0, chests: 0, meters: 0, goalBonus: false },
@@ -32,7 +32,7 @@
       ach: {}, purchases: 0,
       merlin: { nest: [], seq: 0, hatched: 0, right: 0, taken: 0, asked: [], facts: [], gift: '', at: 0 },   // Merlin's eggs (05e-merlin.js)
       druid: { asked: [], wins: 0, losses: 0, taken: 0 },
-      nemesis: { beaten: {}, losses: 0 }, peakLevel: 1,
+      nemesis: { beaten: {}, losses: 0 }, peakLevel: D.START_LEVEL,
       settings: { dailyGoal: 5000, streakMin: 1000, stride: D.DEFAULT_STRIDE_M, sound: true, gameMusic: true, units: /^en-(US|LR|MM)$/i.test((navigator.language || '')) ? 'mi' : 'km', reducedMotion: null, theme: 'night', notify: true, chartDays: 14, moodAsk: true, turnTimer: true, wkChat: true },
       seen: { at: Date.now(), total: 0, day: today, streak: 0 },
     };
@@ -89,6 +89,8 @@
     delete s.settings.music;   // an old setting from the retired in-app music player
     delete s.settings.loc;     // Location Awareness was removed
     delete s.music;            // the in-app music player was removed: players use their own music app
+    // Level 4 edition: every walker starts at level 4. Saves below it are lifted once, with the level-up coins they skipped.
+    if (s.level < D.START_LEVEL) { for (let l = Math.max(s.peakLevel || 1, s.level) + 1; l <= D.START_LEVEL; l++) s.coins += D.levelCoins(l); s.level = D.START_LEVEL; s.xp = 0; s.hp = D.heroMaxHp(s.level); }
     if (s.level > D.LEVEL_CAP) { s.level = D.LEVEL_CAP; s.xp = 0; }   // the cap came down from 100 to 80: walkers above it stay at 80
     s.peakLevel = Math.min(D.LEVEL_CAP, Math.max(s.peakLevel || 0, s.level));   // levels won back after losing to a boss don't pay level-up coins twice
     // the walker picked at sign-up decides the special attack; older saves: the first starter owned is the one picked

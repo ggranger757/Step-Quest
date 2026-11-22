@@ -1099,6 +1099,8 @@
   // Pacing: XP to the next level = 120 + 40 × level^1.35 (early levels aren't free: a 1-mile walk is about level 2).
   // A steady ~1,250 XP a day (walking plus battles, quests and missions): about a month to level 20, 4–5 months to 50,
   // about 9 months to the last world (level 70, which also needs each world explored in turn) and under 2 years to 100.
+  D.START_LEVEL = 4;   // Level 4 edition: new walkers begin at this level
+  D.START_COINS = [2, 3, 4].reduce((n, l) => n + 10 * l, 0);   // the level-up coins for levels 2–4 (same as D.levelCoins)
   D.LEVEL_CAP = 80;   // walkers top out here (every world, walker and Worldkey opens by level 70)
   D.EPIC_MUSIC_LEVEL = 40;   // battles get the epic soundtrack from here
   D.xpToNext = (lvl) => Math.round(120 + 40 * Math.pow(lvl, 1.35));

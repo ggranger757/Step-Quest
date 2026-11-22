@@ -3878,7 +3878,6 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .dl-stats div { display: grid; gap: 2px; }
 .dl-stats dt { font: 400 10px/1 var(--label); text-transform: uppercase; color: var(--muted); }
 .dl-stats dd { margin: 0; font: 400 15px/1 var(--display); }
-#battle.duel .b-actions .defend { grid-column: 1 / -1; }
 .dl-intro { flex-direction: column; }
 .dl-intro .b-title { color: #ff6b5b; }
 .dl-intro-name { display: block; margin-top: var(--s2); font: 400 clamp(16px, 5vw, 24px)/1.1 var(--display); color: #fff; text-shadow: 2px 2px 0 var(--shadow); text-align: center; }

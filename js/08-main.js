@@ -224,6 +224,7 @@
         <button class="btn block xl" type="button" id="i-go">Begin journey</button>`;
       $('#i-go').onclick = () => {
         S().onboarded = true;
+        if (WB.Game.checkUnlocks) WB.Game.checkUnlocks();   // Level 4 edition: open anything gated at levels 1–4
         WB.Save.now(); UI.lockScroll('intro', false);
         iv.stop(); ro.disconnect(); window.removeEventListener('resize', fit);
         WB.Sfx.play('claim');

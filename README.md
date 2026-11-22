@@ -103,6 +103,15 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.10.2: duels play like battles
+- **Duel nearby now has the same gameplay as battle mode** (`js/05q-duel.js` rules, `js/07p-duel-ui.js` screen). The duel screen is the battle screen: the same menu (Gear & Magic, Strike, Throw / Shoot / Cast, Defend, Items, Special, and Give up in place of Run away), the shield gauge, pets on the stage, the turn clock, floaters and animations.
+  - **Turns alternate**, as in battles: one walker moves, then the other. A coin toss picks who starts; the starter's ranged weapon begins on recharge for their first two moves (`D.DUEL_OPEN_CD`), because without it the first mover won about 65% of even duels in simulation (about 52–59% with it).
+  - **The battle rules, on both sides**: Defend sends your Block % of every hit to the shield gauge until your next turn (an empty gauge breaks your guard for 2 turns); weapon effects (daggers and tridents hitting more than once, crits, poison, burns, curses, freezes, stuns, weaken, sunder, lifesteal, piercing); worn gear; charms; potions and food (also on your pet); free gear swaps and battle magic (once per duel each, one per turn; the Golden Key is left out); pets attack, shoot, heal or guard and fire their specials; specials work as in battles (Arcane Nova stuns for 3 turns, Life Drain drains for 3 turns, Scavenger's Raid snatches a potion to use in this duel). What a battle does to a creature, a duel does to the other walker.
+  - **As in battles, what you use is spent**: shots, potions, battle magic, one battle from each charm you wear, and gear wear (`D.DUEL_SPENDS`; set it to `false` to make duels free again). Both walkers still start at full HP and full pet HP, and losing a duel costs nothing else.
+  - Out of time: after 25 moves each, the higher HP % wins. Too slow on your turn: you hesitate and lose the move (the clock appears after 8 seconds, as in battles).
+  - The other phone's walker is built from this phone's own game data (ids, not numbers) with stats from their level (`G.duelClean`), so a bad message can't rig a duel. Both phones need this version (rules version `D.DUEL_V = 2`); an older phone is told to update.
+- **Your opponent is the same size as you.** The other walker was drawn 25% bigger as the boss; now both walkers use the same scale and ground shadow. They keep the boss plate, glow and intro.
+
 ## Changes in 3.10.0: Missions are real-life again, birding removed
 
 - **Bird quests are gone**: no bird photos, no state or country capture screen, no "Birds & location" setting, no local-birds list (`js/02n-birds-local.js` deleted).
@@ -194,9 +203,8 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 ### Duels nearby: battle another walker (`js/04d-link.js`, `js/05q-duel.js`, `js/07p-duel-ui.js`)
 - **World page → Duel nearby** (from level 3, when battles open). One phone hosts and shows an invitation QR; the other joins, scans it and shows a reply QR; the host scans the reply and the phones are linked. Each code can also be copied and pasted if scanning fails.
 - **The phones talk directly** over a WebRTC data channel: no account, no server, no Firebase. The two phones need to be on the same Wi-Fi, or one shares a hotspot. A public STUN server is used only to discover addresses.
-- **On each phone, the other walker is the boss**: they stand on the enemy side, drawn bigger with a red glow, in their own avatar, skin tone and outfit colours, with a boss plate ("Lv X · Boss"), a "Boss Duel" intro and epic boss music.
-- **Simultaneous turns**: both pick Strike, Shoot, Defend, or their class Special (when charged) within 20 seconds (no pick means Defend). The host's phone resolves the turn and both screens play the same result. Defend blocks your Block %, Specials punch through half of a block, Arcane Nova stuns for a turn, Life Drain heals, pets help by their role. After 25 turns, the higher HP % wins.
-- Full HP for both, and nothing is used up: no ammo, potions, magic or gear wear.
+- **On each phone, the other walker is the boss**: they stand on the enemy side, the same size as you, with a red glow, in their own avatar, skin tone and outfit colours, with a boss plate ("Lv X · Boss"), a "Boss Duel" intro and epic boss music.
+- **Battle gameplay** (since 3.10.2): alternating turns and every battle move, rule and item; see Changes in 3.10.2. The host's phone resolves each move and both screens play the same result.
 - **Rewards**: your first 5 duels a day pay coins and XP (win 80 + 60 XP, draw 40 + 30, loss 25 + 20). Your won/lost/drawn record shows on the versus card.
 - Rematch (both tap it), Give up (tap twice), Leave. A lost connection calls the duel off with no result.
 - Everything the other phone sends is checked and clamped (`G.duelClean`), so a bad message cannot break or rig a duel.
