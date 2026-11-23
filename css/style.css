@@ -377,6 +377,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: bloc
 .item .prev canvas { width: 120px; height: 120px; max-width: 100%; }
 .item .prev .tag { position: absolute; top: 6px; right: 6px; max-width: calc(100% - 12px); font: 400 clamp(9px, 2.9vw, 11px)/1.1 var(--label); overflow-wrap: anywhere; text-align: center; text-transform: uppercase; padding: 4px 5px; background: #ff9a3d; color: #000; }   /* Owned: orange with black text */
 .item .prev .tag.eq { background: var(--cyan); color: var(--ink); }
+.item .prev .tag.ev { background: #b4202a; color: #fff; }   /* seasonal event walker (3.10.3) */
 .item h3 { font: 400 22px/1 var(--display); font-weight: 400; padding-top: var(--s1); overflow-wrap: anywhere; }
 .item .req { font-size: 13px; line-height: 1.35; color: var(--muted); display: grid; gap: var(--s2); align-content: start; }
 .item .reqline { display: flex; gap: 6px; align-items: flex-start; }
@@ -3937,3 +3938,9 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .tour-art canvas[data-tour-key] { width: 64px; height: 64px; }
 .tour-art .ta-big { font: 400 26px/1 var(--display); color: #ffb27a; }
 .tour-art .ta-u { font: 400 12px/1 var(--label); text-transform: uppercase; color: var(--muted); align-self: flex-end; padding-bottom: 4px; margin-left: -6px; }
+
+/* 3.10.3: seasonal event offer (07r-events-ui.js) */
+.ev-offer { text-align: center; display: grid; gap: var(--s2); justify-items: center; }
+.ev-offer .ev-hero { width: 144px; height: 144px; image-rendering: pixelated; background: radial-gradient(circle at 50% 60%, rgba(180, 32, 42, 0.35), transparent 65%); }
+.ev-offer .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); width: 100%; }
+.ev-offer .price { justify-content: center; }

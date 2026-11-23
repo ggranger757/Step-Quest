@@ -62,6 +62,7 @@
     // count steps automatically whenever the app is open (unless paused, or health sync is on)
     try { if (S().onboarded) WB.Steps.motion.auto(); } catch (e) {}
     G.markSeen();
+    if (WB.Events) WB.Events.check();   // a seasonal event's walker (07r-events-ui.js): announced once, after the tour
     if (!WB.store.ok()) setTimeout(() => UI.toast({ kicker: 'Progress won’t be saved', title: 'Storage is blocked (private window?). Open normally to save.', icon: 'lock', cls: 'msg', ms: 9000 }), 1500);
   }
 
@@ -185,7 +186,7 @@
       WB.WK.bindLore(panel, $('#i-go'), 'Continue', () => step2());   // three swipeable pages, then on to choosing a walker
     };
     const step2 = () => {
-      const starters = D.STARTER_ORDER.map((id) => D.AVATARS.find((a) => a.id === id)), locked = D.AVATARS.length - 1;
+      const starters = D.STARTER_ORDER.map((id) => D.AVATARS.find((a) => a.id === id)), locked = D.AVATARS.filter((a) => !a.req.event).length - 1;
       panel.innerHTML = `<div class="istep"><span class="lbl">Step 2 of 3</span><h2>Choose your walker</h2></div>
         <div class="pick" role="radiogroup" aria-label="Walker">${starters.map((a) => `<button type="button" role="radio" data-pick="${a.id}" aria-checked="${a.id === pick}"><canvas width="72" height="84"></canvas><span class="pn">${a.name}</span><span class="psp">${D.SPECIALS[D.STARTER_SPECIAL[a.id]].name}</span></button>`).join('')}</div>
         <p class="lockedrow">${WB.icon('lock', 2)}<span>The other two unlock at level ${starters[0].req.level || 5}. ${locked - 2} more to unlock later.</span></p>

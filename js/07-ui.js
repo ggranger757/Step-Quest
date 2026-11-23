@@ -790,6 +790,8 @@
     }
     const locked = !own && !(st && st.buy);
     if (locked) tag = `<span class="tag lock">${WB.icon('lock', 1)}Locked</span>`;
+    const ev = it.req && it.req.event && D.EVENTS[it.req.event];
+    if (ev && !own && G.eventOn(it.req.event)) tag = `<span class="tag ev" title="${WB.esc(ev.name)} event">Until ${WB.esc(ev.untilText.replace(/^(\w{3})\w*/, '$1'))}</span>`;
     return `<div class="item pbox ${locked ? 'locked' : ''}" ${locked ? `data-why="${WB.esc(it.name + ' is locked. ' + st.label + ' to unlock it.')}" role="button" tabindex="0"` : ''}>
       <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${badge}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
       <h3>${WB.esc(it.name)}</h3>
@@ -910,7 +912,9 @@
           <p class="fine">Earned on the old bird quests. They stay yours, but no new ones can be earned.</p>
           <div class="grid">${birds.map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div></div>` : ''}`;
     }
-    return `<div class="grid">${byUnlock(D.AVATARS).map((it) => itemCard('avatar', it, { desc: it.role })).join('')}</div>`;
+    // event walkers lead the list while their event runs, and are gone afterwards (unless you bought one)
+    const live = D.AVATARS.filter((a) => G.inShop(a) || G.owns('avatar', a.id)), ev = live.filter((a) => a.req.event && G.eventOn(a.req.event));
+    return `<div class="grid">${[...ev, ...byUnlock(live.filter((a) => !ev.includes(a)))].map((it) => itemCard('avatar', it, { desc: it.role })).join('')}</div>`;
   }
   // ----- Bag sections -----
   function bagBody(tab) {

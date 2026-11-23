@@ -443,7 +443,7 @@
     { id: 'c6', name: 'Sprinter', role: 'A quarter million steps and still warm.', req: { steps: 250000 } },
     { id: 'satyr', name: 'Satyr Bard', role: 'Sings the songs of every world.', req: { steps: 400000 } },
     // 2026-10: monsters and knights (tools/prep_avatars2.py)
-    { id: 'adventurer', name: 'Adventurer', role: 'Sword in hand, always mid-stride.', req: { cost: 1800, level: 4 } },
+    { id: 'adventurer', name: 'Adventurer', role: 'A scout’s cloak, a quiet sword, and the long way round.', req: { cost: 1800, level: 4 } },
     { id: 'goblin', name: 'Goblin Pathfinder', role: 'Knows every shortcut, takes none of them.', req: { cost: 2600, level: 9 } },
     { id: 'mushroom', name: 'Spore Walker', role: 'Grows a little taller with every mile.', req: { cost: 3400, level: 11 } },
     { id: 'skeleton', name: 'Skeleton Squire', role: 'No muscles, no blisters, no excuses.', req: { cost: 4600, level: 15 } },
@@ -457,7 +457,14 @@
     { id: 'arcanist', name: 'Arcanist', role: 'Reads while walking. Never trips.', req: { cost: 6800, level: 25 } },
     { id: 'bladedancer', name: 'Blade Dancer', role: 'Curved sword, silent cloak, light steps.', req: { cost: 8800, level: 31 } },
     { id: 'warlock', name: 'Hex Warlock', role: 'His staff burns with a cold violet fire.', req: { cost: 11000, level: 40 } },
+    // 3.10.3: event walkers (D.EVENTS): any level, sold only while the event runs; once bought they're yours for good
+    { id: 'santa', name: 'Santa', role: 'Ho-ho-hoofs it one chimney at a time.', req: { cost: 2000, event: 'xmas' } },
   ];
+  // Seasonal events: a walker on sale from `from` to `until` (both days included, the phone's local date). When it
+  // starts, players see the offer once (07q-events.js); when it ends, the walker leaves the Shop for good.
+  D.EVENTS = {
+    xmas: { id: 'xmas2026', name: 'Christmas', avatar: 'santa', from: '2026-11-23', until: '2026-12-25', untilText: 'December 25' },
+  };
   // 3.5.0: walkers are never handed out. A level, streak, step count or explored world only UNLOCKS a walker;
   // you always buy it in Shop → Avatars. Walkers that used to be free get a price that fits what unlocks them.
   const r100 = (n) => Math.round(n / 100) * 100;
@@ -642,6 +649,7 @@
   D.SKIN_MAP = {
     scavenger: { all: ['#e9b5a3'], head: ['#ba756a', '#8e5252'] },
     marauder: { all: ['#e9b5a3'], head: ['#ba756a'] },
+    adventurer: { all: ['#e9b5a3'], head: ['#ba756a'] },   // 3.10.3: redrawn from the Marauder's frames
     wanderer: { all: ['#e9b5a3'], head: ['#8e5252'] },
     ember: { all: ['#e9b5a3'] },
     storm: { all: ['#e9b5a3'], head: ['#723535'] },
@@ -723,7 +731,7 @@
     outrider: { o: ['#221c1a', '#333941'], t: ['#8e5252', '#422433'] },
     c6: { o: ['#cce2e1', '#ffffff'], t: ['#ff8142', '#f4b03c', '#ffda45'] },
     satyr: { o: ['#73172d', '#3b1725', '#422433'], t: ['#d6a851'] },
-    adventurer: { o: ['^#804d36', '^#8f563b', '^#9e6451', '^#8f5e47'], t: ['#8f3232', '#ab4343', '#d95763', '#ad3b3b'] },
+    adventurer: { o: ['^#2f4526', '^#4e6b35'], t: ['#7d9a4c', '#4f6a2f'] },   // 3.10.3: a fantasy scout's green cloak-coat and hood (tools/make_adventurer.py)
     goblin: { o: ['#884931', '#6a331e', '#3f1c0e'], t: ['#41424a', '#28292d'] },
     mushroom: { o: ['#612128', '#341014'] },
     skeleton: { o: ['#633b13', '#41280f', '#583b1e', '#4f3112'], t: ['^#6a6a67'] },

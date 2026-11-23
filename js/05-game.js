@@ -160,6 +160,7 @@
   G.reqStatus = (req) => {
     const s = S();
     if (req.starter && !req.cost) return { met: true, label: 'Starter' };
+    if (req.event && !G.eventOn(req.event)) return { met: false, label: 'Only during the ' + (D.EVENTS[req.event] || { name: 'seasonal' }).name + ' event', gone: true };
     if (req.bird) return { met: false, label: 'No longer available', bird: true };
     if (req.found && !G.hasFound(req.found)) return { met: false, label: 'Find it in ' + D.worldById[req.world].name, found: false };
     if (req.level && s.level < req.level) return { met: false, label: 'Reach level ' + req.level, cur: s.level, target: req.level };
@@ -170,6 +171,9 @@
     if (req.cost) return { met: false, buy: true, cost: req.cost, label: WB.fmt(req.cost) + ' coins' };
     return { met: true, label: '' };
   };
+  // seasonal events (D.EVENTS): on from their first to their last day, by this phone's date
+  G.eventOn = (id, day = WB.dayKey()) => { const e = D.EVENTS && D.EVENTS[id]; return !!e && day >= e.from && day <= e.until; };
+  G.inShop = (it) => !it.req || !it.req.event || G.eventOn(it.req.event);   // an event walker leaves the Shop when its event ends
   G.checkUnlocks = () => {
     for (const cat of Object.keys(CATS)) for (const it of CATS[cat][1]) {
       if (G.owns(cat, it.id) || it.req.cost || it.req.daily || it.req.bird) continue;
