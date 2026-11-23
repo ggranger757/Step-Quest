@@ -3944,3 +3944,16 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .ev-offer .ev-hero { width: 144px; height: 144px; image-rendering: pixelated; background: radial-gradient(circle at 50% 60%, rgba(180, 32, 42, 0.35), transparent 65%); }
 .ev-offer .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); width: 100%; }
 .ev-offer .price { justify-content: center; }
+
+/* 3.10.3: Christmas lights (WB.lights): bulbs on a dark-green wire around a Christmas walker's card */
+.ev-lights { position: relative; }
+.xlights { position: absolute; inset: -5px; pointer-events: none; border: 2px solid #1d4d2a; border-radius: 6px; z-index: 2; }
+.xlights i { position: absolute; width: 7px; height: 9px; border-radius: 50% 50% 45% 45%; transform: translate(-50%, -50%); box-shadow: 0 0 6px 1px currentColor; animation: xl-twinkle 1.8s steps(1) infinite; }
+.xlights i::before { content: ''; position: absolute; left: 1px; top: -3px; width: 5px; height: 3px; background: #2b3b2b; border-radius: 1px; }
+.xlights i.r { background: #ff4b4b; color: #ff4b4b; } .xlights i.g { background: #4fe36a; color: #4fe36a; }
+.xlights i.y { background: #ffd84a; color: #ffd84a; } .xlights i.b { background: #5cc8ff; color: #5cc8ff; }
+@keyframes xl-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; box-shadow: none; } }
+.rm .xlights i { animation: none; }
+@media (prefers-reduced-motion: reduce) { .xlights i { animation: none; } }
+.ev-offer .ev-frame { position: relative; padding: 8px; margin: 6px 0; }
+.ev-offer .ev-left { font: 400 13px/1.2 var(--label); text-transform: uppercase; color: var(--gold, #ffd84a); }

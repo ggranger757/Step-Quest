@@ -458,12 +458,14 @@
     { id: 'bladedancer', name: 'Blade Dancer', role: 'Curved sword, silent cloak, light steps.', req: { cost: 8800, level: 31 } },
     { id: 'warlock', name: 'Hex Warlock', role: 'His staff burns with a cold violet fire.', req: { cost: 11000, level: 40 } },
     // 3.10.3: event walkers (D.EVENTS): any level, sold only while the event runs; once bought they're yours for good
-    { id: 'santa', name: 'Santa', role: 'Ho-ho-hoofs it one chimney at a time.', req: { cost: 2000, event: 'xmas' } },
+    { id: 'santa', name: 'Santa', role: 'Ho-ho-hoofs it one chimney at a time.', thumb: 0.62, req: { cost: 5000, event: 'xmas' } },   // thumb: a stout sprite, drawn smaller in its Shop card
   ];
-  // Seasonal events: a walker on sale from `from` to `until` (both days included, the phone's local date). When it
-  // starts, players see the offer once (07q-events.js); when it ends, the walker leaves the Shop for good.
+  // Seasonal events: a walker or pet (cat + item) on sale from `from` to `until` (both days included, the phone's local
+  // date). Before `from` it isn't in the app at all. When it starts, players see the offer once (07r-events-ui.js);
+  // when it ends, it leaves the Shop for good, and anyone who bought it keeps it. lights: Christmas lights on its card.
   D.EVENTS = {
-    xmas: { id: 'xmas2026', name: 'Christmas', avatar: 'santa', from: '2026-11-23', until: '2026-12-25', untilText: 'December 25' },
+    thanks: { id: 'thanks2026', name: 'Thanksgiving', cat: 'pet', item: 'turkey', from: '2026-11-23', until: '2026-11-25', untilText: 'November 25' },
+    xmas: { id: 'xmas2026', name: 'Christmas', cat: 'avatar', item: 'santa', from: '2026-11-30', until: '2026-12-25', untilText: 'December 25', lights: true },
   };
   // 3.5.0: walkers are never handed out. A level, streak, step count or explored world only UNLOCKS a walker;
   // you always buy it in Shop → Avatars. Walkers that used to be free get a price that fits what unlocks them.
@@ -561,11 +563,13 @@
     { id: 'cm48', name: 'Pinch', kind: 'Bog scorpion', src: 'pet', hop: true, req: { cost: 3500, level: 46 } },
     { id: 'cm49', name: 'Plume', kind: 'Owl spirit', src: 'pet', hop: true, req: { streak: 45 } },
     { id: 'cm50', name: 'Ruckus', kind: 'Horned brute', src: 'pet', hop: true, req: { steps: 500000 } },
+    // 3.10.3: event pets (D.EVENTS): any level, sold only while the event runs; yours to keep once bought
+    { id: 'turkey', name: 'Gobbles', kind: 'Turkey', src: 'pet', req: { cost: 1000, event: 'thanks' } },
   ];
   // Pets have their own health and take part of every hit aimed at you in battle (share = 20% to 60%).
   // Bigger and tougher companions take more. A pet at 0 HP is knocked out until it heals: pets refill
   // slowly over time like you do (walking does not heal anyone).
-  const PET_STATS = { dog: [55, 0.4], dog2: [50, 0.35], cat: [40, 0.3], cat2: [42, 0.3], onyx: [44, 0.3], rat: [28, 0.2], rat2: [30, 0.2], crow: [30, 0.2], pigeon: [28, 0.2],
+  const PET_STATS = { dog: [55, 0.4], dog2: [50, 0.35], cat: [40, 0.3], cat2: [42, 0.3], onyx: [44, 0.3], rat: [28, 0.2], rat2: [30, 0.2], crow: [30, 0.2], pigeon: [28, 0.2], turkey: [45, 0.3],
     hyena: [55, 0.4], scorpio: [50, 0.35], snake: [40, 0.25], vulture: [45, 0.3], mummy: [70, 0.5], deceased: [75, 0.55],
     hare: [35, 0.25], fox: [50, 0.35], boar: [85, 0.55], grouse: [32, 0.2], deer: [70, 0.45],
     rock_lime: [60, 0.45], rock_sand: [60, 0.45], rock_moss: [70, 0.5], rock_rust: [75, 0.5], rock_cobble: [85, 0.55], rock_marble: [90, 0.55], rock_frost: [95, 0.6], rock_magma: [110, 0.6],
@@ -587,6 +591,7 @@
     PH = (heal, verb) => ({ role: 'heal', heal, verb }), PG = (block) => ({ role: 'guard', block });
   D.PET_ROLES = {
     // attackers
+    turkey: PA(0.17, 'Pecks at'),   // 3.10.3: Thanksgiving event pet
     dog: PA(0.14, 'Bites'), dog2: PA(0.16, 'Bites'), cat: PA(0.14, 'Scratches'), onyx: PA(0.15, 'Swipes at'), fox: PA(0.2, 'Nips'), hyena: PA(0.25, 'Pounces on'),
     scorpio: PA(0.3, 'Stings'), boar: PA(0.38, 'Charges'), rat2: PA(0.12, 'Gnaws'), cm2: PA(0.14, 'Bites'), cm6: PA(0.28, 'Bites'), cm7: PA(0.24, 'Rams'),
     cm12: PA(0.22, 'Slashes'), cm17: PA(0.24, 'Pecks'), cm19: PA(0.32, 'Claws'), cm25: PA(0.18, 'Bites'), cm26: PA(0.2, 'Pummels'), cm27: PA(0.3, 'Mauls'),

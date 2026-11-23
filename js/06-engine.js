@@ -270,7 +270,8 @@
         const sx1 = Math.min(sh.fs, Math.ceil(hb.cx + W / sc / 2)), sy1 = Math.min(sh.fs, Math.ceil(hb.cy + H / sc / 2));
         if (sx1 > sx0 && sy1 > sy0) x.drawImage(src, sx0, sh.r * sh.fs + sy0, sx1 - sx0, sy1 - sy0, Math.round(ox + sx0 * sc), Math.round(oy + sy0 * sc), (sx1 - sx0) * sc, (sy1 - sy0) * sc);
       } else {
-        const bx = box.x, by = box.y, bw = box.w, bh = box.h, sc = WB.fitScale(W / bw, H / bh);
+        const av = opts.kind === 'av' && !opts.head && WB.DATA.AVATARS.find((a) => a.id === opts.id), k = (av && av.thumb) || 1;   // thumb: a stout walker drawn smaller
+        const bx = box.x, by = box.y, bw = box.w, bh = box.h, sc = WB.fitScale(W * k / bw, H * k / bh);
         const dw = bw * sc, dh = bh * sc, dx = Math.round((W - dw) / 2), dy = Math.round(H - dh);
         x.drawImage(src, bx, sh.r * sh.fs + by, bw, bh, flip ? W - dx - dw : dx, dy, dw, dh);
       }

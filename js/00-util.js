@@ -21,6 +21,17 @@ WB.fmtDist = (m) => {
 WB.unitText = (t) => (WB.miles() && t ? String(t).replace(/(\d+(?:\.\d+)?)\s?km\b/g, (_, n) => WB.fmtDist(parseFloat(n) * 1000)) : t);
 WB.esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+// a string of Christmas lights around its parent (position: relative): bulbs on a wire, twinkling in turn (3.10.3)
+WB.lights = (top = 7, side = 9) => {
+  const cols = ['r', 'g', 'y', 'b'], b = [];
+  let k = 0;
+  const bulb = (x, y) => b.push(`<i class="${cols[k % 4]}" style="left:${x}%;top:${y}%;animation-delay:${(k++ % 4) * 0.45}s"></i>`);
+  for (let i = 0; i < top; i++) bulb(((i + 0.5) / top) * 100, 0);
+  for (let i = 0; i < side; i++) bulb(100, ((i + 0.5) / side) * 100);
+  for (let i = top - 1; i >= 0; i--) bulb(((i + 0.5) / top) * 100, 100);
+  for (let i = side - 1; i >= 0; i--) bulb(0, ((i + 0.5) / side) * 100);
+  return `<span class="xlights" aria-hidden="true">${b.join('')}</span>`;
+};
 WB.dayKey = (d = new Date()) => {
   const z = (n) => String(n).padStart(2, '0');
   return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate());

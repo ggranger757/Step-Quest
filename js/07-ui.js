@@ -792,8 +792,9 @@
     if (locked) tag = `<span class="tag lock">${WB.icon('lock', 1)}Locked</span>`;
     const ev = it.req && it.req.event && D.EVENTS[it.req.event];
     if (ev && !own && G.eventOn(it.req.event)) tag = `<span class="tag ev" title="${WB.esc(ev.name)} event">Until ${WB.esc(ev.untilText.replace(/^(\w{3})\w*/, '$1'))}</span>`;
-    return `<div class="item pbox ${locked ? 'locked' : ''}" ${locked ? `data-why="${WB.esc(it.name + ' is locked. ' + st.label + ' to unlock it.')}" role="button" tabindex="0"` : ''}>
-      <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${badge}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
+    const lights = ev && ev.lights && (own || G.eventOn(it.req.event));   // Christmas lights around a Christmas walker's card
+    return `<div class="item pbox ${locked ? 'locked' : ''} ${lights ? 'ev-lights' : ''}" ${locked ? `data-why="${WB.esc(it.name + ' is locked. ' + st.label + ' to unlock it.')}" role="button" tabindex="0"` : ''}>
+      ${lights ? WB.lights() : ''}<div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${badge}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
       <h3>${WB.esc(it.name)}</h3>
       <div class="req">${opts.stat && !locked ? `<span class="stat">${opts.stat}</span>` : ''}${opts.desc ? `<span>${WB.esc(opts.desc)}</span>` : ''}</div>${locked ? gauge(st) : ''}
       ${foot ? `<div class="foot">${foot}</div>` : ''}
@@ -814,8 +815,8 @@
     const extra = cat === 'weapon' && stack && n < D.STACK_MAX ? refillBtn(cat, it.id, (n === 0 ? 'gold' : 'ghost') + ' sm') : '';   // a ranged weapon: Equip, plus Refill when it isn't full
     const tag = eq ? `<span class="tag eq">${charm ? 'Worn' : cat === 'avatar' ? 'In use' : 'Equipped'}</span>` : '';
     const gear = cat === 'weapon' && D.weaponById[it.id] && it.slot !== 'ranged';
-    return `<div class="item pbox bag ${empty ? 'empty-uses' : ''}">
-      <div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${stack ? countBadge(cat, it.id) : ''}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
+    return `<div class="item pbox bag ${empty ? 'empty-uses' : ''} ${it.req && it.req.event && (D.EVENTS[it.req.event] || {}).lights ? 'ev-lights' : ''}">
+      ${it.req && it.req.event && (D.EVENTS[it.req.event] || {}).lights ? WB.lights() : ''}<div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${stack ? countBadge(cat, it.id) : ''}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
       <h3>${WB.esc(it.name)}</h3>
       <div class="req">${opts.stat ? `<span class="stat">${opts.stat}</span>` : ''}${opts.desc ? `<span>${WB.esc(opts.desc)}</span>` : ''}${charm ? `<span class="uses ${empty ? 'out' : ''}">${empty ? 'Used up · recharge to wear' : G.usesLabel(it.id) + ' left'}</span>` : ''}${gear ? condLine(it.id) : ''}</div>
       <div class="foot stack">${btn}${extra}${gear && G.repairCost(it.id) ? repairBtn(it.id) : ''}</div>
@@ -907,7 +908,8 @@
     if (cat === 'pets') {
       const pstat = (p) => 'HP ' + G.petMax(p.id) + ' · ' + ({ attack: 'Attacker', shoot: 'Shooter', heal: 'Healer', guard: 'Guardian' })[p.role];
       const birds = (D.STATE_BIRDS || []).filter((p) => G.owns('pet', p.id));   // bird pets from the old bird quests: kept if you own them, no longer earnable
-      return `<div class="grid">${byUnlock(D.PETS.filter((p) => !p.bird)).map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div>${birds.length ? `
+      const pl = D.PETS.filter((p) => !p.bird && (G.inShop(p) || G.owns('pet', p.id))), pev = pl.filter((p) => p.req.event && G.eventOn(p.req.event));   // event pets first, gone after
+      return `<div class="grid">${[...pev, ...byUnlock(pl.filter((p) => !pev.includes(p)))].map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div>${birds.length ? `
         <div class="sect" id="state-birds"><h2>Bird pets you earned <span class="aside">${birds.length}</span></h2>
           <p class="fine">Earned on the old bird quests. They stay yours, but no new ones can be earned.</p>
           <div class="grid">${birds.map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div></div>` : ''}`;

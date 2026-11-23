@@ -8,10 +8,10 @@ Writes assets/av/adventurer.png, and the adventurer entry in js/assets.js (frame
 The old Adventurer was a 40 px chibi sprite, frozen mid-run in every row (no real idle). This one stands and
 breathes like Scavenger, Wandering Mage and Healer, with their outlines, proportions and animations:
   a fantasy scout: forest-green coat (the "o" dye group in js/02-data.js), the hood down on his shoulders (the "t"
-  group), a short green cloak at his back · laced leather jerkin · belt with a brass buckle · leather leggings and boots ·
-  chestnut hair · a steel sword with a gold crossguard in place of the club, and pale blade flashes on the swing.
+  group), a long dark-green cape that sways as he walks · bald, with a chestnut beard · laced leather jerkin · belt with a brass buckle · leather leggings and boots ·
+  a steel sword with a gold crossguard in place of the club, and pale blade flashes on the swing.
 """
-import sys, os, json, re
+import sys, os, json, re, math
 from PIL import Image
 
 APP = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,14 +29,14 @@ PUFF_HOOD = False
 
 NEW = {
     'coat': {COAT_D: H('#2f4526'), COAT_L: H('#4e6b35')},     # forest-green scout's cloak-coat ("o" dye group)
-    'hair': {COAT_D: H('#6e3d1c'), COAT_L: H('#a0662f')},     # chestnut hair
+    'hair': {COAT_D: H('#e9b5a3'), COAT_L: H('#e9b5a3')},     # bald: the scalp is skin (skin tones recolour it)
     'beard': {COAT_D: H('#5a3218'), COAT_L: H('#8a5428')},    # chestnut beard
     'boot': {COAT_D: H('#2e1d14'), COAT_L: H('#4d3222')},     # soft leather boots
     'pants': {PANTS_D: H('#4a3424'), PANTS_L: H('#6b4c33')},  # leather leggings
     'shirt': {SHIRT_L: H('#8a5a34'), SHIRT_D: H('#5e3b22')},  # laced leather jerkin
     'scarf': {TAN_L: H('#7d9a4c'), TAN_D: H('#4f6a2f')},      # the hood, folded on the shoulders (the old collar; "t" dye group)
     'belt': H('#2a1a10'), 'buckle': H('#d6a843'),             # belt and brass buckle
-    'cape': (H('#3d5a2f'), H('#2a3f22')),                     # a short cloak behind the back (inner, outer)
+    'cape': (H('#22351c'), H('#34502a')),                     # the cape: dark forest green, with lighter folds
     'blade': {TAN_L: H('#d5ddee'), TAN_D: H('#a9b3c9'), CLUB_D: H('#7c879f')},   # steel sword
     'flash': H('#dfe9ff'),
     'grip': H('#3a2418'), 'guard': H('#d6a843'),             # the sword's hilt                                     # the swing's streaks
@@ -74,7 +74,7 @@ def find_head(f, tpl):
             if n > best: best, at = n, (ox, oy)
     return at, best / len(tpl)
 
-def frame(img, tpl):
+def frame(img, tpl, row=0, ci=0, n=1):
     f = img.load(); w = h = FS
     col = lambda x, y: f[x, y][:3] if f[x, y][3] else None
     out = img.copy(); o = out.load()
@@ -114,6 +114,10 @@ def frame(img, tpl):
         for x, y in c: put(x, y, NEW[part][col(x, y)])
     for x, y in hair:
         if col(x, y) in COAT: put(x, y, (NEW['beard'] if (x, y) in beard else NEW['hair'])[col(x, y)])
+    if at and score > 0.6:   # bald: the scalp's back edge in shadow, so the head stays round
+        bk = 1 if use is tpl else -1
+        for x, y in hair - beard:
+            if 0 <= x - bk < w and o[x - bk, y][:3] == OUTLINE and o[x, y][:3] == NEW['hair'][COAT_L]: o[x, y] = H('#ba756a') + (255,)
     # stubble the head match missed (a dark pixel between skin pixels) is beard, not coat
     skin_c = {H('#e9b5a3'), H('#ba756a')}
     inv = {v: k for k, v in NEW['coat'].items()}
@@ -148,23 +152,23 @@ def frame(img, tpl):
             mid = sum(sx) / len(sx); bx, by = min(belt, key=lambda p: abs(p[0] - mid))
             for x in (bx, bx + 1):
                 if (x, by) in dict.fromkeys(belt) or col(x, by) in (PANTS_D, PANTS_L): put(x, by, NEW['buckle'])
-    # 6. a short cloak hanging behind the back (the side he walks away from), drawn only where nothing else is
-    torso = [p for p in (comps(o, w, h, lambda x, y: o[x, y][3] and o[x, y][:3] in NEW['coat'].values()) or [[]])]
-    torso = max(torso, key=len) if torso else []
-    if len(torso) > 60:
-        ty0, ty1 = min(y for _, y in torso), max(y for _, y in torso)
-        left = {}
-        for x, y in torso:
-            if y not in left or x < left[y]: left[y] = x
-        span, last = max(1, ty1 - ty0), None
-        for y in range(ty0 + 2, ty1 + 4):
-            if y in left: last = left[y]
-            if last is None: continue
-            wd = 1 + int(3 * (y - ty0) / span) + (1 if (y + ty0) % 5 == 0 and y > ty0 + 6 else 0)
-            for k in range(1, wd + 2):
-                x = last - k
-                if x < 0 or o[x, y][3]: continue
-                o[x, y] = (OUTLINE if k == wd + 1 or y == ty1 + 3 else NEW['cape'][0] if k == 1 else NEW['cape'][1]) + (255,)
+    # 6. a cape from the shoulders to below the knees, behind the body (only where nothing else is drawn), with folds,
+    #    swaying when he walks and streaming back when he runs
+    if at and score > 0.6:
+        y0, coat_c = at[1] + 13, set(NEW['coat'].values())
+        back = [x for y in range(y0, y0 + 5) for x in range(w) if o[x, y][3] and o[x, y][:3] in coat_c]
+        if back:
+            x0, yb, ph = min(back), min(h - 3, y0 + 36), 2 * math.pi * ci / max(1, n)
+            for y in range(y0, yb + 1):
+                t = (y - y0) / (yb - y0)
+                sway = 1.6 * math.sin(ph + t * 3) + 3 * t if row in (1, 2) else 0.7 * math.sin(ph + t * 2) if row == 0 else 0
+                if row == 2: sway += 3 * t     # running: the cape streams out behind
+                outer, inner = x0 - round(2 + 6 * t + sway), x0 + 7
+                for x in range(max(0, outer), inner + 1):
+                    if o[x, y][3]: continue
+                    hem = y == yb or (y == yb - 1 and (x - outer) % 3 == 0)   # a ragged hem
+                    edge = x == outer or (x == inner and x + 1 < w and not o[x + 1, y][3])
+                    o[x, y] = (OUTLINE if edge or hem else NEW['cape'][1] if (x - outer) % 4 == 2 else NEW['cape'][0]) + (255,)
     return out, score
 
 def main():
@@ -174,7 +178,7 @@ def main():
         for c in range(sheet.width // FS):
             fr = sheet.crop((c * FS, r * FS, c * FS + FS, r * FS + FS))
             if not fr.getbbox(): continue
-            nf, s = frame(fr, tpl); out.paste(nf, (c * FS, r * FS)); scores.append(round(s, 2))
+            nf, s = frame(fr, tpl, r, c, sum(1 for k in range(sheet.width // FS) if sheet.crop((k * FS, r * FS, k * FS + FS, r * FS + FS)).getbbox())); out.paste(nf, (c * FS, r * FS)); scores.append(round(s, 2))
             if s <= 0.6: print('  head not matched: row', r, 'frame', c, round(s, 2))
     out.save(OUT, optimize=True)
     # the sheet's frames, boxes and hand points are the Marauder's
