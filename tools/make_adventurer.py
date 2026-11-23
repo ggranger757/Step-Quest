@@ -7,8 +7,9 @@ Writes assets/av/adventurer.png, and the adventurer entry in js/assets.js (frame
 
 The old Adventurer was a 40 px chibi sprite, frozen mid-run in every row (no real idle). This one stands and
 breathes like Scavenger, Wandering Mage and Healer, with their outlines, proportions and animations:
-  a fantasy scout: forest-green coat (the "o" dye group in js/02-data.js), the hood down on his shoulders (the "t"
-  group), a long dark-green cape that sways as he walks · bald, with a chestnut beard · laced leather jerkin · belt with a brass buckle · leather leggings and boots ·
+  a fantasy scout: forest-green coat (the "o" dye group in js/02-data.js), the hood down on his shoulders and a long
+  cape in the same colors (both the "t" group), swaying as he walks · a gunmetal helmet with a black visor and orange
+  accents (after a sci-fi helmet reference) · a chestnut beard · laced leather jerkin · belt with a brass buckle · leather leggings and boots ·
   a steel sword with a gold crossguard in place of the club, and pale blade flashes on the swing.
 """
 import sys, os, json, re, math
@@ -36,7 +37,9 @@ NEW = {
     'shirt': {SHIRT_L: H('#8a5a34'), SHIRT_D: H('#5e3b22')},  # laced leather jerkin
     'scarf': {TAN_L: H('#7d9a4c'), TAN_D: H('#4f6a2f')},      # the hood, folded on the shoulders (the old collar; "t" dye group)
     'belt': H('#2a1a10'), 'buckle': H('#d6a843'),             # belt and brass buckle
-    'cape': (H('#22351c'), H('#34502a')),                     # the cape: dark forest green, with lighter folds
+    'cape': (H('#4f6a2f'), H('#7d9a4c')),                     # the cape: the hood collar's own two colors ("t" dye group), so they change together
+    'helm': {'g0': H('#23262c'), 'g1': H('#3c4049'), 'g2': H('#5d6470'), 'v': H('#15171b'), 'vl': H('#6d7480'),
+             'o': H('#f08a1e'), 'ol': H('#ffb04a')},           # the helmet: gunmetal plates, black visor, orange accents
     'blade': {TAN_L: H('#d5ddee'), TAN_D: H('#a9b3c9'), CLUB_D: H('#7c879f')},   # steel sword
     'flash': H('#dfe9ff'),
     'grip': H('#3a2418'), 'guard': H('#d6a843'),             # the sword's hilt                                     # the swing's streaks
@@ -169,6 +172,35 @@ def frame(img, tpl, row=0, ci=0, n=1):
                     hem = y == yb or (y == yb - 1 and (x - outer) % 3 == 0)   # a ragged hem
                     edge = x == outer or (x == inner and x + 1 < w and not o[x + 1, y][3])
                     o[x, y] = (OUTLINE if edge or hem else NEW['cape'][1] if (x - outer) % 4 == 2 else NEW['cape'][0]) + (255,)
+    # 7. the helmet (gunmetal plates, a black visor slab over the eyes, a round ear pod with an orange core, flat fins
+    #    sweeping back, an orange canister on top, a cheek guard; the mouth stays bare), drawn in head coordinates
+    #    (dx 0-10 from the back of the head to the face, dy 0-10 from the crown down), only over the head itself
+    if at and score > 0.6:
+        hc = NEW['helm']
+        X = (lambda dx: at[0] + dx) if use is tpl else (lambda dx: at[0] + 10 - dx)
+        head = {(X(dx), at[1] + dy) for dx, dy in tpl}
+        helm = {}
+        def hp(dx, dy, c): helm[(X(dx), at[1] + dy)] = hc[c]
+        rows = {0: (2, 7), 1: (1, 8), 2: (0, 9), 3: (0, 9)}                       # the dome, over the crown and back
+        for dy, (a0, a1) in rows.items():
+            for dx in range(a0, a1 + 1): hp(dx, dy, 'g2' if dy == 0 else 'g0' if dx <= a0 + 1 else 'g1')
+        for dx in range(3, 7): hp(dx, -1, 'g1')                                  # a raised plate on the crown
+        hp(5, -2, 'ol'); hp(6, -2, 'o'); hp(5, -3, 'g0'); hp(6, -3, 'g0')        # the orange canister on top
+        for dx in range(-3, 1): hp(dx, 1, 'g1')                                  # flat fins sweeping back
+        for dx in range(-2, 1): hp(dx, 2, 'o')
+        for dx in range(0, 11):                                                  # the visor: a black slab over the eyes,
+            for dy in (4, 5, 6):                                                 # jutting past the face
+                if dx >= 3 or dy == 4: hp(dx, dy, 'v')
+        for dx in range(6, 10): hp(dx, 4, 'vl')                                  # a thin reflection along its top
+        hp(10, 5, 'o')                                                           # an orange light at its tip
+        for dx, dy in ((0, 5), (1, 5), (2, 5), (0, 6), (2, 6), (0, 7), (1, 7), (2, 7)): hp(dx, dy, 'g0')   # the ear pod
+        hp(1, 6, 'o'); hp(1, 5, 'ol')
+        for dy in (7, 8, 9): hp(3, dy, 'g1')                                     # a slim guard down the jaw
+        for (x, y), c in helm.items():
+            if 0 <= x < w and 0 <= y < h and ((x, y) in head or not o[x, y][3]): o[x, y] = c
+        for (x, y) in list(helm):                                                # its outline, where it meets the air
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if 0 <= nx < w and 0 <= ny < h and not o[nx, ny][3] and (nx, ny) not in helm: o[nx, ny] = OUTLINE + (255,)
     return out, score
 
 def main():

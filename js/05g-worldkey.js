@@ -1,7 +1,7 @@
 /* Step Quest — Worldkey rules: energy, charging with artifacts, resonance, the travel gate and what it says.
    Every change of state happens here, once, and only after its checks pass; screens only call these functions.
    Energy only goes down when a world opens (it never fades).
-   Tuning (3.4.0): each Worldkey holds its own tuning, which drifts down a gauge and runs out K.TUNE_HOURS (2 h) after you
+   Tuning (3.4.0): each Worldkey holds its own tuning, which drifts down a gauge and runs out K.TUNE_HOURS (3 h since 3.10.3) after you
    tune it. Every key tunes with its own mini-game (05o-wkgames.js). A newly discovered world also needs a LOCK: a tuning
    played after you found it, while the key is in tune, so every new world is opened with a fresh tuning. */
 (() => {
@@ -67,7 +67,7 @@
   // next locked world, which can be tuned in advance but not opened yet.
   G.wkDest = () => { const w = G.wk(); return D.worldById[w.found[0]] || G.nextWorld() || null; };
   // ---------- tuning: one gauge per Worldkey, drifting from 100% to 0 over K.TUNE_HOURS ----------
-  K.TUNE_HOURS = 2;
+  K.TUNE_HOURS = 3;   // 3.10.3: was 2; keys drift out of tune more slowly
   K.DRIFT_PCT = 25;   // at or below this the key is "drifting" and says so
   const span = () => K.TUNE_HOURS * 3600000;
   G.wkTunedAt = (look) => G.wk().tunes[look || G.wk().look] || 0;
