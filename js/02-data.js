@@ -463,9 +463,10 @@
   // Seasonal events: a walker or pet (cat + item) on sale from `from` to `until` (both days included, the phone's local
   // date). Before `from` it isn't in the app at all. When it starts, players see the offer once (07r-events-ui.js);
   // when it ends, it leaves the Shop for good, and anyone who bought it keeps it. lights: Christmas lights on its card.
+  // shows: how many app opens show its pop-up (until the player buys it).
   D.EVENTS = {
-    thanks: { id: 'thanks2026', name: 'Thanksgiving', cat: 'pet', item: 'turkey', from: '2026-11-23', until: '2026-11-25', untilText: 'November 25' },
-    xmas: { id: 'xmas2026', name: 'Christmas', cat: 'avatar', item: 'santa', from: '2026-11-30', until: '2026-12-25', untilText: 'December 25', lights: true },
+    thanks: { id: 'thanks2026', name: 'Thanksgiving', cat: 'pet', item: 'turkey', from: '2026-11-23', until: '2026-11-25', untilText: 'November 25', shows: 3 },
+    xmas: { id: 'xmas2026', name: 'Christmas', cat: 'avatar', item: 'santa', from: '2026-11-30', until: '2026-12-25', untilText: 'December 25', lights: true, shows: 3 },
   };
   // 3.5.0: walkers are never handed out. A level, streak, step count or explored world only UNLOCKS a walker;
   // you always buy it in Shop → Avatars. Walkers that used to be free get a price that fits what unlocks them.
@@ -564,7 +565,7 @@
     { id: 'cm49', name: 'Plume', kind: 'Owl spirit', src: 'pet', hop: true, req: { streak: 45 } },
     { id: 'cm50', name: 'Ruckus', kind: 'Horned brute', src: 'pet', hop: true, req: { steps: 500000 } },
     // 3.10.3: event pets (D.EVENTS): any level, sold only while the event runs; yours to keep once bought
-    { id: 'turkey', name: 'Gobbles', kind: 'Turkey', src: 'pet', req: { cost: 1000, event: 'thanks' } },
+    { id: 'turkey', name: 'Gobbles', kind: 'Turkey', src: 'pet', req: { cost: 2700, event: 'thanks' } },
   ];
   // Pets have their own health and take part of every hit aimed at you in battle (share = 20% to 60%).
   // Bigger and tougher companions take more. A pet at 0 HP is knocked out until it heals: pets refill

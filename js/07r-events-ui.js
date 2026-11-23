@@ -4,7 +4,8 @@
      its list, with an "Until …" tag; Christmas items get a string of lights), for any level.
    · The first time a player is in the app while the event runs (after sign-up and the tour for new players, on
      their next open for everyone else), a pop-up announces it: what it is, the price, how many days are left, and
-     that it's theirs to keep. Once per event, and not if they already own it.
+     that it's theirs to keep. On the first `shows` opens (3) while it runs, one per open, and never once they own
+     it. An open is a launch, or coming back to the app after 30+ minutes away.
    · After the last day it leaves the Shop; anyone who bought it keeps it. */
 (() => {
   const D = WB.DATA, G = WB.Game, UI = WB.UI, $ = WB.$, S = () => WB.state, esc = WB.esc;
@@ -14,8 +15,11 @@
   const daysLeft = (e) => { const [y, m, d] = e.until.split('-').map(Number), end = new Date(y, m - 1, d), now = new Date(); now.setHours(0, 0, 0, 0); return Math.round((end - now) / 864e5) + 1; };
   const leftText = (e) => { const n = daysLeft(e); return n <= 1 ? 'Last day!' : n + ' days left'; };
 
-  // is this event's pop-up still to be shown? (running, not seen yet, item not owned)
-  const due = (k) => { const e = D.EVENTS[k], s = S(); return !!(e && s && G.eventOn(k) && !(s.hints.events || {})[e.id] && !G.owns(e.cat, e.item)); };
+  // how many times a player has seen an event's pop-up (older saves kept a timestamp for "seen once")
+  const seen = (e) => { const v = ((S().hints.events || {})[e.id]) || 0; return v > 1000 ? 1 : v; };
+  // is this event's pop-up to be shown on this open? (running, shown fewer than `shows` times, not this open yet, not owned)
+  const thisOpen = new Set();
+  const due = (k) => { const e = D.EVENTS[k], s = S(); return !!(e && s && G.eventOn(k) && seen(e) < (e.shows || 1) && !thisOpen.has(e.id) && !G.owns(e.cat, e.item)); };
   // in the app with nothing else on screen: signed up, tour done, no sheet, battle, intro or tour open
   const quiet = () => {
     const s = S();
@@ -40,7 +44,7 @@
   // the pop-up: the item in a little looping animation, what it is, the price, the last day and the days left
   function offer(k) {
     const e = D.EVENTS[k], it = itemOf(e), s = S(), cost = it.req.cost, short = cost - s.coins, pet = e.cat === 'pet';
-    (s.hints.events = s.hints.events || {})[e.id] = Date.now(); WB.Save.queue();   // shown once
+    (s.hints.events = s.hints.events || {})[e.id] = seen(e) + 1; thisOpen.add(e.id); WB.Save.queue();   // one more showing
     WB.Sfx.play('unlock');
     const what = pet ? it.name + ' the ' + it.kind : it.name, him = pet ? 'it' : 'him', He = pet ? 'It' : 'He';
     const pitch = pet
@@ -101,7 +105,13 @@
   }
 
   // started from the app's start-up (08-main.js startApp): players who already play see it on this open; new players
-  // after sign-up and the tour (quiet() waits for both). Coming back to the app checks again (a new event may have begun).
+  // after sign-up and the tour (quiet() waits for both). Coming back after 30+ minutes away is a new open; any return
+  // checks again (an event may have begun since).
   WB.Events = { check, offer, due, daysLeft };
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S() && S().onboarded) check(); });
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+    if (hiddenAt && Date.now() - hiddenAt >= 30 * 60e3) thisOpen.clear();
+    if (S() && S().onboarded) check();
+  });
 })();

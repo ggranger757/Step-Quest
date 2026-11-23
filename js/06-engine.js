@@ -92,6 +92,8 @@
     const info = kind === 'av' ? M.avatars[id] : kind === 'cr' ? M.creatures[id] : kind === 'pet' ? M.pets[id] : M.npc[id];
     let k = anim;
     if (!info.anims[k]) k = (FALLBACK[anim] || ['idle']).find((x) => info.anims[x]) || 'idle';
+    // 3.10.3: a creature drawn facing the camera can have side-on rows for battle (b_idle, b_attack...): the Druid
+    if (info.battle && info.anims['b_' + k] && document.documentElement.classList.contains('battling')) k = 'b_' + k;
     const a = info.anims[k];
     const folder = { av: 'av', cr: 'cr', pet: 'pet', npc: 'npc' }[kind];
     return { path: `${folder}/${id}.png`, r: a.r, n: a.n, box: a.b, fs: info.fs, scale: info.scale || 1, anim: k, face: info.face || 'right' };
