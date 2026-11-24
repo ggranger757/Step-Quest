@@ -184,7 +184,7 @@
         ${wp ? `<div class="wk-next">
             <div class="wk-next-h"><span class="lbl">Reach ${esc(dest.name)}</span><b>${pct}%</b></div>
             <div class="bar seg cyan" role="progressbar" aria-label="Progress to ${esc(dest.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
-            <p class="fine"><span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Level ${dest.unlock.level}</span>${wp.prev ? ` · <span class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : ''}${G.gatePct(dest)}% of ${esc(wp.prev.name)}</span>` : ''} · ~${WB.fmt(wp.stepsLeft)} steps</p>
+            <p class="fine"><span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Level ${dest.unlock.level}</span>${wp.prev ? ` · <span class="${wp.exploreOk ? 'ok' : ''}">${wp.exploreOk ? WB.icon('check', 1) : ''}${G.gatePct(dest)}% of ${esc(wp.prev.name)}</span>` : ''}${wp.guardian ? ` · <span class="${wp.guardOk ? 'ok' : ''}">${wp.guardOk ? WB.icon('check', 1) : ''}${WB.UI.guardReq(wp)}</span>` : ''}${wp.exploreOk ? '' : ` · ~${WB.fmt(wp.stepsLeft)} steps`}</p>
           </div>` : ''}
         <div class="wk-acts">${step && step.act !== 'tune' ? `<button class="btn ${step.cls}" type="button" data-wk="${step.act}" data-wid="${dest ? dest.id : ''}">${step.cls === 'tertiary' ? '<span class="tl"><span>' + esc(step.label) + '</span></span>' : esc(step.label)}</button>` : ''}<button class="btn ghost sm wk-keys" type="button" data-wk="custom">${WB.icon('key', 2)}Worldkeys</button></div>
       </div>

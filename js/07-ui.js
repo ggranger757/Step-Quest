@@ -228,7 +228,7 @@
     const items = [
       ...(inRange(D.BATTLE_LEVEL) ? [{ n: 'Battles', sub: 'Creatures and the Druid now roam', icon: 'sword' }] : []),
       ...(inRange(D.MERLIN_MIN_LEVEL) ? [{ n: 'Merlin’s Eggs', sub: 'Walk to hatch eggs and answer quizzes', icon: 'feather' }] : []),
-      ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · use your Worldkey' : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name, icon: 'map' })),
+      ...D.WORLDS.filter((w) => inRange(w.unlock.level) && !S().unlocked.includes(w.id)).map((w) => ({ n: w.name, sub: G.gateMet(w) ? 'New world · use your Worldkey' : G.exploreMet(w) && G.guardianOf(w.unlock.after) ? 'New world · defeat ' + G.guardianOf(w.unlock.after).name : 'New world · explore ' + G.gatePct(w) + '% of ' + D.worldById[w.unlock.after].name, icon: 'map' })),
       ...D.WK_LOOKS.filter((k) => G.featOn('wk') && k.req.level && inRange(k.req.level)).map((k) => ({ n: k.name + ' Worldkey', sub: D.wkVoiceById[k.voice].name + ' · ' + WB.fmt(k.req.cost) + ' coins', icon: 'key', cat: 'wk', id: k.id })),
       ...D.AVATARS.filter((a) => a.req.level && inRange(a.req.level)).map((a) => ({ n: a.name, sub: 'Walker · ' + price(a.req), thumb: { kind: 'av', id: a.id, head: true, face: 'right' }, cat: 'avatar', id: a.id })),
       ...D.PETS.filter((p) => p.req.level && inRange(p.req.level)).map((p) => ({ n: p.name, sub: 'Pet · ' + price(p.req), thumb: { kind: p.src, id: p.id, face: 'right' }, cat: 'pet', id: p.id })),
@@ -314,7 +314,7 @@
       </div>` : nw ? `<div class="next-unlock pbox card">
         <div class="obj-head"><span class="lbl">Next world</span><span class="lbl">about ${WB.fmt(G.worldProgress(nw).stepsLeft)} steps to go</span></div>
         <div class="nu-line"><strong>${WB.esc(nw.name)}</strong></div>
-        <div class="nu-req">${(() => { const wp = G.worldProgress(nw); return `<span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Reach level ${nw.unlock.level}</span>${wp.prev ? `<span class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : ''}Explore ${G.gatePct(nw)}% of ${WB.esc(wp.prev.name)}</span>` : ''}`; })()}</div>
+        <div class="nu-req">${(() => { const wp = G.worldProgress(nw); return `<span class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : ''}Reach level ${nw.unlock.level}</span>${wp.prev ? `<span class="${wp.exploreOk ? 'ok' : ''}">${wp.exploreOk ? WB.icon('check', 1) : ''}Explore ${G.gatePct(nw)}% of ${WB.esc(wp.prev.name)}</span>` : ''}${wp.guardian ? `<span class="${wp.guardOk ? 'ok' : ''}">${wp.guardOk ? WB.icon('check', 1) : ''}${UI.guardReq(wp)}</span>` : ''}`; })()}</div>
         <div class="bar seg cyan"><i style="width:${G.worldProgress(nw).pct}%"></i></div>
       </div>` : `<div class="next-unlock pbox card"><span class="lbl">Every world unlocked</span><div class="nu-line">Keep exploring for artifacts and rewards.</div></div>`}
     `);
@@ -749,6 +749,8 @@
   const ART_TABS = [['finds', 'Artifacts', 'img:art/m30.png', '']];
   const GEAR = ['weapons', 'potions', 'pets'];
   // open a hub (and one of its sections) from anywhere
+  // the guardian requirement of a world (3.10.4): "Defeat Battle Turtle", and when battles aren't open yet, when they open
+  UI.guardReq = (wp) => 'Defeat ' + WB.esc(wp.guardian.name) + (wp.guardOk || G.battlesOpen() ? '' : ' (battles open at level ' + D.BATTLE_LEVEL + ')');
   UI.goHub = (hub, sub, opt) => {
     UI.hub = hub; if (hub !== 'shop') UI.invHub = hub;
     if (sub) { if (hub === 'shop') UI.shopTab = sub; else if (hub === 'bag') UI.bagTab = sub; else UI.artTab = sub; }
@@ -1031,12 +1033,18 @@
   // Profile → Achievements
   UI.achList = () => { if (G.checkAchievements) G.checkAchievements(); const s = S(), st = G.stats(), row = (a) => {   // anything already reached is earned first
     const has = !!s.ach[a.id], cur = st[a.stat];
-    return `<div class="ach pbox ${has ? 'got' : 'locked'}"><span class="a-badge">${WB.pxImg('ach/' + a.id + '.png', 48)}${has ? '' : `<span class="b-lock">${WB.icon('lock', 1)}</span>`}</span><div class="a-b"><div class="a-t">${a.title}</div><div class="a-d">${a.desc}</div>${has ? '' : `<div class="a-p"><span class="bar seg"><i style="width:${Math.min(100, (cur / a.target) * 100)}%"></i></span><span class="lbl">${WB.fmt(Math.min(cur, a.target))} / ${WB.fmt(a.target)}</span></div>`}</div><div class="a-r">${has ? WB.icon('check', 2) : WB.esc(G.rewardText(a.reward))}</div></div>`;
-  };
+    return `<div class="ach pbox ${has ? 'got' : 'locked'}"><span class="a-badge">${WB.pxImg('ach/' + a.id + '.png', 48)}${has ? '' : `<span class="b-lock">${WB.icon('lock', 1)}</span>`}</span><div class="a-b"><div class="a-t">${a.title}</div><div class="a-d">${a.desc}</div>${has ? '' : `<div class="a-p"><span class="bar seg"><i style="width:${Math.min(100, (cur / a.target) * 100)}%"></i></span><span class="lbl">${WB.fmt(Math.min(cur, a.target))} / ${WB.fmt(a.target)}</span></div>`}${has ? `<div class="a-when">Earned ${WB.esc(when(s.ach[a.id]))} · ${WB.esc(G.rewardText(a.reward))}</div>` : ''}</div><div class="a-r">${has ? WB.icon('check', 2) : WB.esc(G.rewardText(a.reward))}</div></div>`;
+  }, when = (t) => { if (typeof t !== 'number' || t < 1e12) return 'earlier'; const d = new Date(t); return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) }); };
     // in progress first (closest to done at the top), then everything earned
     const todo = D.ACHIEVEMENTS.filter((a) => !s.ach[a.id]).sort((x, y) => Math.min(1, st[y.stat] / y.target) - Math.min(1, st[x.stat] / x.target));
     const done = D.ACHIEVEMENTS.filter((a) => s.ach[a.id]).sort((x, y) => s.ach[y.id] - s.ach[x.id]);
-    return `${todo.length ? `<div class="sect"><h2>In progress <span class="aside">${todo.length}</span></h2><div class="list">${todo.map(row).join('')}</div></div>` : ''}${done.length ? `<div class="sect"><h2>Earned <span class="aside">${done.length}</span></h2><div class="list">${done.map(row).join('')}</div></div>` : ''}`; };
+    // filter: In progress / Earned / All (remembered while the app is open)
+    const f = ['todo', 'done', 'all'].includes(UI.achF) ? UI.achF : 'todo';
+    const tabs = `<div class="seg ach-f" role="tablist" aria-label="Show awards">${[['todo', 'To earn', todo.length], ['done', 'Earned', done.length], ['all', 'All', D.ACHIEVEMENTS.length]].map(([id, l, n]) => `<button type="button" role="tab" data-achf="${id}" aria-selected="${f === id}" aria-pressed="${f === id}">${l} <span class="n">${n}</span></button>`).join('')}</div>`;
+    const sect = (h, list, empty) => `<div class="sect">${h ? `<h2>${h} <span class="aside">${list.length}</span></h2>` : ''}${list.length ? `<div class="list">${list.map(row).join('')}</div>` : `<p class="scr-note ach-empty">${empty}</p>`}</div>`;
+    return tabs + (f === 'todo' ? sect('', todo, 'You’ve earned every award. Amazing!')
+      : f === 'done' ? sect('', done, 'No awards yet. Keep walking: your first one is close!')
+      : sect('Earned', done, 'None yet.') + sect('In progress', todo, 'All done!')); };
 
   // ---------- PROFILE ----------
   const anims = [];
@@ -1080,7 +1088,7 @@
     const s = S(), sv = G.streakView();
     const span = [7, 14, 30].includes(s.settings.chartDays) ? s.settings.chartDays : 14;   // the chart's range: 7, 14 or 30 days
     const days = []; for (let i = span - 1; i >= 0; i--) { const k = WB.addDays(WB.dayKey(), -i); days.push([k, s.days[k] || 0]); }
-    const tab = ['settings', 'ach'].includes(UI.pfTab) ? UI.pfTab : 'overview';
+    const tab = ['settings', 'ach'].includes(UI.pfTab) || (UI.pfTab === 'ranks' && WB.LB && WB.LB.on()) ? UI.pfTab : 'overview';
     // tapping a bar shows that day's steps (defaults to today); the pick sticks while it is still inside the range
     const selDay = days.some((d) => d[0] === UI.chartSel) ? UI.chartSel : days[days.length - 1][0];
     const chartRead = (k, plain) => { const v = s.days[k] || 0, d = WB.parseDay(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }), t = k === WB.dayKey() ? 'Today · ' : ''; return plain ? t + d + ': ' + WB.fmt(v) + ' steps' : `<span class="cr-d">${WB.esc(t + d)}</span><b>${WB.fmt(v)} steps</b><span class="cr-s ${v >= s.settings.streakMin ? 'ok' : ''}">${v >= s.settings.streakMin ? 'Streak day' : WB.fmt(s.settings.streakMin) + '+ for a streak'}</span>`; };
@@ -1096,8 +1104,8 @@
     const st = WB.Steps.status;
     const pf = $('#scr-profile'); pf._html = null; pf.innerHTML = `<div class="scr-wrap">
       <div class="scr-head pf-head"><h1>Profile</h1></div>
-      <div class="seg pf-tabs" role="tablist" aria-label="Profile sections">${[['overview', 'Overview', 'user'], ['ach', 'Achievements', 'trophy', 'Awards'], ['settings', 'Settings', 'gear']].map(([id, l, ic, short]) => `<button type="button" role="tab" data-pftab="${id}" aria-selected="${tab === id}" aria-pressed="${tab === id}"${short ? ` aria-label="${l}"` : ''}>${WB.icon(ic, 2)}${short ? `<span class="l-long" aria-hidden="true">${l}</span><span class="l-short" aria-hidden="true">${short}</span>` : `<span>${l}</span>`}</button>`).join('')}</div>
-      ${tab === 'ach' ? `<p class="scr-note">Milestones that pay coins and XP. ${Object.keys(s.ach).length} of ${D.ACHIEVEMENTS.length} earned.</p>${UI.achList()}` : tab === 'overview' ? `
+      <div class="seg pf-tabs" role="tablist" aria-label="Profile sections">${[['overview', 'Overview', 'user'], ['ach', 'Achievements', 'trophy', 'Awards'], ...(WB.LB && WB.LB.on() ? [['ranks', 'Leaderboard', 'flag', 'Ranks']] : []), ['settings', 'Settings', 'gear']].map(([id, l, ic, short]) => `<button type="button" role="tab" data-pftab="${id}" aria-selected="${tab === id}" aria-pressed="${tab === id}"${short ? ` aria-label="${l}"` : ''}>${WB.icon(ic, 2)}${short ? `<span class="l-long" aria-hidden="true">${l}</span><span class="l-short" aria-hidden="true">${short}</span>` : `<span>${l}</span>`}</button>`).join('')}</div>
+      ${tab === 'ranks' ? '<div id="lb-root" class="lb"></div>' : tab === 'ach' ? `<p class="scr-note">Milestones that pay coins and XP. ${Object.keys(s.ach).length} of ${D.ACHIEVEMENTS.length} earned.</p>${UI.achList()}` : tab === 'overview' ? `
 
       <div class="hero pbox"><canvas width="144" height="144" id="pf-av"></canvas><div class="meta">
         <span class="title">${WB.esc(title())}</span>
@@ -1183,8 +1191,10 @@
       `}
     </div>`;
     if ($('#pf-av')) UI.animate($('#pf-av'), 'av', s.avatar, 'idle', s.skin);   // only on the Overview tab
+    if ($('#lb-root')) WB.LB.render($('#lb-root'));                              // Profile → Leaderboard (07s-leaderboard-ui.js)
     WB.$$('[data-prev]', pf).forEach((c) => paintPreview(c, ...c.dataset.prev.split(':')));
     const sel = (id, k, num) => { const el = $(id); if (el) el.onchange = (e) => { s.settings[k] = num(e.target.value); WB.Save.queue(); G.after(); UI.renderProfile(); }; };
+    WB.$$('[data-achf]', pf).forEach((b) => (b.onclick = () => { UI.achF = b.dataset.achf; WB.Sfx.play('tap'); const y = window.scrollY; UI.renderProfile(); window.scrollTo(0, y); }));
     WB.$$('[data-pftab]', pf).forEach((b) => (b.onclick = () => { UI.pfTab = b.dataset.pftab; WB.Sfx.play('tap'); UI.renderProfile(); window.scrollTo(0, 0); }));
     WB.$$('.bcol[data-day]', pf).forEach((b) => (b.onclick = () => {
       UI.chartSel = b.dataset.day; WB.Sfx.play('tap');
@@ -1328,7 +1338,7 @@
             <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${s.bosses[w.id] ? (G.battlesOpen() ? `<button class="btn ghost sm" type="button" data-boss="${w.id}" aria-label="Rematch: a random fight in ${WB.esc(w.name)}">Rematch</button>` : '') : pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : '<span class="lbl dim">Appears at 100%</span>'}</div></div>`
           : G.wk().found.includes(w.id) ? `<div class="wrow"><div class="wmeta"><span class="lbl here">Discovered</span><button class="btn gold sm" type="button" data-wk="gate" data-wid="${w.id}">Use Worldkey</button></div></div>`
           : `<div class="wrow"><span class="lbl wreq-h">${WB.icon('lock', 2)} To open this world</span>
-            <ul class="wreq"><li class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Reach level ${w.unlock.level}</li>${wp.prev ? `<li class="${wp.gateOk ? 'ok' : ''}">${wp.gateOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Explore ${G.gatePct(w)}% of ${WB.esc(wp.prev.name)}</li>` : ''}</ul>
+            <ul class="wreq"><li class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Reach level ${w.unlock.level}</li>${wp.prev ? `<li class="${wp.exploreOk ? 'ok' : ''}">${wp.exploreOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Explore ${G.gatePct(w)}% of ${WB.esc(wp.prev.name)}</li>` : ''}${wp.guardian ? `<li class="${wp.guardOk ? 'ok' : ''}">${wp.guardOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}${UI.guardReq(wp)}</li>` : ''}</ul>
             <div class="bar seg"><i style="width:${wp.pct}%"></i></div><div class="wmeta"><span class="lbl">${Math.floor(wp.pct)}% of the way</span><span class="lbl">about ${WB.fmt(wp.stepsLeft)} steps to go</span></div></div>`}
           </div></div>`;
       }).join('')}</div></div>`);

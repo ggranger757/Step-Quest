@@ -202,10 +202,14 @@
   };
   // a world opens when you reach its level AND have explored the world before it fully (D.WORLD_GATE_PCT = 100%)
   G.gatePct = (w) => Math.max(D.WORLD_GATE_PCT, (w.unlock && w.unlock.pct) || 0);
-  G.gateMet = (w) => !w.unlock.after || S().unlocked.includes(w.id) || G.explorePct(w.unlock.after) >= G.gatePct(w);
+  // 3.10.4: the next world also waits for the guardian of the world before it (met at 100% explored, or on the map)
+  G.guardianBeaten = (wid) => !!S().bosses[wid];
+  G.guardianOf = (wid) => { const w = D.worldById[wid]; return w && D.CREATURES[w.boss]; };
+  G.exploreMet = (w) => !w.unlock.after || G.explorePct(w.unlock.after) >= G.gatePct(w);
+  G.gateMet = (w) => !w.unlock.after || S().unlocked.includes(w.id) || (G.exploreMet(w) && G.guardianBeaten(w.unlock.after));
   G.worldReq = (w) => {
-    const prev = w.unlock.after && D.worldById[w.unlock.after];
-    return 'Reach level ' + w.unlock.level + (prev ? ' and explore ' + G.gatePct(w) + '% of ' + prev.name : '');
+    const prev = w.unlock.after && D.worldById[w.unlock.after], g = prev && G.guardianOf(prev.id);
+    return 'Reach level ' + w.unlock.level + (prev ? ', explore ' + G.gatePct(w) + '% of ' + prev.name + (g ? ' and defeat its guardian, ' + g.name : '') : '');
   };
   function openWorlds() {
     const s = S();
@@ -222,7 +226,9 @@
     // exploring: steps still to walk in the world before it (0 once it's explored far enough)
     const gateSteps = prev && !G.gateMet(w) ? Math.max(0, Math.ceil(prev.length * G.gatePct(w) / 100 - (S().worldSteps[prev.id] || 0))) : 0;
     const gatePct = prev ? Math.min(100, G.explorePct(prev.id) / G.gatePct(w) * 100) : 100;
-    return { pct: Math.min(xpPct, gatePct), xpLeft: Math.max(0, need - have), stepsLeft: Math.max(xpSteps, gateSteps), levelOk: S().level >= w.unlock.level, gateOk: G.gateMet(w), prev };
+    // guardOk: the guardian of the world before it is beaten; guardian: its creature (for "Defeat …")
+    return { pct: Math.min(xpPct, gatePct), xpLeft: Math.max(0, need - have), stepsLeft: Math.max(xpSteps, gateSteps), levelOk: S().level >= w.unlock.level, gateOk: G.gateMet(w),
+      exploreOk: G.exploreMet(w), guardOk: !prev || G.guardianBeaten(prev.id), guardian: prev && G.guardianOf(prev.id), prev };
   };
   function checkWorlds() {
     const s = S();
@@ -680,6 +686,7 @@
       else if (e.arena) { s.enc.rematches = (s.enc.rematches || 0) + 1; out.rematch = w; out.arena = true; if (Math.random() < 0.3) out.reward.potion = 'tonic'; }
       else if (e.boss) {
         s.bosses[w.id] = Date.now(); s.enc.bossDue = null; out.boss = w;
+        openWorlds();   // 3.10.4: beating the guardian may be the last thing the next world was waiting for
         out.reward.potion = 'elixir';
       } else if (Math.random() < (G.perk('loot') ? 0.6 : 0.3)) out.reward.potion = Math.random() < 0.8 ? 'tonic' : 'iron';
       if (G.perk('loot')) { out.reward.coins = Math.round(out.reward.coins * 1.5); out.backpack = true; }   // the backpack carries extra loot

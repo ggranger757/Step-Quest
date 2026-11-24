@@ -103,6 +103,49 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Leaderboards (free, optional)
+
+Weekly, monthly and all-time step leaderboards live in **Profile → Ranks**. The tab stays hidden until a server is set,
+so nothing changes for players until you finish these steps. The server is the small Cloudflare Worker in `push-server/`
+with a D1 database; both are free on Cloudflare's free plan (100,000 requests a day, far more than a leaderboard needs).
+
+1. Make a free account at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up) and install [Node.js](https://nodejs.org).
+2. In a terminal, from this repo:
+   ```sh
+   cd push-server
+   npm install
+   npx wrangler login
+   npx wrangler d1 create stepquest-push        # copy the database_id it prints into wrangler.toml
+   npx wrangler d1 execute stepquest-push --remote --file=schema.sql
+   npx wrangler secret put ADMIN_KEY            # make up a long password; only you use it (see below)
+   npx wrangler deploy                          # prints your URL, like https://stepquest-push.<you>.workers.dev
+   ```
+3. Paste that URL into `D.SERVER_URL = '';` near the top of `js/02-data.js`, commit and push. The Ranks tab appears.
+
+**How it works for players:** they choose to join, pick a public name (3–16 characters; rude names are refused), and
+their steps then update in the background. Only name, walker, level and steps are shown. Weeks run Monday to Sunday and
+months by the calendar, both by the player's own day. Players see the podium, the top 100, their own pinned rank with
+how many steps they need to pass the next person, and the players just above and below them. They can rename themselves or
+leave at any time (leaving deletes their data). The server refuses impossible numbers (over 100,000 steps a day, sudden
+jumps in all-time steps) to keep boards fair.
+
+**Moderating:** use your `ADMIN_KEY` to hide, show, rename or delete a player:
+```sh
+curl -X POST https://stepquest-push.<you>.workers.dev/lb/admin -H 'Content-Type: application/json' \
+  -d '{"key":"YOUR_ADMIN_KEY","action":"hide","name":"BadName"}'
+# action: hide | show | rename (add "newName":"...") | delete
+```
+
+## Changes in 3.10.5: leaderboards, guardians guard their worlds, small-phone battles
+- **Leaderboards** (Profile → Ranks): weekly, monthly and all-time step boards with a podium, your pinned rank and
+  "steps to pass" the next walker, and the players around you. Opt in with a public name; leave anytime. Needs the free
+  server set up once (see *Leaderboards* above); until then the tab is hidden.
+- **Defeat the guardian to move on:** a new world now opens only after you explore enough of the previous one *and*
+  beat its guardian. The World page, the World map and the Worldkey show both steps. Worlds you already opened stay open.
+- **Battles on small phones** (iPhone 12/13 mini, SE): actions stack one per row with the name and details on one line,
+  and the battle log keeps to 3 lines (scroll for more), so the menu fits.
+- **Awards:** filter by *To earn*, *Earned* or *All*; earned awards show the date you got them and what they paid.
+
 ## Changes in 3.10.4
 - **The event pop-up is properly centred.** Its title sat left of centre (the sheet title keeps room on the right for the close button), so it now has the same room on both sides; every line, the price row and the buttons are centred. The pet's title is shorter so it fits on one line ("Gobbles is here!").
 
