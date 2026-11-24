@@ -1088,7 +1088,7 @@
     const s = S(), sv = G.streakView();
     const span = [7, 14, 30].includes(s.settings.chartDays) ? s.settings.chartDays : 14;   // the chart's range: 7, 14 or 30 days
     const days = []; for (let i = span - 1; i >= 0; i--) { const k = WB.addDays(WB.dayKey(), -i); days.push([k, s.days[k] || 0]); }
-    const tab = ['settings', 'ach'].includes(UI.pfTab) || (UI.pfTab === 'ranks' && WB.LB && WB.LB.on()) ? UI.pfTab : 'overview';
+    const tab = ['settings', 'ach'].includes(UI.pfTab) ? UI.pfTab : 'overview';
     // tapping a bar shows that day's steps (defaults to today); the pick sticks while it is still inside the range
     const selDay = days.some((d) => d[0] === UI.chartSel) ? UI.chartSel : days[days.length - 1][0];
     const chartRead = (k, plain) => { const v = s.days[k] || 0, d = WB.parseDay(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }), t = k === WB.dayKey() ? 'Today · ' : ''; return plain ? t + d + ': ' + WB.fmt(v) + ' steps' : `<span class="cr-d">${WB.esc(t + d)}</span><b>${WB.fmt(v)} steps</b><span class="cr-s ${v >= s.settings.streakMin ? 'ok' : ''}">${v >= s.settings.streakMin ? 'Streak day' : WB.fmt(s.settings.streakMin) + '+ for a streak'}</span>`; };
@@ -1104,8 +1104,8 @@
     const st = WB.Steps.status;
     const pf = $('#scr-profile'); pf._html = null; pf.innerHTML = `<div class="scr-wrap">
       <div class="scr-head pf-head"><h1>Profile</h1></div>
-      <div class="seg pf-tabs" role="tablist" aria-label="Profile sections">${[['overview', 'Overview', 'user'], ['ach', 'Achievements', 'trophy', 'Awards'], ...(WB.LB && WB.LB.on() ? [['ranks', 'Leaderboard', 'flag', 'Ranks']] : []), ['settings', 'Settings', 'gear']].map(([id, l, ic, short]) => `<button type="button" role="tab" data-pftab="${id}" aria-selected="${tab === id}" aria-pressed="${tab === id}"${short ? ` aria-label="${l}"` : ''}>${WB.icon(ic, 2)}${short ? `<span class="l-long" aria-hidden="true">${l}</span><span class="l-short" aria-hidden="true">${short}</span>` : `<span>${l}</span>`}</button>`).join('')}</div>
-      ${tab === 'ranks' ? '<div id="lb-root" class="lb"></div>' : tab === 'ach' ? `<p class="scr-note">Milestones that pay coins and XP. ${Object.keys(s.ach).length} of ${D.ACHIEVEMENTS.length} earned.</p>${UI.achList()}` : tab === 'overview' ? `
+      <div class="seg pf-tabs" role="tablist" aria-label="Profile sections">${[['overview', 'Overview', 'user'], ['ach', 'Achievements', 'trophy', 'Awards'], ['settings', 'Settings', 'gear']].map(([id, l, ic, short]) => `<button type="button" role="tab" data-pftab="${id}" aria-selected="${tab === id}" aria-pressed="${tab === id}"${short ? ` aria-label="${l}"` : ''}>${WB.icon(ic, 2)}${short ? `<span class="l-long" aria-hidden="true">${l}</span><span class="l-short" aria-hidden="true">${short}</span>` : `<span>${l}</span>`}</button>`).join('')}</div>
+      ${tab === 'ach' ? `<p class="scr-note">Milestones that pay coins and XP. ${Object.keys(s.ach).length} of ${D.ACHIEVEMENTS.length} earned.</p>${UI.achList()}` : tab === 'overview' ? `
 
       <div class="hero pbox"><canvas width="144" height="144" id="pf-av"></canvas><div class="meta">
         <span class="title">${WB.esc(title())}</span>
@@ -1191,7 +1191,6 @@
       `}
     </div>`;
     if ($('#pf-av')) UI.animate($('#pf-av'), 'av', s.avatar, 'idle', s.skin);   // only on the Overview tab
-    if ($('#lb-root')) WB.LB.render($('#lb-root'));                              // Profile → Leaderboard (07s-leaderboard-ui.js)
     WB.$$('[data-prev]', pf).forEach((c) => paintPreview(c, ...c.dataset.prev.split(':')));
     const sel = (id, k, num) => { const el = $(id); if (el) el.onchange = (e) => { s.settings[k] = num(e.target.value); WB.Save.queue(); G.after(); UI.renderProfile(); }; };
     WB.$$('[data-achf]', pf).forEach((b) => (b.onclick = () => { UI.achF = b.dataset.achf; WB.Sfx.play('tap'); const y = window.scrollY; UI.renderProfile(); window.scrollTo(0, y); }));

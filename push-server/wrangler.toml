@@ -1,5 +1,5 @@
-# Step Quest server: leaderboards (3.10.4), and push notifications (mission reminders and the daily reminder).
-# Setup: see "Leaderboards (free, optional)" in the main README.
+# Step Quest push server: sends mission reminders and the daily reminder to the web app, even when it's closed.
+# Setup: see "Push notifications" in the main README.
 name = "stepquest-push"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
@@ -15,9 +15,7 @@ database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"   # printed by: npx wrangler d1
 
 [vars]
 # where your Step Quest is hosted (comma-separated); requests from other sites are refused
-ALLOWED_ORIGINS = "https://ggranger757.github.io,capacitor://localhost,https://localhost"
+ALLOWED_ORIGINS = "https://YOUR-USER.github.io"
 # a contact address push services can reach you at (required by the Web Push standard)
 VAPID_SUBJECT = "mailto:you@example.com"
-# secrets (not in this file), set with `npx wrangler secret put NAME`:
-#   ADMIN_KEY                            your password for hiding or renaming leaderboard players (README: Leaderboards)
-#   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY  only for push notifications
+# secrets (not in this file): VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, set with `npx wrangler secret put ...`

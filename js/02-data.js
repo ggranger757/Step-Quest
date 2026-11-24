@@ -464,10 +464,6 @@
   // date). Before `from` it isn't in the app at all. When it starts, players see the offer once (07r-events-ui.js);
   // when it ends, it leaves the Shop for good, and anyone who bought it keeps it. lights: Christmas lights on its card.
   // shows: how many app opens show its pop-up (until the player buys it).
-  // 3.10.4: the Step Quest server (push-server/: a free Cloudflare Worker), for the leaderboards. Paste its address
-  // here after deploying it (README → Leaderboards), e.g. 'https://stepquest-push.yourname.workers.dev'.
-  // Empty: no leaderboards (the Profile tab stays hidden).
-  D.SERVER_URL = '';
   D.EVENTS = {
     thanks: { id: 'thanks2026', name: 'Thanksgiving', cat: 'pet', item: 'turkey', from: '2026-11-23', until: '2026-11-25', untilText: 'November 25', shows: 3 },
     xmas: { id: 'xmas2026', name: 'Christmas', cat: 'avatar', item: 'santa', from: '2026-11-30', until: '2026-12-25', untilText: 'December 25', lights: true, shows: 3 },

@@ -3541,35 +3541,10 @@ html.rm .forge.flash { animation: none; }
 .loadout.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .loadout.one { grid-template-columns: minmax(0, 220px); justify-content: center; }
 
-/* ---------- Profile → Ranks (leaderboards) ---------- */
-.lb-seg { margin-bottom: var(--s3); }
-.lb-seg.seg.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.lb-seg button { flex-direction: column; height: 56px; gap: 4px; font-size: 11px; letter-spacing: .02em; }
-.lb-mine { margin-bottom: var(--s3); }
-.lb-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); margin: var(--s2) 0; text-align: center; }
-.lb-nums b { display: block; font: 400 22px/1 var(--display); color: var(--gold); }
-.lb-nums small { font: 400 10px/1.2 var(--label); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.lb-join h3 { margin: 0 0 var(--s2); }
-.lb-share { list-style: none; padding: 0; margin: var(--s3) 0; display: grid; gap: var(--s2); font-size: 14px; color: var(--muted); }
-.lb-share li { display: flex; gap: 8px; align-items: flex-start; }
-.lb-ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.lb-row { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) auto; gap: var(--s2); align-items: center; padding: 6px var(--s3) 6px var(--s2); }
-.lb-row.me { box-shadow: 0 0 0 2px var(--gold), 0 0 0 5px var(--shadow); }
-.lb-row.top1 .lb-val { color: var(--gold); }
-.lb-rank { font: 400 16px/1 var(--display); text-align: center; color: var(--muted); }
-.lb-row.top .lb-rank { font-size: 22px; }
-.lb-av { width: 40px; height: 40px; image-rendering: pixelated; background: var(--inset); }
-.lb-who { display: grid; gap: 2px; min-width: 0; }
-.lb-who b { font-weight: 400; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-who b small { font: 400 10px/1 var(--label); color: var(--gold); text-transform: uppercase; margin-left: 4px; }
-.lb-who > small { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.lb-who > small img, .lb-who > small .px-img { flex: none; }
-.lb-val { font: 400 18px/1 var(--display); color: var(--text); text-align: right; }
-.lb-gap { text-align: center; color: var(--dim); }
-.lb-wait { padding: var(--s4) 0; text-align: center; }
-.lb-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); margin-top: var(--s3); }
+/* ---------- Profile tabs ---------- */
 .pf-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 520px) { .pf-tabs .l-long { display: none; } .pf-tabs .l-short { display: inline; } }
+
 /* ---------- gear that gets used up: condition, uses left, repairs (05n-gear.js) ---------- */
 .item .cond { display: grid; gap: 4px; }
 .item .cond-t { display: flex; justify-content: space-between; font: 400 11px/1.2 var(--label); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
@@ -3962,66 +3937,9 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .ev-offer .lbl, .ev-offer p, .ev-offer .ev-left { text-align: center; width: 100%; }
 .ev-offer .price { display: flex; justify-content: center; align-items: center; gap: 10px; }
 
-/* 3.10.4: leaderboards (Profile → Leaderboard, 07s-leaderboard-ui.js) */
-.lb { display: grid; gap: var(--s3); }
-.lb .lb-tabs { margin: 0; }
-.lb-period { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); flex-wrap: wrap; font: 400 12px/1.3 var(--label); text-transform: uppercase; color: var(--muted); }
-.lb-period b { color: var(--text); font-weight: 400; }
-.lb-av { width: 32px; height: 32px; image-rendering: pixelated; flex: none; border-radius: 4px; background: var(--inset); }
-.lb-you { display: flex; align-items: center; gap: var(--s3); padding: var(--s3); border-color: var(--line-hi); position: sticky; top: 4px; z-index: 3; background: var(--surface-2); }
-.lb-you .lb-av { width: 40px; height: 40px; }
-.lb-you p { margin: 0; }
-.lb-yt { display: grid; gap: 2px; min-width: 0; }
-.lb-yt b { font: 400 20px/1 var(--display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-yt span { color: var(--text); }
-.lb-yt small { color: var(--cyan); font-size: 13px; }
-.lb-yt small b { font: inherit; color: var(--text); }
-.lb-rk { font: 400 14px/1 var(--label); color: var(--muted); min-width: 2.2em; text-align: center; flex: none; }
-.lb-rk.big { font: 400 28px/1 var(--display); color: var(--gold); min-width: 2.4em; }
 /* the podium: 2nd · 1st · 3rd, with steps under each name */
-.lb-podium { list-style: none; margin: var(--s2) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; gap: var(--s2); }
-.lb-pod { display: grid; justify-items: center; gap: 4px; text-align: center; min-width: 0; }
-.lb-pod .lb-av { width: 48px; height: 48px; }
-.lb-pod.p1 .lb-av { width: 56px; height: 56px; }
-.lb-pn { font: 400 18px/1 var(--display); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-ps { font-size: 13px; color: var(--muted); }
-.lb-step { width: 100%; display: grid; place-items: center; border: 2px solid var(--line); border-bottom: 0; background: var(--surface); }
-.lb-step i { font: normal 400 28px/1 var(--display); }
-.lb-pod.p1 .lb-step { height: 64px; border-color: #ffd75a; background: color-mix(in srgb, #ffd75a 18%, var(--surface)); } .lb-pod.p1 .lb-step i { color: #ffd75a; }
-.lb-pod.p2 .lb-step { height: 48px; border-color: #c9d3e8; background: color-mix(in srgb, #c9d3e8 14%, var(--surface)); } .lb-pod.p2 .lb-step i { color: #c9d3e8; }
-.lb-pod.p3 .lb-step { height: 36px; border-color: #d98a4a; background: color-mix(in srgb, #d98a4a 16%, var(--surface)); } .lb-pod.p3 .lb-step i { color: #d98a4a; }
-.lb-pod.me .lb-pn { color: var(--cyan); }
 /* ranks 4+ */
-.lb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.lb-row { display: flex; align-items: center; gap: var(--s2); padding: 6px var(--s2); background: var(--surface); border: 2px solid var(--line); }
-.lb-row.me { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 10%, var(--surface)); }
-.lb-nm { display: grid; min-width: 0; flex: 1; }
-.lb-nm b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-nm small { color: var(--muted); font-size: 12px; }
-.lb-st { font-variant-numeric: tabular-nums; flex: none; }
-.lb-gap { text-align: center; color: var(--muted); margin: 0; letter-spacing: 4px; }
-.lb-foot { text-align: center; margin: 0; }
-.lb-empty, .lb-off { text-align: center; padding: var(--s4); margin: 0; }
-.lb-off { display: grid; gap: var(--s2); justify-items: center; }
-.lb-off p { margin: 0; }
-.lb-wait { text-align: center; color: var(--muted); min-height: 1.5em; }
-.lb-sub { font: 400 12px/1 var(--label); text-transform: uppercase; color: var(--muted); text-align: center; margin: var(--s2) 0 0; }
 /* joining */
-.lb-join { display: grid; gap: var(--s2); justify-items: center; text-align: center; padding: var(--s4); }
-.lb-join h2 { margin: 0; font: 400 30px/1 var(--display); }
-.lb-join p { margin: 0; }
-.lb-badge { display: grid; place-items: center; width: 56px; height: 56px; border: 2px solid var(--gold); background: color-mix(in srgb, var(--gold) 14%, var(--surface)); }
-.lb-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; text-align: left; color: var(--muted); font-size: 14px; }
-.lb-points li { display: flex; gap: var(--s2); align-items: center; }
-.lb-lab { font: 400 12px/1 var(--label); text-transform: uppercase; color: var(--muted); justify-self: stretch; text-align: left; margin-top: var(--s2); }
-.lb input[type="text"] { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 10px; background: var(--inset); color: var(--text); border: 2px solid var(--line); }
-.lb input[type="text"]:focus { outline: none; border-color: var(--cyan); }
-.lb-join .btn { width: 100%; }
-.lb-manage { padding: var(--s3); }
-.lb-manage summary { cursor: pointer; font: 400 12px/1 var(--label); text-transform: uppercase; color: var(--muted); }
-.lb-manage[open] { display: grid; gap: var(--s2); }
-.lb-renrow { display: flex; gap: var(--s2); }
-.lb-manage .linkbtn.danger { color: var(--danger); justify-self: start; }
 
 /* Awards filter: In progress / Earned / All */
 .ach-f { margin: 0 0 var(--s3); }

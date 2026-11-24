@@ -9,13 +9,11 @@
      POST /test         { id, token }                    send one notification right now
      POST /unsubscribe  { id, token }                    forget this device
      POST /resubscribe  { old, sub }                     the browser rotated its subscription (from the service worker)
-     /lb/...                                             leaderboards: see src/leaderboard.js
    A job: { at: ms, tag, title, body, url, ttl } — see LIMITS for sizes.
 
    Privacy: the server stores the push subscription and the notification texts it is asked to send. Each job is
    deleted as soon as it is sent (or once it is too late to be useful); unsubscribing deletes everything. */
 import { sendPush, b64u } from './webpush.js';
-import { handleLb } from './leaderboard.js';
 
 const LIMITS = { jobs: 200, title: 80, body: 240, tag: 64, url: 200, aheadMs: 40 * 864e5, bodyBytes: 96 * 1024, ttlMax: 24 * 3600 };
 // Only real browser push services may receive requests from this server.
@@ -80,7 +78,6 @@ async function handle(req, env) {
   const H = c.headers, now = Date.now();
   if (req.method === 'GET' && url.pathname === '/vapid') return json({ key: env.VAPID_PUBLIC_KEY || '' }, 200, H);
   if (req.method === 'GET' && url.pathname === '/') return json({ ok: true, service: 'stepquest-push' }, 200, H);
-  const lb = await handleLb(req, env, url, H, now); if (lb) return lb;   // leaderboards (3.10.4): src/leaderboard.js
   if (!['POST', 'PUT'].includes(req.method)) return json({ error: 'not found' }, 404, H);
   const len = Number(req.headers.get('Content-Length') || 0);
   if (len > LIMITS.bodyBytes) return json({ error: 'too large' }, 413, H);
