@@ -48,11 +48,11 @@
     WB.Sfx.play('unlock');
     const what = pet ? it.name + ' the ' + it.kind : it.name, him = pet ? 'it' : 'him', He = pet ? 'It' : 'He';
     const pitch = pet
-      ? `A ${esc(e.name)} pet that walks with you and ${esc((it.atkVerb || 'helps').toLowerCase())} creatures in battle.`
+      ? `A ${esc(e.name)} ${esc(it.kind.toLowerCase())} that walks with you and ${esc((it.atkVerb || 'helps').toLowerCase())} creatures in battle.`
       : `Walk the worlds as ${esc(it.name)} this ${esc(e.name)}.`;
     UI.sheet(`<div class="ev-offer">
       <span class="lbl">${esc(e.name)} event · ${pet ? 'limited pet' : 'limited walker'}</span>
-      <h3 id="sheet-title">${esc(what)} is here!</h3>
+      <h3 id="sheet-title">${esc(it.name)} is here!</h3>
       <div class="ev-frame">${e.lights ? WB.lights(5, 5) : ''}<canvas class="ev-hero" width="96" height="96" role="img" aria-label="${esc(what)}"></canvas></div>
       <span class="ev-left">${leftText(e)} · on sale until ${esc(e.untilText)}</span>
       <p>${pitch} Any level can get ${him} in Shop → ${pet ? 'Pets' : 'Avatars'} for ${WB.fmt(cost)} coins until ${esc(e.untilText)}. After that ${pet ? 'it' : 'he'} leaves the Shop. ${He}’s yours to keep once you buy ${him}.</p>

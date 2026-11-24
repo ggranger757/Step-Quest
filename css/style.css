@@ -3957,3 +3957,7 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 @media (prefers-reduced-motion: reduce) { .xlights i { animation: none; } }
 .ev-offer .ev-frame { position: relative; padding: 8px; margin: 6px 0; }
 .ev-offer .ev-left { font: 400 13px/1.2 var(--label); text-transform: uppercase; color: var(--gold, #ffd84a); }
+/* the event pop-up is centred: balance the title's room for the close button on both sides, so it sits in the middle */
+.ev-offer h3 { padding-left: 48px; padding-right: 48px; text-align: center; width: 100%; box-sizing: border-box; }
+.ev-offer .lbl, .ev-offer p, .ev-offer .ev-left { text-align: center; width: 100%; }
+.ev-offer .price { display: flex; justify-content: center; align-items: center; gap: 10px; }

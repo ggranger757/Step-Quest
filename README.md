@@ -103,6 +103,9 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
 - **Energy:** 25% / 50% / 80% by world tier. **Charge it directly with artifacts** (Inventory → Worldkey → Charge): each copy gives +10%, +20% or +30% by the tier of its world. Energy never fades.
 - **18 Worldkeys:** the Rookie, plus 17 more to buy from level 3 (800 coins) to level 52 (15,000), each with its own look and personality (Inventory → Worldkey → Worldkeys).
 
+## Changes in 3.10.4
+- **The event pop-up is properly centred.** Its title sat left of centre (the sheet title keeps room on the right for the close button), so it now has the same room on both sides; every line, the price row and the buttons are centred. The pet's title is shorter so it fits on one line ("Gobbles is here!").
+
 ## Changes in 3.10.3: a scout Adventurer, a Thanksgiving turkey and Santa for Christmas
 - **Worldkeys stay in tune longer**: a tuning now lasts 3 hours instead of 2 (`K.TUNE_HOURS`), so the gauge drains a third more slowly.
 - **Calorie award badges** (`tools/make_kcal_badges.py`, `assets/ach/kcal_*.png`): Kindling, Bonfire, Furnace, Inferno, Stoked and Eternal Flame had no badge images, so they showed blank. Each now has a 32 px fire badge in the achievement style: twigs and a small flame, a log bonfire, a stone furnace, a towering flame, a glowing coal throwing sparks, a golden brazier with a blue-hearted flame.
