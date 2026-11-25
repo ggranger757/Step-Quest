@@ -3976,3 +3976,5 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
   .battle .b-actions .flee { order: 9; grid-column: 1 / -1; min-height: 32px; padding: 0; }
   .battle .b-actions.items .back { grid-column: 1 / -1; min-height: 40px; }
 }
+.item .prev .tag.ev.new { background: var(--gold); color: #000; }   /* a newly added walker (3.10.9) */
+.ev-offer .row { justify-content: center; }

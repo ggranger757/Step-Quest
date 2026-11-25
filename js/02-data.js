@@ -427,6 +427,7 @@
     { id: 'reaper', name: 'Executioner', role: 'Walks with a scythe and a very long memory.', req: { cost: 10000, level: 36 } },
     { id: 'blaze', name: 'Blaze', role: 'Red hair, quick blade, never sits still.', req: { cost: 5000, level: 18 } },
     { id: 'huntress', name: 'Huntress', role: 'Tracks anything, anywhere, on foot.', req: { cost: 7500, level: 28 } },
+    { id: 'demonblade', name: 'Demon Blade', role: 'A hooded shade that drags a cursed blade.', req: { cost: 8900, level: 32 } },   // 3.10.9: tools/add_demonblade.py
     { id: 'duelist', name: 'Crimson Duelist', role: 'Bows first, then wins.', req: { cost: 9000, level: 33 } },
     { id: 'shade', name: 'Shadow Knight', role: 'Moves like a rumor, strikes like a storm.', req: { cost: 12000, level: 45 } },
     { id: 'c5', name: 'Busker', role: 'Plays for every creature he meets.', req: { level: 25 } },
@@ -464,8 +465,11 @@
   // date). Before `from` it isn't in the app at all. When it starts, players see the offer once (07r-events-ui.js);
   // when it ends, it leaves the Shop for good, and anyone who bought it keeps it. lights: Christmas lights on its card.
   // shows: how many app opens show its pop-up (until the player buys it).
+  // kind 'new' (3.10.9): not a sale, just a heads-up that a new walker is in the Shop for good. Shown once; its `until`
+  // only ends the pop-up for players who haven't opened the app by then, and the walker's "New" tag in the Shop.
   D.EVENTS = {
     thanks: { id: 'thanks2026', name: 'Thanksgiving', cat: 'pet', item: 'turkey', from: '2026-11-23', until: '2026-11-25', untilText: 'November 25', shows: 3 },
+    newDemon: { id: 'new_demonblade', kind: 'new', name: 'New walker', cat: 'avatar', item: 'demonblade', from: '2026-11-25', until: '2026-12-31', shows: 1 },
     xmas: { id: 'xmas2026', name: 'Christmas', cat: 'avatar', item: 'santa', from: '2026-11-30', until: '2026-12-25', untilText: 'December 25', lights: true, shows: 3 },
   };
   // 3.5.0: walkers are never handed out. A level, streak, step count or explored world only UNLOCKS a walker;
@@ -724,6 +728,7 @@
     blaze: { o: ['#2f5b86', '#253266', '#376b9c', '#58a6d6', '#4cb3cc'], t: ['#fe5ff6', '#a14bfb'] },
     huntress: { o: ['#595818', '#554d20', '#716f17', '#7e7d4b', '#625b3e', '#52523a'], t: ['#18161d', '#26241c'] },
     duelist: { o: ['#ce1d39', '#8d0a37'], t: ['#784046', '#481e26', '#491613'] },
+    demonblade: { o: ['#172038'], t: ['#d6455e', '#ff4d67', '#ff8d9e'] },   // a shadow with no skin: Outfit dyes the cloak, Trim the blade (and its eyes)
     c5: { o: ['#8babbf', '#566a89'], t: ['#222a5c', '#1f1faa', '#3368dc', '#3dabea'] },
     storm: { o: ['#71413b', '#3b2027', '#422433', '#6f403a'], t: ['#73172d', '#460414', '#ad2f45', '#ab2f45', '#a92f45', '#72172d'] },
     cyborg: { o: ['#8babbf', '#566a89'], t: ['#222a5c', '#38002c'] },

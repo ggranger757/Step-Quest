@@ -110,6 +110,14 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
   and the battle log keeps to 3 lines (scroll for more), so the menu fits.
 - **Awards:** filter by *To earn*, *Earned* or *All*; earned awards show the date you got them and what they paid.
 
+## Changes in 3.10.9: the Demon Blade
+- **New walker: Demon Blade**, a hooded shade that drags a cursed blade (unlocks at level 32, 8,900 coins). It idles,
+  walks, runs, spins its blade to attack, flinches and fades away on defeat. Outfit dyes its cloak, Trim its blade.
+  Made with `tools/add_demonblade.py` from the artist's sheet (`tools/art/demonblade_source.png`).
+- **A one-time pop-up announces it**: what it is, its level and price (or a Buy button if you can already get it), and
+  a "New" tag on its Shop card until December 31.
+- Martial Hero 2 was not added again: it is already in the game as the Ronin.
+
 ## Changes in 3.10.8
 - **Battle buttons breathe:** the special move's charge gauge has clear space under its text, and the phone battle
   buttons are a little taller (58 px) so labels never touch the edges.

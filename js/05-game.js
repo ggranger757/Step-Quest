@@ -172,7 +172,7 @@
     return { met: true, label: '' };
   };
   // seasonal events (D.EVENTS): on from their first to their last day, by this phone's date
-  G.eventOn = (id, day = WB.dayKey()) => { const e = D.EVENTS && D.EVENTS[id]; return !!e && day >= e.from && day <= e.until; };
+  G.eventOn = (id, day = WB.dayKey()) => { const e = D.EVENTS && D.EVENTS[id]; return !!e && day >= e.from && (!e.until || day <= e.until); };
   G.inShop = (it) => !it.req || !it.req.event || G.eventOn(it.req.event);   // an event walker leaves the Shop when its event ends
   G.checkUnlocks = () => {
     for (const cat of Object.keys(CATS)) for (const it of CATS[cat][1]) {

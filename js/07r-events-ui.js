@@ -43,6 +43,7 @@
 
   // the pop-up: the item in a little looping animation, what it is, the price, the last day and the days left
   function offer(k) {
+    if (D.EVENTS[k].kind === 'new') return offerNew(k);
     const e = D.EVENTS[k], it = itemOf(e), s = S(), cost = it.req.cost, short = cost - s.coins, pet = e.cat === 'pet';
     (s.hints.events = s.hints.events || {})[e.id] = seen(e) + 1; thisOpen.add(e.id); WB.Save.queue();   // one more showing
     WB.Sfx.play('unlock');
@@ -80,6 +81,43 @@
         }
         const f = root.querySelector('.row button'); if (f) f.focus();
         UI.updateHud();
+      };
+      root.querySelector('#ev-shop').onclick = () => { UI.closeSheet(); UI.showItem(e.cat, e.item); };
+    });
+  }
+  // 3.10.9: a new walker is in the Shop for good. Shown once: what it is, and its unlock level and price, or Buy if the
+  // player can already get it.
+  function offerNew(k) {
+    const e = D.EVENTS[k], it = itemOf(e), s = S(), st = G.reqStatus(it.req), cost = it.req.cost || 0;
+    const locked = !st.met && !st.buy, short = cost - s.coins;
+    (s.hints.events = s.hints.events || {})[e.id] = seen(e) + 1; thisOpen.add(e.id); WB.Save.queue();
+    WB.Sfx.play('unlock');
+    const how = locked ? `${esc(st.label)} to unlock ${esc(it.name)}, then get it for ${WB.fmt(cost)} coins.`
+      : short > 0 ? `You can unlock ${esc(it.name)} now: ${WB.fmt(short)} more coins to go.` : `You can get ${esc(it.name)} right now.`;
+    UI.sheet(`<div class="ev-offer">
+      <span class="lbl">New walker</span>
+      <h3 id="sheet-title">${esc(it.name)} has arrived!</h3>
+      <div class="ev-frame"><canvas class="ev-hero" width="96" height="96" role="img" aria-label="${esc(it.name)}"></canvas></div>
+      <span class="ev-left">${locked ? 'Unlocks at level ' + it.req.level : 'Ready to unlock'}</span>
+      <p>${esc(it.role)} Find ${esc(it.name)} in Shop → Avatars. ${how}</p>
+      <div class="price"><span class="cost">${WB.icon('coin', 2)}${WB.fmt(cost)}</span>${!locked && short > 0 ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>
+      <p class="fine" id="ev-msg" role="status" aria-live="polite"></p>
+      <div class="row">
+        ${locked || short > 0 ? '' : `<button class="btn gold" type="button" id="ev-buy" data-autofocus>${WB.icon('shop', 2)}Buy ${esc(it.name)}</button>`}
+        <button class="btn ${locked || short > 0 ? 'gold' : 'ghost'}" type="button" id="ev-shop" ${locked || short > 0 ? 'data-autofocus' : ''}>See in Shop</button>
+      </div>
+      <button class="linkbtn" type="button" data-close>Got it</button>
+    </div>`, (root) => {
+      animate(root.querySelector('.ev-hero'), sheetOf(e));
+      const buy = root.querySelector('#ev-buy');
+      if (buy) buy.onclick = () => {
+        const r = G.buy(e.cat, e.item);
+        if (!r.ok) { root.querySelector('#ev-msg').textContent = r.msg || 'Not now.'; return; }
+        UI.toast({ kicker: 'Purchased', title: it.name, icon: 'shop', cls: 'gold' });
+        root.querySelector('#ev-msg').textContent = it.name + ' is yours.';
+        root.querySelector('.row').innerHTML = `<button class="btn gold" type="button" id="ev-use" data-autofocus>Walk as ${esc(it.name)}</button>`;
+        root.querySelector('#ev-use').onclick = () => { G.equip('avatar', it.id); WB.Sfx.play('equip'); G.after(); UI.closeSheet(); UI.updateHud(); UI.paintFace && UI.paintFace(); UI.render(); };
+        root.querySelector('#ev-use').focus(); UI.updateHud();
       };
       root.querySelector('#ev-shop').onclick = () => { UI.closeSheet(); UI.showItem(e.cat, e.item); };
     });

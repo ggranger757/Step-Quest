@@ -794,6 +794,7 @@
     if (locked) tag = `<span class="tag lock">${WB.icon('lock', 1)}Locked</span>`;
     const ev = it.req && it.req.event && D.EVENTS[it.req.event];
     if (ev && !own && G.eventOn(it.req.event)) tag = `<span class="tag ev" title="${WB.esc(ev.name)} event">Until ${WB.esc(ev.untilText.replace(/^(\w{3})\w*/, '$1'))}</span>`;
+    else if (!own && Object.keys(D.EVENTS || {}).some((k) => D.EVENTS[k].kind === 'new' && D.EVENTS[k].item === it.id && G.eventOn(k))) tag = '<span class="tag ev new" title="Just added">New</span>';   // 3.10.9: a newly added walker
     const lights = ev && ev.lights && (own || G.eventOn(it.req.event));   // Christmas lights around a Christmas walker's card
     return `<div class="item pbox ${locked ? 'locked' : ''} ${lights ? 'ev-lights' : ''}" ${locked ? `data-why="${WB.esc(it.name + ' is locked. ' + st.label + ' to unlock it.')}" role="button" tabindex="0"` : ''}>
       ${lights ? WB.lights() : ''}<div class="prev"><canvas width="120" height="120" data-prev="${cat}:${it.id}"></canvas>${tag}${badge}${it.legendary ? '<span class="tag leg">Legendary</span>' : ''}</div>
