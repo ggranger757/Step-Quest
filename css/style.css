@@ -3959,7 +3959,11 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
   .battle .b-actions, .battle .b-actions.items { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .battle .b-actions .btn, .battle .b-actions .btn.special, .battle .b-actions .btn.defend { grid-column: auto; min-height: 52px; height: auto;
     padding: 7px 10px; gap: 8px; align-items: center; overflow: hidden; }
-  .battle .b-actions .btn.defend, .battle .b-actions .btn.special { padding-bottom: 12px; }
+  .battle .b-actions .btn, .battle .b-actions .btn.special, .battle .b-actions .btn.defend { min-height: 58px; }
+  .battle .b-actions .btn.defend { padding-bottom: 7px; }
+  .battle .b-actions .btn.special { padding-top: 6px; padding-bottom: 20px; }   /* room for the charge gauge under the text */
+  .battle .b-actions .btn.special .sp-gauge { left: 10px; right: 10px; bottom: 7px; }
+  .battle .b-actions .bt { gap: 3px; }
   .battle .b-actions .bt { display: grid; gap: 2px; min-width: 0; }
   .battle .b-actions .bt > span, .battle .b-actions .bt small { display: block; white-space: normal; overflow: visible; text-overflow: clip; -webkit-line-clamp: unset; overflow-wrap: break-word; hyphens: auto; }
   .battle .b-actions .bt > span { font-size: 14px; line-height: 1.15; }

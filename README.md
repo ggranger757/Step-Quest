@@ -110,6 +110,10 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
   and the battle log keeps to 3 lines (scroll for more), so the menu fits.
 - **Awards:** filter by *To earn*, *Earned* or *All*; earned awards show the date you got them and what they paid.
 
+## Changes in 3.10.8
+- **Battle buttons breathe:** the special move's charge gauge has clear space under its text, and the phone battle
+  buttons are a little taller (58 px) so labels never touch the edges.
+
 ## Changes in 3.10.7: roomier battles on phones
 - **Battle menu two per row:** Strike | Throw, Defend | Items, Gear & Magic | Special, then Run away. Labels wrap inside
   their buttons, so nothing is cut off, and the Items menu uses the same layout.
