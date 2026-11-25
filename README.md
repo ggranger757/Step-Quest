@@ -110,6 +110,10 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
   and the battle log keeps to 3 lines (scroll for more), so the menu fits.
 - **Awards:** filter by *To earn*, *Earned* or *All*; earned awards show the date you got them and what they paid.
 
+## Changes in 3.10.10
+- **New Mind quick mission:** "Put your phone away an hour before bed" (the bigger reward, +12 XP), in the middle of
+  the Mind list. It has its own id (`q_bedphone`), so no existing quick mission's id changes.
+
 ## Changes in 3.10.9: the Demon Blade
 - **New walker: Demon Blade**, a hooded shade that drags a cursed blade (unlocks at level 32, 8,900 coins). It idles,
   walks, runs, spins its blade to attack, flinches and fades away on defeat. Outfit dyes its cloak, Trim its blade.

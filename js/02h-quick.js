@@ -36,6 +36,10 @@
   ];
   // rewards stay small: they are a nudge, not a way to out-earn walking
   D.QUICK = RAW.map(([cat, title, size], i) => ({ id: 'q' + String(i + 1).padStart(3, '0'), cat, title, size, reward: size > 1 ? { coins: 8, xp: 12 } : { coins: 4, xp: 6 } }));
+  // 3.10.10: a bedtime habit, placed in the middle of the Mind list. It has its own id so the numbered ids above
+  // (which come from list order and are saved in players' picks) never shift.
+  D.QUICK.splice(D.QUICK.findIndex((q) => q.title === 'Put your phone down for 10 minutes') + 1, 0,
+    { id: 'q_bedphone', cat: 'mind', title: 'Put your phone away an hour before bed', size: 2, reward: { coins: 8, xp: 12 } });
   D.quickById = Object.fromEntries(D.QUICK.map((q) => [q.id, q]));
   D.QUICK_CAP = { coins: 80, xp: 120 };   // everything quick, per day (about what 2,500 steps earn)
   D.QUICK_COOLDOWN_MIN = 30;              // minutes before a finished quick mission can be added again
