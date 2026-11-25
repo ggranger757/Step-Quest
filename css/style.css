@@ -3948,16 +3948,27 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 .ach .a-when { font-size: 12px; color: var(--gold, #ffd34d); margin-top: 2px; }
 .ach-empty { text-align: center; padding: var(--s4) 0; }
 
-/* battle on small phones (iPhone 12/13 mini, SE…): actions stack one per row, name left, detail right,
-   so every label fits on one line and the whole menu shows without side-by-side squeezing. */
-@media (orientation: portrait) and (max-width: 400px) {
+/* battle on phones held upright: actions two per row (Strike | Throw, Defend | Items, Gear | Special), every label
+   wraps inside its button instead of being cut off, and the menu stays compact so the battle itself gets more room. */
+@media (orientation: portrait) and (max-width: 560px) {
+  .battle .b-panel { padding-top: var(--s2); gap: var(--s2); }
+  .battle .b-plates { padding-top: 8px; padding-bottom: 4px; gap: var(--s2); }
+  .battle .b-plate, .battle .b-plate .pl-main { gap: 3px; }
+  .battle .b-plate { padding: 6px 8px; }
   .battle .b-log { font-size: 14px; line-height: 18px; min-height: 0; max-height: 62px; padding-top: 8px; padding-bottom: 0; box-sizing: border-box; overflow-y: auto; }   /* 3 lines; longer messages scroll */
-  .battle .b-actions, .battle .b-actions.items { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .battle .b-actions .btn, .battle .b-actions .btn.special { min-height: 44px; padding: 0 var(--s3); gap: var(--s2); }
-  .battle .b-actions .btn.defend, .battle .b-actions .btn.special { min-height: 44px; padding-bottom: 8px; }
-  .battle .b-actions .bt { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s2); }
-  .battle .b-actions .bt > span, .battle .b-actions .bt small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: unset; }
-  .battle .b-actions .bt > span { flex: 0 1 auto; font-size: 15px; }
-  .battle .b-actions .bt small { flex: 0 1 auto; text-align: right; font-size: 10px; }
-  .battle .b-actions .flee { min-height: 40px; }
+  .battle .b-actions, .battle .b-actions.items { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .battle .b-actions .btn, .battle .b-actions .btn.special, .battle .b-actions .btn.defend { grid-column: auto; min-height: 52px; height: auto;
+    padding: 7px 10px; gap: 8px; align-items: center; overflow: hidden; }
+  .battle .b-actions .btn.defend, .battle .b-actions .btn.special { padding-bottom: 12px; }
+  .battle .b-actions .bt { display: grid; gap: 2px; min-width: 0; }
+  .battle .b-actions .bt > span, .battle .b-actions .bt small { display: block; white-space: normal; overflow: visible; text-overflow: clip; -webkit-line-clamp: unset; overflow-wrap: break-word; hyphens: auto; }
+  .battle .b-actions .bt > span { font-size: 14px; line-height: 1.15; }
+  .battle .b-actions .bt small { font-size: 10.5px; line-height: 1.2; }
+  .battle .b-actions .wp-ic, .battle .b-actions .b-ic { width: 22px; height: 22px; flex: none; }
+  .battle .b-actions [data-b="strike"] { order: 1; } .battle .b-actions [data-b="throw"] { order: 2; }
+  .battle .b-actions [data-b="defend"] { order: 3; } .battle .b-actions [data-b="items"] { order: 4; }
+  .battle .b-actions .gear-btn { order: 5; } .battle .b-actions [data-b="special"] { order: 6; }
+  .battle .b-actions .magic-btn { order: 7; }
+  .battle .b-actions .flee { order: 9; grid-column: 1 / -1; min-height: 32px; padding: 0; }
+  .battle .b-actions.items .back { grid-column: 1 / -1; min-height: 40px; }
 }

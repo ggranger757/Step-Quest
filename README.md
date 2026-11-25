@@ -110,6 +110,12 @@ Wakes when you finish Rust Hollow, with a full charge. Opening a new world needs
   and the battle log keeps to 3 lines (scroll for more), so the menu fits.
 - **Awards:** filter by *To earn*, *Earned* or *All*; earned awards show the date you got them and what they paid.
 
+## Changes in 3.10.7: roomier battles on phones
+- **Battle menu two per row:** Strike | Throw, Defend | Items, Gear & Magic | Special, then Run away. Labels wrap inside
+  their buttons, so nothing is cut off, and the Items menu uses the same layout.
+- **Bigger battle area:** the menu and name cards are more compact, so the fight scene is about 25–30% taller on phones
+  (e.g. 305 → 394 px on an iPhone 12 mini), and the whole menu fits without scrolling on most phones.
+
 ## Changes in 3.10.6
 - Leaderboards removed.
 
