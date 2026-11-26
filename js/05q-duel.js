@@ -80,8 +80,8 @@
     const spId = D.SPECIALS[p.special] ? p.special : 'raid';
     return {
       name: str(p.name, 'Walker'), avatar: D.AVATARS.some((a) => a.id === p.avatar) ? p.avatar : 'scavenger',
-      skin: D.SKIN_TONES.some((t) => t.id === p.skin) ? p.skin : null,
-      outfit: p.outfit && typeof p.outfit === 'object' ? { o: D.dyeById[p.outfit.o] ? p.outfit.o : undefined, t: D.dyeById[p.outfit.t] ? p.outfit.t : undefined } : {},
+      skin: D.toneOf(p.skin) ? p.skin : null,
+      outfit: p.outfit && typeof p.outfit === 'object' ? { o: D.dyeOf(p.outfit.o) ? p.outfit.o : undefined, t: D.dyeOf(p.outfit.t) ? p.outfit.t : undefined } : {},
       lvl, max: Math.round(D.heroMaxHp(lvl) * (perks.includes('hp') ? 1.1 : 1)), atk: D.heroAtk(lvl), def: D.heroDef(lvl),
       melee, ranged, shield, owned, ammo, cond, potions, uses, perks,
       special: { id: spId, name: D.SPECIALS[spId].name, on: !!p.spOn && lvl >= D.SPECIAL_LEVEL },

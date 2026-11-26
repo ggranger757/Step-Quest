@@ -166,9 +166,9 @@
     const avatarId = (path.match(/^av\/([a-z0-9]+)\.png$/) || [])[1];
     if (!avatarId) return img;
     const map = D.SKIN_MAP[avatarId];
-    const tone = skinId && map && D.SKIN_TONES.find((t) => t.id === skinId);
+    const tone = skinId && map && D.toneOf(skinId);
     const om = D.OUTFIT_MAP[avatarId], worn = outfit || WB.outfitOf(avatarId);
-    const dyes = om ? ['o', 't'].filter((k) => om[k] && D.dyeById[worn[k]]) : [];
+    const dyes = om ? ['o', 't'].filter((k) => om[k] && D.dyeOf(worn[k])) : [];
     if (!tone && !dyes.length) return img;
     const key = path + '|' + (tone ? tone.id : '') + '|' + dyes.map((k) => k + worn[k]).join(',');
     if (tintCache[key]) return tintCache[key];
@@ -189,7 +189,7 @@
         for (let i = 0; i < p.length; i += 4) if (p[i + 3]) { const col = (p[i] << 16) | (p[i + 1] << 8) | p[i + 2]; if (wanted.has(col)) counts.set(col, (counts.get(col) || 0) + 1); }
         dyes.forEach((k) => {
           const list = om[k].map((h) => [hex2int(h.replace('^', '')), h[0] === '^']);
-          const t = dyeTable(list.map((e) => e[0]), counts, D.dyeById[worn[k]]);
+          const t = dyeTable(list.map((e) => e[0]), counts, D.dyeOf(worn[k]));
           list.forEach(([col, body]) => { if (t.has(col)) dyeMap.set(col, [t.get(col), body]); });
         });
       }

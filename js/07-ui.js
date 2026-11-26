@@ -1100,7 +1100,7 @@
     const own = (c) => s.owned[G.CATS[c][0]].length + '/' + G.CATS[c][1].length;
     const slot = (cat, label, id, icon, sub) => `<button class="wslot pbox" type="button" data-wslot="${cat}" ${sub ? `data-wsub="${sub}"` : ''}>${cat === 'weapon' && id ? `<canvas width="36" height="36" data-prev="weapon:${id}"></canvas>` : WB.icon(icon, 3)}<span class="ws-t"><span class="lbl">${label}</span><span class="ws-v">${id ? WB.esc(G.item(cat, id).name) : '<span class="none">None</span>'}</span></span></button>`;
     // Colors (skin tone + outfit dyes): one slot, open to everyone
-    const tone = s.skin && D.SKIN_TONES.find((t) => t.id === s.skin), om = D.OUTFIT_MAP[s.avatar] || {};
+    const tone = s.skin && D.toneOf(s.skin), om = D.OUTFIT_MAP[s.avatar] || {};
     const skinCol = tone ? tone.ramp[2] : UI.originalSkin(s.avatar), dyeCol = UI.dyeColors(s.avatar, om.o ? 'o' : 't', WB.outfitOf(s.avatar)[om.o ? 'o' : 't'])[0];
     const hasColors = WB.hasSkin(s.avatar) || WB.hasOutfit(s.avatar);
     const colorsSlot = `<button class="wslot pbox" type="button" data-act="colors"><span class="sw-dot dye-dot" style="--a:${WB.hasSkin(s.avatar) ? skinCol : dyeCol};--b:${WB.hasOutfit(s.avatar) ? dyeCol : skinCol}"></span><span class="ws-t"><span class="lbl">Colors</span><span class="ws-v">${WB.esc(UI.colorsLabel(s.avatar))}</span></span></button>`;
@@ -1231,9 +1231,10 @@
       ${one(null, origName || 'Original', UI.originalSkin(avatarId), UI.originalSkin(avatarId, 1))}
       ${human.map((t) => one(t.id, t.name, t.ramp[2], t.ramp[1])).join('')}
       ${fant.map((t) => one(t.id, t.name, t.ramp[2], t.ramp[1])).join('')}
+      ${UI.wheelSwatch('skin', 'Skin tone', D.isHex(current) ? current : null)}
     </div>`;
   };
-  UI.skinName = (id, origName) => (id ? D.SKIN_TONES.find((t) => t.id === id).name : origName || 'Original');
+  UI.skinName = (id, origName) => (id && D.toneOf(id) ? D.toneOf(id).name : origName || 'Original');
   UI.setSkin = (id) => {
     S().skin = id || null;
     WB.Save.queue();
@@ -1249,12 +1250,12 @@
   };
   // two colors for a swatch: the dye (or the walker's own main color when "Original") and a darker step
   UI.dyeColors = (avatarId, k, dyeId) => {
-    const d = dyeId && D.dyeById[dyeId];
+    const d = dyeId && D.dyeOf(dyeId);
     if (d) return [d.hex, shade(d.hex, -0.16)];
     const g = (D.OUTFIT_MAP[avatarId] || {})[k] || ['#8a84b5'];
     const c = g[0].replace('^', ''); return [c, shade(c, -0.12)];
   };
-  UI.dyeName = (id) => (id && D.dyeById[id] ? D.dyeById[id].name : 'Original');
+  UI.dyeName = (id) => (id && D.dyeOf(id) ? D.dyeOf(id).name : 'Original');
   UI.outfitLabel = (avatarId) => {
     const o = WB.outfitOf(avatarId), m = D.OUTFIT_MAP[avatarId] || {};
     const parts = UI.DYE_SLOTS.filter(([k]) => m[k] && o[k]).map(([k]) => UI.dyeName(o[k]));
@@ -1262,7 +1263,7 @@
   };
   UI.setDye = (avatarId, k, id) => {
     const s = S(), cur = { ...(s.outfit[avatarId] || {}) };
-    if (id && D.dyeById[id]) cur[k] = id; else delete cur[k];
+    if (id && D.dyeOf(id)) cur[k] = D.dyeOf(id).id; else delete cur[k];
     if (cur.o || cur.t) s.outfit[avatarId] = cur; else delete s.outfit[avatarId];
     WB.Save.queue();
     UI.paintFace();
@@ -1271,7 +1272,57 @@
   UI.dyeSwatches = (avatarId, k, label) => {
     const cur = WB.outfitOf(avatarId)[k] || null;
     const one = (id, name) => { const [a, b] = UI.dyeColors(avatarId, k, id); return `<button type="button" class="sw" role="radio" aria-checked="${cur === id}" aria-label="${label}: ${name}" title="${name}" data-dye="${k}:${id || ''}" style="--a:${a};--b:${b}"></button>`; };
-    return `<div class="swatches" role="radiogroup" aria-labelledby="dy-l-${k}">${one(null, 'Original')}${D.DYES.map((d) => one(d.id, d.name)).join('')}</div>`;
+    return `<div class="swatches" role="radiogroup" aria-labelledby="dy-l-${k}">${one(null, 'Original')}${D.DYES.map((d) => one(d.id, d.name)).join('')}${UI.wheelSwatch(k, label, D.isHex(cur) ? cur : null)}</div>`;
+  };
+  // ---------- COLOR WHEEL (3.10.13) ----------
+  // hue around the ring, richness from the middle out, and a brightness slider; any '#rrggbb' can be chosen
+  const hsv2hex = (h, sat, v) => {
+    const f = (n) => { const k = (n + h / 60) % 6; return Math.round(255 * (v - v * sat * Math.max(0, Math.min(k, 4 - k, 1)))); };
+    return '#' + [f(5), f(3), f(1)].map((x) => x.toString(16).padStart(2, '0')).join('');
+  };
+  const hex2hsv = (hex) => {
+    const n = parseInt(hex.slice(1), 16), r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+    const h = !d ? 0 : mx === r ? 60 * (((g - b) / d + 6) % 6) : mx === g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
+    return [h, mx ? d / mx : 0, mx];
+  };
+  UI.wheelSwatch = (k, label, hex) => `<button type="button" class="sw sw-wheel" data-wheel="${k}" aria-checked="${!!hex}" aria-expanded="false" aria-controls="cw-${k}" aria-label="${label}: pick any color${hex ? ' (now ' + hex + ')' : ''}" title="Any color" style="--c:${hex || 'transparent'}"></button>`;
+  UI.wheelPanel = (k) => `<div class="cwheel pbox" id="cw-${k}" hidden>
+      <canvas class="cw-c" width="176" height="176" role="slider" tabindex="0" aria-label="Color wheel: hue and richness. Arrow keys adjust." aria-valuetext=""></canvas><div class="cw-side">
+        <span class="cw-now" aria-hidden="true"></span><code class="cw-hex"></code>
+        <label class="lbl cw-bl">Brightness<input class="cw-v" type="range" min="12" max="100" step="1"></label>
+        <p class="sd">Drag on the wheel, then let go to try it on.</p></div></div>`;
+  UI.colorWheel = (panel, startHex, onPick, minV = 0.12) => {
+    const c = panel.querySelector('.cw-c'), x = c.getContext('2d'), W = c.width, R = W / 2 - 2, sl = panel.querySelector('.cw-v');
+    let [h, sat, v] = hex2hsv(startHex || '#888888'); if (v < minV) v = minV;
+    const img = x.createImageData(W, W);
+    const paint = () => {
+      const d = img.data;
+      for (let py = 0; py < W; py++) for (let px = 0; px < W; px++) {
+        const dx = px - W / 2 + 0.5, dy = py - W / 2 + 0.5, r = Math.hypot(dx, dy), i = (py * W + px) * 4;
+        if (r > R) { d[i + 3] = 0; continue; }
+        const hx = hsv2hex((Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360, Math.min(1, r / R), v), n = parseInt(hx.slice(1), 16);
+        d[i] = (n >> 16) & 255; d[i + 1] = (n >> 8) & 255; d[i + 2] = n & 255; d[i + 3] = r > R - 1 ? 128 : 255;
+      }
+      x.putImageData(img, 0, 0);
+      const a = h * Math.PI / 180, mx = W / 2 + Math.cos(a) * sat * R, my = W / 2 + Math.sin(a) * sat * R;
+      x.lineWidth = 3; x.strokeStyle = '#000'; x.beginPath(); x.arc(mx, my, 7, 0, 7); x.stroke();
+      x.lineWidth = 2; x.strokeStyle = '#fff'; x.beginPath(); x.arc(mx, my, 7, 0, 7); x.stroke();
+    };
+    const show = () => { const hx = hsv2hex(h, sat, v); panel.querySelector('.cw-now').style.background = hx; panel.querySelector('.cw-hex').textContent = hx.toUpperCase(); c.setAttribute('aria-valuetext', hx.toUpperCase()); return hx; };
+    const at = (e) => { const b = c.getBoundingClientRect(), dx = (e.clientX - b.left) * W / b.width - W / 2, dy = (e.clientY - b.top) * W / b.height - W / 2; h = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360; sat = Math.min(1, Math.hypot(dx, dy) / R); paint(); show(); };
+    const pick = () => { onPick(show()); WB.Sfx.play('tap'); };
+    c.onpointerdown = (e) => { c.setPointerCapture(e.pointerId); at(e); e.preventDefault(); };
+    c.onpointermove = (e) => { if (c.hasPointerCapture(e.pointerId)) at(e); };
+    c.onpointerup = (e) => { if (c.hasPointerCapture(e.pointerId)) { c.releasePointerCapture(e.pointerId); pick(); } };
+    c.onkeydown = (e) => {
+      const m = { ArrowLeft: [-6, 0], ArrowRight: [6, 0], ArrowUp: [0, 0.05], ArrowDown: [0, -0.05] }[e.key]; if (!m) return;
+      h = (h + m[0] + 360) % 360; sat = Math.max(0, Math.min(1, sat + m[1])); paint(); pick(); e.preventDefault();
+    };
+    sl.value = Math.round(v * 100);
+    sl.oninput = () => { v = sl.value / 100; paint(); show(); };
+    sl.onchange = pick;
+    paint(); show();
   };
   // ---------- COLORS (skin tone + outfit dyes, one sheet; available from level 1) ----------
   UI.colorsLabel = (avatarId) => {
@@ -1293,14 +1344,15 @@
           <p class="skin-note">${skinOn ? 'Skin tone applies to every walker that shows skin. ' : ''}${slots.length ? 'Outfit colors are saved for each walker.' : ''}</p>
         </div>
       </div>
-      ${skinOn ? `<div class="dye-row"><span class="lbl" id="dy-l-skin">Skin tone · <span id="dy-n-skin">${UI.skinName(s.skin)}</span></span>${UI.swatches(s.skin, id).replace('aria-label="Skin tone"', 'aria-labelledby="dy-l-skin"')}</div>` : ''}
-      ${slots.map(([k, l]) => `<div class="dye-row"><span class="lbl" id="dy-l-${k}">${l === 'Main' ? 'Outfit' : 'Trim'} · <span id="dy-n-${k}">${UI.dyeName(WB.outfitOf(id)[k])}</span></span>${UI.dyeSwatches(id, k, l === 'Main' ? 'Outfit' : 'Trim')}</div>`).join('')}
+      ${skinOn ? `<div class="dye-row"><span class="lbl" id="dy-l-skin">Skin tone · <span id="dy-n-skin">${UI.skinName(s.skin)}</span></span>${UI.swatches(s.skin, id).replace('aria-label="Skin tone"', 'aria-labelledby="dy-l-skin"')}${UI.wheelPanel('skin')}</div>` : ''}
+      ${slots.map(([k, l]) => `<div class="dye-row"><span class="lbl" id="dy-l-${k}">${l === 'Main' ? 'Outfit' : 'Trim'} · <span id="dy-n-${k}">${UI.dyeName(WB.outfitOf(id)[k])}</span></span>${UI.dyeSwatches(id, k, l === 'Main' ? 'Outfit' : 'Trim')}${UI.wheelPanel(k)}</div>`).join('')}
       <div class="dye-acts${slots.length ? '' : ' one'}">${slots.length ? '<button class="btn ghost" type="button" id="dy-reset">Reset outfit</button>' : ''}<button class="btn" type="button" data-close>Done</button></div>`, (root) => {
       const prev = () => { UI.stopAnims(); UI.animate($('#dy-prev'), 'av', id, 'idle', S().skin); };
       const sync = () => {
         const o = WB.outfitOf(id);
         WB.$$('[data-dye]', root).forEach((x) => { const [k, v] = x.dataset.dye.split(':'); x.setAttribute('aria-checked', (o[k] || '') === v); });
         WB.$$('[data-skin]', root).forEach((x) => x.setAttribute('aria-checked', (S().skin || '') === x.dataset.skin));
+        WB.$$('[data-wheel]', root).forEach((x) => { const v = x.dataset.wheel === 'skin' ? S().skin : o[x.dataset.wheel]; const on = D.isHex(v); x.setAttribute('aria-checked', on); x.style.setProperty('--c', on ? v : 'transparent'); });
         slots.forEach(([k]) => { $('#dy-n-' + k).textContent = UI.dyeName(o[k]); });
         if (skinOn) $('#dy-n-skin').textContent = UI.skinName(S().skin);
         $('#dy-name').textContent = UI.colorsLabel(id);
@@ -1308,6 +1360,19 @@
         prev();
       };
       WB.$$('[data-skin]', root).forEach((b) => b.onclick = () => { UI.setSkin(b.dataset.skin || null); WB.Sfx.play('tap'); sync(); });
+      // 3.10.13: color wheels (any color): the last swatch in a row opens its wheel; a color is applied when you let go
+      WB.$$('[data-wheel]', root).forEach((b) => b.onclick = () => {
+        const k = b.dataset.wheel, panel = $('#cw-' + k), open = panel.hidden;
+        WB.$$('.cwheel', root).forEach((p) => { p.hidden = true; }); WB.$$('[data-wheel]', root).forEach((x) => x.setAttribute('aria-expanded', 'false'));
+        if (!open) return;
+        panel.hidden = false; b.setAttribute('aria-expanded', 'true');
+        const v = k === 'skin' ? S().skin : WB.outfitOf(id)[k];
+        UI.colorWheel(panel, D.isHex(v) ? v : (k === 'skin' ? (D.toneOf(v) ? D.toneOf(v).ramp[2] : UI.originalSkin(id)) : UI.dyeColors(id, k, v)[0]), (hex) => {
+          if (k === 'skin') UI.setSkin(hex); else UI.setDye(id, k, hex);
+          sync();
+        }, D.isHex(v) ? 0.12 : 0.75);   // a custom color reopens as it is; otherwise start bright enough to see the wheel
+        panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
       WB.$$('[data-dye]', root).forEach((b) => b.onclick = () => {
         const [k, v] = b.dataset.dye.split(':');
         UI.setDye(id, k, v || null); WB.Sfx.play('tap'); sync();
@@ -1320,7 +1385,8 @@
   document.addEventListener('keydown', (e) => {
     const b = e.target.closest && e.target.closest('.sw');
     if (!b || !['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
-    const all = WB.$$('.sw', b.parentElement), i = all.indexOf(b);
+    if (b.classList.contains('sw-wheel')) return;   // the wheel swatch opens its panel; arrows don't pass through it
+    const all = WB.$$('.sw:not(.sw-wheel)', b.parentElement), i = all.indexOf(b);
     const n = all[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + all.length) % all.length];
     n.focus(); n.click(); e.preventDefault();
   });

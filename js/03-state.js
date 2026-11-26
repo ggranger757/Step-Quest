@@ -119,7 +119,7 @@
     for (const id of Object.keys(s.outfit)) {
       const o = s.outfit[id], map = D.OUTFIT_MAP[id];
       if (!map || !o || typeof o !== 'object') { delete s.outfit[id]; continue; }
-      for (const k of ['o', 't']) if (o[k] != null && (!map[k] || !D.dyeById[o[k]])) delete o[k];
+      for (const k of ['o', 't']) if (o[k] != null && (!map[k] || !D.dyeOf(o[k]))) delete o[k];
       if (o.o == null && o.t == null) delete s.outfit[id];
     }
     s.unlocked = s.unlocked.filter((id) => D.worldById[id]);

@@ -3978,3 +3978,16 @@ html.rm .pl-psp.ready .psp-pips i { animation: none; }
 }
 .item .prev .tag.ev.new { background: var(--gold); color: #000; }   /* a newly added walker (3.10.9) */
 .ev-offer .row { justify-content: center; }
+
+/* 3.10.13: color wheels in the Colors sheet */
+.sw.sw-wheel { background: radial-gradient(circle, #fff 0 18%, transparent 62%), conic-gradient(from 90deg, #f33, #fd3, #3d4, #3cf, #36f, #c3f, #f33); }
+.sw.sw-wheel[aria-checked="true"]::after { width: 16px; height: 16px; margin: -8px 0 0 -8px; background: var(--c); box-shadow: 0 0 0 2px #fff, 0 0 0 3px #000; }
+.cwheel { display: grid; grid-template-columns: auto 1fr; gap: var(--s3); align-items: center; padding: var(--s3); }
+.cwheel[hidden] { display: none; }
+.cw-c { width: 150px; height: 150px; touch-action: none; cursor: crosshair; border-radius: 50%; }
+.cw-side { display: grid; gap: var(--s2); min-width: 0; }
+.cw-now { width: 100%; height: 30px; box-shadow: 0 0 0 2px var(--shadow), 0 0 0 4px var(--line); }
+.cw-hex { font-size: 13px; letter-spacing: 1px; }
+.cw-bl { display: grid; gap: 4px; }
+.cw-v { width: 100%; }
+@media (max-width: 360px) { .cwheel { grid-template-columns: 1fr; justify-items: center; } .cw-side { width: 100%; } }

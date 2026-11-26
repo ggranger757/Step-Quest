@@ -760,6 +760,14 @@
     warlock: { o: ['#312841', '#3f3a57', '#5a4772'], t: ['#cd7a26', '#ba5d22', '#d1a22a'] },
   };
   D.dyeById = Object.fromEntries(D.DYES.map((d) => [d.id, d]));
+  // 3.10.13: any color from the color wheel is saved as its own '#rrggbb' in place of a preset id
+  D.isHex = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+  D.dyeOf = (v) => D.dyeById[v] || (D.isHex(v) ? { id: v.toLowerCase(), name: 'Custom', hex: v.toLowerCase() } : null);
+  D.toneOf = (v) => {   // a skin tone: a preset, or a custom light color with two darker steps for its shading
+    const t = D.SKIN_TONES.find((x) => x.id === v); if (t || !D.isHex(v)) return t || null;
+    const n = parseInt(v.slice(1), 16), step = (f) => '#' + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(c * f).toString(16).padStart(2, '0')).join('');
+    return { id: v.toLowerCase(), name: 'Custom', ramp: [step(0.66), step(0.84), v.toLowerCase()] };
+  };
 
 
   // ---------- Battle gear ----------
