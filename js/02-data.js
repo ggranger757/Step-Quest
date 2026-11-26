@@ -1264,7 +1264,7 @@
   D.FIGHT_CHANCE = 0.4;
   D.RIVAL_CHANCE = 0.35;   // 3.10.11: a fighting creature on a walk is Redhood Rival 35% of the time, in any world (was 22%)
   D.RIVAL_PITY = 4;        // ...and she always turns up if 4 fights have gone by without her (was 7)
-  D.REMATCH_DAILY = 5;     // 3.10.11: World map rematches per day, so XP and HP can't be farmed
+  D.REMATCH_DAILY = 3;     // 3.10.12: World map rematches per day on worlds you have cleared (was 5), so XP and HP can't be farmed
   D.RIVAL_REMATCH = 0.25;  // a world Rematch is her a quarter of the time
   // mobs: from level D.MOB_LEVEL a fight can be 2–3 creatures. The ones behind the front are weaker and attack 60% of rounds.
   D.MOB_MAX = 3; D.MOB_LEVEL = 6; D.MOB_CHANCE = 0.18; D.MOB_HP = 0.6; D.MOB_ATK = 0.55; D.MOB_ACT = 0.6;
