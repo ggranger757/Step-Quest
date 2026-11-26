@@ -53,8 +53,10 @@
     if (!force && !G.battlesOpen()) return WB.UI.toast({ kicker: 'Not yet', title: 'Battles unlock at level ' + D.BATTLE_LEVEL + '.', cls: 'msg' });
     if (S().hp < 1) S().hp = 1;
     // a beaten guardian's world offers a rematch: a random fight from that world (G.makeRematch)
-    const e = S().bosses[worldId] ? G.makeRematch(worldId) : G.makeEncounter('boss', { world: worldId });
-    if (e) BU.open(e, force);
+    const re = !!S().bosses[worldId];
+    if (re && !force && G.rematchesLeft() < 1) return WB.UI.toast({ kicker: 'Rematches', title: 'That’s all ' + D.REMATCH_DAILY + ' rematches for today. More tomorrow!', cls: 'msg' });
+    const e = re ? G.makeRematch(worldId) : G.makeEncounter('boss', { world: worldId });
+    if (e && BU.open(e, force) !== false && re) { G.useRematch(); WB.bus.emit('state'); }
   };
 
   // The one door into every fight. Battle mode stays shut until level D.BATTLE_LEVEL (4), whatever called it (a developer force skips this).
@@ -430,7 +432,7 @@
     l.onclick = () => { clearInterval(typeT); l.textContent = text; };
   }
   const clip = (t, n) => { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };   // keeps a name inside its button
-  const potionTag = (p) => (p.kind === 'blockup' ? 'Block +' + Math.round(p.amount * 100) + '%' : p.kind === 'mend' ? 'Repair + gauge +' + p.amount * 2 + '%' : p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? 'Weapon ready + heal' : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
+  const potionTag = (p) => (p.kind === 'blockup' ? 'Block +' + Math.round(p.amount * 100) + '%' : p.kind === 'mend' ? 'Repair + gauge +' + p.amount * 2 + '%' : p.kind === 'heal' ? '+' + Math.round(p.amount * 100) + '% HP' + (p.regen ? ' + ' + Math.round(p.regen.amount * 100) + '%/turn' : p.cure ? ' · cure' : p.guardTurns ? ' · -' + Math.round((1 - (p.guardF || 0.5)) * 100) + '% dmg' : p.furyTurns ? ' · +' + Math.round((p.furyMult - 1) * 100) + '% dmg' : '') : p.kind === 'guard' ? '-' + Math.round((1 - (p.factor || 0.5)) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'fury' ? '+' + Math.round(((p.mult || 1.5) - 1) * 100) + '% damage, ' + p.turns + ' turns' : p.kind === 'swift' ? (p.amount === 0 ? 'Weapon ready · clear' : 'Weapon ready + heal') : 'Bomb: ' + Math.round(p.power * 100) + '% of its HP');
   function actions(mode = 'main') {
     const st = WB.Battle.st, el = $('#b-actions'), s = S();
     if (!el) return;

@@ -518,9 +518,12 @@
   // Rematch (World map → a world whose guardian you beat): a random fight from that world, not just the guardian.
   // The guardian comes back 1 time in 5, Redhood Rival a quarter of the time (D.RIVAL_REMATCH); otherwise one of the
   // world's creatures, or (from D.MOB_LEVEL) a mob of them.
+  // 3.10.11: up to D.REMATCH_DAILY rematches a day (all worlds together); a rematch counts as soon as it starts
+  G.rematchesLeft = () => { const r = S().rematches; return Math.max(0, D.REMATCH_DAILY - (r && r.day === WB.dayKey() ? r.n : 0)); };
+  G.useRematch = () => { const s = S(), day = WB.dayKey(); if (!s.rematches || s.rematches.day !== day) s.rematches = { day, n: 0 }; s.rematches.n++; WB.Save.queue(); };
   G.makeRematch = (wid, rnd = Math.random) => {
     const s = S(), w = D.worldById[wid];
-    if (!w || !s.bosses[wid]) return null;
+    if (!w || !s.bosses[wid] || G.rematchesLeft() < 1) return null;
     const roll = rnd();
     if (roll < 0.2 || !w.pool.length) return G.makeEncounter('boss', { world: wid });
     if (roll < 0.2 + D.RIVAL_REMATCH && G.battlesOpen()) {   // Redhood Rival crashes the rematch
@@ -786,7 +789,7 @@
     const s = S(), p = G.potion(id);
     if (!p || p.kind !== 'heal' || !(s.potions[id] > 0)) return { ok: false };
     if (s.hp >= G.maxHp()) return { ok: false, msg: 'You’re already at full health.' };
-    s.potions[id]--; G.heal(Math.round(G.maxHp() * Math.min(1, p.amount * (G.perk('potions') ? 1.25 : 1))));
+    s.potions[id]--; G.heal(Math.round(G.maxHp() * Math.min(1, (p.amount + (p.regen ? p.regen.amount * p.regen.turns : 0)) * (G.perk('potions') ? 1.25 : 1))));   // food that heals over time heals all at once outside battle
     WB.Sfx.play('claim'); G.after();
     return { ok: true };
   };

@@ -760,9 +760,12 @@
   const tabIcon = (ic) => (ic === 'img:egg1' ? WB.eggImg('ember', 20, 'still') : ic.startsWith('img:') ? WB.pxImg(ic.slice(4), 20) : WB.icon(ic, 2));
   // Shop order: easiest to get first. Starters, then by unlock level and price; items earned another way (streaks,
   // steps, exploring, guardians, the daily reward) come last.
-  const byUnlock = (list) => list.slice().sort((a, b) => {
-    const k = (it) => { const r = it.req || {}; const other = r.streak || r.steps || r.explored || r.bosses || r.daily || r.found ? 1 : 0; return [r.starter ? -1 : other, r.level || 0, r.cost || it.cost || 0]; };
-    const x = k(a), y = k(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
+  // 3.10.11: what you can have right now (owned, or ready to buy) comes before anything still locked, so a list never
+  // goes unlocked → locked → unlocked as you scroll. Pass the shop category so owned items count as available.
+  const avail = (it, cat) => { if (cat && G.owns(cat, it.id)) return true; const st = G.reqStatus(it.req || { cost: it.cost }); return !!(st.met || st.buy); };
+  const byUnlock = (list, cat) => list.slice().sort((a, b) => {
+    const k = (it) => { const r = it.req || {}; const other = r.streak || r.steps || r.explored || r.bosses || r.daily || r.found ? 1 : 0; return [avail(it, cat) ? 0 : 1, r.starter ? -1 : other, r.level || 0, r.cost || it.cost || 0]; };
+    const x = k(a), y = k(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || x[3] - y[3];
   });
   const priceTag = (cost) => { const short = cost - S().coins; return `<div class="price"><span class="cost">${WB.icon('coin', 2)}${WB.fmt(cost)}</span>${short > 0 ? `<span class="short">${WB.fmt(short)} more</span>` : ''}</div>`; };
   const shortWhy = (cost, what) => { const short = cost - S().coins; return short > 0 ? 'Need ' + WB.fmt(short) + ' more coins. Keep walking!' : ''; };
@@ -878,8 +881,8 @@
     const s = S();
     if (cat === 'ranged') {
       if (!G.battlesOpen()) return gearLock('Ranged weapons and magic');
-      const rng = WGROUPS.ranged.map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('');
-      const mag = (kind, title, aside) => { const list = byUnlock(D.MAGIC.filter((m) => m.kind === kind)); return `<div class="sect"><h2>${title} <span class="aside">${list.filter((m) => G.owns('magic', m.id)).length} / ${list.length} · ${aside}</span></h2><div class="grid">${list.map((it) => itemCard('magic', it, { desc: it.desc, stat: it.tag })).join('')}</div></div>`; };
+      const rng = WGROUPS.ranged.map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === 'ranged' && w.type === type), 'weapon'); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('');
+      const mag = (kind, title, aside) => { const list = byUnlock(D.MAGIC.filter((m) => m.kind === kind), 'magic'); return `<div class="sect"><h2>${title} <span class="aside">${list.filter((m) => G.owns('magic', m.id)).length} / ${list.length} · ${aside}</span></h2><div class="grid">${list.map((it) => itemCard('magic', it, { desc: it.desc, stat: it.tag })).join('')}</div></div>`; };
       return `<p class="fine wnote">Ranged weapons and battle magic get used up. Buy one to unlock it (it comes with ${D.FIRST_PACK}), then buy as many more as you like.</p>${rng}${mag('battle', 'Battle magic', 'buy as many as you like')}${mag('charm', 'Charms', 'wear ' + D.CHARM_SLOTS)}`;
     }
     if (cat === 'weapons') {
@@ -887,7 +890,7 @@
       const slot = UI.wpnSlot === 'shield' ? 'shield' : 'melee';
       const all = (k) => D.WEAPONS.filter((w) => w.slot === k).length, own = (k) => D.WEAPONS.filter((w) => w.slot === k && G.owns('weapon', w.id)).length;
       return `${slotTabs(slot)}<p class="fine wnote">${slot === 'melee' ? 'Used by Strike.' : 'Softens hits and powers Defend. Belts soften more, block less. Wear one.'} ${own(slot)} of ${all(slot)} owned.</p>
-        ${WGROUPS[slot].map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && w.type === type)); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('')}`;
+        ${WGROUPS[slot].map(([type, label]) => { const list = byUnlock(D.WEAPONS.filter((w) => w.slot === slot && w.type === type), 'weapon'); return list.length ? `<div class="sect"><h2>${label} <span class="aside">${list.filter((w) => G.owns('weapon', w.id)).length} / ${list.length}</span></h2><div class="grid">${list.map((w) => itemCard('weapon', w, { desc: w.desc, stat: statLine(w) })).join('')}</div></div>` : ''; }).join('')}`;
     }
     if (cat === 'potions') {
       const card = (p) => {
@@ -899,7 +902,7 @@
           ${locked ? '' : `<div class="foot">${priceTag(p.cost)}<button class="btn gold sm block" type="button" data-potion-buy="${p.id}" ${off(full ? 'Bag full: carry up to ' + D.POTION_MAX + '.' : shortWhy(p.cost, p.name))}>${full ? 'Full' : 'Buy'}</button></div>`}
         </div>`;
       };
-      const base = byUnlock(D.POTIONS.filter((p) => p.base && !p.food && !p.shield)), shieldP = byUnlock(D.POTIONS.filter((p) => p.shield)), food = byUnlock(D.POTIONS.filter((p) => p.food)), found = D.POTIONS.filter((p) => !p.base && G.hasFound(p.id)), hidden = D.POTIONS.filter((p) => !p.base && !G.hasFound(p.id));
+      const base = byUnlock(D.POTIONS.filter((p) => p.base && !p.food && !p.shield)), shieldP = byUnlock(D.POTIONS.filter((p) => p.shield)), food = byUnlock(D.POTIONS.filter((p) => p.food)), found = byUnlock(D.POTIONS.filter((p) => !p.base && G.hasFound(p.id))), hidden = D.POTIONS.filter((p) => !p.base && !G.hasFound(p.id));
       return `<div class="sect"><h2>Everyday potions <span class="aside">${base.length}</span></h2><div class="grid">${base.map(card).join('')}</div></div>
         <div class="sect"><h2>For your shield <span class="aside">${shieldP.length} · battle only</span></h2><p class="fine">They make Defend stronger or repair your shield. None of them restore HP.</p><div class="grid">${shieldP.map(card).join('')}</div></div>
         <div class="sect"><h2>Food <span class="aside">${food.length}</span></h2><div class="grid">${food.map(card).join('')}</div></div>
@@ -912,14 +915,14 @@
       const pstat = (p) => 'HP ' + G.petMax(p.id) + ' · ' + ({ attack: 'Attacker', shoot: 'Shooter', heal: 'Healer', guard: 'Guardian' })[p.role];
       const birds = (D.STATE_BIRDS || []).filter((p) => G.owns('pet', p.id));   // bird pets from the old bird quests: kept if you own them, no longer earnable
       const pl = D.PETS.filter((p) => !p.bird && (G.inShop(p) || G.owns('pet', p.id))), pev = pl.filter((p) => p.req.event && G.eventOn(p.req.event));   // event pets first, gone after
-      return `<div class="grid">${[...pev, ...byUnlock(pl.filter((p) => !pev.includes(p)))].map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div>${birds.length ? `
+      return `<div class="grid">${[...pev, ...byUnlock(pl.filter((p) => !pev.includes(p)), 'pet')].map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div>${birds.length ? `
         <div class="sect" id="state-birds"><h2>Bird pets you earned <span class="aside">${birds.length}</span></h2>
           <p class="fine">Earned on the old bird quests. They stay yours, but no new ones can be earned.</p>
           <div class="grid">${birds.map((p) => itemCard('pet', p, { desc: p.kind + '. ' + D.petRoleText(p), stat: pstat(p) })).join('')}</div></div>` : ''}`;
     }
     // event walkers lead the list while their event runs, and are gone afterwards (unless you bought one)
     const live = D.AVATARS.filter((a) => G.inShop(a) || G.owns('avatar', a.id)), ev = live.filter((a) => a.req.event && G.eventOn(a.req.event));
-    return `<div class="grid">${[...ev, ...byUnlock(live.filter((a) => !ev.includes(a)))].map((it) => itemCard('avatar', it, { desc: it.role })).join('')}</div>`;
+    return `<div class="grid">${[...ev, ...byUnlock(live.filter((a) => !ev.includes(a)), 'avatar')].map((it) => itemCard('avatar', it, { desc: it.role })).join('')}</div>`;
   }
   // ----- Bag sections -----
   function bagBody(tab) {
@@ -1335,7 +1338,7 @@
           <div class="wbody"><h3>${w.name}</h3><p class="wb">${w.blurb}</p>
           <div class="wcr"><span class="lbl">Creatures here</span><div class="crts">${w.pool.map((c) => `<span class="crt" title="${WB.esc(D.CREATURES[c].name)}"><canvas width="80" height="80" data-crthumb="${c}" aria-label="${WB.esc(D.CREATURES[c].name)}" role="img"></canvas></span>`).join('')}</div></div>
           ${open ? `<div class="wrow"><div class="bar seg cyan"><i style="width:${pct}%"></i></div><div class="wmeta"><span class="lbl">${Math.floor(pct)}% explored · ${(s.enc.finds[w.id] || []).length}/${D.FINDS[w.id].length} artifacts</span>${cur ? '<span class="lbl here">You are here</span>' : G.canTravel(w.id) ? `<button class="btn sm" type="button" data-travel="${w.id}">Travel</button>` : `<span class="lbl dim">Finish ${WB.esc(G.firstWorld().name)} to wake your Worldkey</span>`}</div>
-            <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${s.bosses[w.id] ? (G.battlesOpen() ? `<button class="btn ghost sm" type="button" data-boss="${w.id}" aria-label="Rematch: a random fight in ${WB.esc(w.name)}">Rematch</button>` : '') : pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : '<span class="lbl dim">Appears at 100%</span>'}</div></div>`
+            <div class="wmeta guard"><span class="lbl">${s.bosses[w.id] ? WB.icon('check', 2) + ' Guardian defeated' : WB.icon('sword', 2) + ' Guardian: ' + D.CREATURES[w.boss].name}</span>${s.bosses[w.id] ? (G.battlesOpen() ? (G.rematchesLeft() ? `<button class="btn ghost sm" type="button" data-boss="${w.id}" aria-label="Rematch: a random fight in ${WB.esc(w.name)}. ${G.rematchesLeft()} of ${D.REMATCH_DAILY} left today">Rematch · ${G.rematchesLeft()} left</button>` : `<span class="lbl dim">Rematches done today</span>`) : '') : pct >= 100 ? (G.battlesOpen() ? `<button class="btn danger sm" type="button" data-boss="${w.id}">Challenge</button>` : `<span class="lbl dim">Battles unlock at level ${D.BATTLE_LEVEL}</span>`) : '<span class="lbl dim">Appears at 100%</span>'}</div></div>`
           : G.wk().found.includes(w.id) ? `<div class="wrow"><div class="wmeta"><span class="lbl here">Discovered</span><button class="btn gold sm" type="button" data-wk="gate" data-wid="${w.id}">Use Worldkey</button></div></div>`
           : `<div class="wrow"><span class="lbl wreq-h">${WB.icon('lock', 2)} To open this world</span>
             <ul class="wreq"><li class="${wp.levelOk ? 'ok' : ''}">${wp.levelOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Reach level ${w.unlock.level}</li>${wp.prev ? `<li class="${wp.exploreOk ? 'ok' : ''}">${wp.exploreOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}Explore ${G.gatePct(w)}% of ${WB.esc(wp.prev.name)}</li>` : ''}${wp.guardian ? `<li class="${wp.guardOk ? 'ok' : ''}">${wp.guardOk ? WB.icon('check', 1) : '<i aria-hidden="true">•</i>'}${UI.guardReq(wp)}</li>` : ''}</ul>

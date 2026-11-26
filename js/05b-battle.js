@@ -98,8 +98,9 @@
     const e = st.enemy, h = st.hero, m = st.melee, sh = st.shield;
     const yours = h.atk * m.power * G.wearF(m.id) * (st.perks.has('dmg') ? 1.08 : 1);   // your plain Strike
     const soften = sh ? 1 - sh.armor * G.wearF(sh.id) : 1;
-    e.atk = Math.max(e.atk, Math.round((yours * D.RIVAL_PACE + h.def * 0.5) / Math.max(0.5, soften)));
-    e.max = e.hp = Math.max(e.hp, Math.round(h.max * D.RIVAL_HP));
+    const edge = D.rivalEdge(h.lvl);
+    e.atk = Math.max(e.atk, Math.round((yours * (D.RIVAL_PACE + edge * 0.6) + h.def * 0.5) / Math.max(0.5, soften)));
+    e.max = e.hp = Math.max(e.hp, Math.round(h.max * (D.RIVAL_HP + edge)));
     e.lvl = Math.max(e.lvl, h.lvl);
   };
   const guardName = (st) => (st.shield ? (st.shield.belt ? 'belt' : 'shield') : 'guard');
@@ -330,7 +331,10 @@
       } else {
       s.potions[arg]--;   // every potion is used up when you drink it (it was only counted when given to a pet)
       const ev = { who: 'hero', type: 'potion', potion: arg, left: s.potions[arg] };
-      if (p.kind === 'heal') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * p.amount)); ev.heal = h.hp - b0; ev.text = p.name + ': +' + ev.heal + ' HP.'; if (p.guardTurns) { h.guard = p.guardTurns; h.guardF = p.guardF || 0.5; ev.text += ' Damage taken halved for ' + p.guardTurns + ' turns.'; } }
+      if (p.kind === 'heal') { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * p.amount)); ev.heal = h.hp - b0; ev.text = p.name + ': +' + ev.heal + ' HP.'; if (p.guardTurns) { h.guard = p.guardTurns; h.guardF = p.guardF || 0.5; ev.text += ' Damage taken ' + (h.guardF === 0.5 ? 'halved' : 'cut by ' + pct(1 - h.guardF)) + ' for ' + p.guardTurns + ' turns.'; }
+        if (p.cure) { h.poison = h.venom = h.burn = 0; ev.text += ' Poison and burns cleared.'; }
+        if (p.furyTurns && !(h.fury > 0 && h.furyMult > p.furyMult)) { h.fury = p.furyTurns + 1; h.furyMult = p.furyMult; ev.text += ' +' + pct(p.furyMult - 1) + ' damage for ' + p.furyTurns + ' turns.'; }
+        if (p.regen) { h.meal = { name: p.name, amount: p.regen.amount, turns: p.regen.turns }; ev.text += ' +' + pct(p.regen.amount) + ' more each turn for ' + p.regen.turns + ' turns.'; } }
       if (p.kind === 'guard') { h.guard = p.turns; h.guardF = p.factor || 0.5; ev.text = p.name + ': damage taken cut by ' + pct(1 - h.guardF) + ' for ' + p.turns + ' turns.'; }
       // shield potions (3.5.3): a stronger Defend for the rest of the battle, or a repaired shield. They never touch HP.
       if (p.kind === 'blockup' && !st.shield) { ev.text = p.name + ': it does nothing without a shield or belt.'; }
@@ -343,7 +347,8 @@
         ev.text = sh ? p.name + ': your ' + sh.name + ' is back to ' + Math.round(G.cond(sh.id)) + '% condition, and its gauge is up to ' + sg.hp + ' / ' + sg.max + '.' : p.name + ': you have no shield or belt to oil.';
       }
       if (p.kind === 'fury') { h.fury = p.turns + 1; h.furyMult = p.mult || 1.5; ev.text = p.name + ': +' + pct(h.furyMult - 1) + ' damage for ' + p.turns + ' turns.'; }
-      if (p.kind === 'swift') { st.cooldown = 0; const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * (p.amount || 0.1))); ev.heal = h.hp - b0; ev.text = p.name + ': your weapon is ready again' + (ev.heal ? ' (+' + ev.heal + ' HP).' : '.'); }
+      if (p.kind === 'swift') { st.cooldown = 0; const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.round(h.max * (p.amount != null ? p.amount : 0.1))); ev.heal = h.hp - b0; ev.text = p.name + ': your weapon is ready again' + (ev.heal ? ' (+' + ev.heal + ' HP).' : '.');
+        if (p.clear) { const was = h.weak > 0 || h.stun > 0; h.weak = h.stun = 0; if (was) ev.text += ' Weak and Stun shaken off.'; } }
       if (p.kind === 'blast') { strikeEnemy(st, Math.max(1, Math.round(e.max * p.power)), ev, true); ev.text = p.name + ' explodes for ' + ev.dmg + '!'; }
       ev.text = (ev.text || p.name + '.') + (ev.left ? ' ' + ev.left + ' left.' : ' That was your last one.');
       events.push(ev);
@@ -450,6 +455,7 @@
     if (h.spikes > 0) h.spikes--;
     if (h.autoGuard > 0) h.autoGuard--;
     guardRound(st, events);
+    if (h.meal && h.meal.turns > 0 && h.hp > 0) { h.meal.turns--; if (h.hp < h.max) { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.max(1, Math.round(h.max * h.meal.amount))); events.push({ who: 'hero', type: 'regen', heal: h.hp - b0, text: h.meal.name + ': +' + (h.hp - b0) + ' HP.' }); } }   // 3.10.11: Orchard Fruit heals over time
     if (P.has('regen') && h.hp > 0 && h.hp < h.max) { const b0 = h.hp; h.hp = Math.min(h.max, h.hp + Math.max(1, Math.round(h.max * 0.03))); events.push({ who: 'hero', type: 'regen', heal: h.hp - b0, text: 'Pendant of Renewal: +' + (h.hp - b0) + ' HP.' }); }
     h.defend = false; h.defended = false;
     if (st.cooldown > 0) st.cooldown--;

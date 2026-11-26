@@ -352,7 +352,10 @@
   D.SG_BREAK = 2; D.SG_BACK = 0.5;       // an emptied gauge breaks your guard for 2 turns, then it's back at half
   // Redhood Rival keeps pace with you (3.7.0): her plain attack is about D.RIVAL_PACE of your Strike, her HP about
   // D.RIVAL_HP of yours, and D.RIVAL_MIRROR of her attacks copy your last attack for exactly what you dealt.
-  D.RIVAL_PACE = 0.8; D.RIVAL_HP = 1.0; D.RIVAL_MIRROR = 0.35;
+  D.RIVAL_PACE = 0.85; D.RIVAL_HP = 1.05; D.RIVAL_MIRROR = 0.35;   // 3.10.11: a touch tougher than you (was 0.8 and 1.0)
+  // ...and the gap grows as you level: + D.rivalEdge(lvl) to her HP share (and 60% of that to her attack share),
+  // from 0 at level 4 to +0.10 by level 37, so a high-level walker meets a rival who is a little stronger than they are
+  D.rivalEdge = (lvl) => Math.min(0.1, Math.max(0, lvl - 4) * 0.003);
   // Initiative: the chance a creature strikes first, before your opening move (never in your very first battle; the Druid always does)
   D.AMBUSH = { creature: 0.3, guardian: 0.4, boss: 0.5 };
   // Turn timer (seconds) to pick a move; when it runs out you hesitate and the creature acts. Tougher foes give you less time.
@@ -1063,12 +1066,13 @@
     { id: 'sundrop', name: 'Sundrop', kind: 'heal', amount: 1, cost: 320, pal: 'brass', desc: 'Restores all of your HP.', req: { level: 15 }, base: true },
     { id: 'firecrystal', name: 'Fire Crystal', kind: 'fury', turns: 3, mult: 1.75, cost: 360, pal: 'rose', desc: '+75% damage for 3 turns.', req: { level: 18 }, base: true },
     { id: 'ambrosia', name: 'Ambrosia', kind: 'heal', amount: 1, guardTurns: 3, guardF: 0.5, cost: 900, pal: 'cyan', desc: 'Restores all of your HP, and in battle halves the damage you take for 3 turns.', req: { level: 79 }, base: true },
-    // food: cheap, everyday healing (eat it in battle from Items, or here in the Shop); the Candy Jar is a sugar rush
-    { id: 'radish', name: 'Garden Radish', kind: 'heal', amount: 0.2, cost: 25, pal: 'rose', desc: 'Restores 20% of your HP.', req: {}, base: true, food: true },
-    { id: 'fruit', name: 'Orchard Fruit', kind: 'heal', amount: 0.3, cost: 45, pal: 'rose', desc: 'Restores 30% of your HP.', req: { level: 2 }, base: true, food: true },
-    { id: 'candy', name: 'Candy Jar', kind: 'swift', amount: 0.1, cost: 80, pal: 'brass', desc: 'Sugar rush: recharges your weapon instantly and restores 10% HP.', req: { level: 3 }, base: true, food: true },
-    { id: 'fish', name: 'Smoked Fish', kind: 'heal', amount: 0.45, cost: 75, pal: 'ash', desc: 'Restores 45% of your HP.', req: { level: 4 }, base: true, food: true },
-    { id: 'steak', name: 'Hearty Steak', kind: 'heal', amount: 0.6, cost: 120, pal: 'rose', desc: 'Restores 60% of your HP.', req: { level: 7 }, base: true, food: true },
+    // food: cheap, everyday healing (eat it in battle from Items, or here in the Shop). 3.10.11: each food has its own
+    // twist so it never just copies a Tonic: Radish cures, Fruit heals over time, Fish guards, Steak hits harder, Candy clears
+    { id: 'radish', name: 'Garden Radish', kind: 'heal', amount: 0.15, cure: true, cost: 25, pal: 'rose', desc: 'Restores 15% of your HP and clears poison, venom and burns.', req: {}, base: true, food: true },
+    { id: 'fruit', name: 'Orchard Fruit', kind: 'heal', amount: 0.1, regen: { amount: 0.07, turns: 4 }, cost: 45, pal: 'rose', desc: 'Restores 10% of your HP now, then 7% each turn for 4 turns (38% in all; all at once outside battle).', req: { level: 2 }, base: true, food: true },
+    { id: 'candy', name: 'Candy Jar', kind: 'swift', amount: 0, clear: true, cost: 80, pal: 'brass', desc: 'Sugar rush: recharges your weapon instantly and shakes off Weak and Stun. No healing.', req: { level: 3 }, base: true, food: true },
+    { id: 'fish', name: 'Smoked Fish', kind: 'heal', amount: 0.3, guardTurns: 2, guardF: 0.75, cost: 75, pal: 'ash', desc: 'Restores 30% of your HP, and in battle you take 25% less damage for 2 turns.', req: { level: 4 }, base: true, food: true },
+    { id: 'steak', name: 'Hearty Steak', kind: 'heal', amount: 0.4, furyTurns: 3, furyMult: 1.25, cost: 120, pal: 'rose', desc: 'Restores 40% of your HP, and in battle you deal 25% more damage for 3 turns.', req: { level: 7 }, base: true, food: true },
   ];
   // Every other flask in the potion pack is DISCOVERED: it is one of the artifacts hidden in the newer
   // worlds. Finding it gives you one, and from then on you can buy it. Kind follows the flask's color;
@@ -1258,8 +1262,9 @@
   D.EGG_LINES = ['Something glints in a nest beside the path.', 'An egg sits all alone in the grass, still warm.', 'Half-buried in leaves: an egg with a strange shell.', 'A bird circles overhead and drops something shiny.', 'There’s an egg wedged between two stones.'];
   D.BATTLE_LEVEL = 3;    // creatures, battles, guardians and the Druid only appear from this level
   D.FIGHT_CHANCE = 0.4;
-  D.RIVAL_CHANCE = 0.22;   // 3.5.3: a fighting creature is Redhood Rival 22% of the time, in any world (was 8%)
-  D.RIVAL_PITY = 7;        // ...and she always turns up if 7 fights have gone by without her
+  D.RIVAL_CHANCE = 0.35;   // 3.10.11: a fighting creature on a walk is Redhood Rival 35% of the time, in any world (was 22%)
+  D.RIVAL_PITY = 4;        // ...and she always turns up if 4 fights have gone by without her (was 7)
+  D.REMATCH_DAILY = 5;     // 3.10.11: World map rematches per day, so XP and HP can't be farmed
   D.RIVAL_REMATCH = 0.25;  // a world Rematch is her a quarter of the time
   // mobs: from level D.MOB_LEVEL a fight can be 2–3 creatures. The ones behind the front are weaker and attack 60% of rounds.
   D.MOB_MAX = 3; D.MOB_LEVEL = 6; D.MOB_CHANCE = 0.18; D.MOB_HP = 0.6; D.MOB_ATK = 0.55; D.MOB_ACT = 0.6;
